@@ -490,30 +490,10 @@ do -- RoomsList
 
     StageAPI.RoomsList = StageAPI.Class("RoomsList")
     function StageAPI.RoomsList:Init(...)
-        local roomData = {}
-        local byShape = {}
-        local roomfiles = {...}
-        for _, rooms in ipairs(roomfiles) do
-            local roomfile = "N/A"
-            if rooms.Name and rooms.Rooms then
-                roomfile = rooms.Name
-                rooms = rooms.Rooms
-            end
-
-            for _, room in ipairs(rooms) do
-                local simplified = StageAPI.SimplifyRoomLayout(room)
-                simplified.RoomFilename = roomfile
-                roomData[#roomData + 1] = simplified
-                if not byShape[simplified.Shape] then
-                    byShape[simplified.Shape] = {}
-                end
-
-                byShape[simplified.Shape][#byShape[simplified.Shape] + 1] = simplified
-            end
-        end
-
-        self.All = roomData
-        self.ByShape = byShape
+        self.All = {}
+        self.ByShape = {}
+        self.Shapes = {}
+        self:AddRooms(...)
     end
 
     function StageAPI.RoomsList:AddRooms(...)
@@ -530,6 +510,7 @@ do -- RoomsList
                 simplified.RoomFilename = roomfile
                 self.All[#self.All + 1] = simplified
                 if not self.ByShape[simplified.Shape] then
+                    self.Shapes[#self.Shapes + 1] = simplified.Shape
                     self.ByShape[simplified.Shape] = {}
                 end
 
@@ -1238,6 +1219,11 @@ do -- Custom Stage
         }
     end
 
+    function StageAPI.CustomStage:SetSpots(bossSpot, playerSpot)
+        self.BossSpot = bossSpot
+        self.PlayerSpot = playerSpot
+    end
+
     function StageAPI.CustomStage:GetPlayingMusic()
         local roomType = room:GetType()
         local id = StageAPI.Music:GetCurrentMusicID()
@@ -1317,9 +1303,7 @@ do -- Definitions
     StageAPI.Catacombs = StageAPI.CustomStage("Catacombs")
     StageAPI.Catacombs:SetMusic(StageAPI.CatacombsMusicID, RoomType.ROOM_DEFAULT)
     StageAPI.Catacombs:SetBossMusic({Music.MUSIC_BOSS, Music.MUSIC_BOSS2}, Music.MUSIC_BOSS_OVER)
-    StageAPI.Catacombs:SetRoomGfx(StageAPI.CatacombsRoomGfx, RoomType.ROOM_DEFAULT)
-    StageAPI.Catacombs:SetRoomGfx(StageAPI.CatacombsRoomGfx, RoomType.ROOM_TREASURE)
-    StageAPI.Catacombs:SetRoomGfx(StageAPI.CatacombsRoomGfx, RoomType.ROOM_BOSS)
+    StageAPI.Catacombs:SetRoomGfx(StageAPI.CatacombsRoomGfx, {RoomType.ROOM_DEFAULT, RoomType.ROOM_TREASURE, RoomType.ROOM_MINIBOSS, RoomType.ROOM_BOSS})
     StageAPI.Catacombs:SetRooms(StageAPI.CatacombsRooms)
 
     StageAPI.StageOverride = {
@@ -1366,6 +1350,191 @@ do -- Definitions
 
     function StageAPI.GetCurrentListIndex()
         return level:GetCurrentRoomDesc().ListIndex
+    end
+end
+
+do -- Bosses
+    StageAPI.BossSpots = {
+        [LevelStage.STAGE1_1] = {
+            [StageType.STAGETYPE_ORIGINAL] = "01_basement",
+            [StageType.STAGETYPE_WOTL] = "02_cellar",
+            [StageType.STAGETYPE_AFTERBIRTH] = "13_burning_basement",
+            [StageType.STAGETYPE_GREEDMODE] = "01_basement"
+        },
+        [LevelStage.STAGE1_2] = {
+            [StageType.STAGETYPE_ORIGINAL] = "01_basement",
+            [StageType.STAGETYPE_WOTL] = "02_cellar",
+            [StageType.STAGETYPE_AFTERBIRTH] = "13_burning_basement",
+            [StageType.STAGETYPE_GREEDMODE] = "01_basement"
+        },
+        [LevelStage.STAGE2_1] = {
+            [StageType.STAGETYPE_ORIGINAL] = "03_caves",
+            [StageType.STAGETYPE_WOTL] = "04_catacombs",
+            [StageType.STAGETYPE_AFTERBIRTH] = "14_drowned_caves",
+            [StageType.STAGETYPE_GREEDMODE] = "03_caves"
+        },
+        [LevelStage.STAGE2_2] = {
+            [StageType.STAGETYPE_ORIGINAL] = "03_caves",
+            [StageType.STAGETYPE_WOTL] = "04_catacombs",
+            [StageType.STAGETYPE_AFTERBIRTH] = "14_drowned_caves",
+            [StageType.STAGETYPE_GREEDMODE] = "03_caves"
+        },
+        [LevelStage.STAGE3_1] = {
+            [StageType.STAGETYPE_ORIGINAL] = "05_depths",
+            [StageType.STAGETYPE_WOTL] = "06_necropolis",
+            [StageType.STAGETYPE_AFTERBIRTH] = "15_dank_depths",
+            [StageType.STAGETYPE_GREEDMODE] = "05_depths"
+        },
+        [LevelStage.STAGE3_2] = {
+            [StageType.STAGETYPE_ORIGINAL] = "05_depths",
+            [StageType.STAGETYPE_WOTL] = "06_necropolis",
+            [StageType.STAGETYPE_AFTERBIRTH] = "15_dank_depths",
+            [StageType.STAGETYPE_GREEDMODE] = "05_depths"
+        },
+        [LevelStage.STAGE4_1] = {
+            [StageType.STAGETYPE_ORIGINAL] = "07_womb",
+            [StageType.STAGETYPE_WOTL] = "07_womb",
+            [StageType.STAGETYPE_AFTERBIRTH] = "16_scarred_womb",
+            [StageType.STAGETYPE_GREEDMODE] = "07_womb"
+        },
+        [LevelStage.STAGE4_2] = {
+            [StageType.STAGETYPE_ORIGINAL] = "07_womb",
+            [StageType.STAGETYPE_WOTL] = "07_womb",
+            [StageType.STAGETYPE_AFTERBIRTH] = "16_scarred_womb",
+            [StageType.STAGETYPE_GREEDMODE] = "07_womb"
+        },
+        [LevelStage.STAGE4_3] = {
+            [StageType.STAGETYPE_ORIGINAL] = "17_blue_womb",
+            [StageType.STAGETYPE_WOTL] = "17_blue_womb",
+            [StageType.STAGETYPE_AFTERBIRTH] = "17_blue_womb",
+            [StageType.STAGETYPE_GREEDMODE] = "17_blue_womb"
+        },
+        [LevelStage.STAGE5] = {
+            [StageType.STAGETYPE_ORIGINAL] = "09_sheol",
+            [StageType.STAGETYPE_WOTL] = "10_cathedral",
+            [StageType.STAGETYPE_AFTERBIRTH] = "09_sheol",
+            [StageType.STAGETYPE_GREEDMODE] = "09_sheol"
+        },
+        [LevelStage.STAGE6] = {
+            [StageType.STAGETYPE_ORIGINAL] = "11_darkroom",
+            [StageType.STAGETYPE_WOTL] = "12_chest",
+            [StageType.STAGETYPE_AFTERBIRTH] = "11_darkroom",
+            [StageType.STAGETYPE_GREEDMODE] = "18_shop"
+        },
+        [LevelStage.STAGE7] = {
+            [StageType.STAGETYPE_ORIGINAL] = "19_void",
+            [StageType.STAGETYPE_WOTL] = "19_void",
+            [StageType.STAGETYPE_AFTERBIRTH] = "19_void",
+            [StageType.STAGETYPE_GREEDMODE] = "18_shop"
+        }
+    }
+
+    StageAPI.PlayerBossInfo = {
+        isaac = "01",
+        magdalene = "02",
+        cain = "03",
+        judas = "04",
+        eve = "05",
+        ["???"] = "06",
+        samson = "07",
+        azazel = "08",
+        eden = "09",
+        thelost = "12",
+        lilith = "13",
+        keeper = "14",
+        apollyon = "15"
+    }
+
+    for k, v in pairs(StageAPI.PlayerBossInfo) do
+        local use = k
+        if k == "???" then
+            use = "bluebaby"
+        end
+
+        StageAPI.PlayerBossInfo[k] = {
+            Portrait = "gfx/ui/boss/playerportrait_" .. v .. "_" .. use .. ".png",
+            Name = "gfx/ui/boss/playername_" .. v .. "_" .. use .. ".png"
+        }
+    end
+
+    function StageAPI.AddPlayerBossInfo(name, portrait, namefile)
+        StageAPI.PlayerBossInfo[string.gsub(string.lower(name), "%s+", "")] = {
+            Portrait = portrait,
+            Name = namefile
+        }
+    end
+
+    StageAPI.AddPlayerBossInfo("Black Judas", "gfx/ui/boss/playerportrait_blackjudas.png", "gfx/ui/boss/playername_04_judas.png")
+    StageAPI.AddPlayerBossInfo("Lazarus", "gfx/ui/boss/playerportrait_09_lazarus.png", "gfx/ui/boss/playername_10_lazarus.png")
+    StageAPI.AddPlayerBossInfo("Lazarus 2", "gfx/ui/boss/playerportrait_10_lazarus2.png", "gfx/ui/boss/playername_10_lazarus.png")
+
+    function StageAPI.GetStageSpot()
+        if StageAPI.InNewStage() then
+            return StageAPI.CurrentStage.BossSpot or "gfx/ui/boss/bossspot.png", StageAPI.CurrentStage.PlayerSpot or "gfx/ui/boss/playerspot.png"
+        else
+            local stage, stype = level:GetStage(), level:GetStageType()
+            local spot = StageAPI.BossSpots[stage][stype]
+            return "gfx/ui/boss/bossspot_" .. spot .. ".png", "gfx/ui/boss/playerspot_" .. spot .. ".png"
+        end
+    end
+
+    function StageAPI.TryGetPlayerBossInfo(player)
+        local playerName = string.gsub(string.lower(player:GetName()), "%s+", "")
+        if StageAPI.PlayerBossInfo[playerName] then
+            return StageAPI.PlayerBossInfo[playerName].Portrait, StageAPI.PlayerBossInfo[playerName].Name
+        else -- worth a shot, most common naming convention
+            return "gfx/ui/boss/playerportrait_" .. playerName .. ".png", "gfx/ui/boss/playername_" .. playerName .. ".png"
+        end
+    end
+
+    StageAPI.BossSprite = Sprite()
+    StageAPI.BossSprite:Load("gfx/ui/boss/versusscreen.anm2", false)
+    function StageAPI.PlayBossAnimationManual(portrait, name, spot, playerPortrait, playerName, playerSpot, portraitTwo)
+        spot = spot or "gfx/ui/boss/bossspot.png"
+        name = name or "gfx/ui/boss/bossname_20.0_monstro.png"
+        portrait = portrait or "gfx/ui/boss/portrait_20.0_monstro.png"
+        playerSpot = playerSpot or "gfx/ui/boss/bossspot.png"
+        playerName = playerName or "gfx/ui/boss/bossname_20.0_monstro.png"
+        playerPortrait = playerPortrait or "gfx/ui/boss/portrait_20.0_monstro.png"
+
+        StageAPI.BossSprite:ReplaceSpritesheet(2, spot)
+        StageAPI.BossSprite:ReplaceSpritesheet(3, playerSpot)
+        StageAPI.BossSprite:ReplaceSpritesheet(4, portrait)
+        StageAPI.BossSprite:ReplaceSpritesheet(5, playerPortrait)
+        StageAPI.BossSprite:ReplaceSpritesheet(6, playerName)
+        StageAPI.BossSprite:ReplaceSpritesheet(7, name)
+
+        if portraitTwo then
+            StageAPI.BossSprite:ReplaceSpritesheet(9, portraitTwo)
+            StageAPI.BossSprite:Play("DoubleTrouble", true)
+        else
+            StageAPI.BossSprite:Play("Scene", true)
+        end
+
+        StageAPI.BossSprite:LoadGraphics()
+    end
+
+    StageAPI.IsOddRenderFrame = nil
+    mod:AddCallback(ModCallbacks.MC_POST_RENDER, function()
+        StageAPI.IsOddRenderFrame = not StageAPI.IsOddRenderFrame
+        if StageAPI.BossSprite:IsPlaying("Scene") or StageAPI.BossSprite:IsPlaying("DoubleTrouble") then
+            if StageAPI.IsOddRenderFrame then
+                StageAPI.BossSprite:Update()
+            end
+
+            if Input.IsActionTriggered(ButtonAction.ACTION_MENUCONFIRM, StageAPI.Players[1].ControllerIndex) then
+                StageAPI.BossSprite:Stop()
+            else
+                StageAPI.BossSprite:Render(StageAPI.GetScreenCenterPosition(), zeroVector, zeroVector)
+            end
+        end
+    end)
+
+    StageAPI.DummyBoss = {}
+    function StageAPI.PlayBossAnimation(boss)
+        local bSpot, pSpot = StageAPI.GetStageSpot()
+        local playerPortrait, playerName = StageAPI.TryGetPlayerBossInfo(StageAPI.Players[1])
+        StageAPI.PlayBossAnimationManual(boss.Portrait, boss.Name, boss.Spot or bSpot, playerPortrait, playerName, pSpot, boss.PortraitTwo)
     end
 end
 
@@ -1572,6 +1741,10 @@ do -- Callbacks
                         end
                     end
                 end
+            end
+
+            if StageAPI.InNewStage() and room:GetType() == RoomType.ROOM_BOSS then
+
             end
 
             local rtype

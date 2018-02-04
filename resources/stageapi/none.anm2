@@ -1,10 +1,19 @@
 <AnimatedActor>
-	<Info CreatedBy="Unknown" CreatedOn="1/21/2018 2:45:36 PM" Version="1" Fps="30"/>
+	<Info CreatedBy="Unknown" CreatedOn="2/4/2018 1:01:48 PM" Version="2" Fps="30"/>
 	<Content>
 		<Spritesheets/>
 		<Layers/>
 		<Nulls/>
 		<Events/>
 	</Content>
-	<Animations DefaultAnimation=""/>
+	<Animations DefaultAnimation="None">
+		<Animation Name="None" FrameNum="1" Loop="false">
+			<RootAnimation>
+				<Frame XPosition="0" YPosition="0" XScale="100" YScale="100" Delay="1" Visible="true" RedTint="255" GreenTint="255" BlueTint="255" AlphaTint="255" RedOffset="0" GreenOffset="0" BlueOffset="0" Rotation="0" Interpolated="false"/>
+			</RootAnimation>
+			<LayerAnimations/>
+			<NullAnimations/>
+			<Triggers/>
+		</Animation>
+	</Animations>
 </AnimatedActor>
