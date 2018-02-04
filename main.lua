@@ -1613,8 +1613,6 @@ do -- Callbacks
     end)
 
     mod:AddCallback(ModCallbacks.MC_EXECUTE_CMD, function(_, cmd, params)
-        Isaac.DebugString(cmd)
-        Isaac.DebugString(params)
         if cmd == "cstage" and StageAPI.CustomStages[params] then
             StageAPI.NextStage = StageAPI.CustomStages[params]
             Isaac.ExecuteCommand("stage 3a")
