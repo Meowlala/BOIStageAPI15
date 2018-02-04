@@ -1,0 +1,29 @@
+<stages root="rooms/" bossgfxroot="gfx/ui/boss/">
+    <stage id="0" name="Special Rooms" path="00.Special Rooms.xml"/>
+    <stage id="1" name="Basement" path="01.Basement.xml" playerspot="playerspot_01_basement.png" bossspot="bossspot_01_basement.png" />
+    <stage id="2" name="Cellar" path="02.Cellar.xml" playerspot="playerspot_02_cellar.png" bossspot="bossspot_02_cellar.png" />
+	<stage id="3" name="Burning Basement" path="03.Burning Basement.xml" playerspot="playerspot_13_burning_basement.png" bossspot="bossspot_13_burning_basement.png" />
+    <stage id="4" name="Caves" path="04.Caves.xml" playerspot="playerspot_03_caves.png" bossspot="bossspot_03_caves.png" />
+    <stage id="5" name="_                                                                                                 _" path="05.Catacombs.xml" playerspot="playerspot_04_catacombs.png" bossspot="bossspot_04_catacombs.png" />
+	<stage id="6" name="Flooded Caves" path="06.Flooded Caves.xml" playerspot="playerspot_14_drowned_caves.png" bossspot="bossspot_14_drowned_caves.png" />
+    <stage id="7" name="Depths" path="07.Depths.xml" playerspot="playerspot_05_depths.png" bossspot="bossspot_05_depths.png" />
+    <stage id="8" name="Necropolis" path="08.Necropolis.xml" playerspot="playerspot_06_necropolis.png" bossspot="bossspot_06_necropolis.png" />
+	<stage id="9" name="Dank Depths" path="09.Dank Depths.xml" playerspot="playerspot_15_dank_depths.png" bossspot="bossspot_15_dank_depths.png" />
+    <stage id="10" name="Womb" path="10.Womb.xml" playerspot="playerspot_07_womb.png" bossspot="bossspot_07_womb.png" />
+    <stage id="11" name="Utero" path="11.Utero.xml" playerspot="playerspot_07_womb.png" bossspot="bossspot_07_womb.png" />
+	<stage id="12" name="Scarred Womb" path="12.Scarred Womb.xml" playerspot="playerspot_16_scarred_womb.png" bossspot="bossspot_16_scarred_womb.png" />
+    <stage id="13" name="???" path="13.Blue Womb.xml" playerspot="playerspot_17_blue_womb.png" bossspot="bossspot_17_blue_womb.png" />
+    <stage id="14" name="Sheol" path="14.Sheol.xml" playerspot="playerspot_09_sheol.png" bossspot="bossspot_09_sheol.png" />
+    <stage id="15" name="Cathedral" path="15.Cathedral.xml" playerspot="playerspot_10_cathedral.png" bossspot="bossspot_10_cathedral.png" />
+    <stage id="16" name="Dark Room" path="16.Dark Room.xml" playerspot="playerspot_11_darkroom.png" bossspot="bossspot_11_darkroom.png" />
+    <stage id="17" name="Chest" path="17.Chest.xml" playerspot="playerspot_12_chest.png" bossspot="bossspot_12_chest.png" />
+	<stage id="18" name="Special Rooms (Greed)" path="18.Greed Special.xml" />
+	<stage id="19" name="Basement" path="19.Greed Basement.xml" playerspot="playerspot_01_basement.png" bossspot="bossspot_01_basement.png" />
+	<stage id="20" name="Caves" path="20.Greed Caves.xml" playerspot="playerspot_03_caves.png" bossspot="bossspot_03_caves.png" />
+	<stage id="21" name="Depths" path="21.Greed Depths.xml" playerspot="playerspot_05_depths.png" bossspot="bossspot_05_depths.png" />
+	<stage id="22" name="Womb" path="22.Greed Womb.xml" playerspot="playerspot_07_womb.png" bossspot="bossspot_07_womb.png" />
+	<stage id="23" name="Sheol" path="23.Greed Sheol.xml" playerspot="playerspot_09_sheol.png" bossspot="bossspot_09_sheol.png" />
+	<stage id="24" name="The Shop" path="24.Greed The Shop.xml" />
+	<stage id="25" name="Ultra Greed" path="25.Ultra Greed.xml" playerspot="playerspot_18_shop.png" bossspot="bossspot_18_shop.png" />
+	<stage id="26" name="The Void" path="01.Basement.xml" playerspot="playerspot_19_void.png" bossspot="bossspot_19_void.png" />
+</stages>

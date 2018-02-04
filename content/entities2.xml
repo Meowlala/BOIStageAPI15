@@ -1,0 +1,11 @@
+<entities anm2root="" version="5">
+    <entity anm2path="stageapi/none.anm2" id="1000" name="StageAPIBridge" variant="12537" collisionRadius="0" numGridCollisionPoints="0">
+        <gibs amount="0" blood="0" bone="0" eye="0" gut="0" large="0" />
+    </entity>
+    <entity anm2path="stageapi/none.anm2" id="1000" name="StageAPIBackdrop" variant="12538" collisionRadius="0" numGridCollisionPoints="0">
+        <gibs amount="0" blood="0" bone="0" eye="0" gut="0" large="0" />
+    </entity>
+    <entity anm2path="stageapi/none.anm2" id="1000" name="StageAPIShading" variant="12539" collisionRadius="0" numGridCollisionPoints="0">
+        <gibs amount="0" blood="0" bone="0" eye="0" gut="0" large="0" />
+    </entity>
+</entities>

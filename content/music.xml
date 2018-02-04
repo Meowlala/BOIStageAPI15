@@ -1,0 +1,3 @@
+<music root="music/">
+	<track name="Catacombs" intro="Catacombs Intro.ogg" path="Catacombs.ogg" layerintro="Catacombs Layer Intro.ogg" layer="Catacombs Layer.ogg" loop="true" />
+</music>

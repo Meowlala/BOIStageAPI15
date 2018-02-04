@@ -1,0 +1,59 @@
+<music root="music/">
+	<track id="1" name="Basement" intro="Diptera Sonata Intro.ogg" path="Diptera Sonata(Basement).ogg" layerintro="Diptera Layer Intro.ogg" layer="Diptera Layer.ogg" loop="true" />
+	<track id="2" name="Caves" intro="The Caves Intro.ogg" path="The Caves.ogg" layerintro="The Caves Layer Intro.ogg" layer="The Caves Layer.ogg" loop="true" />
+	<track id="3" name="Depths" intro="The Depths Intro.ogg" path="The Depths.ogg" layerintro="The Depths Layer Intro.ogg" layer="The Depths Layer.ogg" loop="true" />
+	<track id="4" name="Cellar" intro="The Cellar Alt Intro.ogg" path="The Cellar Alt.ogg" layerintro="The Cellar Layer Intro.ogg" layer="The Cellar Layer.ogg" loop="true" />
+	<track id="6" name="Necropolis" intro="Necropolis Intro.ogg" path="Necropolis.ogg" layerintro="Necropolis Layer Intro.ogg" layer="Necropolis Layer.ogg" loop="true" />
+	<track id="7" name="Womb/Utero" intro="The Womb Chapter Four Intro.ogg" path="The Womb Chapter Four.ogg" layerintro="The Womb Layer Intro.ogg" layer="The Womb Layer.ogg" loop="true" />
+	<track id="8" name="Game Over" path="You Died.ogg" loop="true" />
+	<track id="9" name="Boss" path="Fight Ogg/Basic Boss Fight.ogg" loop="true" />
+	<track id="10" name="Cathedral" intro="Cathedral Intro.ogg" path="Cathedral Chant.ogg" layerintro="Cathedral Layer Intro.ogg" layer="Cathedral Layer.ogg" loop="true" />
+	<track id="11" name="Sheol" intro="Sheol Intro.ogg" path="Sheol.ogg" layerintro="Sheol Layer Intro.ogg" layer="Sheol Layer.ogg" loop="true" />
+	<track id="12" name="Dark Room" intro="Dark Room Alt Chapter 6 intro.ogg" path="Dark Room Alt Chapter 6.ogg" loop="true" />
+	<track id="13" name="Chest" intro="Chest Room Intro.ogg" path="Chest Room Chapter 6.ogg" layerintro="Chest Layer Intro.ogg" layer="Chest Layer.ogg" loop="true" />
+	<track id="14" name="Burning Basement" intro="Afterbirth/burning basement Intro.ogg" path="Afterbirth/burning basement Loop.ogg" layerintro="Afterbirth/burning basement Intro silent.ogg" layer="Afterbirth/Burning Basement GUitar Layer_04.ogg" loop="true" />
+	<track id="15" name="Flooded Caves" intro="Afterbirth/Kave Diluvii (Flooded Caves)Intro.ogg" path="Afterbirth/Kave Diluvii (Flooded Caves) loop.ogg" layerintro="Afterbirth/Kave Diluvii (Flooded Caves)Intro silent.ogg" layer="Afterbirth/Kave Diluvii (Flooded Caves) Layer.ogg" loop="true" />
+	<track id="16" name="Dank Depths" intro="Afterbirth/Pulso Profundum (dank Depths ) intro.ogg" path="Afterbirth/Pulso Profundum (dank Depths ) Loop.ogg" layerintro="Afterbirth/Pulso Profundum (dank Depths ) intro silent.ogg" layer="Afterbirth/Pulso Profundum (dank Depths ) Layer.ogg" loop="true" />
+	<track id="17" name="Scarred Womb" intro="Afterbirth/Cicatrix (Scarred Womb) Intro.ogg" path="Afterbirth/Cicatrix (Scarred Womb) Loop.ogg" layerintro="Afterbirth/Cicatrix (Scarred Womb) Intro silent.ogg" layer="Afterbirth/Cicatrix (Scarred Womb) Layer.ogg" loop="true" />
+	<track id="18" name="Blue Womb" intro="Afterbirth/Nativitate  (Dead Womb Floor) Intro.ogg" path="Afterbirth/Nativitate (Dead Womb Floor) Loop.ogg" layerintro="Afterbirth/Nativitate  (Dead Womb Floor) Intro silence.ogg" layer="Afterbirth/Nativitate (Dead Womb Floor) Layer.ogg" loop="true" />
+	<track id="20" name="Boss (Depths - Mom)" path="Fight Ogg/Mom Fight.ogg" loop="true" />
+	<track id="21" name="Boss (Womb - Mom's Heart)" path="Fight Ogg/Womb Fight.ogg" loop="true" />
+	<track id="22" name="Boss (Cathedral - Isaac)" path="Fight Ogg/Isaac Fight.ogg" loop="true" />
+	<track id="23" name="Boss (Sheol - Satan)" path="Fight Ogg/Satan Fight.ogg" loop="true" />
+	<track id="24" name="Boss (Dark Room)" path="Fight Ogg/Dark Room Fight.ogg" loop="true" />
+	<track id="25" name="Boss (Chest - ???)" path="Fight Ogg/Chest Fight.ogg" loop="true" />
+	<track id="26" name="Boss (alternate)" intro="Afterbirth/Cerebrum Dispersio (boss alt ) intro.ogg" path="Afterbirth/Cerebrum Dispersio (boss alt) Loop.ogg" loop="true" />
+	<track id="27" name="Boss (Blue Womb - Hush)" intro="Afterbirth/Morituros (dead womb boss) intro.ogg" path="Afterbirth/Morituros (dead womb boss) Loop.ogg" loop="true" />
+	<track id="28" name="Boss (Ultra Greed)" intro="Afterbirth/Chorus Mortis (Punk Credit) Intro.ogg" path="Afterbirth/Chorus Mortis (Punk Credit) Loop.ogg" loop="true" />
+	<track id="30" name="Library Room" intro="Library Intro.ogg" path="Library.ogg" loop="true" />
+	<track id="31" name="Secret Room" intro="Secret to Everyone Intro.ogg" path="Secret to Everyone.ogg" loop="true" />
+	<track id="33" name="Devil Room" path="Deal With the Devil.ogg" loop="true" />
+	<track id="34" name="Angel Room" intro="Angel Room intro.ogg" path="Angel Room.ogg" loop="true" />
+	<track id="35" name="Shop Room" intro="Store Loop Intro.ogg" path="Store Loop.ogg" loop="true" />
+	<track id="36" name="Arcade Room" intro="Retro Beats Intro 8-6-14.ogg" path="Retro Beats 8-6-14.ogg" loop="true" />
+	<track id="37" name="Boss Room (empty)" intro="The Calm intro.ogg" path="The Calm.ogg" loop="true" />
+	<track id="38" name="Challenge Room (fight)" path="Ambush.ogg" loop="true" />
+	<track id="60" name="Credits" path="Credits Roll.ogg" loop="true" />
+	<track id="61" name="Title Screen" intro="Title Screen Intro.ogg" path="Title Screen.ogg" loop="true" />
+	<track id="62" name="Title Screen (Afterbirth)" intro="Afterbirth/ReGenesis V3 intro.ogg" path="Afterbirth/ReGenesis (loop) V3.ogg" loop="true" />
+	<track id="81" name="Boss (jingle)" path="JINGLE OGG/Boss Fight intro jingle V2.1.ogg" loop="false" />
+	<track id="83" name="Boss Death (jingle)" path="JINGLE OGG/Boss FIght jingle OUTRO v2_12.ogg" loop="false" />
+	<track id="84" name="Holy Room Find (jingle)" path="JINGLE OGG/Angel Room Appear V2_07.ogg" loop="false" />
+	<track id="85" name="Secret Room Find (jingle)" path="JINGLE OGG/secret room find v2_07.ogg" loop="false" />
+	<track id="87" name="Treasure Room Entry (jingle) 1" path="JINGLE OGG/treasure room discoverA.ogg" loop="false" />
+	<track id="88" name="Treasure Room Entry (jingle) 2" path="JINGLE OGG/treasure room discoverB.ogg" loop="false" />
+	<track id="89" name="Treasure Room Entry (jingle) 3" path="JINGLE OGG/treasure room discoverC.ogg" loop="false" />
+	<track id="90" name="Treasure Room Entry (jingle) 4" path="JINGLE OGG/treasure room discover_03.ogg" loop="false" />
+	<track id="91" name="Challenge Room Entry (jingle)" path="JINGLE OGG/Ambush jingle.V2_01.ogg" loop="false" />
+	<track id="92" name="Challenge Room Outro (jingle)" path="JINGLE OGG/Ambush Jinle outro V3_04.ogg" loop="false" />
+	<track id="93" name="Game Over (jingle)" path="JINGLE OGG/Isaac Died_02.ogg" loop="false" />
+	<track id="94" name="Devil Room appear (jingle)" path="JINGLE OGG/Satan Room Appear V2_01.ogg" loop="false" />
+	<track id="95" name="Game start (jingle)" path="JINGLE OGG/Title Screen jingle V1_01.ogg" loop="false" />
+	<track id="96" name="Nightmare" path="JINGLE OGG/boss fight intro jingle_01.ogg" loop="false" />
+	<track id="97" name="Boss Death Alternate (jingle)" path="Afterbirth/Cerebrum Dispersio (boss alt) end.ogg" loop="false" />
+	<track id="98" name="Boss Hush Death (jingle)" path="Afterbirth/Morituros (dead womb boss) outro.ogg" loop="false" />
+	<track id="100" name="Intro Voiceover" path="IntroVoiceover.ogg" loop="false" />
+	<track id="101" name="Epilogue Voiceover" path="Epilogue_01m.ogg" loop="false" />
+	<track id="102" name="Void" path="Void.ogg" loop="true" />
+	<track id="103" name="Boss (Void)" path="Fight Ogg/Delirium Fight.ogg" loop="true" />
+</music>
