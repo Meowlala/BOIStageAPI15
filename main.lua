@@ -116,10 +116,13 @@ end
 StageAPI.ZeroVector = Vector(0, 0)
 
 mod:AddCallback(ModCallbacks.MC_POST_PLAYER_INIT, function()
+    StageAPI.Level = StageAPI.Game:GetLevel()
+    StageAPI.Room = StageAPI.Game:GetRoom()
     for i = 1, StageAPI.Game:GetNumPlayers() do
         StageAPI.Players[i] = Isaac.GetPlayer(i - 1)
     end
 end)
+
 
 mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, function()
     StageAPI.Level = StageAPI.Game:GetLevel()
