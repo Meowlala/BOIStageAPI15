@@ -1032,12 +1032,7 @@ do -- GridGfx
             end
         end
 
-        for i = 0, room:GetGridSize() do
-            local grid = room:GetGridEntity(i)
-            if grid then
-                grid:PostInit()
-            end
-        end
+        StageAPI.CallGridPostInit()
     end
 end
 
@@ -1173,11 +1168,28 @@ do -- Custom Stage
     StageAPI.CustomStages = {}
 
     StageAPI.CustomStage = StageAPI.Class("CustomStage")
-    function StageAPI.CustomStage:Init(name)
+    function StageAPI.CustomStage:Init(name, replaces, noSetReplaces)
         self.Name = name
+
+        if not noSetReplaces then
+            self.Replaces = replaces or StageAPI.StageOverride.CatacombsOne
+        end
+
         if name then
             StageAPI.CustomStages[name] = self
         end
+    end
+
+    function StageAPI.CustomStage:SetName(name)
+        self.Name = name or self.Name
+        if self.Name then
+            StageAPI.CustomStages[self.Name] = self
+        end
+
+    end
+
+    function StageAPI.CustomStage:SetReplace(replaces)
+        self.Replaces = replaces
     end
 
     function StageAPI.CustomStage:SetRoomGfx(gfx, rtype)
@@ -1300,42 +1312,34 @@ do -- Definitions
     StageAPI.CatacombsRoomGfx = StageAPI.RoomGfx(StageAPI.CatacombsBackdrop, StageAPI.CatacombsGridGfx, "_default")
     StageAPI.CatacombsMusicID = Isaac.GetMusicIdByName("Catacombs")
     StageAPI.CatacombsRooms = StageAPI.RoomsList(require("catacombs"))
-    StageAPI.Catacombs = StageAPI.CustomStage("Catacombs")
+    StageAPI.Catacombs = StageAPI.CustomStage("Catacombs", nil, true)
     StageAPI.Catacombs:SetMusic(StageAPI.CatacombsMusicID, RoomType.ROOM_DEFAULT)
     StageAPI.Catacombs:SetBossMusic({Music.MUSIC_BOSS, Music.MUSIC_BOSS2}, Music.MUSIC_BOSS_OVER)
     StageAPI.Catacombs:SetRoomGfx(StageAPI.CatacombsRoomGfx, {RoomType.ROOM_DEFAULT, RoomType.ROOM_TREASURE, RoomType.ROOM_MINIBOSS, RoomType.ROOM_BOSS})
     StageAPI.Catacombs:SetRooms(StageAPI.CatacombsRooms)
 
     StageAPI.StageOverride = {
-        {
-            OverrideStages = {LevelStage.STAGE2_1, LevelStage.STAGE2_2},
-            OverrideStageTypes = {StageType.STAGETYPE_WOTL},
+        CatacombsOne = {
+            OverrideStage = LevelStage.STAGE2_1,
+            OverrideStageType = StageType.STAGETYPE_WOTL,
+            ReplaceWith = StageAPI.Catacombs
+        },
+        CatacombsTwo = {
+            OverrideStage = LevelStage.STAGE2_2,
+            OverrideStageType = StageType.STAGETYPE_WOTL,
             ReplaceWith = StageAPI.Catacombs
         }
     }
 
+    StageAPI.Catacombs:SetReplace(StageAPI.StageOverride.CatacombsOne)
+
     function StageAPI.InOverriddenStage()
-        for _, override in ipairs(StageAPI.StageOverride) do
+        for name, override in pairs(StageAPI.StageOverride) do
             local overridden = true
 
-            local isStage = false
-            for _, stage in ipairs(override.OverrideStages) do
-                if level:GetStage() == stage then
-                    isStage = true
-                end
-            end
-
+            local isStage = level:GetStage() == override.OverrideStage and level:GetStageType() == override.OverrideStageType
             if isStage then
-                local isStageType = false
-                for _, stageType in ipairs(override.OverrideStageTypes) do
-                    if level:GetStageType() == stageType then
-                        isStageType = true
-                    end
-                end
-
-                if isStageType then
-                    return true, override
-                end
+                return true, override, name
             end
         end
     end
@@ -1538,6 +1542,21 @@ do -- Bosses
     end
 end
 
+do -- Transition
+    StageAPI.StageTypeToString = {
+        [StageType.STAGETYPE_ORIGINAL] = "",
+        [StageType.STAGETYPE_WOTL] = "a",
+        [StageType.STAGETYPE_AFTERBIRTH] = "b"
+    }
+
+    function StageAPI.GotoCustomStage(stage)
+        local replace = stage.Replaces
+        local absolute = replace.OverrideStage
+        StageAPI.NextStage = stage
+        Isaac.ExecuteCommand("stage " .. tostring(absolute) .. StageAPI.StageTypeToString[replace.OverrideStageType])
+    end
+end
+
 do -- Callbacks
     StageAPI.NonOverrideMusic = {
         Music.MUSIC_GAME_OVER,
@@ -1656,6 +1675,10 @@ do -- Callbacks
         end
 
         for _, player in ipairs(players) do
+            if player:GetData().StageAPIControlsDisabledForAppear and not player:GetSprite():IsPlaying("Appear") then
+                player.ControlsEnabled = true
+            end
+
             if Input.IsButtonTriggered(Keyboard.KEY_F5, player.ControllerIndex) then
                 StageAPI.RoomNamesEnabled = not StageAPI.RoomNamesEnabled
             end
@@ -1684,6 +1707,13 @@ do -- Callbacks
                         StageAPI.CurrentStage = override.ReplaceWith
                     else
                         StageAPI.CurrentStage = StageAPI.NextStage
+                    end
+
+                    for _, player in ipairs(StageAPI.Players) do
+                        player.Position = room:GetCenterPos()
+                        player:AnimateAppear()
+                        player.ControlsEnabled = false
+                        player:GetData().StageAPIControlsDisabledForAppear = true
                     end
 
                     StageAPI.NextStage = nil
