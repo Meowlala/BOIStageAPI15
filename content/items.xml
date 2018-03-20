@@ -1,0 +1,3 @@
+<items gfxroot="gfx/items/" version="1">
+    <active description="Reroll Rewards!" gfx="Collectibles_437_D7.png" name="D7 " maxcharges="3" />
+</items>
