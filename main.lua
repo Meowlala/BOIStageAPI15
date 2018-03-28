@@ -85,6 +85,10 @@ local mod = RegisterMod("StageAPI", 1)
 
 Isaac.DebugString("[StageAPI] Loading Core Definitions")
 do -- Core Definitions
+    if not StageAPI then
+        StageAPI = {}
+    end
+
     StageAPI.CorrectedGridTypes = {
         [1000]=GridEntityType.GRID_ROCK,
         [1001]=GridEntityType.GRID_ROCK_BOMB,
@@ -119,10 +123,6 @@ do -- Core Definitions
         DeleteMeProjectile = "StageAPIDeleteMeProjectile",
         DeleteMePickup = "StageAPIDeleteMePickup"
     }
-
-    if not StageAPI then
-        StageAPI = {}
-    end
 
     setmetatable(StageAPI, {
         __index = function(tbl, ind)
@@ -221,29 +221,66 @@ do -- Core Functions
         end
     end
 
-    function StageAPI.Class(Type)
+    StageAPI.Class = {}
+    function StageAPI.ClassInit(tbl, ...)
+        local inst = {}
+        setmetatable(inst, tbl)
+        tbl.__index = tbl
+        tbl.__call = StageAPI.ClassInit
+
+        if inst.AllowMultipleInit or not inst.Initialized then
+            inst.Initialized = true
+            if inst.Init then
+                inst:Init(...)
+            end
+
+            if inst.PostInit then
+                inst:PostInit(...)
+            end
+        end
+
+        return inst
+    end
+
+    function StageAPI.Class:Init(Type, AllowMultipleInit)
+        self.Type = Type
+        self.AllowMultipleInit = AllowMultipleInit
+        self.Initialized = false
+    end
+
+    setmetatable(StageAPI.Class, {
+        __call = StageAPI.ClassInit
+    })
+
+    --[[
+    function StageAPI.Class(Type, AllowMultipleInit)
         local newClass = {}
+        newClass.Type = Type
+        newClass.AllowMultipleInit = AllowMultipleInit
+        newClass.Initialized = false
         setmetatable(newClass, {
-            __call = function(tbl, ...)
+            __call = StageAPI.ClassInit --[[function(tbl, ...)
                 local inst = {}
-                setmetatable(inst, {
-                    __index = tbl
-                })
-                if inst.Init then
-                    inst:Init(...)
-                end
+                setmetatable(inst, tbl)
+                tbl.__index = tbl
 
-                if inst.PostInit then
-                    inst:PostInit(...)
-                end
+                if AllowMultipleInit or not inst.Type then
+                    if inst.Init then
+                        inst:Init(...)
+                    end
 
-                inst.Type = Type
+                    if inst.PostInit then
+                        inst:PostInit(...)
+                    end
+
+                    inst.Type = Type
+                end
 
                 return inst
             end
         })
         return newClass
-    end
+    end]]
 
     StageAPI.Callbacks = {}
 
@@ -338,6 +375,99 @@ do -- Core Functions
     function StageAPI.Lerp(first, second, percent)
     	return first * (1 - percent) + second * percent
     end
+
+    local TextStreakScales = {
+        [0] = Vector(3,0.2),	[1] = Vector(2.6,0.36),
+        [2] = Vector(2.2,0.52),	[3] = Vector(1.8,0.68),
+        [4] = Vector(1.4,0.84),	[5] = Vector(0.95,1.05),
+        [6] = Vector(0.97,1.03),	[7] = Vector(0.98,1.02),
+        [61] = Vector(0.99,1.03),	[62] = Vector(0.98,1.05),
+        [63] = Vector(0.96,1.08),	[64] = Vector(0.95,1.1),
+        [65] = Vector(1.36,0.92),	[66] = Vector(1.77,0.74),
+        [67] = Vector(2.18,0.56),	[68] = Vector(2.59,0.38),
+        [69] = Vector(3,0.2)
+    }
+
+    local TextStreakPositions = {
+        [0] = -800,	[1] = -639,
+        [2] = -450,	[3] = -250,
+        [4] = -70,	[5] = 10,
+        [6] = 6,	[7] = 3,
+        [61] = -5,	[62] = -10,
+        [63] = -15,	[64] = -20,
+        [65] = 144,	[66] = 308,
+        [67] = 472,	[68] = 636,
+        [69] =800
+    }
+
+    local StreakSprites = {}
+    local Streaks = {}
+
+    local streakFont = Font()
+    streakFont:Load("font/upheaval.fnt")
+
+    local streakSmallFont = Font()
+    streakSmallFont:Load("font/pftempestasevencondensed.fnt")
+
+    local streakDefaultColor = KColor(1,1,1,1,0,0,0)
+    local streakDefaultPos = Vector(240, 48)
+    local oneVector = Vector(1, 1)
+    function StageAPI.PlayTextStreak(text, extratext, extratextOffset, extratextScaleMulti)
+        local index = #Streaks + 1
+        if not StreakSprites[index] then -- this system loads as many sprites as it has to play at once
+            StreakSprites[index] = Sprite()
+            StreakSprites[index]:Load("stageapi/streak.anm2", true)
+        end
+
+        StreakSprites[index]:Play("Text", true)
+
+        Streaks[index] = {
+            Text = text,
+            ExtraText = extratext,
+            Color = streakDefaultColor,
+            Frame = 0,
+            Width = streakFont:GetStringWidth(text) / 2,
+            RenderPos = streakDefaultPos,
+            FontScale = oneVector,
+            ExtraFontScale = extratextScaleMulti,
+            ExtraOffset = extratextOffset,
+            ExtraWidth = streakSmallFont:GetStringWidth(extratext or "")
+        }
+    end
+
+    function StageAPI.UpdateTextStreak()
+        for index, streakPlaying in ipairs(Streaks) do
+            local sprite = StreakSprites[index]
+
+            sprite:Update()
+
+            streakPlaying.Frame = sprite:GetFrame()
+            if streakPlaying.Frame >= 69 then
+                sprite:Stop()
+                table.remove(Streaks, index)
+            end
+
+            streakPlaying.FontScale = (TextStreakScales[streakPlaying.Frame] or oneVector)
+            local screenX = StageAPI.GetScreenCenterPosition().X
+            streakPlaying.RenderPos.X = screenX
+            streakPlaying.PositionX = (TextStreakPositions[streakPlaying.Frame] or 0) - streakPlaying.Width * streakPlaying.FontScale.X + screenX + 0.25
+            streakPlaying.ExtraPositionX = (TextStreakPositions[streakPlaying.Frame] or 0) - (streakPlaying.ExtraWidth / 2) * streakPlaying.FontScale.X + screenX + 0.25
+        end
+    end
+
+    function StageAPI.RenderTextStreak()
+        for index, streakPlaying in ipairs(Streaks) do
+            local sprite = StreakSprites[index]
+            sprite:Render(streakPlaying.RenderPos, zeroVector, zeroVector)
+            streakFont:DrawStringScaled(streakPlaying.Text, streakPlaying.PositionX, streakPlaying.RenderPos.Y - 9, streakPlaying.FontScale.X, 1, streakPlaying.Color, 0, true)
+            if streakPlaying.ExtraText then
+                streakSmallFont:DrawStringScaled(streakPlaying.ExtraText, streakPlaying.ExtraPositionX + streakPlaying.ExtraOffset.X, (streakPlaying.RenderPos.Y - 9) + streakPlaying.ExtraOffset.Y, streakPlaying.FontScale.X * streakPlaying.ExtraFontScale.X, 1 * streakPlaying.ExtraFontScale.Y, streakPlaying.Color, 0, true)
+            end
+        end
+    end
+
+    mod:AddCallback(ModCallbacks.MC_POST_UPDATE, StageAPI.UpdateTextStreak)
+    mod:AddCallback(ModCallbacks.MC_POST_RENDER, StageAPI.RenderTextStreak)
 
     for k, v in pairs(StageAPI.E) do
         StageAPI.E[k] = {
@@ -1341,6 +1471,7 @@ do -- GridGfx
             sprite:Load("stageapi/bridge.anm2", false)
             sprite:ReplaceSpritesheet(0, bridgefilename)
             sprite:LoadGraphics()
+            sprite:Play("Idle", true)
 
             bridge:AddEntityFlags(EntityFlag.FLAG_DONT_OVERWRITE)
             bridge.SpriteOffset = StageAPI.BridgeOffset
@@ -1737,8 +1868,27 @@ do -- Custom Stage
 
     end
 
+    function StageAPI.CustomStage:AddSubStage(name, replaces, noSetReplaces)
+        if not self.SubStages then
+            self.SubStagesOrder = {}
+            self.SubStages = {}
+        end
+
+        local substage = self()
+
+        substage.DisplayName = name
+        substage.Replaces = replaces or StageAPI.StageOverride.CatacombsOne
+        self.SubStagesOrder[#self.SubStagesOrder + 1] = name
+        self.SubStages[name] = substage
+        return substage
+    end
+
     function StageAPI.CustomStage:SetReplace(replaces)
         self.Replaces = replaces
+    end
+
+    function StageAPI.CustomStage:SetNextStage(stage)
+        self.NextStage = stage
     end
 
     function StageAPI.CustomStage:SetRoomGfx(gfx, rtype)
@@ -1869,7 +2019,7 @@ do -- Definitions
     StageAPI.CatacombsGridGfx = StageAPI.GridGfx()
     StageAPI.CatacombsGridGfx:SetRocks("gfx/grid/rocks_catacombs.png")
     StageAPI.CatacombsGridGfx:SetPits("gfx/grid/grid_pit_catacombs.png", "gfx/grid/grid_pit_water_catacombs.png")
-    StageAPI.CatacombsGridGfx:SetBridges("gfx/grid/grid_bridge_catacombs.png")
+    StageAPI.CatacombsGridGfx:SetBridges("stageapi/floors/catacombs/grid_bridge_catacombs.png")
     StageAPI.CatacombsGridGfx:SetDecorations("gfx/grid/props_03_caves.png")
 
     StageAPI.CatacombsBackdrop = {
@@ -1887,30 +2037,18 @@ do -- Definitions
         }
     }
 
-    StageAPI.CatacombsBackdrop = {
-        {
-            Walls = {"tombsand_1"},
-            NFloors = {"Catacombs_nfloor"},
-            LFloors = {"Catacombs_lfloor"},
-            Corners = {"Catacombs1_corner"}
-        },
-        {
-            Walls = {"tombtrap_1"},
-            NFloors = {"Catacombs_nfloor"},
-            LFloors = {"Catacombs_lfloor"},
-            Corners = {"Catacombs2_corner"}
-        }
-    }
-
-    StageAPI.CatacombsBackdrop = StageAPI.BackdropHelper(StageAPI.CatacombsBackdrop, "stageapi/backdrops/catacombs/", ".png")
+    StageAPI.CatacombsBackdrop = StageAPI.BackdropHelper(StageAPI.CatacombsBackdrop, "stageapi/floors/catacombs/", ".png")
     StageAPI.CatacombsRoomGfx = StageAPI.RoomGfx(StageAPI.CatacombsBackdrop, StageAPI.CatacombsGridGfx, "_default")
     StageAPI.CatacombsMusicID = Isaac.GetMusicIdByName("Catacombs")
-    StageAPI.CatacombsRooms = StageAPI.RoomsList(require("catacombs"))
     StageAPI.Catacombs = StageAPI.CustomStage("Catacombs", nil, true)
     StageAPI.Catacombs:SetMusic(StageAPI.CatacombsMusicID, RoomType.ROOM_DEFAULT)
     StageAPI.Catacombs:SetBossMusic({Music.MUSIC_BOSS, Music.MUSIC_BOSS2}, Music.MUSIC_BOSS_OVER)
     StageAPI.Catacombs:SetRoomGfx(StageAPI.CatacombsRoomGfx, {RoomType.ROOM_DEFAULT, RoomType.ROOM_TREASURE, RoomType.ROOM_MINIBOSS, RoomType.ROOM_BOSS})
-    StageAPI.Catacombs:SetRooms(StageAPI.CatacombsRooms)
+    StageAPI.Catacombs.DisplayName = "Catacombs 1"
+
+    --[[
+    StageAPI.CatacombsTwo = StageAPI.Catacombs()
+    StageAPI.CatacombsTwo.DisplayName = "Catacombs 2"]]
 
     StageAPI.StageOverride = {
         CatacombsOne = {
@@ -1921,11 +2059,13 @@ do -- Definitions
         CatacombsTwo = {
             OverrideStage = LevelStage.STAGE2_2,
             OverrideStageType = StageType.STAGETYPE_WOTL,
-            ReplaceWith = StageAPI.Catacombs
+            ReplaceWith = StageAPI.CatacombsTwo
         }
     }
 
+    --[[
     StageAPI.Catacombs:SetReplace(StageAPI.StageOverride.CatacombsOne)
+    StageAPI.CatacombsTwo:SetReplace(StageAPI.StageOverride.CatacombsTwo)]]
 
     function StageAPI.InOverriddenStage()
         for name, override in pairs(StageAPI.StageOverride) do
@@ -1960,14 +2100,8 @@ end
 
 Isaac.DebugString("[StageAPI] Loading Boss Handler")
 do -- Bosses
-    StageAPI.BossSpots = {
+    StageAPI.FloorInfo = {
         [LevelStage.STAGE1_1] = {
-            [StageType.STAGETYPE_ORIGINAL] = "01_basement",
-            [StageType.STAGETYPE_WOTL] = "02_cellar",
-            [StageType.STAGETYPE_AFTERBIRTH] = "13_burning_basement",
-            [StageType.STAGETYPE_GREEDMODE] = "01_basement"
-        },
-        [LevelStage.STAGE1_2] = {
             [StageType.STAGETYPE_ORIGINAL] = "01_basement",
             [StageType.STAGETYPE_WOTL] = "02_cellar",
             [StageType.STAGETYPE_AFTERBIRTH] = "13_burning_basement",
@@ -1979,31 +2113,13 @@ do -- Bosses
             [StageType.STAGETYPE_AFTERBIRTH] = "14_drowned_caves",
             [StageType.STAGETYPE_GREEDMODE] = "03_caves"
         },
-        [LevelStage.STAGE2_2] = {
-            [StageType.STAGETYPE_ORIGINAL] = "03_caves",
-            [StageType.STAGETYPE_WOTL] = "04_catacombs",
-            [StageType.STAGETYPE_AFTERBIRTH] = "14_drowned_caves",
-            [StageType.STAGETYPE_GREEDMODE] = "03_caves"
-        },
         [LevelStage.STAGE3_1] = {
             [StageType.STAGETYPE_ORIGINAL] = "05_depths",
             [StageType.STAGETYPE_WOTL] = "06_necropolis",
             [StageType.STAGETYPE_AFTERBIRTH] = "15_dank_depths",
             [StageType.STAGETYPE_GREEDMODE] = "05_depths"
         },
-        [LevelStage.STAGE3_2] = {
-            [StageType.STAGETYPE_ORIGINAL] = "05_depths",
-            [StageType.STAGETYPE_WOTL] = "06_necropolis",
-            [StageType.STAGETYPE_AFTERBIRTH] = "15_dank_depths",
-            [StageType.STAGETYPE_GREEDMODE] = "05_depths"
-        },
         [LevelStage.STAGE4_1] = {
-            [StageType.STAGETYPE_ORIGINAL] = "07_womb",
-            [StageType.STAGETYPE_WOTL] = "07_womb",
-            [StageType.STAGETYPE_AFTERBIRTH] = "16_scarred_womb",
-            [StageType.STAGETYPE_GREEDMODE] = "07_womb"
-        },
-        [LevelStage.STAGE4_2] = {
             [StageType.STAGETYPE_ORIGINAL] = "07_womb",
             [StageType.STAGETYPE_WOTL] = "07_womb",
             [StageType.STAGETYPE_AFTERBIRTH] = "16_scarred_womb",
@@ -2034,6 +2150,11 @@ do -- Bosses
             [StageType.STAGETYPE_GREEDMODE] = "18_shop"
         }
     }
+
+    StageAPI.FloorInfo[LevelStage.STAGE1_2] = StageAPI.FloorInfo[LevelStage.STAGE1_1]
+    StageAPI.FloorInfo[LevelStage.STAGE2_2] = StageAPI.FloorInfo[LevelStage.STAGE2_1]
+    StageAPI.FloorInfo[LevelStage.STAGE3_2] = StageAPI.FloorInfo[LevelStage.STAGE3_1]
+    StageAPI.FloorInfo[LevelStage.STAGE4_2] = StageAPI.FloorInfo[LevelStage.STAGE4_1]
 
     StageAPI.PlayerBossInfo = {
         isaac = "01",
@@ -2088,7 +2209,7 @@ do -- Bosses
             return StageAPI.CurrentStage.BossSpot or "gfx/ui/boss/bossspot.png", StageAPI.CurrentStage.PlayerSpot or "gfx/ui/boss/playerspot.png"
         else
             local stage, stype = level:GetStage(), level:GetStageType()
-            local spot = StageAPI.BossSpots[stage][stype]
+            local spot = StageAPI.FloorInfo[stage][stype]
             return "gfx/ui/boss/bossspot_" .. spot .. ".png", "gfx/ui/boss/playerspot_" .. spot .. ".png"
         end
     end
@@ -2237,6 +2358,12 @@ do -- Transition
         [StageType.STAGETYPE_AFTERBIRTH] = "b"
     }
 
+    StageAPI.StageTypes = {
+        StageType.STAGETYPE_ORIGINAL,
+        StageType.STAGETYPE_WOTL,
+        StageType.STAGETYPE_AFTERBIRTH
+    }
+
     StageAPI.TransitionAnimation = Sprite()
     StageAPI.TransitionAnimation:Load("stageapi/transition/customnightmare.anm2", true)
 
@@ -2255,6 +2382,11 @@ do -- Transition
             StageAPI.TransitionAnimation:Render(StageAPI.GetScreenCenterPosition(), zeroVector, zeroVector)
         elseif StageAPI.TransitionIsPlaying then
             StageAPI.TransitionIsPlaying = false
+            if StageAPI.CurrentStage then
+                local name = StageAPI.CurrentStage.DisplayName or StageAPI.CurrentStage.Name
+                StageAPI.PlayTextStreak(name)
+            end
+
             for _, player in ipairs(players) do
                 player.Position = room:GetCenterPos()
                 player:AnimateAppear()
@@ -2277,11 +2409,23 @@ do -- Transition
         return StageAPI.TransitionAnimation:IsPlaying("Scene") or StageAPI.BossSprite:IsPlaying("Scene") or StageAPI.BossSprite:IsPlaying("DoubleTrouble")
     end
 
+    function StageAPI.GetLevelTransitionIcon(stage, stype)
+        local base = StageAPI.FloorInfo[stage][stype]
+        if base == "07_womb" and stype == StageType.STAGETYPE_WOTL then
+            base = "utero"
+        end
+
+        return "stageapi/transition/levelicons/" .. base .. ".png"
+    end
+
     function StageAPI.PlayTransitionAnimationManual(portraitbig, icon, transitionmusic, queue)
         portraitbig = portraitbig or "gfx/ui/stage/playerportraitbig_01_isaac.png"
-        icon = icon or "stageapi/transition/LevelIcon.png"
+        icon = icon or "stageapi/transition/levelicons/unknown.png"
         transitionmusic = transitionmusic or Music.MUSIC_JINGLE_NIGHTMARE
-        queue = queue or StageAPI.Music:GetCurrentMusicID()
+
+        if queue ~= false then
+            queue = queue or StageAPI.Music:GetCurrentMusicID()
+        end
 
         StageAPI.TransitionAnimation:ReplaceSpritesheet(1, portraitbig)
         StageAPI.TransitionAnimation:ReplaceSpritesheet(2, icon)
@@ -2289,7 +2433,11 @@ do -- Transition
         StageAPI.TransitionAnimation:Play("Scene", true)
 
         StageAPI.Music:Play(transitionmusic, 1)
-        StageAPI.Music:Queue(queue)
+
+        if queue ~= false then
+            StageAPI.Music:Queue(queue)
+        end
+
         StageAPI.Music:UpdateVolume()
     end
 
@@ -2298,18 +2446,36 @@ do -- Transition
         StageAPI.PlayTransitionAnimationManual(portraitbig, stage.TransitionIcon, stage.TransitionMusic, stage.Music[RoomType.ROOM_DEFAULT])
     end
 
+    StageAPI.StageRNG = RNG()
     function StageAPI.GotoCustomStage(stage, playTransition)
-        local replace = stage.Replaces
-        local absolute = replace.OverrideStage
-        StageAPI.NextStage = stage
-        if playTransition then
-            StageAPI.PlayTransitionAnimation(stage)
-        end
 
-        Isaac.ExecuteCommand("stage " .. tostring(absolute) .. StageAPI.StageTypeToString[replace.OverrideStageType])
+        if stage.NormalStage then
+            StageAPI.PreReseed = true
+            StageAPI.Seeds:ForgetStageSeed(stage.Stage)
+            local stageType = stage.StageType
+            if not stageType then
+                StageAPI.StageRNG:SetSeed(StageAPI.Seeds:GetStageSeed(stage.Stage), 0)
+                stageType = StageAPI.StageTypes[StageAPI.Random(1, #StageAPI.StageTypes, StageAPI.StageRNG)]
+            end
+
+            local _, _, portraitbig = StageAPI.TryGetPlayerGraphicsInfo(players[1])
+            StageAPI.PlayTransitionAnimationManual(portraitbig, StageAPI.GetLevelTransitionIcon(stage.Stage, stageType), nil, nil)
+
+            Isaac.ExecuteCommand("stage " .. tostring(stage.Stage) .. StageAPI.StageTypeToString[stageType])
+        else
+            local replace = stage.Replaces
+            local absolute = replace.OverrideStage
+            StageAPI.NextStage = stage
+            if playTransition then
+                StageAPI.PlayTransitionAnimation(stage)
+            end
+
+            StageAPI.Seeds:ForgetStageSeed(absolute)
+            Isaac.ExecuteCommand("stage " .. tostring(absolute) .. StageAPI.StageTypeToString[replace.OverrideStageType])
+        end
     end
 
-    function StageAPI.SpawnCustomTrapdoor(position, goesTo, anm2, size)
+    function StageAPI.SpawnCustomTrapdoor(position, goesTo, anm2, size, alreadyEntering)
         anm2 = anm2 or "gfx/grid/door_11_trapdoor.anm2"
         size = size or 32
         local trapdoor = Isaac.Spawn(StageAPI.E.FloorEffect.T, StageAPI.E.FloorEffect.V, 0, position, zeroVector, nil)
@@ -2318,7 +2484,17 @@ do -- Transition
         trapdoor.Size = size
         local sprite, data = trapdoor:GetSprite(), trapdoor:GetData()
         sprite:Load(anm2, true)
-        sprite:Play("Closed", true)
+
+        if alreadyEntering then
+            sprite:Play("Opened", true)
+            data.BeingEntered = true
+            for _, player in ipairs(players) do
+                player:AnimateTrapdoor()
+            end
+        else
+            sprite:Play("Closed", true)
+        end
+
         data.GoesTo = goesTo
         return trapdoor
     end
@@ -2358,6 +2534,7 @@ do -- Transition
             else
                 local animationOver
                 for _, player in ipairs(players) do
+                    player.ControlsCooldown = 5
                     player.Velocity = (StageAPI.Lerp(player.Position, eff.Position, 0.5) - player.Position) / 2
                     if player:IsExtraAnimationFinished() then
                         animationOver = true
@@ -2546,7 +2723,7 @@ do -- Callbacks
             if not grids[i] then
                 local grid = room:GetGridEntity(i)
                 if grid and grid.Desc.Type ~= GridEntityType.GRID_WALL and grid.Desc.Type ~= GridEntityType.GRID_DOOR then
-                    room:RemoveGridEntity(i, 0, true)
+                    room:RemoveGridEntity(i, 0, false)
                 end
             end
         end
@@ -2592,9 +2769,7 @@ do -- Callbacks
                 end
             end
 
-            StageAPI.PlayTransitionAnimation(StageAPI.CurrentStage)
-            StageAPI.NextStage = StageAPI.CurrentStage
-            Isaac.ExecuteCommand("reseed")
+            StageAPI.GotoCustomStage(StageAPI.CurrentStage, true)
             return true
         end
     end, CollectibleType.COLLECTIBLE_FORGET_ME_NOW)
@@ -2622,7 +2797,6 @@ do -- Callbacks
         local currentListIndex = StageAPI.GetCurrentListIndex()
         local stage = level:GetStage()
         local stype = level:GetStageType()
-
         local updatedGrids
         local gridCount = 0
         local pits = {}
@@ -2631,6 +2805,24 @@ do -- Callbacks
             if grid then
                 if grid.Desc.Type == GridEntityType.GRID_PIT then
                     pits[#pits + 1] = {grid, i}
+                end
+
+                if StageAPI.CurrentStage and StageAPI.CurrentStage.NextStage then
+                    if grid.Desc.Type == GridEntityType.GRID_TRAPDOOR and grid.State == 1 then
+                        local entering = false
+                        for _, player in ipairs(players) do
+                            local dist = player.Position:DistanceSquared(grid.Position)
+                            local size = player.Size + 32
+                            if dist < size * size then
+                                entering = true
+                            end
+                        end
+
+                        if entering then
+                            StageAPI.SpawnCustomTrapdoor(room:GetGridPosition(i), StageAPI.CurrentStage.NextStage, nil, nil, true)
+                            room:RemoveGridEntity(i, 0, false)
+                        end
+                    end
                 end
 
                 gridCount = gridCount + 1
@@ -2644,7 +2836,7 @@ do -- Callbacks
             end
 
             updatedGrids = true
-            if StageAPI.RoomGrids[roomIndex] then
+            if StageAPI.RoomGrids[currentListIndex] then
                 StageAPI.StoreRoomGrids()
             end
 
@@ -2742,15 +2934,16 @@ do -- Callbacks
     end)
 
     mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, function()
-        local stage = level:GetStage()
-        local stype = level:GetStageType()
         local isNewStage, override = StageAPI.InOverriddenStage()
         local currentListIndex = StageAPI.GetCurrentListIndex()
         local currentRoom, justGenerated = StageAPI.GetCurrentRoom(), nil
+        local inStartingRoom = level:GetCurrentRoomIndex() == level:GetStartingRoomIndex()
         StageAPI.CustomGridIndices = {}
-        if isNewStage then
-            if level:GetCurrentRoomIndex() == level:GetStartingRoomIndex() then
-                if room:IsFirstVisit() then
+
+        if inStartingRoom then
+            if room:IsFirstVisit() then
+                StageAPI.CurrentStage = nil
+                if isNewStage then
                     currentRoom = nil
                     StageAPI.LevelRooms = {}
                     if not StageAPI.NextStage then
@@ -2761,19 +2954,19 @@ do -- Callbacks
 
                     StageAPI.NextStage = nil
                 end
-            else
-                if StageAPI.CurrentStage and room:GetType() == RoomType.ROOM_DEFAULT then
-                    if not currentRoom then
-                        local newRoom = StageAPI.LevelRoom(nil, StageAPI.CurrentStage.Rooms)
-                        StageAPI.SetCurrentRoom(newRoom)
-                        newRoom:Load()
-                        currentRoom = newRoom
-                        justGenerated = true
-                    end
-                end
+            end
+        end
+
+        if StageAPI.InNewStage() then
+            if not inStartingRoom and room:GetType() == RoomType.ROOM_DEFAULT and not currentRoom then
+                local newRoom = StageAPI.LevelRoom(nil, StageAPI.CurrentStage.Rooms)
+                StageAPI.SetCurrentRoom(newRoom)
+                newRoom:Load()
+                currentRoom = newRoom
+                justGenerated = true
             end
 
-            if StageAPI.InNewStage() and room:GetType() == RoomType.ROOM_BOSS and StageAPI.CurrentStage.Bosses then
+            if room:GetType() == RoomType.ROOM_BOSS and StageAPI.CurrentStage.Bosses then
                 if not room:IsClear() then
                     local boss = StageAPI.SelectBoss(StageAPI.CurrentStage.Bosses, StageAPI.CurrentStage.Bosses.HasHorseman)
                     StageAPI.SetBossEncountered(boss.Name)

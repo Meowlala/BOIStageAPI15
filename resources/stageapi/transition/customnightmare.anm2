@@ -4,7 +4,7 @@
 		<Spritesheets>
 			<Spritesheet Path="nightmares_bg.png" Id="0"/>
 			<Spritesheet Path="playerportraitbig_01_isaac.png" Id="1"/>
-			<Spritesheet Path="LevelIcon.png" Id="2"/>
+			<Spritesheet Path="LevelIcons/unknown.png" Id="2"/>
 			<Spritesheet Path="progress.png" Id="3"/>
 			<Spritesheet Path="bgblack.png" Id="4"/>
 		</Spritesheets>
