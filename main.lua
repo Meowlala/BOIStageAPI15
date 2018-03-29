@@ -832,7 +832,7 @@ do -- RoomsList
     end
 
     StageAPI.AddPersistenceCheck(function(entData)
-        if entData.Type <= 9 or entData.Type == EntityType.ENTITY_FIREPLACE then
+        if entData.Type == EntityType.ENTITY_BOMBDROP or entData.Type == EntityType.ENTITY_PICKUP or entData.Type == EntityType.ENTITY_SLOT or entData.Type == EntityType.ENTITY_FIREPLACE then
             return {
                 AutoPersists = true,
                 UpdatePosition = true,
@@ -852,6 +852,8 @@ do -- RoomsList
                                 return true
                             end
                         end
+                    elseif entity.Type == EntityType.ENTITY_FIREPLACE then
+                        return entity.HitPoints <= 2
                     end
                 end
             }
@@ -945,6 +947,22 @@ do -- RoomsList
         return entitiesToSpawn, persistentIndex
     end
 
+    StageAPI.ActiveEntityPersistenceData = {}
+    mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, function()
+        StageAPI.ActiveEntityPersistenceData = {}
+    end)
+
+    function StageAPI.GetEntityPersistenceData(entity)
+        return StageAPI.ActiveEntityPersistenceData[GetPtrHash(entity)]
+    end
+
+    function StageAPI.SetEntityPersistenceData(entity, persistentIndex, persistentData)
+        StageAPI.ActiveEntityPersistenceData[GetPtrHash(entity)] = {
+            PersistentIndex = persistentIndex,
+            PersistenceData = persistentData
+        }
+    end
+
     function StageAPI.LoadEntitiesFromEntitySets(entitysets, doGrids, doPersistentOnly, doAutoPersistent, avoidSpawning, persistentPositions)
         local ents_spawned = {}
         local listCallbacks = StageAPI.GetCallbacks("PRE_SPAWN_ENTITY_LIST")
@@ -1019,8 +1037,10 @@ do -- RoomsList
                                     )
 
                                     if entityInfo.Persistent then
+                                        StageAPI.SetEntityPersistenceData(ent, entityInfo.PersistentIndex, entityInfo.PersistenceData)
+                                        --[[
                                         ent:GetData().PersistentIndex = entityInfo.PersistentIndex
-                                        ent:GetData().PersistenceData = entityInfo.PersistenceData
+                                        ent:GetData().PersistenceData = entityInfo.PersistenceData]]
                                     end
 
                                     if ent:CanShutDoors() then
@@ -1124,84 +1144,35 @@ do -- RoomsList
         return ents_spawned, grids_spawned
     end
 
-    StageAPI.ExtraRooms = {}
-    function StageAPI.SetExtraRoom(name, room)
-        StageAPI.ExtraRooms[name] = room
-    end
-
-    function StageAPI.GetExtraRoom(name)
-        return StageAPI.ExtraRooms[name]
-    end
-
-    StageAPI.RoomTransitionOverlay = Sprite()
-    StageAPI.RoomTransitionOverlay:Load("stageapi/overlay.anm2", false)
-    StageAPI.RoomTransitionOverlay:ReplaceSpritesheet(0, "stageapi/overlay_black.png")
-    StageAPI.RoomTransitionOverlay:Play("Idle", true)
-
-    StageAPI.TransitionFadeTime = 10
-
-    StageAPI.TransitionTimer = 0
-    StageAPI.TransitioningTo = nil
-    function StageAPI.TransitionToExtraRoom(name)
-        StageAPI.TransitionTimer = 0
-        StageAPI.TransitioningTo = StageAPI.GetExtraRoom(name)
-    end
-
-    StageAPI.RoomShapeToGotoID = {
-        [RoomShape.ROOMSHAPE_1x1] = "4550",
-        [RoomShape.ROOMSHAPE_IH] = "4551",
-        [RoomShape.ROOMSHAPE_IV] = "4552",
-        [RoomShape.ROOMSHAPE_1x2] = "4553",
-        [RoomShape.ROOMSHAPE_IIV] = "4554",
-        [RoomShape.ROOMSHAPE_2x1] = "4555",
-        [RoomShape.ROOMSHAPE_IIH] = "4556",
-        [RoomShape.ROOMSHAPE_2x2] = "4557",
-        [RoomShape.ROOMSHAPE_LTL] = "4558",
-        [RoomShape.ROOMSHAPE_LTR] = "4559",
-        [RoomShape.ROOMSHAPE_LBL] = "4560",
-        [RoomShape.ROOMSHAPE_LBR] = "4561"
-    }
-
-    mod:AddCallback(ModCallbacks.MC_POST_RENDER, function()
-        if StageAPI.TransitioningTo then
-            StageAPI.TransitionTimer = StageAPI.TransitionTimer + 1
-            if StageAPI.TransitionTimer == StageAPI.TransitionFadeTime then
-                local id = StageAPI.RoomShapeToGotoID[StageAPI.TransitioningTo.Shape]
-                Isaac.ExecuteCommand("goto s.barren." .. id)
-            end
-        elseif StageAPI.TransitionTimer then
-            StageAPI.TransitionTimer = StageAPI.TransitionTimer - 1
-            if StageAPI.TransitionTimer <= 0 then
-                StageAPI.TransitionTimer = nil
-            end
+    function StageAPI.GetCurrentRoomID()
+        if StageAPI.InExtraRoom then
+            return StageAPI.CurrentExtraRoomName
+        else
+            return StageAPI.GetCurrentListIndex()
         end
-
-        if StageAPI.TransitionTimer then
-            StageAPI.RoomTransitionOverlay.Color = Color(1, 1, 1, StageAPI.TransitionTimer / StageAPI.TransitionFadeTime, 0, 0, 0)
-            StageAPI.RoomTransitionOverlay:Render(zeroVector, zeroVector, zeroVector)
-        end
-    end)
-
-    mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, function()
-        if StageAPI.TransitioningTo then
-            StageAPI.TransitioningTo:Load()
-            StageAPI.TransitioningTo = nil
-        end
-    end)
+    end
 
     StageAPI.LevelRooms = {}
     function StageAPI.SetCurrentRoom(room)
-        StageAPI.LevelRooms[StageAPI.GetCurrentListIndex()] = room
+        if not StageAPI.InExtraRoom then
+            StageAPI.LevelRooms[StageAPI.GetCurrentListIndex()] = room
+        else
+            StageAPI.ExtraRooms[StageAPI.CurrentExtraRoomName] = room
+        end
     end
 
     function StageAPI.GetCurrentRoom()
-        return StageAPI.LevelRooms[StageAPI.GetCurrentListIndex()]
+        if not StageAPI.InExtraRoom then
+            return StageAPI.LevelRooms[StageAPI.GetCurrentListIndex()]
+        else
+            return StageAPI.CurrentExtraRoom
+        end
     end
 
     function StageAPI.GetCurrentRoomType()
         local currentRoom = StageAPI.GetCurrentRoom()
         if currentRoom then
-            return currentRoom.TypeOverride or currentRoom.RoomType
+            return currentRoom.TypeOverride or currentRoom.RoomType or room:GetType()
         end
     end
 
@@ -1260,39 +1231,61 @@ do -- RoomsList
     end
 
     function StageAPI.LevelRoom:SavePersistentEntities()
+        for index, spawns in pairs(self.ExtraSpawn) do
+            for _, spawn in ipairs(spawns) do
+                if spawn.PersistenceData.RemoveOnRemove then
+                    local hasMatch = false
+                    local matching = Isaac.FindByType(spawn.Data.Type, spawn.Data.Variant, spawn.Data.SubType, false, false)
+                    for _, match in ipairs(matching) do
+                        if not spawn.PersistenceData.StoreCheck or not spawn.PersistenceData.StoreCheck(match, match:GetData()) then
+                            hasMatch = true
+                        end
+                    end
+
+                    if not hasMatch then
+                        self.AvoidSpawning[spawn.PersistentIndex] = true
+                    end
+                end
+            end
+        end
+
         for _, entity in ipairs(Isaac.GetRoomEntities()) do
             local data = entity:GetData()
-            if data.PersistenceData then
-                if data.PersistenceData.UpdatePosition then
-                    data.PersistentPositions[data.PersistentIndex] = {X = entity.Position.X, Y = entity.Position.Y}
+            local entityPersistData = StageAPI.GetEntityPersistenceData(entity)
+            if entityPersistData then
+                Isaac.DebugString("pre-existing")
+                if entityPersistData.PersistenceData.UpdatePosition then
+                    self.PersistentPositions[entityPersistData.PersistentIndex] = {X = entity.Position.X, Y = entity.Position.Y}
                 end
 
-                if data.PersistenceData.StoreCheck(entity, data) then
-                    self.AvoidSpawning[data.PersistentIndex] = true
+                if entityPersistData.PersistenceData.StoreCheck and entityPersistData.PersistenceData.StoreCheck(entity, data) then
+                    self.AvoidSpawning[entityPersistData.PersistentIndex] = true
                 end
             else
                 local persistentData = StageAPI.CheckPersistence(entity.Type, entity.Variant, entity.SubType)
                 if persistentData then
-                    local index = self.LastPersistentIndex + 1
-                    self.LastPersistentIndex = index
-                    local grindex = room:GetGridIndex(entity.Position)
-                    if not self.ExtraSpawn[grindex] then
-                        self.ExtraSpawn[grindex] = {}
-                    end
+                    if not persistentData.StoreCheck or not persistentData.StoreCheck(entity, data) then
+                        local index = self.LastPersistentIndex + 1
+                        self.LastPersistentIndex = index
+                        local grindex = room:GetGridIndex(entity.Position)
+                        if not self.ExtraSpawn[grindex] then
+                            self.ExtraSpawn[grindex] = {}
+                        end
 
-                    self.ExtraSpawn[grindex][#self.ExtraSpawn[grindex] + 1] = {
-                        Data = {
-                            Type = entity.Type,
-                            Variant = entity.Variant,
-                            SubType = entity.SubType,
-                            Index = grindex
-                        },
-                        PersistentIndex = index,
-                        PersistenceData = persistentData
-                    }
+                        self.ExtraSpawn[grindex][#self.ExtraSpawn[grindex] + 1] = {
+                            Data = {
+                                Type = entity.Type,
+                                Variant = entity.Variant,
+                                SubType = entity.SubType,
+                                Index = grindex
+                            },
+                            PersistentIndex = index,
+                            PersistenceData = persistentData
+                        }
 
-                    if persistentData.UpdatePosition then
-                        data.PersistentPositions[index] = {X = entity.Position.X, Y = entity.Position.Y}
+                        if persistentData.UpdatePosition then
+                            self.PersistentPositions[index] = {X = entity.Position.X, Y = entity.Position.Y}
+                        end
                     end
                 end
             end
@@ -1304,8 +1297,8 @@ do -- RoomsList
     end
 
     function StageAPI.LevelRoom:RemovePersistentEntity(entity)
-        local data = entity:GetData()
-        if data.PersistenceData then
+        local data = StageAPI.GetEntityPersistenceData(entity)
+        if data and data.PersistenceData then
             self:RemovePersistentIndex(data.PersistentIndex)
         end
     end
@@ -1339,17 +1332,283 @@ do -- RoomsList
     end
 
     mod:AddCallback(ModCallbacks.MC_POST_ENTITY_REMOVE, function(_, ent)
-        local data = ent:GetData()
+        local data = StageAPI.GetEntityPersistenceData(ent)
         -- Entities are removed whenever you exit the room, in this time the game is paused, which we can use to stop removing persistent entities on room exit.
-        if data.PersistenceData and data.PersistenceData.RemoveOnRemove and not game:IsPaused() then
+        if data and data.PersistenceData and data.PersistenceData.RemoveOnRemove and not game:IsPaused() then
             StageAPI.RemovePersistentEntity(ent)
         end
     end)
 
     mod:AddCallback(ModCallbacks.MC_POST_ENTITY_KILL, function(_, ent)
-        local data = ent:GetData()
-        if data.PersistenceData and data.PersistenceData.RemoveOnDeath then
+        local data = StageAPI.GetEntityPersistenceData(ent)
+        if data and data.PersistenceData and data.PersistenceData.RemoveOnDeath then
             StageAPI.RemovePersistentEntity(ent)
+        end
+    end)
+end
+
+Isaac.DebugString("[StageAPI] Loading Custom Grid System")
+do -- Custom Grid Entities
+    StageAPI.CustomGridTypes = {}
+    StageAPI.CustomGrid = StageAPI.Class("CustomGrid")
+    function StageAPI.CustomGrid:Init(name, baseType, baseVariant, anm2, animation, frame, variantFrames, offset, overrideGridSpawns, forceSpawning)
+        self.Name = name
+        self.BaseType = baseType
+        self.BaseVariant = baseVariant
+        self.Anm2 = anm2
+        self.Animation = animation
+        self.Frame = frame
+        self.VariantFrames = variantFrames
+        self.OverrideGridSpawns = overrideGridSpawns
+        self.ForceSpawning = forceSpawning
+        self.Offset = offset
+
+        if anm2 then
+            self.Sprite = Sprite()
+            self.Sprite:Load(anm2, true)
+        end
+
+        StageAPI.CustomGridTypes[name] = self
+    end
+
+    StageAPI.CustomGrids = {}
+    StageAPI.CustomGridIndices = {}
+    function StageAPI.CustomGrid:Spawn(grindex, force, reSpawning, startPersistData)
+        local grid
+        if self.BaseType then
+            if not reSpawning then
+                force = force or self.ForceSpawning
+                grid = Isaac.GridSpawn(self.BaseType, self.BaseVariant or 0, room:GetGridPosition(grindex), force)
+            else
+                grid = room:GetGridEntity(grindex)
+            end
+
+            if self.OverrideGridSpawns and grid and grid.State ~= 2 then
+                StageAPI.SpawnOverridenGrids[grindex] = true
+            end
+
+            if self.Sprite and grid then
+                if self.VariantFrames or self.Frame then
+                    local animation = self.Animation or self.Sprite:GetDefaultAnimation()
+                    if self.VariantFrames then
+                        self.Sprite:SetFrame(animation, StageAPI.Random(0, self.VariantFrames))
+                    else
+                        self.Sprite:SetFrame(animation, self.Frame)
+                    end
+                elseif self.Animation then
+                    self.Sprite:Play(self.Animation, true)
+                end
+
+                grid.Sprite = self.Sprite
+                if self.Offset then
+                    grid.Sprite.Offset = self.Offset
+                end
+            end
+        end
+
+        local lindex = StageAPI.GetCurrentListIndex()
+        if not StageAPI.CustomGrids[lindex] then
+            StageAPI.CustomGrids[lindex] = {}
+        end
+
+        if not StageAPI.CustomGrids[lindex][self.Name] then
+            StageAPI.CustomGrids[lindex][self.Name] = {}
+        end
+
+        if not StageAPI.CustomGrids[lindex][self.Name][grindex] then
+            StageAPI.CustomGrids[lindex][self.Name][grindex] = startPersistData
+        end
+
+        StageAPI.CustomGridIndices[grindex] = true
+
+        for _, callback in ipairs(StageAPI.GetCallbacks("POST_SPAWN_CUSTOM_GRID")) do
+            if not callback.Params[1] or callback.Params[1] == self.Name then
+                callback.Function(grindex, force, reSpawning, grid, self)
+            end
+        end
+
+        return grid
+    end
+
+    function StageAPI.GetCustomGridIndicesByName(name)
+        local lindex = StageAPI.GetCurrentListIndex()
+        if StageAPI.CustomGrids[lindex] and StageAPI.CustomGrids[lindex][name] then
+            local ret = {}
+            for grindex, exists in pairs(StageAPI.CustomGrids[lindex][name]) do
+                ret[#ret + 1] = grindex
+            end
+
+            return ret
+        end
+
+        return {}
+    end
+
+    function StageAPI.GetCustomGridsByName(name)
+        local lindex = StageAPI.GetCurrentListIndex()
+        if StageAPI.CustomGrids[lindex] and StageAPI.CustomGrids[lindex][name] then
+            local ret = {}
+            for grindex, persistData in pairs(StageAPI.CustomGrids[lindex][name]) do
+                ret[#ret + 1] = {
+                    Name = name,
+                    PersistData = persistData,
+                    Data = StageAPI.CustomGridTypes[name],
+                    Index = grindex
+                }
+            end
+
+            return ret
+        end
+
+        return {}
+    end
+
+    function StageAPI.GetCustomGrids()
+        local lindex = StageAPI.GetCurrentListIndex()
+        if StageAPI.CustomGrids[lindex] then
+            local ret = {}
+            for name, grindices in pairs(StageAPI.CustomGrids[lindex]) do
+                for grindex, persistData in pairs(grindices) do
+                    ret[#ret + 1] = {
+                        Name = name,
+                        PersistData = persistData,
+                        Data = StageAPI.CustomGridTypes[name],
+                        Index = grindex
+                    }
+                end
+            end
+
+            return ret
+        end
+
+        return {}
+    end
+
+    function StageAPI.IsCustomGrid(index)
+        local lindex = StageAPI.GetCurrentListIndex()
+        return StageAPI.CustomGridIndices[index]
+    end
+
+    mod:AddCallback(ModCallbacks.MC_POST_UPDATE, function()
+        local lindex = StageAPI.GetCurrentListIndex()
+        if StageAPI.CustomGrids[lindex] then
+            for name, grindices in pairs(StageAPI.CustomGrids[lindex]) do
+                for grindex, exists in pairs(grindices) do
+                    local grid = room:GetGridEntity(grindex)
+                    if not grid then
+                        grindices[grindex] = nil
+                    end
+                end
+            end
+        end
+    end)
+end
+
+do -- Extra Rooms
+    StageAPI.InExtraRoom = false
+    StageAPI.CurrentExtraRoom = nil
+    StageAPI.CurrentExtraRoomName = nil
+    StageAPI.ExtraRooms = {}
+    function StageAPI.SetExtraRoom(name, room)
+        StageAPI.ExtraRooms[name] = room
+    end
+
+    function StageAPI.GetExtraRoom(name)
+        return StageAPI.ExtraRooms[name]
+    end
+
+    function StageAPI.InOrTransitioningToExtraRoom()
+        return StageAPI.TransitionTimer or StageAPI.InExtraRoom
+    end
+
+    StageAPI.RoomTransitionOverlay = Sprite()
+    StageAPI.RoomTransitionOverlay:Load("stageapi/overlay.anm2", false)
+    StageAPI.RoomTransitionOverlay:ReplaceSpritesheet(0, "stageapi/overlay_black.png")
+    StageAPI.RoomTransitionOverlay:LoadGraphics()
+    StageAPI.RoomTransitionOverlay:Play("Idle", true)
+
+    StageAPI.TransitionFadeTime = 30
+
+    StageAPI.TransitionTimer = nil
+    StageAPI.TransitioningTo = nil
+    StageAPI.TransitioningFromTo = nil
+    function StageAPI.TransitionToExtraRoom(name)
+        StageAPI.TransitionTimer = 0
+        StageAPI.TransitioningTo = name
+    end
+
+    function StageAPI.TransitionFromExtraRoom(toIndex)
+        StageAPI.TransitionTimer = 0
+        StageAPI.TransitioningFromTo = toIndex
+    end
+
+    StageAPI.RoomShapeToGotoID = {
+        [RoomShape.ROOMSHAPE_1x1] = "4550",
+        [RoomShape.ROOMSHAPE_IH] = "4551",
+        [RoomShape.ROOMSHAPE_IV] = "4552",
+        [RoomShape.ROOMSHAPE_1x2] = "4553",
+        [RoomShape.ROOMSHAPE_IIV] = "4554",
+        [RoomShape.ROOMSHAPE_2x1] = "4555",
+        [RoomShape.ROOMSHAPE_IIH] = "4556",
+        [RoomShape.ROOMSHAPE_2x2] = "4557",
+        [RoomShape.ROOMSHAPE_LTL] = "4558",
+        [RoomShape.ROOMSHAPE_LTR] = "4559",
+        [RoomShape.ROOMSHAPE_LBL] = "4560",
+        [RoomShape.ROOMSHAPE_LBR] = "4561"
+    }
+
+    mod:AddCallback(ModCallbacks.MC_POST_RENDER, function()
+        if not game:IsPaused() then
+            if StageAPI.TransitioningTo or StageAPI.TransitioningFromTo then
+                StageAPI.TransitionTimer = StageAPI.TransitionTimer + 1
+                if StageAPI.TransitionTimer == StageAPI.TransitionFadeTime then
+                    if StageAPI.TransitioningTo then
+                        if not StageAPI.InExtraRoom then
+                            StageAPI.LastNonExtraRoom = level:GetCurrentRoomIndex()
+                        end
+
+                        local extraRoom = StageAPI.GetExtraRoom(StageAPI.TransitioningTo)
+                        local id = StageAPI.RoomShapeToGotoID[extraRoom.Shape]
+                        StageAPI.InExtraRoom = true
+                        StageAPI.CurrentExtraRoom = extraRoom
+                        StageAPI.CurrentExtraRoomName = StageAPI.TransitioningTo
+                        StageAPI.TransitioningTo = nil
+                        Isaac.ExecuteCommand("goto s.barren." .. id)
+                    elseif StageAPI.TransitioningFromTo then
+                        StageAPI.CurrentExtraRoom:SaveGridInformation()
+                        StageAPI.CurrentExtraRoom:SavePersistentEntities()
+                        StageAPI.InExtraRoom = nil
+                        StageAPI.CurrentExtraRoom = nil
+                        StageAPI.CurrentExtraRoomName = nil
+                        game:ChangeRoom(StageAPI.TransitioningFromTo)
+                        StageAPI.TransitioningFromTo = nil
+                    end
+                end
+            elseif StageAPI.TransitionTimer then
+                StageAPI.TransitionTimer = StageAPI.TransitionTimer - 1
+                if StageAPI.TransitionTimer <= 0 then
+                    StageAPI.TransitionTimer = nil
+                end
+            end
+        end
+
+        if StageAPI.TransitionTimer then
+            StageAPI.RoomTransitionOverlay.Color = Color(1, 1, 1, StageAPI.TransitionTimer / StageAPI.TransitionFadeTime, 0, 0, 0)
+            StageAPI.RoomTransitionOverlay:Render(zeroVector, zeroVector, zeroVector)
+        end
+    end)
+
+    StageAPI.CustomDoorGrid = StageAPI.CustomGrid("Door")
+
+    mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, function()
+        if StageAPI.CurrentExtraRoom then
+            for i = 0, 7 do
+                if room:GetDoor(i) then
+                    room:RemoveDoor(i)
+                end
+            end
+
+            StageAPI.CurrentExtraRoom:Load(true)
         end
     end)
 end
@@ -2406,7 +2665,7 @@ do -- Transition
     end)
 
     function StageAPI.IsHUDAnimationPlaying()
-        return StageAPI.TransitionAnimation:IsPlaying("Scene") or StageAPI.BossSprite:IsPlaying("Scene") or StageAPI.BossSprite:IsPlaying("DoubleTrouble")
+        return StageAPI.TransitionAnimation:IsPlaying("Scene") or StageAPI.BossSprite:IsPlaying("Scene") or StageAPI.BossSprite:IsPlaying("DoubleTrouble") or StageAPI.TransitionTimer
     end
 
     function StageAPI.GetLevelTransitionIcon(stage, stype)
@@ -2846,16 +3105,7 @@ do -- Callbacks
         if StageAPI.InOverriddenStage() then
             if StageAPI.CurrentStage then
                 local roomType = room:GetType()
-                local rtype
-                local currentRoom = StageAPI.LevelRooms[currentListIndex]
-                if currentRoom and currentRoom.TypeOverride then
-                    rtype = currentRoom.TypeOverride
-                elseif currentRoom and currentRoom.RoomType then
-                    rtype = currentRoom.RoomType
-                else
-                    rtype = roomType
-                end
-
+                local rtype = StageAPI.GetCurrentRoomType()
                 local grids
                 local gridsOverride
                 local callbacks = StageAPI.GetCallbacks("PRE_UPDATE_GRID_GFX")
@@ -2942,6 +3192,7 @@ do -- Callbacks
 
         if inStartingRoom then
             if room:IsFirstVisit() then
+                StageAPI.CustomGrids = {}
                 StageAPI.CurrentStage = nil
                 if isNewStage then
                     currentRoom = nil
@@ -2957,7 +3208,7 @@ do -- Callbacks
             end
         end
 
-        if StageAPI.InNewStage() then
+        if not StageAPI.InExtraRoom and StageAPI.InNewStage() then
             if not inStartingRoom and room:GetType() == RoomType.ROOM_DEFAULT and not currentRoom then
                 local newRoom = StageAPI.LevelRoom(nil, StageAPI.CurrentStage.Rooms)
                 StageAPI.SetCurrentRoom(newRoom)
@@ -2994,7 +3245,7 @@ do -- Callbacks
             StageAPI.RemoveExtraGrids(StageAPI.RoomGrids[currentListIndex])
         end
 
-        if currentRoom and not justGenerated then
+        if currentRoom and not StageAPI.InExtraRoom and not justGenerated then
             currentRoom:Load()
         end
 
@@ -3010,15 +3261,7 @@ do -- Callbacks
         end
 
         if isNewStage then
-            local rtype
-            if currentRoom and currentRoom.TypeOverride then
-                rtype = currentRoom.TypeOverride
-            elseif currentRoom and currentRoom.RoomType then
-                rtype = currentRoom.RoomType
-            else
-                rtype = room:GetType()
-            end
-
+            local rtype = StageAPI.GetCurrentRoomType()
             if StageAPI.CurrentStage.RoomGfx[rtype] then
                 local callbacks = StageAPI.GetCallbacks("PRE_CHANGE_ROOM_GFX")
                 local gfxOverride
@@ -3065,142 +3308,12 @@ do -- Callbacks
             StageAPI.RoomGrids, StageAPI.LevelRooms = StageAPI.LoadSaveString(StageAPI.GetSaveString())
         elseif cmd == "printsave" then
             Isaac.DebugString(StageAPI.GetSaveString())
-        elseif cmd == "glaciertrapdoor" then
-            StageAPI.SpawnCustomTrapdoor(room:GetCenterPos(), StageAPI.CustomStages["Glacier"])
-        end
-    end)
-end
-
-Isaac.DebugString("[StageAPI] Loading Custom Grid System")
-do -- Custom Grid Entities
-    StageAPI.CustomGridTypes = {}
-    StageAPI.CustomGrid = StageAPI.Class("CustomGrid")
-    function StageAPI.CustomGrid:Init(name, baseType, baseVariant, anm2, animation, frame, variantFrames, offset, overrideGridSpawns, forceSpawning)
-        self.Name = name
-        self.BaseType = baseType
-        self.BaseVariant = baseVariant
-        self.Anm2 = anm2
-        self.Animation = animation
-        self.Frame = frame
-        self.VariantFrames = variantFrames
-        self.OverrideGridSpawns = overrideGridSpawns
-        self.ForceSpawning = forceSpawning
-        self.Offset = offset
-
-        if anm2 then
-            self.Sprite = Sprite()
-            self.Sprite:Load(anm2, true)
-        end
-
-        StageAPI.CustomGridTypes[name] = self
-    end
-
-    StageAPI.CustomGrids = {}
-    StageAPI.CustomGridIndices = {}
-    function StageAPI.CustomGrid:Spawn(grindex, force, reSpawning)
-        local grid
-        if self.BaseType then
-            if not reSpawning then
-                force = force or self.ForceSpawning
-                grid = Isaac.GridSpawn(self.BaseType, self.BaseVariant or 0, room:GetGridPosition(grindex), force)
-            else
-                grid = room:GetGridEntity(grindex)
+        elseif cmd == "extraroom" then
+            if StageAPI.GetExtraRoom(params) then
+                StageAPI.TransitionToExtraRoom(params)
             end
-
-            if self.OverrideGridSpawns and grid and grid.State ~= 2 then
-                StageAPI.SpawnOverridenGrids[grindex] = true
-            end
-
-            if self.Sprite and grid then
-                if self.VariantFrames or self.Frame then
-                    local animation = self.Animation or self.Sprite:GetDefaultAnimation()
-                    if self.VariantFrames then
-                        self.Sprite:SetFrame(animation, StageAPI.Random(0, self.VariantFrames))
-                    else
-                        self.Sprite:SetFrame(animation, self.Frame)
-                    end
-                elseif self.Animation then
-                    self.Sprite:Play(self.Animation, true)
-                end
-
-                grid.Sprite = self.Sprite
-                if self.Offset then
-                    grid.Sprite.Offset = self.Offset
-                end
-            end
-        end
-
-        local lindex = StageAPI.GetCurrentListIndex()
-        if not StageAPI.CustomGrids[lindex] then
-            StageAPI.CustomGrids[lindex] = {}
-        end
-
-        if not StageAPI.CustomGrids[lindex][self.Name] then
-            StageAPI.CustomGrids[lindex][self.Name] = {}
-        end
-
-        StageAPI.CustomGrids[lindex][self.Name][grindex] = true
-        StageAPI.CustomGridIndices[grindex] = true
-
-        for _, callback in ipairs(StageAPI.GetCallbacks("POST_SPAWN_CUSTOM_GRID")) do
-            if not callback.Params[1] or callback.Params[1] == self.Name then
-                callback.Function(grindex, force, reSpawning, grid, self)
-            end
-        end
-
-        return grid
-    end
-
-    function StageAPI.GetCustomGridIndicesByName(name)
-        local lindex = StageAPI.GetCurrentListIndex()
-        if StageAPI.CustomGrids[lindex] and StageAPI.CustomGrids[lindex][name] then
-            local ret = {}
-            for grindex, exists in pairs(StageAPI.CustomGrids[lindex][name]) do
-                ret[#ret + 1] = grindex
-            end
-
-            return ret
-        end
-
-        return {}
-    end
-
-    function StageAPI.GetCustomGrids()
-        local lindex = StageAPI.GetCurrentListIndex()
-        if StageAPI.CustomGrids[lindex] then
-            local ret = {}
-            for name, grindices in pairs(StageAPI.CustomGrids[lindex]) do
-                for grindex, exists in pairs(grindices) do
-                    ret[#ret + 1] = {
-                        Name = name,
-                        Data = StageAPI.CustomGridTypes[name],
-                        Index = grindex
-                    }
-                end
-            end
-
-            return ret
-        end
-
-        return {}
-    end
-
-    function StageAPI.IsCustomGrid(index)
-        local lindex = StageAPI.GetCurrentListIndex()
-        return StageAPI.CustomGridIndices[index]
-    end
-
-    mod:AddCallback(ModCallbacks.MC_POST_UPDATE, function()
-        local lindex = StageAPI.GetCurrentListIndex()
-        if StageAPI.CustomGrids[lindex] then
-            for name, grindices in pairs(StageAPI.CustomGrids[lindex]) do
-                for grindex, exists in pairs(grindices) do
-                    local grid = room:GetGridEntity(grindex)
-                    if not grid then
-                        grindices[grindex] = nil
-                    end
-                end
-            end
+        elseif cmd == "extraroomexit" then
+            StageAPI.TransitionFromExtraRoom(StageAPI.LastNonExtraRoom)
         end
     end)
 end
