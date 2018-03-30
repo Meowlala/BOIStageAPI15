@@ -2634,13 +2634,13 @@ do -- Custom Stage
                 musicID = musicID[StageAPI.Random(1, #musicID, StageAPI.MusicRNG)]
             end
 
-            if musicID and not StageAPI.IsIn(StageAPI.NonOverrideMusic, id) then
+            if musicID then
                 return musicID, not room:IsClear()
             end
         else
             local music = self.Music
             local musicID = music[roomType]
-            if musicID and not StageAPI.IsIn(StageAPI.NonOverrideMusic, id) then
+            if musicID then
                 return musicID, not room:IsClear()
             end
         end
@@ -3577,9 +3577,13 @@ do -- Callbacks
                 local id = StageAPI.Music:GetCurrentMusicID()
                 local musicID, shouldLayer = StageAPI.CurrentStage:GetPlayingMusic()
                 if musicID then
-                    StageAPI.Music:Queue(musicID)
-                    if id ~= musicID then
-                        StageAPI.Music:Play(musicID, 0.1)
+                    local queuedID = StageAPI.Music:GetQueuedMusicID()
+                    if queuedID ~= musicID and not StageAPI.IsIn(StageAPI.NonOverrideMusic, queuedID) then
+                        StageAPI.Music:Queue(musicID)
+                    end
+                    
+                    if id ~= musicID and not StageAPI.IsIn(StageAPI.NonOverrideMusic, id) then
+                        StageAPI.Music:Play(musicID, 1)
                     end
 
                     StageAPI.Music:UpdateVolume()
