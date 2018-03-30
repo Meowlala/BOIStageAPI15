@@ -1,5 +1,5 @@
 <AnimatedActor>
-	<Info CreatedBy="Unknown" CreatedOn="3/27/2018 10:23:05 AM" Version="27" Fps="30"/>
+	<Info CreatedBy="Unknown" CreatedOn="3/29/2018 5:33:34 PM" Version="28" Fps="30"/>
 	<Content>
 		<Spritesheets>
 			<Spritesheet Path="nightmares_bg.png" Id="0"/>
@@ -16,7 +16,9 @@
 			<Layer Name="BackgroundFading" Id="4" SpritesheetId="4"/>
 		</Layers>
 		<Nulls/>
-		<Events/>
+		<Events>
+			<Event Name="LastFrame" Id="0"/>
+		</Events>
 	</Content>
 	<Animations DefaultAnimation="Scene">
 		<Animation Name="Scene" FrameNum="100" Loop="false">
@@ -109,7 +111,9 @@
 				</LayerAnimation>
 			</LayerAnimations>
 			<NullAnimations/>
-			<Triggers/>
+			<Triggers>
+				<Trigger EventId="0" AtFrame="99"/>
+			</Triggers>
 		</Animation>
 		<Animation Name="Idle" FrameNum="1" Loop="false">
 			<RootAnimation>
