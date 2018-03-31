@@ -376,18 +376,6 @@ do -- Core Definitions
         DeleteMePickup = "StageAPIDeleteMePickup"
     }
 
-    setmetatable(StageAPI, {
-        __index = function(tbl, ind)
-            if ind == "Room" then
-                tbl.Room = tbl.Game:GetRoom()
-                return tbl.Room
-            elseif ind == "Level" then
-                tbl.Level = tbl.Game:GetLevel()
-                return tbl.Level
-            end
-        end
-    })
-
     StageAPI.Game = Game()
     StageAPI.Players = {}
 
@@ -444,20 +432,39 @@ do -- Core Definitions
         StageAPI.Room = StageAPI.Game:GetRoom()
         StageAPI.CurrentListIndex = StageAPI.GetCurrentListIndex(true)
     end)
+end
+
+-- local, so needs to be outside of do/end
+local localToStageAPIMap = {
+    game = "Game",
+    room = "Room",
+    level = "Level",
+    players = "Players",
+    zeroVector = "ZeroVector"
+}
+
+setmetatable(_ENV, {
+    __index = function(tbl, k)
+        if localToStageAPIMap[k] then
+            return StageAPI[localToStageAPIMap[k]]
+        end
+    end
+})
+
+--local game, room, level, players, zeroVector = StageAPI.Game, StageAPI.Room, StageAPI.Level, StageAPI.Players, StageAPI.ZeroVector
+
+Isaac.DebugString("[StageAPI] Loading Core Functions")
+do -- Core Functions
 
     mod:AddCallback(ModCallbacks.MC_PRE_GAME_EXIT, function(_, shouldSave)
         StageAPI.Players = {}
+        players = StageAPI.Players
+
         if shouldSave then
             StageAPI.SaveModData()
         end
     end)
-end
 
--- local, so needs to be outside of do/end
-local game, room, level, players, zeroVector = StageAPI.Game, StageAPI.Room, StageAPI.Level, StageAPI.Players, StageAPI.ZeroVector
-
-Isaac.DebugString("[StageAPI] Loading Core Functions")
-do -- Core Functions
     StageAPI.RandomRNG = RNG()
     StageAPI.RandomRNG:SetSeed(Random(), 0)
     function StageAPI.Random(min, max, rng)
@@ -3986,6 +3993,10 @@ do -- Callbacks
     StageAPI.Music = MusicManager()
     StageAPI.MusicRNG = RNG()
     mod:AddCallback(ModCallbacks.MC_POST_RENDER, function()
+        if game:GetFrameCount() <= 0 then
+            return
+        end
+
         local currentListIndex = StageAPI.GetCurrentRoomID()
         local stage = level:GetStage()
         local stype = level:GetStageType()
