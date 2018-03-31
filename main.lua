@@ -217,7 +217,7 @@ StageAPI Objects:
 -- Save()
 -- GetSaveData()
 -- LoadSaveData(saveData)
--- SetTypeOverride()
+-- SetTypeOverride(override)
 
 - CustomStage(name, replaces, noSetReplaces) -- replaces defaults to catacombs one if noSetReplaces is not set.
 -- NAME IS NOT OPTIONAL. USED TO IDENTIFY STAGE AND FOR SAVING CURRENT STAGE.
@@ -1909,6 +1909,10 @@ do -- RoomsList
         end
     end
 
+    function StageAPI.LevelRoom:SetTypeOverride(override)
+        self.TypeOverride = override
+    end
+
     function StageAPI.RemovePersistentEntity(entity)
         local currentRoom = StageAPI.GetCurrentRoom()
         if currentRoom then
@@ -3483,6 +3487,10 @@ do -- Transition
         if StageAPI.TransitionAnimation:IsPlaying("Scene") then
             if StageAPI.IsOddRenderFrame then
                 StageAPI.TransitionAnimation:Update()
+            end
+
+            for _, player in ipairs(players) do
+                player.ControlsCooldown = 80
             end
 
             if StageAPI.TransitionAnimation:IsEventTriggered("LastFrame") then
