@@ -1295,6 +1295,10 @@ do -- RoomsList
             local grid = room:GetGridEntity(i)
             if grid then
                 grid:PostInit()
+
+                if grid:ToRock() then
+                    grid:ToRock():UpdateAnimFrame()
+                end
             end
         end
     end
