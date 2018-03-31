@@ -2,85 +2,219 @@ local mod = RegisterMod("StageAPI", 1)
 
 --[[ FUNCTIONALITY
 
-- RoomsList - object containing room filenames and the require()d files.
--- RoomsList(roomfile, roomfile, roomfile)
+Basic Features:
 
-- Backdrop - object containing backdrop filenames (not a real object, just a way of setting a table up that you need to do)
+Classes:
+StageAPI.Class("Name", AllowMultipleInit) -- Returns a Class object, actually is one itself.
+
+Classes can be constructed simply by calling them with (), i.e,
+
+local myClass = StageAPI.Class("MyClass")
+local myClassInst = myClass()
+
+Classes can have a couple of functions, Init, PostInit, and InheritInit.
+When called like in the example above, Init and PostInit are called, passing in whatever args.
+However, you can keep going deeper, i.e,
+
+local myClassInstCopy = myClassInst()
+
+Which will generate another copy that inherits from myClassInst that inherits from myClass which inherits from StageAPI.Class.
+In that case, InheritInit will be called instead of Init and PostInit, unless AllowMultipleInit was passed in to the initial myClass definition.
+
+Classes are used for a majority of StageAPI objects.
+
+Callbacks:
+StageAPI.AddCallback(id, priority, function, params...) -- Stores a function and its params in a table indexed by ID and sorted by priority, where low priority is at the start.
+StageAPI.GetCallbacks(id) -- Gets a list of callbacks from the table by the ID, sorted by priority.
+
+Individual callbacks tables are arranged like so
 {
-    NFloors = {file},
-    LFloors = {file, file},
-    Corners = {file},
-    Walls = {file, file, file}
+    Priority = integer,
+    Function = function,
+    Params = {params...}
 }
 
-- Grids - object containing grid filenames
--- SetRocks(filename)
--- SetBridges(filename)
--- SetPits(filename)
--- SetDecorations(filename)
--- SetDoors(filename, targetType, currentType, targetNot, currentNot) -- target / current type can be nil for any
+StageAPI.CallCallbacks(id, breakOnFirstReturn, params...) -- Calls all callbacks with ID, passing in additional params. If breakOnFirstReturn is defined, breaks and returns the first non-nil return value.
 
-- RoomGfx - object containing Backdrop & Grid Entity gfx.
--- RoomGfx(backdrop, grids)
--- SetRoomGfx(RoomGfx) -- loads all grids & backdrop
--- Can be assigned to RoomTypes as well, for boss rooms, challenge rooms, etc. Assign multiple for random choice.
+StageAPI callbacks all use string IDs, i.e, AddCallback("POST_CHECK_VALID_ROOM", 1, function, params)
 
-- CustomStage
--- SetRoomGfx(RoomGfx, RoomType)
--- SetRoomMusic(Music, RoomType)
--- SetRooms(RoomsList)
--- SetEndStage(stage, custom) -- where this stage will output you, "stage" can be a CustomStage or a LevelStage, interpretation based on "custom" bool. This is to be used for multi stage floors.
--- SetName(name) -- string that is automatically rendered on stage enter, like "Glacier 1" or "Glacer 2"
--- Duplicate() -- clones the stage. Useful for multi stage floors, to duplicate, make changes, then pass into SetEndStage of the first.
--- SetBosses(bosses)
+Callback List:
+- POST_CHECK_VALID_ROOM(layout, roomList, seed, shape, rtype, requireRoomType)
+-- Return false to invalidate a room layout.
 
-- Bosses - object containing boss information (not a real object, just a way of setting a table up that you need to do)
-{
+- PRE_SELECT_ENTITY_LIST(entityList, spawnIndex, addEntities)
+-- Takes 4 return values, AddEntities, EntityList, StillAddRandom, and NoBreak. If the first value is false, cancels selecting the list.
+-- AddEntities and EntityList are lists of EntityData tables, described below.
+-- Usually StageAPI will pick one entity from the EntityList to add to the AddEntities table at random, but that can be changed with this callback.
+-- If StillAddRandom is true, StageAPI will still add a random entity from the entitylist to addentities, alongside ones you returned.
+
+- PRE_SPAWN_ENTITY_LIST(entityList, spawnIndex, doGrids, doPersistentOnly, doAutoPersistent, avoidSpawning, persistentPositions)
+-- Takes 1 return value. If false, cancels spawning the entity list. If a table, uses it as the entity list. Any return value breaks out of future callbacks.
+-- Every entity in the final entity list is spawned.
+-- Note that this entity list contains EntityInfo tables rather than EntityData, which contain persistent room-specific data. Both detailed below.
+
+- PRE_SPAWN_ENTITY(entityInfo, entityList, spawnIndex, doGrids, doPersistentOnly, doAutoPersistent, avoidSpawning, persistentPositions)
+-- Takes 1 return value. If false, cancels spawning the entity info. If a table, uses it as the entity info. Any return value breaks out of future callbacks.
+
+- PRE_SPAWN_GRID(gridData, gridInformation, entities, gridSpawnRNG)
+-- Takes 1 return value. If false, cancels spawning the grid. If a table, uses it as the grid data. Any return value breaks out of future callbacks.
+
+- PRE_ROOM_LAYOUT_CHOOSE(currentRoom, roomsList)
+-- Takes 1 return value. If a table, uses it as the current room layout. Otherwise, chooses from the roomslist with seeded RNG. Breaks on first return.
+-- Called both on initial room load and when continuing game, before INIT.
+
+- POST_ROOM_INIT(currentRoom, fromSaveData, saveData)
+-- Called when a room initializes. Can occur at two times, when a room is initially entered or when a room is loaded from save data. Takes no return values.
+
+- POST_ROOM_LOAD(currentRoom, isFirstLoad, isExtraRoom)
+-- Called when a room is loaded. Takes no return value.
+
+- POST_SPAWN_CUSTOM_GRID(spawnIndex, force, reSpawning, grid, persistentData, CustomGrid)
+-- Takes CustomGridTypeName as first callback parameter, and will only run if parameter not supplied or matches current grid.
+
+- POST_CUSTOM_GRID_UPDATE(grid, spawnIndex, persistData, CustomGrid, customGridTypeName)
+-- Takes CustomGridTypeName as first callback parameter, and will only run if parameter not supplied or matches current grid.
+
+- PRE_TRANSITION_RENDER()
+-- Called before the custom room transition would render, for effects that should render before it.
+
+- POST_SPAWN_CUSTOM_DOOR(door, data, sprite, CustomDoor, persistData, index, force, respawning, grid, CustomGrid)
+-- Takes CustomDoorName as first callback parameter, and will only run if parameter not supplied or matches current door.
+
+- POST_CUSTOM_DOOR_UPDATE(door, data, sprite, CustomDoor, persistData)
+-- Takes CustomDoorName as first callback parameter, and will only run if parameter not supplied or matches current door.
+
+- PRE_SELECT_BOSS(bosses, allowHorseman, rng)
+-- If a boss is returned, uses it instead.
+
+- POST_OVERRIDEN_GRID_BREAK(grindex, grid, justBrokenGridSpawns)
+-- Called when an overriden grid reaches its break state and is considered broken. justBrokenGridSpawns contains all deleted spawns from the grid. Breaks on first non-nil return.
+
+- POST_GRID_UPDATE()
+-- Calls when the number of grids changes or grids are reprocessed. This is when room grid graphics are changed.
+
+- PRE_UPDATE_GRID_GFX()
+-- Allows returning gridgfx to use in place of the stage's.
+
+- PRE_CHANGE_ROOM_GFX(currentRoom)
+-- Allows returning roomgfx to use in place of the stage's.
+
+- POST_CHANGE_ROOM_GFX()
+
+-- StageAPI Structures:
+EntityData {
+    Type = integer,
+    Variant = integer,
+    SubType = integer,
+    GridX = integer,
+    GridY = integer,
+    Index = integer
+}
+
+EntityInfo {
+    Data = EntityData,
+    PersistentIndex = integer,
+    Persistent = boolean,
+    PersistenceData = PersistentData
+}
+
+PersistentData {
+    Type = etype,
+    Variant = variant,
+    SubType = subtype,
+    AutoPersists = autoPersists,
+    RemoveOnRemove = removeOnRemove,
+    RemoveOnDeath = removeOnDeath,
+    UpdatePosition = updatePosition,
+    StoreCheck = storeCheck
+}
+
+Backdrop {
+    NFloors = {filenames},
+    LFloors = {filenames},
+    Corners = {filenames},
+    Walls = {filenames}
+}
+
+Bosses {
     {
-        Name = "", -- Used for identification / to set encounters
-        NameTwo = "", -- when setting if a boss has been encountered, will set NameTwo's as well
-        Portrait = "",
-        Bossname = "", -- name sprite rather than ID name
+        Name = string,
+        NameTwo = string,
+        Portrait = string,
+        PortraitTwo = string,
+        Weight = integer,
+        Horseman = boolean,
         Rooms = RoomsList,
-        Shapes = {RoomShape, RoomShape}, -- optional, autogenerated from list if not specified.
-        Portrait2 = "", -- used for double trouble
-        Weight = 1,
-        Horseman = false -- in boss selection, if a horseman boss already exists in the boss room and there is a boss for the floor with the Horseman flag set, picks that boss.
+        Shapes = {RoomShapes}
     },
     ...
 }
 
-- CustomRoom (mostly internal class, but accessible)
--- Name
--- Filename
--- Layout
--- RoomGfx
--- ListIndex
--- IsCleared
--- Load(doEnemies, doGrids)
--- TypeOverride -- Not normally set, can be to change how Grid, Backdrop, and Music work.
+DoorInfo {
+    RequireCurrent = {RoomTypes},
+    RequireTarget = {RoomTypes},
+    RequireEither = {RoomTypes},
+    NotCurrent = {RoomTypes},
+    NotTarget = {RoomTypes},
+    NotEither = {RoomTypes}
+}
 
-- Basic Internal
--- Class(Type) -- returns an object that can be called with () to instantiate an object with metatable __index set to the original, then calling functions named init.
--- AddCallback(id, priority, fn, ...) -- higher priority = sooner
---- PRE_ROOM_SELECT(rooms) -- return room to force it to spawn and cancel other callbacks, doesn't have to be one of the rooms the api is choosing
---- PRE_ROOM_LOAD(layout, doEnemies, doGrids) -- return false to cancel other callbacks and prevent layout from spawning
---- PRE_ROOM_GRAPHICS_LOAD() -- return false to cancel other callbacks and prevent graphics from loading
---- POST_ROOM_LOAD()
---- PRE_ROOM_ENTER(reentered) -- called when entering room, before selection, load, gfx, etc. Return false to cancel all load. Good for custom special rooms that shouldn't act the same way as the floor.
---- POST_ROOM_ENTER(reentered) -- called when entering room, after selection, load, gfx
---- PRE_SPAWN_ENTRY(entry, isGrid) -- return false or a new entry to cancel / change
---- POST_SPAWN_ENTRY(spawned, isGrid, entry)
---- PRE_BOSS_SELECT(bosses) -- return boss to force it to spawn and cancel other callbacks, doesn't have to be one of the rooms the api is choosing
---- PRE_BOSS_ANIMATION_PLAY(name, portrait, bossname) -- return false or new name, portrait, and bossname to cancel / change
+Shading = shadingPrefix .. "_RoomShape" .. shadingName
 
-- Basic External
--- SetCustomStage(CustomStage) -- go to a custom stage
--- ChangeGrids(grids)
--- ChangeBackdrop(backdrop[s]) -- if multiple backdrops are passed in a table, select a random "variant". nfloors, walls, etc selected at random from that variant's lists.
--- ChangeRoomLayout(RoomsList)
--- GetCurrentRoom()
--- GetRoomAtListIndex(listindex)
+StageAPI Objects:
+
+- GridGfx()
+-- SetGrid(filename, GridEntityType, variant)
+-- SetRocks(filename)
+-- SetPits(filename, altpitsfilename) -- Alt Pits are used where water pits would be.
+-- SetBridges(filename)
+-- SetDecorations(filename)
+-- AddDoors(filename, DoorInfo)
+-- SetPayToPlayDoor(filename)
+
+- RoomGfx(Backdrop, GridGfx, shadingName, shadingPrefix)
+
+- RoomsList(name, roomfiles...) -- NAME IS NOT OPTIONAL. USED FOR SAVING / LOADING ROOMS.
+-- AddRooms(roomfiles...) -- automatically called on init.
+
+- LevelRoom(layoutName, roomsList, seed, shape, roomType, isExtraRoom, saveData, requireRoomType)
+-- RemovePersistentIndex(persistentIndex)
+-- RemovePersistentEntity(entity)
+-- Load(isExtraRoom)
+-- SaveGridInformation() -- Save functions only called for extra rooms, usually.
+-- SavePersistentEntities()
+-- Save()
+-- GetSaveData()
+-- LoadSaveData(saveData)
+
+- CustomStage(name, replaces, noSetReplaces) -- replaces defaults to catacombs one if noSetReplaces is not set.
+-- NAME IS NOT OPTIONAL. USED TO IDENTIFY STAGE AND FOR SAVING CURRENT STAGE.
+-- InheritInit(name, noSetAlias) -- automatically aliases the new stage to the old one, if noSetAlias is not set, meaning that IsStage calls on either will return true if either is active. STILL NEEDS A UNIQUE NAME.
+-- SetName(name)
+-- SetReplace(replaces)
+-- SetNextStage(CustomStage)
+-- SetRoomGfx(RoomGfx)
+-- SetRooms(RoomsList)
+-- SetMusic(musicID, RoomType)
+-- SetBossMusic(musicID, clearedMusicID)
+-- SetSpots(bossSpot, playerSpot)
+-- SetBosses(Bosses)
+-- GetPlayingMusic()
+-- OverrideRockAltEffects()
+-- SetTransitionIcon(icon)
+-- IsStage(noAlias)
+
+- CustomGrid(name, GridEntityType, baseVariant, anm2, animation, frame, variantFrames, offset, overrideGridSpawns, overrideGridSpawnAtState, forceSpawning)
+-- NAME IS NOT OPTIONAL. USED FOR IDENTIFICATION AFTER SAVING.
+-- Spawn(grindex, force, reSpawning, initialPersistData) -- only sets persistData if not already defined.
+
+- CustomDoor(name, anm2, openAnim, closeAnim, openedAnim, closedAnim, noAutoHandling, alwaysOpen)
+-- NAME IS NOT OPTIONAL. USED FOR IDENTIFICATION AFTER SAVING.
+
+- Overlay(anm2, velocity, offset, size)
+-- SetAlpha(alpha, noCancelFade)
+-- Fade(total, time, step) -- Fades from time to total incrementing by step. Use a step of -1 and a time equal to total to fade out.
+-- Render(noCenterCorrect)
 ]]
 
 Isaac.DebugString("[StageAPI] Loading Core Definitions")
@@ -976,7 +1110,7 @@ do -- RoomsList
 
     StageAPI.RoomChooseRNG = RNG()
     function StageAPI.ChooseRoomLayout(roomList, seed, shape, rtype, requireRoomType)
-        local callbacks = StageAPI.GetCallbacks("CHECK_VALID_ROOM")
+        local callbacks = StageAPI.GetCallbacks("POST_CHECK_VALID_ROOM")
         local validRooms = {}
 
         shape = shape or room:GetRoomShape()
@@ -1008,15 +1142,17 @@ do -- RoomsList
                     end
                 end
 
-                for _, callback in ipairs(callbacks) do
-                    if callback.Function(roomList) == false then
-                        isValid = false
-                        break
-                    end
-                end
-
                 if requireRoomType and layout.Type ~= rtype then
                     isValid = false
+                end
+
+                if isValid then
+                    for _, callback in ipairs(callbacks) do
+                        if callback.Function(roomList) == false then
+                            isValid = false
+                            break
+                        end
+                    end
                 end
 
                 if isValid then
@@ -1210,7 +1346,7 @@ do -- RoomsList
                 if #entityList > 0 then
                     local shouldSpawn = true
                     for _, callback in ipairs(listCallbacks) do
-                        local ret = callback.Function(entityList, index, doGrids)
+                        local ret = callback.Function(entityList, index, doGrids, doPersistentOnly, doAutoPersistent, avoidSpawning, persistentPositions)
                         if ret == false then
                             shouldSpawn = false
                             break
@@ -4208,6 +4344,17 @@ do -- Misc helpful functions
 end
 
 Isaac.DebugString("[StageAPI] Fully Loaded, loading dependent mods.")
+
+for objname, obj in pairs(StageAPI) do
+    if type(obj) == "table" then
+        Isaac.DebugString(objname)
+        for name, fn in pairs(obj) do
+            if type(fn) == "function" then
+                Isaac.DebugString(objname .. "." .. name)
+            end
+        end
+    end
+end
 
 StageAPI.Loaded = true
 if StageAPI.ToCall then
