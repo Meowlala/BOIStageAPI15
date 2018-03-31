@@ -1,8 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <metadata>
-	<name>stageapi</name>
-	<directory>stageapi</directory>
-	<description/>
-	<version>1.0</version>
-	<visibility/>
-</metadata>
+    <name>Custom Stage API</name>
+    <directory>stageapi15</directory>
+    <id>1348031964</id>
+    <description>It's an API for making custom stages. Not released, documentation is kinda sucky ATM.
 
+Built from scratch to replace Revelations' StageAPI. Incompatible with old Revelations, needed for new version.
+	</description>
+    <version>1.1</version>
+    <visibility>Private</visibility>
+    <tag id="Lua"/>
+    <tag id="Rooms"/>
+    <tag id="Floors"/>
+    <tag id="Tweaks"/>
+</metadata>
