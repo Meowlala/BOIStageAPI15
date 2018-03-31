@@ -3,11 +3,11 @@
     <name>Custom Stage API</name>
     <directory>stageapi15</directory>
     <id>1348031964</id>
-    <description>It's an API for making custom stages. Not released, documentation is kinda sucky ATM.
+    <description>It's an API for making custom stages.
 
 Built from scratch to replace Revelations' StageAPI. Incompatible with old Revelations, needed for new version.
 	</description>
-    <version>1.1</version>
+    <version>1.2</version>
     <visibility>Private</visibility>
     <tag id="Lua"/>
     <tag id="Rooms"/>
