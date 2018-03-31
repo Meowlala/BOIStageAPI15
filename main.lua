@@ -557,7 +557,7 @@ do -- Core Functions
         return Reverse_Iterator, t, #t+1
     end
 
-    function StageAPI.AddCallback(id, priority, fn, ...)
+    function StageAPI.AddCallback(modID, id, priority, fn, ...)
         if not StageAPI.Callbacks[id] then
             StageAPI.Callbacks[id] = {}
         end
@@ -574,9 +574,22 @@ do -- Core Functions
         table.insert(StageAPI.Callbacks[id], index, {
             Priority = priority,
             Function = fn,
+            ModID = modID,
             Params = {...}
         })
     end
+
+    function StageAPI.UnregisterCallbacks(modID)
+        for id, callbacks in pairs(StageAPI.Callbacks) do
+            for i, callback in StageAPI.ReverseIterate(callbacks) do
+                if callback.ModID == modID then
+                    table.remove(callbacks, i)
+                end
+            end
+        end
+    end
+
+    StageAPI.UnregisterCallbacks("StageAPI")
 
     function StageAPI.GetCallbacks(id)
         return StageAPI.Callbacks[id] or {}
@@ -2318,7 +2331,7 @@ do -- Extra Rooms
         })
     end
 
-    StageAPI.AddCallback("POST_SPAWN_CUSTOM_GRID", 0, function(index, force, respawning, grid, persistData, customGrid)
+    StageAPI.AddCallback("StageAPI", "POST_SPAWN_CUSTOM_GRID", 0, function(index, force, respawning, grid, persistData, customGrid)
         local doorData
         if persistData.DoorDataName and StageAPI.DoorTypes[persistData.DoorDataName] then
             doorData = StageAPI.DoorTypes[persistData.DoorDataName]
@@ -3853,7 +3866,7 @@ do -- Rock Alt Override
         StageAPI.SpawnOverriddenGrids = {}
     end)
 
-    StageAPI.AddCallback("POST_GRID_UPDATE", 0, function()
+    StageAPI.AddCallback("StageAPI", "POST_GRID_UPDATE", 0, function()
         if (StageAPI.CurrentStage and StageAPI.CurrentStage.OverrideRockAltEffects) or StageAPI.TemporaryOverrideRockAltEffects then
             for i = room:GetGridWidth(), room:GetGridSize() do
                 local grid = room:GetGridEntity(i)
