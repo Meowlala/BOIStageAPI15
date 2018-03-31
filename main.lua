@@ -274,6 +274,8 @@ GotoCustomStage(CustomStage, playTransition) -- also accepts VanillaStage
 SpawnCustomTrapdoor(position, goesTo<CustomStage>, anm2, size, alreadyEntering)
 
 AddBossData(id, BossData) -- ID is needed for save / resume.
+GetBossData(id)
+IsDoorSlotAllowed(slot) -- needed in custom rooms
 
 SetExtraRoom(name, room)
 GetExtraRoom(name)
