@@ -4,6 +4,13 @@ local mod = RegisterMod("StageAPI", 1)
 
 Basic Features:
 
+Commands:
+cstage or customstage <StageName> -- Warps to new stage.
+nstage or nextstage -- Warps to next stage.
+extraroom <ExtraRoomName> -- Warps to extra room
+extraroomexit -- Cleanly exits extra room to previous room.
+creseed -- Akin to reseed, but guaranteed to work for and only work for custom stages.
+
 Classes:
 StageAPI.Class("Name", AllowMultipleInit) -- Returns a Class object, actually is one itself.
 
@@ -115,10 +122,10 @@ EntityInfo {
     Data = EntityData,
     PersistentIndex = integer,
     Persistent = boolean,
-    PersistenceData = PersistentData
+    PersistenceData = PersistenceData
 }
 
-PersistentData {
+PersistenceData {
     Type = etype,
     Variant = variant,
     SubType = subtype,
@@ -128,6 +135,10 @@ PersistentData {
     UpdatePosition = updatePosition,
     StoreCheck = storeCheck
 }
+
+PersistenceFunction(EntityData)
+    return PersistenceData
+end
 
 Backdrop {
     NFloors = {filenames},
@@ -159,6 +170,26 @@ DoorInfo {
     NotEither = {RoomTypes}
 }
 
+VanillaStage {
+    NormalStage = true,
+    Stage = LevelStage,
+    StageType = StageType
+}
+
+CustomGridIndexData {
+    Name = CustomGridName,
+    PersistData = persistData,
+    Data = CustomGrid,
+    Index = gridIndex
+}
+
+GridContainer {
+    Grid = GridEntity,
+    Type = GridEntityType,
+    Desc = GridEntityDesc,
+    Index = gridIndex
+}
+
 Shading = shadingPrefix .. "_RoomShape" .. shadingName
 
 StageAPI Objects:
@@ -186,11 +217,13 @@ StageAPI Objects:
 -- Save()
 -- GetSaveData()
 -- LoadSaveData(saveData)
+-- SetTypeOverride()
 
 - CustomStage(name, replaces, noSetReplaces) -- replaces defaults to catacombs one if noSetReplaces is not set.
 -- NAME IS NOT OPTIONAL. USED TO IDENTIFY STAGE AND FOR SAVING CURRENT STAGE.
 -- InheritInit(name, noSetAlias) -- automatically aliases the new stage to the old one, if noSetAlias is not set, meaning that IsStage calls on either will return true if either is active. STILL NEEDS A UNIQUE NAME.
 -- SetName(name)
+-- SetDisplayName(name)
 -- SetReplace(replaces)
 -- SetNextStage(CustomStage)
 -- SetRoomGfx(RoomGfx)
@@ -215,6 +248,68 @@ StageAPI Objects:
 -- SetAlpha(alpha, noCancelFade)
 -- Fade(total, time, step) -- Fades from time to total incrementing by step. Use a step of -1 and a time equal to total to fade out.
 -- Render(noCenterCorrect)
+
+Various useful tools:
+Random(min, max, rng)
+WeightedRNG(table, rng, weightKey, preCalculatedWeight)
+GotoCustomStage(CustomStage, playTransition) -- also accepts VanillaStage
+SpawnCustomTrapdoor(position, goesTo<CustomStage>, anm2, size, alreadyEntering)
+
+SetExtraRoom(name, room)
+GetExtraRoom(name)
+InOrTransitioningToExtraRoom()
+TransitioningToExtraRoom()
+TransitionToExtraRoom(name, exitSlot)
+TransitionFromExtraRoom(toNormalRoomIndex, exitSlot)
+SpawnCustomDoor(slot, leadsToExtraRoomName, leadsToNormalRoomIndex, CustomDoorName, data(at persistData.Data), exitSlot)
+SetDoorOpen(open, door)
+
+GetCustomGridIndicesByName(name)
+GetCustomGridsByName(name) -- returns list of CustomGridIndexData
+GetCustomGrids() -- returns list of CustomGridIndexData
+IsCustomGrid(index, name) -- if name not specified just returns if there is a custom grid at index
+
+InOverridenStage() -- true if in new stage or in override stage
+InOverrideStage() -- true if in override stage
+InNewStage() -- true only if inoverridenstage and not inoverridestage.
+GetCurrentStage()
+GetCurrentStageDisplayName() -- used for streaks
+GetCurrentListIndex(noCache)
+
+GetCurrentRoomID() -- returns list index or extra room name
+SetCurrentRoom(LevelRoom)
+GetCurrentRoom()
+GetCurrentRoomType() -- returns TypeOverride, or RoomType, or room:GetType()
+GetRooms()
+
+AddEntityPersistenceData(PersistenceData)
+AddPersistenceCheck(PersistenceFunction)
+CheckPersistence(id, variant, subtype) -- returns PersistenceData
+SetRoomFromList(roomsList, roomType, requireRoomType, isExtraRoom, load, seed, shape, fromSaveData) -- full room generation package. Initializes it, sets it, loads it, and returns it.
+RemovePersistentEntity(entity) -- mapped directly to LevelRoom function of the same name
+
+ChangeRock(GridContainer)
+ChangeDecoration(GridContainer, filename)
+ChangePit(GridContainer, filename, bridgefilename, altfilename)
+CheckBridge(GridEntity, gridIndex, bridgefilename)
+ChangeDoor(GridContainer, DoorInfo, payToPlayFilename)
+ChangeGrid(GridContainer, filename)
+ChangeSingleGrid(GridEntity, GridGfx, gridIndex)
+ChangeGrids(GridGfx)
+ChangeBackdrop(Backdrop)
+ChangeShading(name, prefix)
+ChangeRoomGfx(RoomGfx)
+
+PlayTextStreak(text, extratext, extratextOffset, extratextScaleMulti) -- extra text usually used for item descriptions, not used in stageapi by default.
+
+IsIn(table, value, iterator) -- iterator defaults to ipairs
+GetPlayingAnimation(sprite, animationList)
+VectorToGrid(x, y, width)
+GridToVector(index, width)
+GetScreenCenterPosition()
+GetScreenBottomRight()
+Lerp(first, second, percent)
+ReverseIterate() -- in place of ipairs / pairs.
 ]]
 
 Isaac.DebugString("[StageAPI] Loading Core Definitions")
@@ -419,36 +514,6 @@ do -- Core Functions
     setmetatable(StageAPI.Class, {
         __call = StageAPI.ClassInit
     })
-
-    --[[
-    function StageAPI.Class(Type, AllowMultipleInit)
-        local newClass = {}
-        newClass.Type = Type
-        newClass.AllowMultipleInit = AllowMultipleInit
-        newClass.Initialized = false
-        setmetatable(newClass, {
-            __call = StageAPI.ClassInit --[[function(tbl, ...)
-                local inst = {}
-                setmetatable(inst, tbl)
-                tbl.__index = tbl
-
-                if AllowMultipleInit or not inst.Type then
-                    if inst.Init then
-                        inst:Init(...)
-                    end
-
-                    if inst.PostInit then
-                        inst:PostInit(...)
-                    end
-
-                    inst.Type = Type
-                end
-
-                return inst
-            end
-        })
-        return newClass
-    end]]
 
     StageAPI.Callbacks = {}
 
@@ -2888,6 +2953,10 @@ do -- Custom Stage
 
     end
 
+    function StageAPI.CustomStage:SetDisplayName(name)
+        self.DisplayName = name or self.DisplayName or self.Name
+    end
+
     function StageAPI.CustomStage:SetReplace(replaces)
         self.Replaces = replaces
     end
@@ -4344,17 +4413,6 @@ do -- Misc helpful functions
 end
 
 Isaac.DebugString("[StageAPI] Fully Loaded, loading dependent mods.")
-
-for objname, obj in pairs(StageAPI) do
-    if type(obj) == "table" then
-        Isaac.DebugString(objname)
-        for name, fn in pairs(obj) do
-            if type(fn) == "function" then
-                Isaac.DebugString(objname .. "." .. name)
-            end
-        end
-    end
-end
 
 StageAPI.Loaded = true
 if StageAPI.ToCall then
