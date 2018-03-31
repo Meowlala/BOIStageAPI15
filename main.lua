@@ -31,14 +31,16 @@ In that case, InheritInit will be called instead of Init and PostInit, unless Al
 Classes are used for a majority of StageAPI objects.
 
 Callbacks:
-StageAPI.AddCallback(id, priority, function, params...) -- Stores a function and its params in a table indexed by ID and sorted by priority, where low priority is at the start.
+StageAPI.AddCallback(modID, id, priority, function, params...) -- Stores a function and its params in a table indexed by ID and sorted by priority, where low priority is at the start.
 StageAPI.GetCallbacks(id) -- Gets a list of callbacks from the table by the ID, sorted by priority.
+StageAPI.UnregisterCallbacks(modID) -- Unregisters all mod callbacks, should be used when a mod loads, useful for luamod.
 
 Individual callbacks tables are arranged like so
 {
     Priority = integer,
     Function = function,
-    Params = {params...}
+    Params = {params...},
+    ModID = modID
 }
 
 StageAPI.CallCallbacks(id, breakOnFirstReturn, params...) -- Calls all callbacks with ID, passing in additional params. If breakOnFirstReturn is defined, breaks and returns the first non-nil return value.
