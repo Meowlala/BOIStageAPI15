@@ -147,17 +147,19 @@ Backdrop {
     Walls = {filenames}
 }
 
+BossData {
+    Name = string,
+    NameTwo = string,
+    Portrait = string,
+    PortraitTwo = string,
+    Weight = integer,
+    Horseman = boolean,
+    Rooms = RoomsList,
+    Shapes = {RoomShapes}
+}
+
 Bosses {
-    {
-        Name = string,
-        NameTwo = string,
-        Portrait = string,
-        PortraitTwo = string,
-        Weight = integer,
-        Horseman = boolean,
-        Rooms = RoomsList,
-        Shapes = {RoomShapes}
-    },
+    BossDataID,
     ...
 }
 
@@ -190,7 +192,23 @@ GridContainer {
     Index = gridIndex
 }
 
+StageOverrideStage {
+    OverrideStage = LevelStage.STAGE2_1,
+    OverrideStageType = StageType.STAGETYPE_WOTL,
+    ReplaceWith = CustomStage
+}
+
 Shading = shadingPrefix .. "_RoomShape" .. shadingName
+
+StageAPI Variables:
+
+StageOverride {
+    CatacombsOne = StageOverrideStage,
+    CatacombsTwo = StageOverrideStage
+}
+
+DefaultDoorSpawn = DoorInfo -- where default doors should spawn
+SecretDoorSpawn = DoorInfo -- where secret room doors should spawn
 
 StageAPI Objects:
 
@@ -219,12 +237,12 @@ StageAPI Objects:
 -- LoadSaveData(saveData)
 -- SetTypeOverride(override)
 
-- CustomStage(name, replaces, noSetReplaces) -- replaces defaults to catacombs one if noSetReplaces is not set.
+- CustomStage(name, StageOverrideStage, noSetReplaces) -- replaces defaults to catacombs one if noSetReplaces is not set.
 -- NAME IS NOT OPTIONAL. USED TO IDENTIFY STAGE AND FOR SAVING CURRENT STAGE.
 -- InheritInit(name, noSetAlias) -- automatically aliases the new stage to the old one, if noSetAlias is not set, meaning that IsStage calls on either will return true if either is active. STILL NEEDS A UNIQUE NAME.
 -- SetName(name)
 -- SetDisplayName(name)
--- SetReplace(replaces)
+-- SetReplace(StageOverrideStage)
 -- SetNextStage(CustomStage)
 -- SetRoomGfx(RoomGfx)
 -- SetRooms(RoomsList)
@@ -254,6 +272,8 @@ Random(min, max, rng)
 WeightedRNG(table, rng, weightKey, preCalculatedWeight)
 GotoCustomStage(CustomStage, playTransition) -- also accepts VanillaStage
 SpawnCustomTrapdoor(position, goesTo<CustomStage>, anm2, size, alreadyEntering)
+
+AddBossData(id, BossData) -- ID is needed for save / resume.
 
 SetExtraRoom(name, room)
 GetExtraRoom(name)
@@ -690,11 +710,13 @@ do -- Core Functions
 
     function StageAPI.RenderTextStreak()
         for index, streakPlaying in ipairs(Streaks) do
-            local sprite = StreakSprites[index]
-            sprite:Render(streakPlaying.RenderPos, zeroVector, zeroVector)
-            streakFont:DrawStringScaled(streakPlaying.Text, streakPlaying.PositionX, streakPlaying.RenderPos.Y - 9, streakPlaying.FontScale.X, 1, streakPlaying.Color, 0, true)
-            if streakPlaying.ExtraText then
-                streakSmallFont:DrawStringScaled(streakPlaying.ExtraText, streakPlaying.ExtraPositionX + streakPlaying.ExtraOffset.X, (streakPlaying.RenderPos.Y - 9) + streakPlaying.ExtraOffset.Y, streakPlaying.FontScale.X * streakPlaying.ExtraFontScale.X, 1 * streakPlaying.ExtraFontScale.Y, streakPlaying.Color, 0, true)
+            if streakPlaying.PositionX then
+                local sprite = StreakSprites[index]
+                sprite:Render(streakPlaying.RenderPos, zeroVector, zeroVector)
+                streakFont:DrawStringScaled(streakPlaying.Text, streakPlaying.PositionX, streakPlaying.RenderPos.Y - 9, streakPlaying.FontScale.X, 1, streakPlaying.Color, 0, true)
+                if streakPlaying.ExtraText then
+                    streakSmallFont:DrawStringScaled(streakPlaying.ExtraText, streakPlaying.ExtraPositionX + streakPlaying.ExtraOffset.X, (streakPlaying.RenderPos.Y - 9) + streakPlaying.ExtraOffset.Y, streakPlaying.FontScale.X * streakPlaying.ExtraFontScale.X, 1 * streakPlaying.ExtraFontScale.Y, streakPlaying.Color, 0, true)
+                end
             end
         end
     end
@@ -1935,6 +1957,19 @@ do -- RoomsList
         end
     end)
 
+    function StageAPI.IsDoorSlotAllowed(slot)
+        local currentRoom = StageAPI.GetCurrentRoom()
+        if currentRoom and currentRoom.Layout and currentRoom.Layout.Doors then
+            for _, door in ipairs(currentRoom.Layout.Doors) do
+                if door.Slot == slot and door.Exists then
+                    return true
+                end
+            end
+        else
+            return room:IsDoorSlotAllowed(slot)
+        end
+    end
+
     function StageAPI.SetRoomFromList(roomsList, roomType, requireRoomType, isExtraRoom, load, seed, shape, fromSaveData)
         local newRoom = StageAPI.LevelRoom(nil, roomsList, seed, shape, roomType, isExtraRoom, fromSaveData, requireRoomType)
         StageAPI.SetCurrentRoom(newRoom)
@@ -3014,7 +3049,8 @@ do -- Custom Stage
     end
 
     function StageAPI.CustomStage:SetBosses(bosses)
-        for _, boss in ipairs(bosses) do
+        for _, bossID in ipairs(bosses) do
+            local boss = StageAPI.GetBossData(bossID)
             if not boss.Shapes then
                 boss.Shapes = {}
                 for shape, rooms in pairs(boss.Rooms.ByShape) do
@@ -3376,6 +3412,16 @@ do -- Bosses
         end
     end)
 
+    StageAPI.Bosses = {}
+    function StageAPI.AddBossData(id, bossData)
+        StageAPI.Bosses[id] = bossData
+        return id
+    end
+
+    function StageAPI.GetBossData(id)
+        return StageAPI.Bosses[id]
+    end
+
     StageAPI.DummyBoss = {}
     function StageAPI.PlayBossAnimation(boss)
         local bSpot, pSpot = StageAPI.GetStageSpot()
@@ -3412,8 +3458,8 @@ do -- Bosses
 
     StageAPI.BossSelectRNG = RNG()
     function StageAPI.SelectBoss(bosses, allowHorseman, rng)
-        local boss = StageAPI.CallCallbacks("PRE_BOSS_SELECT", true, bosses, allowHorseman, rng)
-        if not boss then
+        local bossID = StageAPI.CallCallbacks("PRE_BOSS_SELECT", true, bosses, allowHorseman, rng)
+        if not bossID then
             local forceHorseman = false
             if allowHorseman then
                 for _, t in ipairs(horsemanTypes) do
@@ -3427,7 +3473,8 @@ do -- Bosses
             local totalValidWeight = 0
             local unencounteredBosses = {}
             local validBosses = {}
-            for _, potentialBoss in ipairs(bosses) do
+            for _, potentialBossID in ipairs(bosses) do
+                local potentialBoss = StageAPI.GetBossData(potentialBossID)
                 if StageAPI.IsIn(potentialBoss.Shapes, room:GetRoomShape()) then
                     local encountered = StageAPI.GetBossEncountered(potentialBoss.Name)
                     if not encountered and potentialBoss.NameTwo then
@@ -3437,11 +3484,11 @@ do -- Bosses
                     local weight = potentialBoss.Weight
                     if not encountered then
                         totalUnencounteredWeight = totalUnencounteredWeight + weight
-                        unencounteredBosses[#unencounteredBosses + 1] = {potentialBoss, weight}
+                        unencounteredBosses[#unencounteredBosses + 1] = {potentialBossID, weight}
                     end
 
                     totalValidWeight = totalValidWeight + weight
-                    validBosses[#validBosses + 1] = {potentialBoss, weight}
+                    validBosses[#validBosses + 1] = {potentialBossID, weight}
                 end
             end
 
@@ -3451,13 +3498,13 @@ do -- Bosses
             end
 
             if #unencounteredBosses > 0 then
-                boss = StageAPI.WeightedRNG(unencounteredBosses, rng, nil, totalUnencounteredWeight)
+                bossID = StageAPI.WeightedRNG(unencounteredBosses, rng, nil, totalUnencounteredWeight)
             elseif #validBosses > 0 then
-                boss = StageAPI.WeightedRNG(validBosses, rng, nil, totalValidWeight)
+                bossID = StageAPI.WeightedRNG(validBosses, rng, nil, totalValidWeight)
             end
         end
 
-        return boss
+        return bossID
     end
 end
 
@@ -4096,6 +4143,7 @@ do -- Callbacks
             end
         end
 
+        local boss
         if not StageAPI.InExtraRoom and StageAPI.InNewStage() then
             if not inStartingRoom and room:GetType() == RoomType.ROOM_DEFAULT and not currentRoom then
                 local newRoom = StageAPI.LevelRoom(nil, StageAPI.CurrentStage.Rooms)
@@ -4106,25 +4154,27 @@ do -- Callbacks
             end
 
             if room:GetType() == RoomType.ROOM_BOSS and StageAPI.CurrentStage.Bosses then
-                if not room:IsClear() then
-                    local boss = StageAPI.SelectBoss(StageAPI.CurrentStage.Bosses, StageAPI.CurrentStage.Bosses.HasHorseman)
+                if not currentRoom then
+                    local bossID = StageAPI.SelectBoss(StageAPI.CurrentStage.Bosses, StageAPI.CurrentStage.Bosses.HasHorseman)
+                    boss = StageAPI.GetBossData(bossID)
                     StageAPI.SetBossEncountered(boss.Name)
                     if boss.NameTwo then
                         StageAPI.SetBossEncountered(boss.NameTwo)
                     end
 
-                    if not currentRoom then
-                        local newRoom = StageAPI.LevelRoom(nil, boss.Rooms)
-                        newRoom.PersistentData.BossNameOne = boss.Name
-                        newRoom.PersistentData.BossNameTwo = boss.NameTwo
-                        StageAPI.SetCurrentRoom(newRoom)
-                        newRoom:Load()
+                    local newRoom = StageAPI.LevelRoom(nil, boss.Rooms)
+                    newRoom.PersistentData.BossID = bossID
+                    StageAPI.CallCallbacks("POST_BOSS_ROOM_INIT", false, newRoom, boss, bossID)
+                    StageAPI.SetCurrentRoom(newRoom)
+                    newRoom:Load()
 
-                        currentRoom = newRoom
-                        justGenerated = true
-                    end
+                    currentRoom = newRoom
+                    justGenerated = true
 
                     StageAPI.PlayBossAnimation(boss)
+                else
+                    local bossID = currentRoom.PersistentData.BossID
+                    boss = StageAPI.GetBossData(bossID)
                 end
             end
         end
@@ -4135,6 +4185,9 @@ do -- Callbacks
 
         if currentRoom and not StageAPI.InExtraRoom and not justGenerated then
             currentRoom:Load()
+            if not room:IsClear() and boss then
+                StageAPI.PlayBossAnimation(boss)
+            end
         end
 
         if not justGenerated then
@@ -4276,10 +4329,18 @@ do
             stage = stage.Name
         end
 
+        local encounteredBosses = {}
+        for boss, encountered in pairs(StageAPI.EncounteredBosses) do
+            if encountered then
+                encounteredBosses[#encounteredBosses + 1] = boss
+            end
+        end
+
         return StageAPI.json.encode({
             LevelInfo = levelSaveData,
             Stage = stage,
-            ExtraRoomName = StageAPI.CurrentExtraRoomName
+            ExtraRoomName = StageAPI.CurrentExtraRoomName,
+            EncounteredBosses = encounteredBosses
         })
     end
 
@@ -4287,6 +4348,7 @@ do
         local retLevelRooms = {}
         local retRoomGrids = {}
         local retCustomGrids = {}
+        local retEncounteredBosses = {}
         local decoded = StageAPI.json.decode(str)
 
         StageAPI.CurrentStage = nil
@@ -4294,6 +4356,14 @@ do
         StageAPI.CurrentExtraRoomName = decoded.ExtraRoomName
         if decoded.Stage then
             StageAPI.CurrentStage = StageAPI.CustomStages[decoded.Stage]
+        end
+
+        StageAPI.EncounteredBosses = {}
+
+        if decoded.EncounteredBosses then
+            for _, boss in ipairs(decoded.EncounteredBosses) do
+                StageAPI.EncounteredBosses[boss] = true
+            end
         end
 
         for strindex, roomSaveData in pairs(decoded.LevelInfo) do
