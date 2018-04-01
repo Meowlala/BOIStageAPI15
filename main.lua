@@ -2162,7 +2162,7 @@ do -- Custom Grid Entities
                     if not grid then
                         grindices[grindex] = nil
                     else
-                        local callbacks = StageAPI.GetCallbacks("CUSTOM_GRID_UPDATE")
+                        local callbacks = StageAPI.GetCallbacks("POST_CUSTOM_GRID_UPDATE")
                         for _, callback in ipairs(callbacks) do
                             if not callback.Params[1] or callback.Params[1] == name then
                                 callback.Function(grid, grindex, persistData, StageAPI.CustomGridTypes[name], name)
@@ -3834,7 +3834,7 @@ do -- Rock Alt Override
     end
 
     mod:AddCallback(ModCallbacks.MC_POST_NPC_INIT, function(_, npc)
-        if eff.Variant == StageAPI.E.DeleteMeNPC.V then
+        if npc.Variant == StageAPI.E.DeleteMeNPC.V then
             StageAPI.DeleteEntity(npc)
         end
     end, StageAPI.E.DeleteMeNPC.T)
