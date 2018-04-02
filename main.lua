@@ -1615,7 +1615,7 @@ do -- RoomsList
     StageAPI.GridSpawnRNG = RNG()
     function StageAPI.LoadGridsFromDataList(grids, gridInformation, entities)
         local grids_spawned = {}
-        StageAPI.GridSpawnRNG:SetSeed(REVEL.room:GetSpawnSeed(), 0)
+        StageAPI.GridSpawnRNG:SetSeed(room:GetSpawnSeed(), 0)
         local callbacks = StageAPI.GetCallbacks("PRE_SPAWN_GRID")
         for _, gridData in ipairs(grids) do
             local shouldSpawn = true
@@ -3210,6 +3210,14 @@ do -- Custom Stage
 
         return false
     end
+
+    function StageAPI.CustomStage:SetRequireRoomTypeNormal(rtype)
+        self.RequireRoomTypeNormal = rtype
+    end
+
+    function StageAPI.CustomStage:SetRequireRoomTypeBoss(rtype)
+        self.RequireRoomTypeBoss = rtype
+    end
 end
 
 Isaac.DebugString("[StageAPI] Loading Stage Override Definitions")
@@ -4233,7 +4241,7 @@ do -- Callbacks
         local boss
         if not StageAPI.InExtraRoom and StageAPI.InNewStage() then
             if not inStartingRoom and room:GetType() == RoomType.ROOM_DEFAULT and not currentRoom then
-                local newRoom = StageAPI.LevelRoom(nil, StageAPI.CurrentStage.Rooms)
+                local newRoom = StageAPI.LevelRoom(nil, StageAPI.CurrentStage.Rooms, nil, nil, nil, nil, nil, StageAPI.CurrentStage.RequireRoomTypeNormal)
                 StageAPI.SetCurrentRoom(newRoom)
                 newRoom:Load()
                 currentRoom = newRoom
@@ -4249,7 +4257,7 @@ do -- Callbacks
                         StageAPI.SetBossEncountered(boss.NameTwo)
                     end
 
-                    local newRoom = StageAPI.LevelRoom(nil, boss.Rooms)
+                    local newRoom = StageAPI.LevelRoom(nil, boss.Rooms, nil, nil, nil, nil, nil, StageAPI.CurrentStage.RequireRoomTypeBoss)
                     newRoom.PersistentData.BossID = bossID
                     StageAPI.CallCallbacks("POST_BOSS_ROOM_INIT", false, newRoom, boss, bossID)
                     StageAPI.SetCurrentRoom(newRoom)
