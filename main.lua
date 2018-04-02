@@ -51,6 +51,10 @@ Callback List:
 - POST_CHECK_VALID_ROOM(layout, roomList, seed, shape, rtype, requireRoomType)
 -- Return false to invalidate a room layout.
 
+- PRE_SELECT_GRIDENTITY_LIST(GridDataList, spawnIndex)
+-- Takes 1 return value. If false, cancels selecting the list. If GridData, selects it to spawn.
+-- With no value, picks at random.
+
 - PRE_SELECT_ENTITY_LIST(entityList, spawnIndex, addEntities)
 -- Takes 4 return values, AddEntities, EntityList, StillAddRandom, and NoBreak. If the first value is false, cancels selecting the list.
 -- AddEntities and EntityList are lists of EntityData tables, described below.
@@ -115,6 +119,14 @@ EntityData {
     Type = integer,
     Variant = integer,
     SubType = integer,
+    GridX = integer,
+    GridY = integer,
+    Index = integer
+}
+
+GridData {
+    Type = integer,
+    Variant = integer,
     GridX = integer,
     GridY = integer,
     Index = integer
@@ -445,7 +457,9 @@ local localToStageAPIMap = {
     zeroVector = "ZeroVector"
 }
 
-setmetatable(_ENV, {
+local localEnv = _ENV
+
+setmetatable(localEnv, {
     __index = function(tbl, k)
         if localToStageAPIMap[k] then
             return StageAPI[localToStageAPIMap[k]]
@@ -871,6 +885,7 @@ do -- RoomsList
     function StageAPI.SimplifyRoomLayout(layout)
         local outLayout = {
             GridEntities = {},
+            GridEntitiesByIndex = {},
             Entities = {},
             EntitiesByIndex = {},
             Doors = {},
@@ -891,13 +906,20 @@ do -- RoomsList
                 local index = StageAPI.VectorToGrid(object.GRIDX, object.GRIDY, outLayout.Width)
                 for _, entityData in ipairs(object) do
                     if StageAPI.CorrectedGridTypes[entityData.TYPE] then
-                        outLayout.GridEntities[#outLayout.GridEntities + 1] = {
+                        local gridData = {
                             Type = StageAPI.CorrectedGridTypes[entityData.TYPE],
                             Variant = entityData.VARIANT,
                             GridX = object.GRIDX,
                             GridY = object.GRIDY,
                             Index = index
                         }
+                        outLayout.GridEntities[#outLayout.GridEntities + 1] = gridData
+
+                        if not outLayout.GridEntitiesByIndex[gridData.Index] then
+                            outLayout.GridEntitiesByIndex[gridData.Index] = {}
+                        end
+
+                        outLayout.GridEntitiesByIndex[gridData.Index][#outLayout.GridEntitiesByIndex[gridData.Index] + 1] = gridData
                     elseif entityData.TYPE ~= 0 then
                         local entData = {
                             Type = entityData.TYPE,
@@ -1003,6 +1025,7 @@ do -- RoomsList
             Height = height,
             Weight = 1,
             GridEntities = {},
+            GridEntitiesByIndex = {},
             Entities = {},
             EntitiesByIndex = {},
             Doors = {},
@@ -1428,6 +1451,45 @@ do -- RoomsList
         return entitiesToSpawn, persistentIndex
     end
 
+    function StageAPI.SelectSpawnGrids(gridsByIndex, seed)
+        StageAPI.RoomLoadRNG:SetSeed(seed or room:GetSpawnSeed(), 1)
+        local spawnGrids = {}
+
+        local callbacks = StageAPI.GetCallbacks("PRE_SELECT_GRIDENTITY_LIST")
+        for index, grids in pairs(gridsByIndex) do
+            if #grids > 0 then
+                local spawnGrid, noSpawnGrid
+                for _, callback in ipairs(callbacks) do
+                    local ret = callback.Function(grids, index)
+                    if ret == false then
+                        noSpawnGrid = true
+                        break
+                    elseif type(ret) == "table" then
+                        if ret.Index then
+                            spawnGrid = ret
+                        else
+                            grids = ret
+                        end
+
+                        break
+                    end
+                end
+
+                if not noSpawnGrid then
+                    if not spawnGrid then
+                        spawnGrid = grids[StageAPI.Random(1, #grids, StageAPI.RoomLoadRNG)]
+                    end
+
+                    if spawnGrid then
+                        spawnGrids[#spawnGrids + 1] = spawnGrid
+                    end
+                end
+            end
+        end
+
+        return spawnGrids
+    end
+
     StageAPI.ActiveEntityPersistenceData = {}
     mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, function()
         StageAPI.ActiveEntityPersistenceData = {}
@@ -1702,13 +1764,13 @@ do -- RoomsList
             end
 
             self.Layout = layout
-            if self.Layout then
-                self.SpawnEntities, self.LastPersistentIndex = StageAPI.SelectSpawnEntities(self.Layout.EntitiesByIndex, seed)
-            else
+            if not self.Layout then
                 self.Layout = StageAPI.CreateEmptyRoomLayout(self.Shape)
-                self.SpawnEntities, self.LastPersistentIndex = StageAPI.SelectSpawnEntities(self.Layout.EntitiesByIndex, seed)
-                Isaac.DebugString("Room load failed!")
+                Isaac.DebugString("[StageAPI] No layout!")
             end
+
+            self.SpawnEntities, self.LastPersistentIndex = StageAPI.SelectSpawnEntities(self.Layout.EntitiesByIndex, seed)
+            self.SpawnGrids = StageAPI.SelectSpawnGrids(self.Layout.GridEntitiesByIndex, seed)
         end
 
         StageAPI.CallCallbacks("POST_ROOM_INIT", false, self, not not fromSaveData, fromSaveData)
@@ -1797,12 +1859,12 @@ do -- RoomsList
 
         StageAPI.ClearRoomLayout(false, self.FirstLoad or isExtraRoom, true, self.FirstLoad or isExtraRoom)
         if self.FirstLoad then
-            StageAPI.LoadRoomLayout(self.Layout.GridEntities, {self.SpawnEntities, self.ExtraSpawn}, true, true, false, true, self.GridInformation, self.AvoidSpawning, self.PersistentPositions)
+            StageAPI.LoadRoomLayout(self.SpawnGrids, {self.SpawnEntities, self.ExtraSpawn}, true, true, false, true, self.GridInformation, self.AvoidSpawning, self.PersistentPositions)
             self.WasClearAtStart = room:IsClear()
             self.IsClear = self.WasClearAtStart
             self.FirstLoad = false
         else
-            StageAPI.LoadRoomLayout(self.Layout.GridEntities, {self.SpawnEntities, self.ExtraSpawn}, isExtraRoom, true, self.IsClear, isExtraRoom, self.GridInformation, self.AvoidSpawning, self.PersistentPositions)
+            StageAPI.LoadRoomLayout(self.SpawnGrids, {self.SpawnEntities, self.ExtraSpawn}, isExtraRoom, true, self.IsClear, isExtraRoom, self.GridInformation, self.AvoidSpawning, self.PersistentPositions)
             self.IsClear = room:IsClear()
         end
 
@@ -1913,12 +1975,13 @@ do -- RoomsList
         end
 
         self.Layout = layout
-        if self.Layout then
-            self.SpawnEntities, self.LastPersistentIndex = StageAPI.SelectSpawnEntities(self.Layout.EntitiesByIndex, seed)
-        else
-            self.SpawnEntities, self.LastPersistentIndex = {}, 0
-            Isaac.DebugString("Room load failed!")
+        if not self.Layout then
+            self.Layout = StageAPI.CreateEmptyRoomLayout(self.Shape)
+            Isaac.DebugString("[StageAPI] No layout!")
         end
+
+        self.SpawnEntities, self.LastPersistentIndex = StageAPI.SelectSpawnEntities(self.Layout.EntitiesByIndex, self.Seed)
+        self.SpawnGrids = StageAPI.SelectSpawnGrids(self.Layout.GridEntitiesByIndex, self.Seed)
 
         self.LastPersistentIndex = saveData.LastPersistentIndex or self.LastPersistentIndex
         self.IsClear = saveData.IsClear
@@ -4130,10 +4193,6 @@ do -- Callbacks
                 player:RemoveCollectible(CollectibleType.COLLECTIBLE_D7)
                 player:AddCollectible(StageAPI.OverridenD7, player:GetActiveCharge(), false)
             end
-
-            if Input.IsButtonTriggered(Keyboard.KEY_F5, player.ControllerIndex) then
-                StageAPI.RoomNamesEnabled = not StageAPI.RoomNamesEnabled
-            end
         end
 
         if StageAPI.RoomNamesEnabled then
@@ -4296,6 +4355,8 @@ do -- Callbacks
             if StageAPI.CurrentStage then
                 StageAPI.GotoCustomStage(StageAPI.CurrentStage)
             end
+        elseif cmd == "roomnames" then
+            StageAPI.RoomNamesEnabled = not StageAPI.RoomNamesEnabled
         end
     end)
 end
