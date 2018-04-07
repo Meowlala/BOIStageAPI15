@@ -49,7 +49,7 @@ StageAPI callbacks all use string IDs, i.e, AddCallback("POST_CHECK_VALID_ROOM",
 
 Callback List:
 - POST_CHECK_VALID_ROOM(layout, roomList, seed, shape, rtype, requireRoomType)
--- Return false to invalidate a room layout.
+-- Return false to invalidate a room layout, return integer to specify new weight.
 
 - PRE_SELECT_GRIDENTITY_LIST(GridDataList, spawnIndex)
 -- Takes 1 return value. If false, cancels selecting the list. If GridData, selects it to spawn.
@@ -1274,16 +1274,6 @@ do -- RoomsList
                     if door.Slot then
                         if not door.Exists and room:GetDoor(door.Slot) then
                             isValid = false
-                            --[[
-                            if not room:IsDoorSlotAllowed(door.Slot) then
-                                isValid = false
-                                break
-                            end
-                        else
-                            if room:GetDoor(door.Slot) then
-                                isValid = false
-                                break
-                            end]]
                         end
                     end
                 end
@@ -1292,18 +1282,23 @@ do -- RoomsList
                     isValid = false
                 end
 
+                local weight = layout.Weight
                 if isValid then
                     for _, callback in ipairs(callbacks) do
-                        if callback.Function(roomList) == false then
+                        local ret = callback.Function(layout, roomList)
+                        if ret == false then
                             isValid = false
+                            break
+                        elseif type(ret) == "number" then
+                            weight = ret
                             break
                         end
                     end
                 end
 
                 if isValid then
-                    validRooms[#validRooms + 1] = layout
-                    totalWeight = totalWeight + layout.Weight
+                    validRooms[#validRooms + 1] = {layout, weight}
+                    totalWeight = totalWeight + weight
                 end
             end
         else
@@ -1312,7 +1307,7 @@ do -- RoomsList
 
         if #validRooms > 0 then
             StageAPI.RoomChooseRNG:SetSeed(seed, 0)
-            return StageAPI.WeightedRNG(validRooms, StageAPI.RoomChooseRNG, "Weight", totalWeight)
+            return StageAPI.WeightedRNG(validRooms, StageAPI.RoomChooseRNG, nil, totalWeight)
         else
             Isaac.DebugString("No rooms with correct shape and doors!")
         end
@@ -3051,8 +3046,13 @@ do -- Backdrop & RoomGfx
             StageAPI.ChangeBackdrop(roomgfx.Backdrops)
         end
 
-        StageAPI.ChangeGrids(roomgfx.Grids)
-        StageAPI.ChangeShading(roomgfx.Shading.Name, roomgfx.Shading.Prefix)
+        if roomgfx.Grids then
+            StageAPI.ChangeGrids(roomgfx.Grids)
+        end
+
+        if roomgfx.Shading and roomgfx.Shading.Name and roomgfx.Shading.Prefix then
+            StageAPI.ChangeShading(roomgfx.Shading.Name, roomgfx.Shading.Prefix)
+        end
     end
 
     StageAPI.RoomGfx = StageAPI.Class("RoomGfx")
