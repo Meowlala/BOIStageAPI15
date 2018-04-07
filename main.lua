@@ -518,7 +518,7 @@ do -- Core Functions
         end
 
         rng = rng or StageAPI.RandomRNG
-        local random_chance = StageAPI.RandomFloat(weight_value, nil, rng) --rng:RandomFloat() * weight_value --StageAPI.Random(1, weight_value, rng)
+        local random_chance = StageAPI.Random(1, weight_value, rng)
         for i, potentialObject in ipairs(args) do
             if key then
                 iterated_weight = iterated_weight + potentialObject[key]
@@ -3613,7 +3613,7 @@ do -- Bosses
 
             if not rng then
                 rng = StageAPI.BossSelectRNG
-                rng:SetSeed(room:GetSpawnSeed(), 0)
+                rng:SetSeed(room:GetSpawnSeed(), 3)
             end
 
             if #unencounteredBosses > 0 then
