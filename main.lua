@@ -3613,7 +3613,7 @@ do -- Bosses
 
             if not rng then
                 rng = StageAPI.BossSelectRNG
-                rng:SetSeed(room:GetSpawnSeed(), 3)
+                rng:SetSeed(room:GetSpawnSeed(), 0)
             end
 
             if #unencounteredBosses > 0 then
