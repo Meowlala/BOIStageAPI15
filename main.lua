@@ -3188,7 +3188,7 @@ do -- Custom Stage
             if self.BossMusic then
                 local music = self.BossMusic
                 local musicID
-                if room:IsClear() then
+                if room:GetAliveBossesCount() < 1 or room:IsClear() then
                     musicID = music.Cleared
                 else
                     musicID = music.Fight
