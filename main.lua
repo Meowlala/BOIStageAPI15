@@ -1285,7 +1285,7 @@ do -- RoomsList
                 local weight = layout.Weight
                 if isValid then
                     for _, callback in ipairs(callbacks) do
-                        local ret = callback.Function(layout, roomList)
+                        local ret = callback.Function(layout, roomList, seed, shape, rtype, requireRoomType)
                         if ret == false then
                             isValid = false
                             break
