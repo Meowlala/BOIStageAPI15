@@ -303,6 +303,7 @@ SetDoorOpen(open, door)
 GetCustomGridIndicesByName(name)
 GetCustomGridsByName(name) -- returns list of CustomGridIndexData
 GetCustomGrids() -- returns list of CustomGridIndexData
+GetCustomDoors(doorDataName) -- returns list of CustomGridIndexData
 IsCustomGrid(index, name) -- if name not specified just returns if there is a custom grid at index
 
 InOverridenStage() -- true if in new stage or in override stage
@@ -493,6 +494,16 @@ do -- Core Functions
         return rng:RandomFloat()
     end
 
+    function StageAPI.RandomFloat(min, max, rng)
+        rng = rng or StageAPI.RandomRNG
+        if min and max then
+            return (rng:RandomFloat() * (max - min)) + min
+        elseif min ~= nil then
+            return rng:RandomFloat() * min
+        end
+        return rng:RandomFloat()
+    end
+
     function StageAPI.WeightedRNG(args, rng, key, preCalculatedWeight) -- takes tables {{obj, weight}, {"pie", 3}, {555, 0}}
         local weight_value = preCalculatedWeight or 0
         local iterated_weight = 1
@@ -506,7 +517,8 @@ do -- Core Functions
             end
         end
 
-        local random_chance = StageAPI.Random(1, weight_value, rng)
+        rng = rng or StageAPI.RandomRNG
+        local random_chance = StageAPI.RandomFloat(weight_value, nil, rng) --rng:RandomFloat() * weight_value --StageAPI.Random(1, weight_value, rng)
         for i, potentialObject in ipairs(args) do
             if key then
                 iterated_weight = iterated_weight + potentialObject[key]
@@ -2396,6 +2408,18 @@ do -- Extra Rooms
         })
     end
 
+    function StageAPI.GetCustomDoors(doorDataName)
+        local ret = {}
+        local doors = StageAPI.GetCustomGridsByName("CustomDoor")
+        for _, door in ipairs(doors) do
+            if not doorDataName or door.DoorDataName == doorDataName then
+                ret[#ret + 1] = door
+            end
+        end
+
+        return ret
+    end
+
     StageAPI.AddCallback("StageAPI", "POST_SPAWN_CUSTOM_GRID", 0, function(index, force, respawning, grid, persistData, customGrid)
         local doorData
         if persistData.DoorDataName and StageAPI.DoorTypes[persistData.DoorDataName] then
@@ -3691,13 +3715,12 @@ do -- Transition
         StageAPI.TransitionAnimation:LoadGraphics()
         StageAPI.TransitionAnimation:Play("Scene", true)
 
-        StageAPI.Music:Play(transitionmusic, 1)
+        StageAPI.Music:Play(transitionmusic, 0)
+        StageAPI.Music:UpdateVolume()
 
         if queue ~= false then
             StageAPI.Music:Queue(queue)
         end
-
-        StageAPI.Music:UpdateVolume()
     end
 
     function StageAPI.PlayTransitionAnimation(stage)
@@ -4173,7 +4196,7 @@ do -- Callbacks
                     end
 
                     if id ~= musicID and not StageAPI.IsIn(StageAPI.NonOverrideMusic, id) then
-                        StageAPI.Music:Play(musicID, 1)
+                        StageAPI.Music:Play(musicID, 0)
                     end
 
                     StageAPI.Music:UpdateVolume()
