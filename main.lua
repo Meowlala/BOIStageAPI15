@@ -2407,7 +2407,7 @@ do -- Extra Rooms
         local ret = {}
         local doors = StageAPI.GetCustomGridsByName("CustomDoor")
         for _, door in ipairs(doors) do
-            if not doorDataName or door.DoorDataName == doorDataName then
+            if not doorDataName or door.PersistData.DoorDataName == doorDataName then
                 ret[#ret + 1] = door
             end
         end
