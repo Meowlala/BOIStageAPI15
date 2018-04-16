@@ -100,8 +100,8 @@ Callback List:
 - PRE_SELECT_BOSS(bosses, allowHorseman, rng)
 -- If a boss is returned, uses it instead.
 
-- POST_OVERRIDEN_GRID_BREAK(grindex, grid, justBrokenGridSpawns)
--- Called when an overriden grid reaches its break state and is considered broken. justBrokenGridSpawns contains all deleted spawns from the grid. Breaks on first non-nil return.
+- POST_OVERRIDDEN_GRID_BREAK(grindex, grid, justBrokenGridSpawns)
+-- Called when an overridden grid reaches its break state and is considered broken. justBrokenGridSpawns contains all deleted spawns from the grid. Breaks on first non-nil return.
 
 - POST_GRID_UPDATE()
 -- Calls when the number of grids changes or grids are reprocessed. This is when room grid graphics are changed.
@@ -306,9 +306,9 @@ GetCustomGrids() -- returns list of CustomGridIndexData
 GetCustomDoors(doorDataName) -- returns list of CustomGridIndexData
 IsCustomGrid(index, name) -- if name not specified just returns if there is a custom grid at index
 
-InOverridenStage() -- true if in new stage or in override stage
+InOverriddenStage() -- true if in new stage or in override stage
 InOverrideStage() -- true if in override stage
-InNewStage() -- true only if inoverridenstage and not inoverridestage.
+InNewStage() -- true only if inoverriddenstage and not inoverridestage.
 GetCurrentStage()
 GetCurrentStageDisplayName() -- used for streaks
 GetCurrentListIndex(noCache)
@@ -383,6 +383,7 @@ do -- Core Definitions
         Bridge = "StageAPIBridge",
         Shading = "StageAPIShading",
         GenericEffect = "StageAPIGenericEffect",
+        FloorEffect = "StageAPIFloorEffect",
         Trapdoor = "StageAPITrapdoor",
         Door = "StageAPIDoor",
         DeleteMeEffect = "StageAPIDeleteMeEffect",
@@ -782,11 +783,21 @@ do -- Core Functions
         }
     end
 
-    StageAPI.E.FloorEffect = {
+    StageAPI.E.FloorEffectCreep = {
         T = EntityType.ENTITY_EFFECT,
         V = EffectVariant.CREEP_RED,
         S = 12545
     }
+
+    function StageAPI.SpawnFloorEffect(pos, velocity, spawner, anm2, loadGraphics)
+        local eff = Isaac.Spawn(StageAPI.E.FloorEffectCreep.T, StageAPI.E.FloorEffectCreep.V, StageAPI.E.FloorEffectCreep.S, pos or zeroVector, velocity or zeroVector, spawner)
+        eff.Variant = StageAPI.E.FloorEffect.V
+        if anm2 then
+            eff:GetSprite():Load(anm2, loadGraphics)
+        end
+
+        return eff
+    end
 end
 
 Isaac.DebugString("[StageAPI] Loading Overlay System")
@@ -1736,6 +1747,7 @@ do -- RoomsList
 
     StageAPI.LevelRoom = StageAPI.Class("LevelRoom")
     function StageAPI.LevelRoom:Init(layoutName, roomsList, seed, shape, roomType, isExtraRoom, fromSaveData, requireRoomType)
+        StageAPI.CurrentlyInitializing = self
         if fromSaveData then
             self:LoadSaveData(fromSaveData)
         else
@@ -1743,6 +1755,7 @@ do -- RoomsList
             shape = shape or room:GetRoomShape()
             seed = seed or room:GetSpawnSeed()
 
+            self.Data = {}
             self.PersistentData = {}
 
             self.Shape = shape
@@ -1781,6 +1794,7 @@ do -- RoomsList
         end
 
         StageAPI.CallCallbacks("POST_ROOM_INIT", false, self, not not fromSaveData, fromSaveData)
+        StageAPI.CurrentlyInitializing = nil
     end
 
     function StageAPI.LevelRoom:SaveGridInformation()
@@ -1951,6 +1965,7 @@ do -- RoomsList
     end
 
     function StageAPI.LevelRoom:LoadSaveData(saveData)
+        self.Data = {}
         self.PersistentData = saveData.PersistentData or {}
         self.AvoidSpawning = {}
         self.PersistentPositions = {}
@@ -3762,7 +3777,7 @@ do -- Transition
     function StageAPI.SpawnCustomTrapdoor(position, goesTo, anm2, size, alreadyEntering)
         anm2 = anm2 or "gfx/grid/door_11_trapdoor.anm2"
         size = size or 24
-        local trapdoor = Isaac.Spawn(StageAPI.E.FloorEffect.T, StageAPI.E.FloorEffect.V, 0, position, zeroVector, nil)
+        local trapdoor = Isaac.Spawn(StageAPI.E.FloorEffectCreep.T, StageAPI.E.FloorEffectCreep.V, StageAPI.E.FloorEffectCreep.S, position, zeroVector, nil)
         trapdoor.Variant = StageAPI.E.Trapdoor.V
         trapdoor.SubType = StageAPI.E.Trapdoor.S
         trapdoor.Size = size
@@ -4053,7 +4068,7 @@ do -- Callbacks
 
     mod:AddCallback(ModCallbacks.MC_PRE_USE_ITEM, StageAPI.ReprocessRoomGrids, CollectibleType.COLLECTIBLE_D12)
 
-    StageAPI.OverridenD7 = Isaac.GetItemIdByName("D7 ")
+    StageAPI.OverriddenD7 = Isaac.GetItemIdByName("D7 ")
     StageAPI.JustUsedD7 = nil
 
     function StageAPI.UseD7()
@@ -4067,7 +4082,7 @@ do -- Callbacks
         return true
     end
 
-    mod:AddCallback(ModCallbacks.MC_USE_ITEM, StageAPI.UseD7, StageAPI.OverridenD7)
+    mod:AddCallback(ModCallbacks.MC_USE_ITEM, StageAPI.UseD7, StageAPI.OverriddenD7)
 
     mod:AddCallback(ModCallbacks.MC_PRE_USE_ITEM, function()
         if StageAPI.InNewStage() then
@@ -4084,7 +4099,7 @@ do -- Callbacks
 
     mod:AddCallback(ModCallbacks.MC_PRE_ENTITY_SPAWN, function(_, t, v, s, po, ve, sp, se)
         if t == EntityType.ENTITY_PICKUP and v == PickupVariant.PICKUP_COLLECTIBLE and s == CollectibleType.COLLECTIBLE_D7 then
-            return {t, v, StageAPI.OverridenD7, se}
+            return {t, v, StageAPI.OverriddenD7, se}
         end
     end)
 
@@ -4222,7 +4237,7 @@ do -- Callbacks
         for _, player in ipairs(players) do
             if player:HasCollectible(CollectibleType.COLLECTIBLE_D7) then
                 player:RemoveCollectible(CollectibleType.COLLECTIBLE_D7)
-                player:AddCollectible(StageAPI.OverridenD7, player:GetActiveCharge(), false)
+                player:AddCollectible(StageAPI.OverriddenD7, player:GetActiveCharge(), false)
             end
         end
 

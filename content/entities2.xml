@@ -11,7 +11,10 @@
     <entity anm2path="stageapi/none.anm2" id="1000" name="StageAPIGenericEffect" variant="12544" collisionRadius="0" numGridCollisionPoints="0">
         <gibs amount="0" blood="0" bone="0" eye="0" gut="0" large="0" />
     </entity>
-    <entity anm2path="stageapi/none.anm2" id="1000" name="StageAPIFloorEffect" variant="22" subtype="12545" collisionRadius="0" numGridCollisionPoints="0">
+    <entity anm2path="stageapi/none.anm2" id="1000" name="StageAPIFloorEffectCreep" variant="22" subtype="12545" collisionRadius="0" numGridCollisionPoints="0">
+        <gibs amount="0" blood="0" bone="0" eye="0" gut="0" large="0" />
+    </entity>
+    <entity anm2path="stageapi/none.anm2" id="1000" name="StageAPIFloorEffect" variant="12545" collisionRadius="0" numGridCollisionPoints="0">
         <gibs amount="0" blood="0" bone="0" eye="0" gut="0" large="0" />
     </entity>
     <entity anm2path="stageapi/none.anm2" id="1000" name="StageAPITrapdoor" variant="12546" collisionRadius="0" numGridCollisionPoints="0">
