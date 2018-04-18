@@ -66,7 +66,7 @@ Callback List:
 -- Every entity in the final entity list is spawned.
 -- Note that this entity list contains EntityInfo tables rather than EntityData, which contain persistent room-specific data. Both detailed below.
 
-- PRE_SPAWN_ENTITY(entityInfo, entityList, spawnIndex, doGrids, doPersistentOnly, doAutoPersistent, avoidSpawning, persistentPositions)
+- PRE_SPAWN_ENTITY(entityInfo, entityList, index, doGrids, doPersistentOnly, doAutoPersistent, avoidSpawning, persistentPositions, shouldSpawnEntity)
 -- Takes 1 return value. If false, cancels spawning the entity info. If a table, uses it as the entity info. Any return value breaks out of future callbacks.
 
 - PRE_SPAWN_GRID(gridData, gridInformation, entities, gridSpawnRNG)
@@ -330,6 +330,7 @@ ChangeDecoration(GridContainer, filename)
 ChangePit(GridContainer, filename, bridgefilename, altfilename)
 CheckBridge(GridEntity, gridIndex, bridgefilename)
 ChangeDoor(GridContainer, DoorInfo, payToPlayFilename)
+DoesDoorMatch(GridEntityDoor, DoorSpawn)
 ChangeGrid(GridContainer, filename)
 ChangeSingleGrid(GridEntity, GridGfx, gridIndex)
 ChangeGrids(GridGfx)
@@ -1550,21 +1551,6 @@ do -- RoomsList
                     if shouldSpawn and #entityList > 0 then
                         for _, entityInfo in ipairs(entityList) do
                             local shouldSpawnEntity = true
-                            for _, callback in ipairs(entCallbacks) do
-                                if not callback.Params[1] or (entityInfo.Data.Type and callback.Params[1] == entityInfo.Data.Type)
-                                and not callback.Params[2] or (entityInfo.Data.Variant and callback.Params[2] == entityInfo.Data.Variant)
-                                and not callback.Params[3] or (entityInfo.Data.SubType and callback.Params[3] == entityInfo.Data.SubType) then
-                                    local ret = callback.Function(entityInfo, entityList, index, doGrids, doPersistentOnly, doAutoPersistent, avoidSpawning, persistentPositions)
-                                    if ret == false then
-                                        shouldSpawnEntity = false
-                                        break
-                                    elseif ret and type(ret) == "table" then
-                                        entityInfo = ret
-                                        break
-                                    end
-                                end
-                            end
-
                             if shouldSpawnEntity and avoidSpawning and avoidSpawning[entityInfo.PersistentIndex] then
                                 shouldSpawnEntity = false
                             end
@@ -1577,15 +1563,30 @@ do -- RoomsList
                                 shouldSpawnEntity = false
                             end
 
+                            if entityInfo.PersistentIndex and persistentPositions and persistentPositions[entityInfo.PersistentIndex] then
+                                entityInfo.Position = Vector(persistentPositions[entityInfo.PersistentIndex].X, persistentPositions[entityInfo.PersistentIndex].Y)
+                            end
+
+                            if not entityInfo.Position then
+                                entityInfo.Position = room:GetGridPosition(index)
+                            end
+
+                            for _, callback in ipairs(entCallbacks) do
+                                if not callback.Params[1] or (entityInfo.Data.Type and callback.Params[1] == entityInfo.Data.Type)
+                                and not callback.Params[2] or (entityInfo.Data.Variant and callback.Params[2] == entityInfo.Data.Variant)
+                                and not callback.Params[3] or (entityInfo.Data.SubType and callback.Params[3] == entityInfo.Data.SubType) then
+                                    local ret = callback.Function(entityInfo, entityList, index, doGrids, doPersistentOnly, doAutoPersistent, avoidSpawning, persistentPositions, shouldSpawnEntity)
+                                    if ret == false or ret == true then
+                                        shouldSpawnEntity = ret
+                                        break
+                                    elseif ret and type(ret) == "table" then
+                                        entityInfo = ret
+                                        break
+                                    end
+                                end
+                            end
+
                             if shouldSpawnEntity then
-                                if entityInfo.PersistentIndex and persistentPositions and persistentPositions[entityInfo.PersistentIndex] then
-                                    entityInfo.Position = Vector(persistentPositions[entityInfo.PersistentIndex].X, persistentPositions[entityInfo.PersistentIndex].Y)
-                                end
-
-                                if not entityInfo.Position then
-                                    entityInfo.Position = room:GetGridPosition(index)
-                                end
-
                                 local entityData = entityInfo.Data
                                 if doGrids or (entityData.Type > 9 and entityData.Type ~= EntityType.ENTITY_FIREPLACE) then
                                     local ent = Isaac.Spawn(
@@ -1604,6 +1605,8 @@ do -- RoomsList
                                     if ent:CanShutDoors() then
                                         StageAPI.Room:SetClear(false)
                                     end
+
+                                    StageAPI.CallCallbacks("POST_SPAWN_ENTITY", false, ent, entityInfo, entityList, index, doGrids, doPersistentOnly, doAutoPersistent, avoidSpawning, persistentPositions, shouldSpawnEntity)
 
                                     ents_spawned[#ents_spawned + 1] = ent
                                 end
@@ -2758,6 +2761,91 @@ do -- GridGfx
         "ArcadeSign"
     }
 
+    function StageAPI.DoesDoorMatch(door, doorSpawn, current, target)
+        current = current or door.CurrentRoomType
+        target = target or door.TargetRoomType
+        local valid = true
+        if doorSpawn.RequireCurrent then
+            local has = false
+            for _, roomType in ipairs(doorSpawn.RequireCurrent) do
+                if current == roomType then
+                    has = true
+                end
+            end
+
+            if not has then
+                valid = false
+            end
+        end
+
+        if doorSpawn.RequireTarget then
+            local has = false
+            for _, roomType in ipairs(doorSpawn.RequireTarget) do
+                if target == roomType then
+                    has = true
+                end
+            end
+
+            if not has then
+                valid = false
+            end
+        end
+
+        if doorSpawn.RequireEither then
+            local has = false
+            for _, roomType in ipairs(doorSpawn.RequireEither) do
+                if current == roomType or target == roomType then
+                    has = true
+                end
+            end
+
+            if not has then
+                valid = false
+            end
+        end
+
+        if doorSpawn.NotCurrent then
+            local has = false
+            for _, roomType in ipairs(doorSpawn.NotCurrent) do
+                if current == roomType then
+                    has = true
+                end
+            end
+
+            if has then
+                valid = false
+            end
+        end
+
+        if doorSpawn.NotTarget then
+            local has = false
+            for _, roomType in ipairs(doorSpawn.NotTarget) do
+                if target == roomType then
+                    has = true
+                end
+            end
+
+            if has then
+                valid = false
+            end
+        end
+
+        if doorSpawn.NotEither then
+            local has = false
+            for _, roomType in ipairs(doorSpawn.NotEither) do
+                if current == roomType or target == roomType then
+                    has = true
+                end
+            end
+
+            if has then
+                valid = false
+            end
+        end
+
+        return valid
+    end
+
     StageAPI.DoorSprite = Sprite()
     function StageAPI.ChangeDoor(door, doors, payToPlay)
         local grid = door.Grid:ToDoor()
@@ -2781,86 +2869,7 @@ do -- GridGfx
         end
 
         for _, doorOption in ipairs(doors) do
-            local valid = true
-            if doorOption.RequireCurrent then
-                local has = false
-                for _, roomType in ipairs(doorOption.RequireCurrent) do
-                    if current == roomType then
-                        has = true
-                    end
-                end
-
-                if not has then
-                    valid = false
-                end
-            end
-
-            if doorOption.RequireTarget then
-                local has = false
-                for _, roomType in ipairs(doorOption.RequireTarget) do
-                    if target == roomType then
-                        has = true
-                    end
-                end
-
-                if not has then
-                    valid = false
-                end
-            end
-
-            if doorOption.RequireEither then
-                local has = false
-                for _, roomType in ipairs(doorOption.RequireEither) do
-                    if current == roomType or target == roomType then
-                        has = true
-                    end
-                end
-
-                if not has then
-                    valid = false
-                end
-            end
-
-            if doorOption.NotCurrent then
-                local has = false
-                for _, roomType in ipairs(doorOption.NotCurrent) do
-                    if current == roomType then
-                        has = true
-                    end
-                end
-
-                if has then
-                    valid = false
-                end
-            end
-
-            if doorOption.NotTarget then
-                local has = false
-                for _, roomType in ipairs(doorOption.NotTarget) do
-                    if target == roomType then
-                        has = true
-                    end
-                end
-
-                if has then
-                    valid = false
-                end
-            end
-
-            if doorOption.NotEither then
-                local has = false
-                for _, roomType in ipairs(doorOption.NotEither) do
-                    if current == roomType or target == roomType then
-                        has = true
-                    end
-                end
-
-                if has then
-                    valid = false
-                end
-            end
-
-            if valid then
+            if StageAPI.DoesDoorMatch(grid, doorOption, current, target) then
                 local sprite = grid.Sprite
                 for i = 0, 5 do
                     sprite:ReplaceSpritesheet(i, doorOption.File)
@@ -3065,7 +3074,7 @@ do -- Backdrop & RoomGfx
             StageAPI.ChangeGrids(roomgfx.Grids)
         end
 
-        if roomgfx.Shading and roomgfx.Shading.Name and roomgfx.Shading.Prefix then
+        if roomgfx.Shading and roomgfx.Shading.Name then
             StageAPI.ChangeShading(roomgfx.Shading.Name, roomgfx.Shading.Prefix)
         end
     end
