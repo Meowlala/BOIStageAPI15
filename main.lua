@@ -4260,6 +4260,31 @@ do -- Callbacks
         end
     end)
 
+    function StageAPI.SetCurrentBossRoom(bossID, checkEncountered, bosses, hasHorseman, requireRoomTypeBoss)
+        if not bossID then
+            bossID = StageAPI.SelectBoss(bosses, hasHorseman)
+        elseif checkEncountered then
+            if StageAPI.GetBossEncountered(bossID) then
+                return
+            end
+        end
+
+        local boss = StageAPI.GetBossData(bossID)
+        StageAPI.SetBossEncountered(boss.Name)
+        if boss.NameTwo then
+            StageAPI.SetBossEncountered(boss.NameTwo)
+        end
+
+        local newRoom = StageAPI.LevelRoom(nil, boss.Rooms, nil, nil, nil, nil, nil, requireRoomTypeBoss)
+        newRoom.PersistentData.BossID = bossID
+        StageAPI.CallCallbacks("POST_BOSS_ROOM_INIT", false, newRoom, boss, bossID)
+        StageAPI.SetCurrentRoom(newRoom)
+        newRoom:Load()
+
+        StageAPI.PlayBossAnimation(boss)
+        return newRoom, boss
+    end
+
     mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, function()
         local isNewStage, override = StageAPI.InOverriddenStage()
         local currentListIndex = StageAPI.GetCurrentRoomID()
@@ -4295,30 +4320,17 @@ do -- Callbacks
                 justGenerated = true
             end
 
-            if room:GetType() == RoomType.ROOM_BOSS and StageAPI.CurrentStage.Bosses then
-                if not currentRoom then
-                    local bossID = StageAPI.SelectBoss(StageAPI.CurrentStage.Bosses, StageAPI.CurrentStage.Bosses.HasHorseman)
-                    boss = StageAPI.GetBossData(bossID)
-                    StageAPI.SetBossEncountered(boss.Name)
-                    if boss.NameTwo then
-                        StageAPI.SetBossEncountered(boss.NameTwo)
-                    end
+            if not currentRoom and StageAPI.CurrentStage.Bosses and room:GetType() == RoomType.ROOM_BOSS then
+                local newRoom
+                newRoom, boss = StageAPI.SetCurrentBossRoom(nil, true, StageAPI.CurrentStage.Bosses, StageAPI.CurrentStage.Bosses.HasHorseman, StageAPI.CurrentStage.RequireRoomTypeBoss)
 
-                    local newRoom = StageAPI.LevelRoom(nil, boss.Rooms, nil, nil, nil, nil, nil, StageAPI.CurrentStage.RequireRoomTypeBoss)
-                    newRoom.PersistentData.BossID = bossID
-                    StageAPI.CallCallbacks("POST_BOSS_ROOM_INIT", false, newRoom, boss, bossID)
-                    StageAPI.SetCurrentRoom(newRoom)
-                    newRoom:Load()
-
-                    currentRoom = newRoom
-                    justGenerated = true
-
-                    StageAPI.PlayBossAnimation(boss)
-                else
-                    local bossID = currentRoom.PersistentData.BossID
-                    boss = StageAPI.GetBossData(bossID)
-                end
+                currentRoom = newRoom
+                justGenerated = true
             end
+        end
+
+        if not boss and currentRoom and currentRoom.PersistentData.BossID then
+            boss = StageAPI.GetBossData(currentRoom.PersistentData.BossID)
         end
 
         if StageAPI.RoomGrids[currentListIndex] and not justGenerated then
