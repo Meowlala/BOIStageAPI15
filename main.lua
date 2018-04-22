@@ -3861,6 +3861,7 @@ Isaac.DebugString("[StageAPI] Loading Rock Alt Breaking Override")
 do -- Rock Alt Override
     StageAPI.SpawnOverriddenGrids = {}
     StageAPI.JustBrokenGridSpawns = {}
+    StageAPI.RecentFarts = {}
     mod:AddCallback(ModCallbacks.MC_PRE_ENTITY_SPAWN, function(_, id, variant, subtype, position, velocity, spawner, seed)
         local lindex = StageAPI.GetCurrentRoomID()
         local grindex = room:GetGridIndex(position)
@@ -3879,6 +3880,10 @@ do -- Rock Alt Override
                 or id == EntityType.ENTITY_PROJECTILE
                 or id == EntityType.ENTITY_HOST
                 or id == EntityType.ENTITY_MUSHROOM then
+                    if id == EntityType.ENTITY_EFFECT and variant == EffectVariant.FART then
+                        StageAPI.RecentFarts[grindex] = 2
+                    end
+
                     if not StageAPI.JustBrokenGridSpawns[grindex] then
                         StageAPI.JustBrokenGridSpawns[grindex] = {}
                     end
@@ -3928,16 +3933,60 @@ do -- Rock Alt Override
     end)
 
     mod:AddCallback(ModCallbacks.MC_ENTITY_TAKE_DMG, function(_, e, amount, flag, source)
-        if flag == 0 and source and source.Type == 0 then
-            for grindex, justBrokenGrid in pairs(StageAPI.JustBrokenGridSpawns) do
-                for _, gridSpawn in ipairs(justBrokenGrid) do
-                    if gridSpawn.Type == EntityType.ENTITY_EFFECT and gridSpawn.Variant == EffectVariant.FART and e.Position:Distance(gridSpawn.Position) < 128 + e.Size then
-                        return false
-                    end
+        if flag == 0 and source and source.Type == 0 and not e:GetData().TrueFart then
+            e:GetData().Farted = {amount, source}
+            return false
+        end
+    end)
+
+    mod:AddCallback(ModCallbacks.MC_POST_PLAYER_RENDER, function(_, npc)
+        local data = npc:GetData()
+        if data.Farted then
+            local stoppedFart
+            for fart, timer in pairs(StageAPI.RecentFarts) do
+                if REVEL.room:GetGridPosition(fart):Distance(npc.Position) < 150 + npc.Size then
+                    stoppedFart = true
+                    break
                 end
             end
+
+            if not stoppedFart then
+                data.TrueFart = true
+                npc:TakeDamage(data.Farted[1], 0, EntityRef(npc), 0)
+                data.TrueFart = nil
+            end
+
+            data.Farted = nil
         end
-    end, EntityType.ENTITY_PLAYER)
+    end)
+
+    mod:AddCallback(ModCallbacks.MC_POST_NPC_RENDER, function(_, npc)
+        local data = npc:GetData()
+        if data.Farted then
+            local stoppedFart
+            for fart, timer in pairs(StageAPI.RecentFarts) do
+                if REVEL.room:GetGridPosition(fart):Distance(npc.Position) < 150 + npc.Size then
+                    stoppedFart = true
+                    break
+                end
+            end
+
+            if not stoppedFart then
+                data.TrueFart = true
+                npc:TakeDamage(data.Farted[1], 0, EntityRef(npc), 0)
+                data.TrueFart = nil
+            end
+
+            data.Farted = nil
+        end
+
+        for fart, timer in pairs(StageAPI.RecentFarts) do
+            if npc:HasEntityFlags(EntityFlag.FLAG_POISON) and REVEL.room:GetGridPosition(fart):Distance(npc.Position) < 150 + npc.Size then
+                npc:RemoveStatusEffects()
+                break
+            end
+        end
+    end)
 
     function StageAPI.DeleteEntity(entA, entB)
         local ent
@@ -3961,6 +4010,13 @@ do -- Rock Alt Override
     mod:AddCallback(ModCallbacks.MC_POST_PICKUP_INIT, StageAPI.DeleteEntity, StageAPI.E.DeleteMePickup.V)
 
     mod:AddCallback(ModCallbacks.MC_POST_UPDATE, function()
+        for fart, timer in pairs(StageAPI.RecentFarts) do
+            StageAPI.RecentFarts[fart] = timer - 1
+            if timer <= 1 then
+                StageAPI.RecentFarts[fart] = nil
+            end
+        end
+
         for grindex, exists in pairs(StageAPI.SpawnOverriddenGrids) do
             local grid = room:GetGridEntity(grindex)
             local stateCheck = 2
@@ -3983,7 +4039,9 @@ do -- Rock Alt Override
 
     mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, function()
         StageAPI.TemporaryOverrideRockAltEffects = nil
+        StageAPI.RecentFarts = {}
         StageAPI.SpawnOverriddenGrids = {}
+        StageAPI.JustBrokenGridSpawns = {}
     end)
 
     StageAPI.AddCallback("StageAPI", "POST_GRID_UPDATE", 0, function()
