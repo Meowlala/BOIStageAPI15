@@ -241,6 +241,7 @@ StageAPI Objects:
 -- AddRooms(roomfiles...) -- automatically called on init.
 
 - LevelRoom(layoutName, roomsList, seed, shape, roomType, isExtraRoom, saveData, requireRoomType)
+-- PostGetLayout(seed) -- second part of init that is called both when loaded from save and normally, after most other things are initialized. gets spawn ents and grids
 -- RemovePersistentIndex(persistentIndex)
 -- RemovePersistentEntity(entity)
 -- Load(isExtraRoom)
