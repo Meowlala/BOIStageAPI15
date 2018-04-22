@@ -1233,7 +1233,7 @@ do -- RoomsList
         return retBossData
     end
 
-    function StageAPI.ClearRoomLayout(keepDecoration, doGrids, doEnts, doPersistentEnts)
+    function StageAPI.ClearRoomLayout(keepDecoration, doGrids, doEnts, doPersistentEnts, onlyRemoveTheseDecorations)
         if doEnts or doPersistentEnts then
             for _, ent in ipairs(Isaac.GetRoomEntities()) do
                 local etype = ent.Type
@@ -1254,7 +1254,7 @@ do -- RoomsList
                 local grid = room:GetGridEntity(i)
                 if grid then
                     local gtype = grid.Desc.Type
-                    if gtype ~= GridEntityType.GRID_WALL and gtype ~= GridEntityType.GRID_DOOR then
+                    if gtype ~= GridEntityType.GRID_WALL and gtype ~= GridEntityType.GRID_DOOR and (not onlyRemoveTheseDecorations or gtype ~= GridEntityType.GRID_DECORATION or onlyRemoveTheseDecorations[i]) then
                         StageAPI.Room:RemoveGridEntity(i, 0, keepDecoration)
                     end
                 end
@@ -1787,17 +1787,36 @@ do -- RoomsList
             end
 
             self.Layout = layout
-            if not self.Layout then
-                self.Layout = StageAPI.CreateEmptyRoomLayout(self.Shape)
-                Isaac.DebugString("[StageAPI] No layout!")
-            end
-
-            self.SpawnEntities, self.LastPersistentIndex = StageAPI.SelectSpawnEntities(self.Layout.EntitiesByIndex, seed)
-            self.SpawnGrids = StageAPI.SelectSpawnGrids(self.Layout.GridEntitiesByIndex, seed)
+            self:PostGetLayout(seed)
         end
 
         StageAPI.CallCallbacks("POST_ROOM_INIT", false, self, not not fromSaveData, fromSaveData)
         StageAPI.CurrentlyInitializing = nil
+    end
+
+    function StageAPI.LevelRoom:PostGetLayout(seed)
+        if not self.Layout then
+            self.Layout = StageAPI.CreateEmptyRoomLayout(self.Shape)
+            Isaac.DebugString("[StageAPI] No layout!")
+        end
+
+        self.SpawnEntities, self.LastPersistentIndex = StageAPI.SelectSpawnEntities(self.Layout.EntitiesByIndex, seed)
+        self.SpawnGrids = StageAPI.SelectSpawnGrids(self.Layout.GridEntitiesByIndex, seed)
+
+        self.GridTakenIndices = {}
+        self.EntityTakenIndices = {}
+
+        for index, entity in pairs(self.SpawnEntities) do
+            self.EntityTakenIndices[index] = true
+        end
+
+        for _, grid in ipairs(self.SpawnGrids) do
+            self.GridTakenIndices[grid.Index] = true
+        end
+    end
+
+    function StageAPI.LevelRoom:IsGridIndexFree(index, ignoreEntities, ignoreGrids)
+        return (ignoreEntities or not self.EntityTakenIndices[index]) and (ignoreGrids or not self.GridTakenIndices[index])
     end
 
     function StageAPI.LevelRoom:SaveGridInformation()
@@ -1881,7 +1900,7 @@ do -- RoomsList
             isExtraRoom = self.IsExtraRoom
         end
 
-        StageAPI.ClearRoomLayout(false, self.FirstLoad or isExtraRoom, true, self.FirstLoad or isExtraRoom)
+        StageAPI.ClearRoomLayout(false, self.FirstLoad or isExtraRoom, true, self.FirstLoad or isExtraRoom, self.GridTakenIndices)
         if self.FirstLoad then
             StageAPI.LoadRoomLayout(self.SpawnGrids, {self.SpawnEntities, self.ExtraSpawn}, true, true, false, true, self.GridInformation, self.AvoidSpawning, self.PersistentPositions)
             self.WasClearAtStart = room:IsClear()
@@ -2000,13 +2019,7 @@ do -- RoomsList
         end
 
         self.Layout = layout
-        if not self.Layout then
-            self.Layout = StageAPI.CreateEmptyRoomLayout(self.Shape)
-            Isaac.DebugString("[StageAPI] No layout!")
-        end
-
-        self.SpawnEntities, self.LastPersistentIndex = StageAPI.SelectSpawnEntities(self.Layout.EntitiesByIndex, self.Seed)
-        self.SpawnGrids = StageAPI.SelectSpawnGrids(self.Layout.GridEntitiesByIndex, self.Seed)
+        self:PostGetLayout(self.Seed)
 
         self.LastPersistentIndex = saveData.LastPersistentIndex or self.LastPersistentIndex
         self.IsClear = saveData.IsClear
@@ -2603,8 +2616,14 @@ do -- GridGfx
         self.Bridges = filename
     end
 
-    function StageAPI.GridGfx:SetDecorations(filename)
-        self.Decorations = filename
+    function StageAPI.GridGfx:SetDecorations(filename, anm2, propCount, prefix, suffix)
+        self.Decorations = {
+            Png = filename,
+            Anm2 = anm2 or "gfx/grid/props_03_caves.anm2",
+            PropCount = propCount or 42,
+            Prefix = prefix or "Prop",
+            Suffix = suffix or ""
+        }
     end
 
     StageAPI.PoopVariant = {
@@ -2668,6 +2687,8 @@ do -- GridGfx
         "ss_broken"
     }
 
+    StageAPI.GridGfxRNG = RNG()
+
     StageAPI.RockSprite = Sprite()
     StageAPI.RockSprite:Load("gfx/grid/grid_rock.anm2", true)
     function StageAPI.ChangeRock(rock, filename)
@@ -2725,23 +2746,26 @@ do -- GridGfx
         StageAPI.CheckBridge(grid, pit.Index, bridgefilename)
     end
 
-    StageAPI.DecorationSprite = Sprite()
-    StageAPI.DecorationSprite:Load("gfx/grid/props_03_caves.anm2", true)
-    StageAPI.DecorationRNG = RNG()
-    function StageAPI.ChangeDecoration(decoration, filename)
+    StageAPI.DecorationSprites = {}
+    function StageAPI.ChangeDecoration(decoration, decorations)
         local grid = decoration.Grid
 
-        StageAPI.DecorationSprite:ReplaceSpritesheet(0, filename)
-        StageAPI.DecorationSprite:LoadGraphics()
-        StageAPI.DecorationRNG:SetSeed(room:GetDecorationSeed(), decoration.Index)
+        local decSprite = StageAPI.DecorationSprites[decorations.Anm2]
+        if not decSprite then
+            decSprite = Sprite()
+            decSprite:Load(decorations.Anm2, false)
+            StageAPI.DecorationSprites[decorations.Anm2] = decSprite
+        end
 
-        local prop = StageAPI.Random(1, 42, StageAPI.DecorationRNG)
+        decSprite:ReplaceSpritesheet(0, decorations.Png)
+        decSprite:LoadGraphics()
+        local prop = StageAPI.Random(1, decorations.PropCount, StageAPI.GridGfxRNG)
         if prop < 10 then
             prop = "0" .. tostring(prop)
         end
 
-        StageAPI.DecorationSprite:Play("Prop" .. tostring(prop), true)
-        grid.Sprite = StageAPI.DecorationSprite
+        decSprite:Play(decorations.Prefix .. tostring(prop) .. decorations.Suffix, true)
+        grid.Sprite = decSprite
     end
 
     StageAPI.DoorAnimationMap = {
@@ -2884,14 +2908,12 @@ do -- GridGfx
         end
     end
 
-    StageAPI.GridGfxAltRNG = RNG()
     function StageAPI.ChangeGrid(sent, filename)
         local grid = sent.Grid
         local sprite = grid.Sprite
 
         if type(filename) == "table" then
-            StageAPI.GridGfxAltRNG:SetSeed(room:GetDecorationSeed(), sent.Index)
-            filename = filename[StageAPI.Random(1, #filename, StageAPI.GridGfxAltRNG)]
+            filename = filename[StageAPI.Random(1, #filename, StageAPI.GridGfxRNG)]
         end
 
         sprite:ReplaceSpritesheet(0, filename)
@@ -2922,6 +2944,7 @@ do -- GridGfx
     end
 
     function StageAPI.ChangeGrids(grids)
+        StageAPI.GridGfxRNG:SetSeed(room:GetDecorationSeed(), 0)
         for i = 0, room:GetGridSize() do
             if not StageAPI.CustomGridIndices[i] then
                 local grid = room:GetGridEntity(i)
