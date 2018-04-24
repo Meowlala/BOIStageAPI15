@@ -117,6 +117,12 @@ Callback List:
 - PRE_STAGEAPI_NEW_ROOM()
 -- runs before most but not all stageapi room functionality. guaranteed to run before any room loads.
 
+- POST_STAGEAPI_NEW_ROOM_GENERATION(justGenerated, currentRoom)
+-- allows returning justGenerated and currentRoom. run after normal room generation but before reloading old rooms.
+
+- POST_STAGEAPI_NEW_ROOM()
+-- all loading and processing of new room generation and old room loading is done, but the gfx hasn't changed yet
+
 -- StageAPI Structures:
 EntityData {
     Type = integer,
@@ -1241,7 +1247,7 @@ do -- RoomsList
         if doEnts or doPersistentEnts then
             for _, ent in ipairs(Isaac.GetRoomEntities()) do
                 local etype = ent.Type
-                if etype ~= EntityType.ENTITY_FAMILIAR and etype ~= EntityType.ENTITY_PLAYER and etype ~= EntityType.ENTITY_KNIFE then
+                if etype ~= EntityType.ENTITY_FAMILIAR and etype ~= EntityType.ENTITY_PLAYER and etype ~= EntityType.ENTITY_KNIFE and not (etype == StageAPI.E.Shading.T and ent.Variant == StageAPI.E.Shading.V) then
                     local persistentData = StageAPI.CheckPersistence(ent.Type, ent.Variant, ent.SubType)
                     if (doPersistentEnts or (ent:ToNPC() and (not persistentData or not persistentData.AutoPersists))) and not (ent:HasEntityFlags(EntityFlag.FLAG_CHARM) or ent:HasEntityFlags(EntityFlag.FLAG_FRIENDLY)) then
                         ent:Remove()
@@ -4412,6 +4418,9 @@ do -- Callbacks
             end
         end
 
+        local retJustGenerated, retCurrentRoom = StageAPI.CallCallbacks("POST_STAGEAPI_NEW_ROOM_GENERATION", true, justGenerated, currentRoom)
+        justGenerated, currentRoom = retJustGenerated or justGenerated, retCurrentRoom or currentRoom
+
         if not boss and currentRoom and currentRoom.PersistentData.BossID then
             boss = StageAPI.GetBossData(currentRoom.PersistentData.BossID)
         end
@@ -4437,6 +4446,8 @@ do -- Callbacks
                 end
             end
         end
+
+        StageAPI.CallCallbacks("POST_STAGEAPI_NEW_ROOM", false, justGenerated)
 
         if isNewStage then
             local rtype = StageAPI.GetCurrentRoomType()
