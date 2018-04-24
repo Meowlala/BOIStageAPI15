@@ -114,6 +114,9 @@ Callback List:
 
 - POST_CHANGE_ROOM_GFX()
 
+- PRE_STAGEAPI_NEW_ROOM()
+-- runs before most but not all stageapi room functionality. guaranteed to run before any room loads.
+
 -- StageAPI Structures:
 EntityData {
     Type = integer,
@@ -2550,35 +2553,6 @@ do -- Extra Rooms
             end
         end
     end, StageAPI.E.Door.V)
-
-    mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, function()
-        if not StageAPI.TransitioningToExtraRoom() then
-            StageAPI.CurrentExtraRoom = nil
-            StageAPI.CurrentExtraRoomName = nil
-            StageAPI.InExtraRoom = false
-        end
-
-        if StageAPI.TransitionExitSlot then
-            local pos = room:GetDoorSlotPosition(StageAPI.TransitionExitSlot) + (StageAPI.DoorOffsetsByDirection[StageAPI.DoorToDirection[StageAPI.TransitionExitSlot]] * 3)
-            for _, player in ipairs(players) do
-                player.Position = pos
-            end
-
-            StageAPI.TransitionExitSlot = nil
-        end
-
-        if StageAPI.CurrentExtraRoom then
-            for i = 0, 7 do
-                if room:GetDoor(i) then
-                    room:RemoveDoor(i)
-                end
-            end
-
-            StageAPI.CurrentExtraRoom:Load(true)
-        end
-
-
-    end)
 end
 
 Isaac.DebugString("[StageAPI] Loading GridGfx Handler")
@@ -4368,6 +4342,33 @@ do -- Callbacks
     end
 
     mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, function()
+        StageAPI.CallCallbacks("PRE_STAGEAPI_NEW_ROOM", false)
+
+        if not StageAPI.TransitioningToExtraRoom() then
+            StageAPI.CurrentExtraRoom = nil
+            StageAPI.CurrentExtraRoomName = nil
+            StageAPI.InExtraRoom = false
+        end
+
+        if StageAPI.TransitionExitSlot then
+            local pos = room:GetDoorSlotPosition(StageAPI.TransitionExitSlot) + (StageAPI.DoorOffsetsByDirection[StageAPI.DoorToDirection[StageAPI.TransitionExitSlot]] * 3)
+            for _, player in ipairs(players) do
+                player.Position = pos
+            end
+
+            StageAPI.TransitionExitSlot = nil
+        end
+
+        if StageAPI.CurrentExtraRoom then
+            for i = 0, 7 do
+                if room:GetDoor(i) then
+                    room:RemoveDoor(i)
+                end
+            end
+
+            StageAPI.CurrentExtraRoom:Load(true)
+        end
+
         local isNewStage, override = StageAPI.InOverriddenStage()
         local currentListIndex = StageAPI.GetCurrentRoomID()
         local currentRoom, justGenerated = StageAPI.GetCurrentRoom(), nil
@@ -4377,18 +4378,18 @@ do -- Callbacks
         if inStartingRoom then
             if room:IsFirstVisit() then
                 StageAPI.CustomGrids = {}
+                StageAPI.LevelRooms = {}
                 StageAPI.CurrentStage = nil
                 if isNewStage then
                     currentRoom = nil
-                    StageAPI.LevelRooms = {}
                     if not StageAPI.NextStage then
                         StageAPI.CurrentStage = override.ReplaceWith
                     else
                         StageAPI.CurrentStage = StageAPI.NextStage
                     end
-
-                    StageAPI.NextStage = nil
                 end
+
+                StageAPI.NextStage = nil
             end
         end
 
