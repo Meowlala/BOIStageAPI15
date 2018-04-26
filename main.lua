@@ -1910,6 +1910,7 @@ do -- RoomsList
             isExtraRoom = self.IsExtraRoom
         end
 
+        room:SetClear(true)
         StageAPI.ClearRoomLayout(false, self.FirstLoad or isExtraRoom, true, self.FirstLoad or isExtraRoom, self.GridTakenIndices)
         if self.FirstLoad then
             StageAPI.LoadRoomLayout(self.SpawnGrids, {self.SpawnEntities, self.ExtraSpawn}, true, true, false, true, self.GridInformation, self.AvoidSpawning, self.PersistentPositions)
@@ -3866,6 +3867,7 @@ do -- Rock Alt Override
     StageAPI.SpawnOverriddenGrids = {}
     StageAPI.JustBrokenGridSpawns = {}
     StageAPI.RecentFarts = {}
+    local sfx = SFXManager()
     mod:AddCallback(ModCallbacks.MC_PRE_ENTITY_SPAWN, function(_, id, variant, subtype, position, velocity, spawner, seed)
         local lindex = StageAPI.GetCurrentRoomID()
         local grindex = room:GetGridIndex(position)
@@ -3886,6 +3888,7 @@ do -- Rock Alt Override
                 or id == EntityType.ENTITY_MUSHROOM then
                     if id == EntityType.ENTITY_EFFECT and variant == EffectVariant.FART then
                         StageAPI.RecentFarts[grindex] = 2
+                        sfx:Stop(SoundEffect.SOUND_FART)
                     end
 
                     if not StageAPI.JustBrokenGridSpawns[grindex] then
@@ -4606,6 +4609,11 @@ do
         StageAPI.CurrentExtraRoomName = decoded.ExtraRoomName
         if decoded.Stage then
             StageAPI.CurrentStage = StageAPI.CustomStages[decoded.Stage]
+        else
+            local inOverriddenStage, override = StageAPI.InOverriddenStage()
+            if inOverriddenStage then
+                StageAPI.CurrentStage = override
+            end
         end
 
         StageAPI.EncounteredBosses = {}
