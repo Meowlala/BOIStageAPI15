@@ -3728,6 +3728,18 @@ do -- Transition
         return StageAPI.TransitionAnimation:IsPlaying("Scene") or StageAPI.TransitionAnimation:IsPlaying("SceneNoShake") or StageAPI.BossSprite:IsPlaying("Scene") or StageAPI.BossSprite:IsPlaying("DoubleTrouble")
     end
 
+    mod:AddCallback(ModCallbacks.MC_ENTITY_TAKE_DMG, function(_, e)
+        if StageAPI.IsHUDAnimationPlaying() then
+            return false
+        end
+    end, EntityType.ENTITY_PLAYER)
+
+    mod:AddCallback(ModCallbacks.MC_POST_EFFECT_INIT, function(_, eff)
+        if StageAPI.IsHUDAnimationPlaying() then
+            eff:Remove()
+        end
+    end, EffectVariant.MOM_FOOT_STOMP)
+
     function StageAPI.GetLevelTransitionIcon(stage, stype)
         local base = StageAPI.FloorInfo[stage][stype]
         if base == "07_womb" and stype == StageType.STAGETYPE_WOTL then
