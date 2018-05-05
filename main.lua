@@ -3456,7 +3456,8 @@ do -- Bosses
         thelost = "12",
         lilith = "13",
         keeper = "14",
-        apollyon = "15"
+        apollyon = "15",
+        theforgotten = "16"
     }
 
     for k, v in pairs(StageAPI.PlayerBossInfo) do
@@ -3479,11 +3480,17 @@ do -- Bosses
         }
     end
 
-    function StageAPI.AddPlayerGraphicsInfo(name, portrait, namefile, portraitbig)
+    StageAPI.PlayerBossInfo["???"].NoShake = true
+    StageAPI.PlayerBossInfo.keeper.NoShake = true
+    StageAPI.PlayerBossInfo.theforgotten.NoShake = true
+    StageAPI.PlayerBossInfo.thelost.NoShake = true
+
+    function StageAPI.AddPlayerGraphicsInfo(name, portrait, namefile, portraitbig, noshake)
         StageAPI.PlayerBossInfo[string.gsub(string.lower(name), "%s+", "")] = {
             Portrait = portrait,
             Name = namefile,
-            PortraitBig = portraitbig
+            PortraitBig = portraitbig,
+            NoShake = noshake
         }
     end
 
@@ -3504,7 +3511,7 @@ do -- Bosses
     function StageAPI.TryGetPlayerGraphicsInfo(player)
         local playerName = string.gsub(string.lower(player:GetName()), "%s+", "")
         if StageAPI.PlayerBossInfo[playerName] then
-            return StageAPI.PlayerBossInfo[playerName].Portrait, StageAPI.PlayerBossInfo[playerName].Name, StageAPI.PlayerBossInfo[playerName].PortraitBig
+            return StageAPI.PlayerBossInfo[playerName].Portrait, StageAPI.PlayerBossInfo[playerName].Name, StageAPI.PlayerBossInfo[playerName].PortraitBig, StageAPI.PlayerBossInfo[playerName].NoShake
         else -- worth a shot, most common naming convention
             return "gfx/ui/boss/playerportrait_" .. playerName .. ".png", "gfx/ui/boss/playername_" .. playerName .. ".png", "gfx/ui/stage/playerportraitbig_" .. playerName .. ".png"
         end
@@ -3679,7 +3686,7 @@ do -- Transition
     StageAPI.Seeds = game:GetSeeds()
 
     mod:AddCallback(ModCallbacks.MC_POST_RENDER, function()
-        if StageAPI.TransitionAnimation:IsPlaying("Scene") then
+        if StageAPI.TransitionAnimation:IsPlaying("Scene") or StageAPI.TransitionAnimation:IsPlaying("SceneNoShake") then
             if StageAPI.IsOddRenderFrame then
                 StageAPI.TransitionAnimation:Update()
             end
@@ -3718,7 +3725,7 @@ do -- Transition
     end)
 
     function StageAPI.IsHUDAnimationPlaying()
-        return StageAPI.TransitionAnimation:IsPlaying("Scene") or StageAPI.BossSprite:IsPlaying("Scene") or StageAPI.BossSprite:IsPlaying("DoubleTrouble")
+        return StageAPI.TransitionAnimation:IsPlaying("Scene") or StageAPI.TransitionAnimation:IsPlaying("SceneNoShake") or StageAPI.BossSprite:IsPlaying("Scene") or StageAPI.BossSprite:IsPlaying("DoubleTrouble")
     end
 
     function StageAPI.GetLevelTransitionIcon(stage, stype)
@@ -3730,7 +3737,7 @@ do -- Transition
         return "stageapi/transition/levelicons/" .. base .. ".png"
     end
 
-    function StageAPI.PlayTransitionAnimationManual(portraitbig, icon, transitionmusic, queue)
+    function StageAPI.PlayTransitionAnimationManual(portraitbig, icon, transitionmusic, queue, noshake)
         portraitbig = portraitbig or "gfx/ui/stage/playerportraitbig_01_isaac.png"
         icon = icon or "stageapi/transition/levelicons/unknown.png"
         transitionmusic = transitionmusic or Music.MUSIC_JINGLE_NIGHTMARE
@@ -3742,7 +3749,11 @@ do -- Transition
         StageAPI.TransitionAnimation:ReplaceSpritesheet(1, portraitbig)
         StageAPI.TransitionAnimation:ReplaceSpritesheet(2, icon)
         StageAPI.TransitionAnimation:LoadGraphics()
-        StageAPI.TransitionAnimation:Play("Scene", true)
+        if noshake then
+            StageAPI.TransitionAnimation:Play("SceneNoShake", true)
+        else
+            StageAPI.TransitionAnimation:Play("Scene", true)
+        end
 
         StageAPI.Music:Play(transitionmusic, 0)
         StageAPI.Music:UpdateVolume()
@@ -3753,8 +3764,8 @@ do -- Transition
     end
 
     function StageAPI.PlayTransitionAnimation(stage)
-        local _, _, portraitbig = StageAPI.TryGetPlayerGraphicsInfo(players[1])
-        StageAPI.PlayTransitionAnimationManual(portraitbig, stage.TransitionIcon, stage.TransitionMusic, stage.Music[RoomType.ROOM_DEFAULT])
+        local _, _, portraitbig, noshake = StageAPI.TryGetPlayerGraphicsInfo(players[1])
+        StageAPI.PlayTransitionAnimationManual(portraitbig, stage.TransitionIcon, stage.TransitionMusic, stage.Music[RoomType.ROOM_DEFAULT], noshake)
     end
 
     StageAPI.StageRNG = RNG()
@@ -3770,8 +3781,8 @@ do -- Transition
             end
 
             if playTransition then
-                local _, _, portraitbig = StageAPI.TryGetPlayerGraphicsInfo(players[1])
-                StageAPI.PlayTransitionAnimationManual(portraitbig, StageAPI.GetLevelTransitionIcon(stage.Stage, stageType), nil, nil)
+                local _, _, portraitbig, noshake = StageAPI.TryGetPlayerGraphicsInfo(players[1])
+                StageAPI.PlayTransitionAnimationManual(portraitbig, StageAPI.GetLevelTransitionIcon(stage.Stage, stageType), nil, nil, noshake)
             end
 
             Isaac.ExecuteCommand("stage " .. tostring(stage.Stage) .. StageAPI.StageTypeToString[stageType])
