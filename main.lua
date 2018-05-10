@@ -1276,6 +1276,19 @@ do -- RoomsList
         StageAPI.CalledRoomUpdate = false
     end
 
+    function StageAPI.ClearSpecificRoomDecorations(decorations)
+        for grindex, _ in pairs(decorations) do
+            local grid = room:GetGridEntity(grindex)
+            if grid then
+                room:RemoveGridEntity(grindex, 0, false)
+            end
+        end
+
+        StageAPI.CalledRoomUpdate = true
+        room:Update()
+        StageAPI.CalledRoomUpdate = false
+    end
+
     StageAPI.RoomChooseRNG = RNG()
     function StageAPI.ChooseRoomLayout(roomList, seed, shape, rtype, requireRoomType)
         local callbacks = StageAPI.GetCallbacks("POST_CHECK_VALID_ROOM")
@@ -1911,7 +1924,8 @@ do -- RoomsList
         end
 
         room:SetClear(true)
-        StageAPI.ClearRoomLayout(false, self.FirstLoad or isExtraRoom, true, self.FirstLoad or isExtraRoom, self.GridTakenIndices)
+        --StageAPI.ClearRoomLayout(false, self.FirstLoad or isExtraRoom, true, self.FirstLoad or isExtraRoom, self.GridTakenIndices)
+        StageAPI.ClearSpecificRoomDecorations(self.GridTakenIndices)
         if self.FirstLoad then
             StageAPI.LoadRoomLayout(self.SpawnGrids, {self.SpawnEntities, self.ExtraSpawn}, true, true, false, true, self.GridInformation, self.AvoidSpawning, self.PersistentPositions)
             self.WasClearAtStart = room:IsClear()
@@ -1923,14 +1937,14 @@ do -- RoomsList
         end
 
         StageAPI.CalledRoomUpdate = true
-        room:Update()
+        --room:Update()
         StageAPI.CalledRoomUpdate = false
         if not self.IsClear then
             StageAPI.CloseDoors()
         end
 
         StageAPI.CallCallbacks("POST_ROOM_LOAD", false, self, self.FirstLoad, isExtraRoom)
-        StageAPI.StoreRoomGrids()
+        --StageAPI.StoreRoomGrids()
     end
 
     function StageAPI.LevelRoom:Save()
@@ -4144,6 +4158,30 @@ do -- Callbacks
         room:Update()
         StageAPI.CalledRoomUpdate = false
     end
+
+    function StageAPI.ShouldOverrideRoom(inStartingRoom, currentRoom)
+        if inStartingRoom == nil then
+            inStartingRoom = level:GetCurrentRoomIndex() == level:GetStartingRoomIndex()
+        end
+
+        if currentRoom == nil then
+            currentRoom = StageAPI.GetCurrentRoom()
+        end
+
+        if currentRoom or StageAPI.InExtraRoom or (not inStartingRoom and StageAPI.InNewStage() and (room:GetType() == RoomType.ROOM_DEFAULT or (StageAPI.CurrentStage.Bosses and room:GetType() == RoomType.ROOM_BOSS))) then
+            return true
+        end
+    end
+
+    mod:AddCallback(ModCallbacks.MC_PRE_ROOM_ENTITY_SPAWN, function(_, t, v, s, i, se)
+        if StageAPI.ShouldOverrideRoom() then
+            return {
+                999,
+                StageAPI.E.DeleteMeEffect.V,
+                0
+            }
+        end
+    end)
 
     mod:AddCallback(ModCallbacks.MC_PRE_USE_ITEM, function()
         if StageAPI.CalledRoomUpdate then
