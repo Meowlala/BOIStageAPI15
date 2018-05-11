@@ -321,7 +321,7 @@ InOverrideStage() -- true if in override stage
 InNewStage() -- true only if inoverriddenstage and not inoverridestage.
 GetCurrentStage()
 GetCurrentStageDisplayName() -- used for streaks
-GetCurrentListIndex(noCache)
+GetCurrentListIndex()
 
 GetCurrentRoomID() -- returns list index or extra room name
 SetCurrentRoom(LevelRoom)
@@ -457,7 +457,6 @@ do -- Core Definitions
     mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, function()
         StageAPI.Level = StageAPI.Game:GetLevel()
         StageAPI.Room = StageAPI.Game:GetRoom()
-        StageAPI.CurrentListIndex = StageAPI.GetCurrentListIndex(true)
     end)
 end
 
@@ -3390,12 +3389,8 @@ do -- Definitions
         end
     end
 
-    function StageAPI.GetCurrentListIndex(noCache)
-        if noCache then
-            return level:GetCurrentRoomDesc().ListIndex
-        else
-            return StageAPI.CurrentListIndex
-        end
+    function StageAPI.GetCurrentListIndex()
+        return level:GetCurrentRoomDesc().ListIndex
     end
 end
 
@@ -4434,6 +4429,11 @@ do -- Callbacks
                 if room:GetDoor(i) then
                     room:RemoveDoor(i)
                 end
+            end
+
+            local beds = Isaac.FindByType(EntityType.ENTITY_EFFECT, EffectVariant.ISAACS_CARPET, -1, false, false)
+            for _, bed in ipairs(beds) do
+                bed:Remove()
             end
 
             StageAPI.CurrentExtraRoom:Load(true)
