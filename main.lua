@@ -2938,6 +2938,34 @@ do -- GridGfx
         end
     end
 
+    function StageAPI.ChangeDoors(doors)
+        if doors then
+            local payToPlay
+            if doors.Type == "GridGfx" then
+                doors = doors.Doors
+                payToPlay = doors.PayToPlayDoor
+            elseif doors.Type == "CustomStage" and doors.RoomGfx then
+                local roomgfx = doors.RoomGfx[room:GetType()]
+                if roomgfx and roomgfx.Grids then
+                    doors = roomgfx.Grids.Doors
+                    payToPlay = roomgfx.Grids.PayToPlayDoor
+                end
+            elseif doors.Type == "RoomGfx" and doors.Grids then
+                payToPlay = doors.Grids.PayToPlayDoor
+                doors = doors.Grids.Doors
+            end
+
+            if doors then
+                for i = 0, 7 do
+                    local door = room:GetDoor(i)
+                    if door then
+                        StageAPI.ChangeDoor({Grid = door}, doors, payToPlay)
+                    end
+                end
+            end
+        end
+    end
+
     function StageAPI.ChangeGrids(grids)
         StageAPI.GridGfxRNG:SetSeed(room:GetDecorationSeed(), 0)
         for i = 0, room:GetGridSize() do
@@ -3983,7 +4011,7 @@ do -- Rock Alt Override
         if data.Farted then
             local stoppedFart
             for fart, timer in pairs(StageAPI.RecentFarts) do
-                if REVEL.room:GetGridPosition(fart):Distance(npc.Position) < 150 + npc.Size then
+                if room:GetGridPosition(fart):Distance(npc.Position) < 150 + npc.Size then
                     stoppedFart = true
                     break
                 end
@@ -4004,7 +4032,7 @@ do -- Rock Alt Override
         if data.Farted then
             local stoppedFart
             for fart, timer in pairs(StageAPI.RecentFarts) do
-                if REVEL.room:GetGridPosition(fart):Distance(npc.Position) < 150 + npc.Size then
+                if room:GetGridPosition(fart):Distance(npc.Position) < 150 + npc.Size then
                     stoppedFart = true
                     break
                 end
@@ -4020,7 +4048,7 @@ do -- Rock Alt Override
         end
 
         for fart, timer in pairs(StageAPI.RecentFarts) do
-            if npc:HasEntityFlags(EntityFlag.FLAG_POISON) and REVEL.room:GetGridPosition(fart):Distance(npc.Position) < 150 + npc.Size then
+            if npc:HasEntityFlags(EntityFlag.FLAG_POISON) and room:GetGridPosition(fart):Distance(npc.Position) < 150 + npc.Size then
                 npc:RemoveStatusEffects()
                 break
             end
