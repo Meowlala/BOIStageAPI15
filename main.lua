@@ -4234,6 +4234,20 @@ do -- Callbacks
         end
     end)
 
+    function StageAPI.ShouldOverrideRoom(inStartingRoom, currentRoom)
+        if inStartingRoom == nil then
+            inStartingRoom = level:GetCurrentRoomIndex() == level:GetStartingRoomIndex()
+        end
+
+        if currentRoom == nil then
+            currentRoom = StageAPI.GetCurrentRoom()
+        end
+
+        if currentRoom or StageAPI.InExtraRoom or (not inStartingRoom and StageAPI.InNewStage() and (room:GetType() == RoomType.ROOM_DEFAULT or (StageAPI.CurrentStage.Bosses and room:GetType() == RoomType.ROOM_BOSS))) then
+            return true
+        end
+    end
+
     StageAPI.Music = MusicManager()
     StageAPI.MusicRNG = RNG()
     mod:AddCallback(ModCallbacks.MC_POST_RENDER, function()
@@ -4419,11 +4433,6 @@ do -- Callbacks
                 if room:GetDoor(i) then
                     room:RemoveDoor(i)
                 end
-            end
-
-            local beds = Isaac.FindByType(EntityType.ENTITY_EFFECT, EffectVariant.ISAACS_CARPET, -1, false, false)
-            for _, bed in ipairs(beds) do
-                bed:Remove()
             end
 
             StageAPI.CurrentExtraRoom:Load(true)
