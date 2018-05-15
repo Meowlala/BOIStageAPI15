@@ -123,6 +123,9 @@ Callback List:
 - POST_STAGEAPI_NEW_ROOM()
 -- all loading and processing of new room generation and old room loading is done, but the gfx hasn't changed yet
 
+- PRE_SELECT_NEXT_STAGE(currentstage)
+-- return a stage to go to instead of currentstage.NextStage or none.
+
 -- StageAPI Structures:
 EntityData {
     Type = integer,
@@ -3171,6 +3174,10 @@ do -- Custom Stage
         self.NextStage = stage
     end
 
+    function StageAPI.CustomStage:SetXLStage(stage)
+        self.XLStage = stage
+    end
+
     function StageAPI.CustomStage:SetRoomGfx(gfx, rtype)
         if not self.RoomGfx then
             self.RoomGfx = {}
@@ -3346,10 +3353,13 @@ do -- Definitions
     StageAPI.Catacombs:SetMusic(StageAPI.CatacombsMusicID, RoomType.ROOM_DEFAULT)
     StageAPI.Catacombs:SetBossMusic({Music.MUSIC_BOSS, Music.MUSIC_BOSS2}, Music.MUSIC_BOSS_OVER)
     StageAPI.Catacombs:SetRoomGfx(StageAPI.CatacombsRoomGfx, {RoomType.ROOM_DEFAULT, RoomType.ROOM_TREASURE, RoomType.ROOM_MINIBOSS, RoomType.ROOM_BOSS})
-    StageAPI.Catacombs.DisplayName = "Catacombs 1"
+    StageAPI.Catacombs.DisplayName = "Catacombs I"
 
     StageAPI.CatacombsTwo = StageAPI.Catacombs("Catacombs 2")
-    StageAPI.CatacombsTwo.DisplayName = "Catacombs 2"
+    StageAPI.CatacombsTwo.DisplayName = "Catacombs II"
+
+    StageAPI.CatacombsXL = StageAPI.Catacombs("Catacombs XL")
+    StageAPI.CatacombsXL.DisplayName = "Catacombs XL"
 
     StageAPI.StageOverride = {
         CatacombsOne = {
@@ -3365,6 +3375,7 @@ do -- Definitions
     }
 
     StageAPI.Catacombs:SetReplace(StageAPI.StageOverride.CatacombsOne)
+    StageAPI.Catacombs:SetXLStage(StageAPI.CatacombsXL)
     StageAPI.CatacombsTwo:SetReplace(StageAPI.StageOverride.CatacombsTwo)
 
     function StageAPI.InOverriddenStage()
@@ -4268,7 +4279,8 @@ do -- Callbacks
                     pits[#pits + 1] = {grid, i}
                 end
 
-                if StageAPI.CurrentStage and StageAPI.CurrentStage.NextStage then
+                local nextStage = StageAPI.CallCallbacks("PRE_SELECT_NEXT_STAGE", true, StageAPI.CurrentStage)
+                if (StageAPI.CurrentStage and StageAPI.CurrentStage.NextStage) or nextStage then
                     if grid.Desc.Type == GridEntityType.GRID_TRAPDOOR and grid.State == 1 then
                         local entering = false
                         for _, player in ipairs(players) do
@@ -4280,7 +4292,7 @@ do -- Callbacks
                         end
 
                         if entering then
-                            StageAPI.SpawnCustomTrapdoor(room:GetGridPosition(i), StageAPI.CurrentStage.NextStage, nil, 32, true)
+                            StageAPI.SpawnCustomTrapdoor(room:GetGridPosition(i), nextStage or StageAPI.CurrentStage.NextStage, nil, 32, true)
                             room:RemoveGridEntity(i, 0, false)
                         end
                     end
@@ -4455,6 +4467,10 @@ do -- Callbacks
                         StageAPI.CurrentStage = override.ReplaceWith
                     else
                         StageAPI.CurrentStage = StageAPI.NextStage
+                    end
+
+                    if level:GetCurses() & LevelCurse.CURSE_OF_LABYRINTH ~= 0 and StageAPI.CurrentStage.XLStage then
+                        StageAPI.CurrentStage = StageAPI.CurrentStage.XLStage
                     end
                 end
 
