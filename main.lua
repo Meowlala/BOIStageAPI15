@@ -4559,7 +4559,7 @@ do -- Callbacks
                 StageAPI.OldBackdropType = 5
             end
 
-            if room:GetType() ~= RoomType.ROOM_DUNGEON then
+            if room:GetType() ~= RoomType.ROOM_DUNGEON and room:GetBackdropType() ~= 16 then
                 StageAPI.ChangeShading("_default")
             end
         end
