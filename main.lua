@@ -1245,6 +1245,74 @@ do -- RoomsList
         return retBossData
     end
 
+    function StageAPI.DoesEntityDataMatchParameters(param, data)
+        return (not param.Type or param.Type == data.Type) and (not param.Variant or param.Variant == data.Variant) and (not param.SubType or param.SubType == data.SubType)
+    end
+
+    function StageAPI.DoesLayoutContainEntity(layout, mustIncludeAny, mustExclude, mustIncludeAll, notIncluding)
+        local includesAny = not mustIncludeAny
+        local mustIncludeAllCopy = {}
+        if mustIncludeAll then
+            for _, include in ipairs(mustIncludeAll) do
+                mustIncludeAllCopy[#mustIncludeAllCopy + 1] = include
+            end
+        end
+
+        for _, ent in ipairs(layout.Entities) do
+            if not includesAny then
+                for _, include in ipairs(mustIncludeAny) do
+                    if StageAPI.DoesEntityDataMatchParameters(include, ent) then
+                        local dontCount
+                        if notIncluding then
+                            for _, noInclude in ipairs(notIncluding) do
+                                if StageAPI.DoesEntityDataMatchParameters(noInclude, ent) then
+                                    dontCount = true
+                                    break
+                                end
+                            end
+                        end
+
+                        if not dontCount then
+                            includesAny = true
+                            break
+                        end
+                    end
+                end
+            end
+
+            if mustExclude then
+                for _, exclude in ipairs(mustExclude) do
+                    if StageAPI.DoesEntityDataMatchParameters(exclude, ent) then
+                        return false
+                    end
+                end
+            end
+
+            if #mustIncludeAllCopy > 0 then
+                for i, include in StageAPI.ReverseIterate(mustIncludeAllCopy) do
+                    if StageAPI.DoesEntityDataMatchParameters(include, ent) then
+                        local dontCount
+                        if notIncluding then
+                            for _, noInclude in ipairs(notIncluding) do
+                                if StageAPI.DoesEntityDataMatchParameters(noInclude, ent) then
+                                    dontCount = true
+                                    break
+                                end
+                            end
+                        end
+
+                        if not dontCount then
+                            table.remove(mustIncludeAllCopy, i)
+                            break
+                        end
+                    end
+                end
+            end
+        end
+
+        return includesAny and #mustIncludeAllCopy == 0
+    end
+
     function StageAPI.ClearRoomLayout(keepDecoration, doGrids, doEnts, doPersistentEnts, onlyRemoveTheseDecorations)
         if doEnts or doPersistentEnts then
             for _, ent in ipairs(Isaac.GetRoomEntities()) do
@@ -1783,19 +1851,21 @@ do -- RoomsList
             self.FirstLoad = true
             self.RequireRoomType = requireRoomType
 
+            local replaceLayoutName = StageAPI.CallCallbacks("PRE_ROOM_LAYOUT_CHOOSE", true, self)
+            if replaceLayoutName then
+                self.LayoutName = replaceLayoutName
+                layoutName = replaceLayoutName
+            end
+
             local layout
             if layoutName then
                 layout = StageAPI.Layouts[layoutName]
             end
 
-            if roomsList and not layout then
+            if not layout then
+                roomsList = StageAPI.CallCallbacks("PRE_ROOMS_LIST_USE", true, self) or roomsList
                 self.RoomsListName = roomsList.Name
-                local retLayout = StageAPI.CallCallbacks("PRE_ROOM_LAYOUT_CHOOSE", true, self)
-                if retLayout then
-                    layout = retLayout
-                else
-                    layout = StageAPI.ChooseRoomLayout(roomsList.ByShape, seed, shape, roomType, requireRoomType)
-                end
+                layout = StageAPI.ChooseRoomLayout(roomsList.ByShape, seed, shape, roomType, requireRoomType)
             end
 
             self.Layout = layout
