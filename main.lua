@@ -1249,7 +1249,33 @@ do -- RoomsList
         return (not param.Type or param.Type == data.Type) and (not param.Variant or param.Variant == data.Variant) and (not param.SubType or param.SubType == data.SubType)
     end
 
-    function StageAPI.DoesLayoutContainEntity(layout, mustIncludeAny, mustExclude, mustIncludeAll, notIncluding)
+    function StageAPI.CountLayoutEntities(layout, entities, notIncluding)
+        local count = 0
+        for _, ent in ipairs(layout.Entities) do
+            for _, entity in ipairs(entities) do
+                if StageAPI.DoesEntityDataMatchParameters(entity, ent) then
+                    local dontCount
+                    if notIncluding then
+                        for _, noInclude in ipairs(notIncluding) do
+                            if StageAPI.DoesEntityDataMatchParameters(noInclude, ent) then
+                                dontCount = true
+                                break
+                            end
+                        end
+                    end
+
+                    if not dontCount then
+                        count = count + 1
+                        break
+                    end
+                end
+            end
+        end
+
+        return count
+    end
+
+    function StageAPI.DoesLayoutContainEntities(layout, mustIncludeAny, mustExclude, mustIncludeAll, notIncluding)
         local includesAny = not mustIncludeAny
         local mustIncludeAllCopy = {}
         if mustIncludeAll then
