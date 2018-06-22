@@ -4715,6 +4715,7 @@ do -- Callbacks
                 if selectedLayout then
                     StageAPI.RegisterLayout("StageAPITest", selectedLayout)
                     local testRoom = StageAPI.LevelRoom("StageAPITest", nil, REVEL.room:GetSpawnSeed(), selectedLayout.Shape, selectedLayout.Variant)
+                    testRoom:SetTypeOverride(selectedLayout.Type)
                     StageAPI.SetExtraRoom("StageAPITest", testRoom)
                     StageAPI.TransitionToExtraRoom("StageAPITest", DoorSlot.DOWN0)
                 else
