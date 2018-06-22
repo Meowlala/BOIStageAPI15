@@ -673,20 +673,12 @@ do -- Core Functions
         return (index % width) - 1, (math.floor(index / width)) - 1
     end
 
-    function StageAPI.GetScreenCenterPosition()
-        local centerOffset = (room:GetCenterPos()) - room:GetTopLeftPos()
-        local pos = room:GetCenterPos()
-        if centerOffset.X > 260 then
-    		pos.X = pos.X - 260
-        end
-        if centerOffset.Y > 140 then
-            pos.Y = pos.Y - 140
-        end
-        return Isaac.WorldToRenderPosition(pos, false)
+    function StageAPI.GetScreenBottomRight()
+        return room:GetRenderSurfaceTopLeft() * 2 + Vector(442,286)
     end
 
-    function StageAPI.GetScreenBottomRight()
-    	return StageAPI.GetScreenCenterPosition() * 2
+    function StageAPI.GetScreenCenterPosition()
+        return StageAPI.GetScreenBottomRight() / 2
     end
 
     function StageAPI.Lerp(first, second, percent)
@@ -4687,6 +4679,50 @@ do -- Callbacks
             end
         elseif cmd == "extraroomexit" then
             StageAPI.TransitionFromExtraRoom(StageAPI.LastNonExtraRoom)
+        elseif cmd == "croom" then
+            local paramTable = {}
+            for word in params:gmatch("%S+") do paramTable[#paramTable + 1] = word end
+            local name = tonumber(paramTable[1]) or paramTable[1]
+            local listName = paramTable[2]
+            if name then
+                local list
+                if listName then
+                    if StageAPI.RoomsLists[listName] then
+                        list = StageAPI.RoomsLists[listName]
+                    else
+                        Isaac.ConsoleOutput("Room List name invalid.")
+                        return
+                    end
+                elseif StageAPI.CurrentStage and StageAPI.CurrentStage.Rooms then
+                    list = StageAPI.CurrentStage.Rooms
+                else
+                    Isaac.ConsoleOutput("Must supply Room List name or be in a custom stage with rooms.")
+                    return
+                end
+
+                if type(name) == "string" then
+                    name = string.gsub(name, "_", " ")
+                end
+
+                local selectedLayout
+                for _, room in ipairs(list.All) do
+                    if room.Name == name or room.Variant == name then
+                        selectedLayout = room
+                        break
+                    end
+                end
+
+                if selectedLayout then
+                    StageAPI.RegisterLayout("StageAPITest", selectedLayout)
+                    local testRoom = StageAPI.LevelRoom("StageAPITest", nil, REVEL.room:GetSpawnSeed(), selectedLayout.Shape, selectedLayout.Variant)
+                    StageAPI.SetExtraRoom("StageAPITest", testRoom)
+                    StageAPI.TransitionToExtraRoom("StageAPITest", DoorSlot.DOWN0)
+                else
+                    Isaac.ConsoleOutput("Room with ID or name " .. tostring(name) .. " does not exist.")
+                end
+            else
+                Isaac.ConsoleOutput("A room ID or name is required.")
+            end
         elseif cmd == "creseed" then
             if StageAPI.CurrentStage then
                 StageAPI.GotoCustomStage(StageAPI.CurrentStage)
