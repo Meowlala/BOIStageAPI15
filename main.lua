@@ -4732,6 +4732,27 @@ do -- Callbacks
             StageAPI.RoomNamesEnabled = not StageAPI.RoomNamesEnabled
         end
     end)
+
+    StageAPI.LoadedMods = {}
+    StageAPI.RunWhenLoaded = {}
+    function StageAPI.MarkLoaded(name)
+        StageAPI.LoadedMods[name] = true
+        if StageAPI.RunWhenLoaded[name] then
+            for _, fn in ipairs(StageAPI.RunWhenLoaded[name]) do
+                fn()
+            end
+        end
+    end
+
+    function StageAPI.RunWhenMarkedLoaded(name, fn)
+        if StageAPI.LoadedMods[name] then
+            fn()
+        else
+            if not StageAPI.RunWhenLoaded[name] then
+                StageAPI.RunWhenLoaded[name] = true
+            end
+        end
+    end
 end
 
 Isaac.DebugString("[StageAPI] Loading Save System")
