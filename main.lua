@@ -4749,8 +4749,10 @@ do -- Callbacks
             fn()
         else
             if not StageAPI.RunWhenLoaded[name] then
-                StageAPI.RunWhenLoaded[name] = true
+                StageAPI.RunWhenLoaded[name] = {}
             end
+
+            StageAPI.RunWhenLoaded[name][#StageAPI.RunWhenLoaded[name] + 1] = fn
         end
     end
 end
