@@ -2,8 +2,8 @@
    <Info CreatedBy="DeadInfinity" CreatedOn="4/26/2018 1:14:28 PM" Version="3" Fps="30"/>
    <Content>
        <Spritesheets>
-           <Spritesheet Path="tombtrap_1.png" Id="0"/>
-           <Spritesheet Path="tombtrap_corner.png" Id="1"/>
+           <Spritesheet Path="none.png" Id="0"/>
+           <Spritesheet Path="none.png" Id="1"/>
        </Spritesheets>
        <Layers>
          <Layer Name="Corner" Id="0" SpritesheetId="1" />
