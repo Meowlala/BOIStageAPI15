@@ -3074,63 +3074,125 @@ do -- Backdrop & RoomGfx
         lRooms[roomsh] = true
     end
 
+    StageAPI.ShapeToWallAnm2Layers = {
+        ["1x2"] = 58,
+        ["2x2"] = 63,
+        ["2x2X"] = 21,
+        ["IIH"] = 62,
+        ["LTR"] = 63,
+        ["LTRX"] = 19,
+        ["2x1"] = 63,
+        ["2x1X"] = 7,
+        ["1x1"] = 44,
+        ["LTL"] = 63,
+        ["LTLX"] = 19,
+        ["LBR"] = 63,
+        ["LBRX"] = 19,
+        ["LBL"] = 63,
+        ["LBLX"] = 19,
+        ["IIV"] = 42,
+        ["IH"] = 36,
+        ["IV"] = 28
+    }
+
+    StageAPI.ShapeToName = {
+       [RoomShape.ROOMSHAPE_IV] = "IV",
+       [RoomShape.ROOMSHAPE_1x2] = "1x2",
+       [RoomShape.ROOMSHAPE_2x2] = "2x2",
+       [RoomShape.ROOMSHAPE_IH] = "IH",
+       [RoomShape.ROOMSHAPE_LTR] = "LTR",
+       [RoomShape.ROOMSHAPE_LTL] = "LTL",
+       [RoomShape.ROOMSHAPE_2x1] = "2x1",
+       [RoomShape.ROOMSHAPE_1x1] = "1x1",
+       [RoomShape.ROOMSHAPE_LBL] = "LBL",
+       [RoomShape.ROOMSHAPE_LBR] = "LBR",
+       [RoomShape.ROOMSHAPE_IIH] = "IIH",
+       [RoomShape.ROOMSHAPE_IIV] = "IIV"
+    }
+
     function StageAPI.ChangeBackdrop(backdrop)
         StageAPI.BackdropRNG:SetSeed(room:GetDecorationSeed(), 1)
-        local roomShape = room:GetRoomShape()
-        local backdropEntity = Isaac.Spawn(StageAPI.E.Backdrop.T, StageAPI.E.Backdrop.V, 0, zeroVector, zeroVector, nil)
-        local sprite = backdropEntity:GetSprite()
-        sprite:Load("stageapi/Backdrop.anm2", false)
+        local needsExtra
+        for i = 1, 3 do
+            if i == 3 and not needsExtra then
+                break
+            end
 
-        if backdrop.Walls then
-            for num = 0, 15 do
-                local wall_to_use = backdrop.Walls[StageAPI.Random(1, #backdrop.Walls, backdropRNG)]
-                sprite:ReplaceSpritesheet(num, wall_to_use)
+            local roomShape = room:GetRoomShape()
+            local shapeName = StageAPI.ShapeToName[roomShape]
+            if StageAPI.ShapeToWallAnm2Layers[shapeName .. "X"] then
+                needsExtra = true
+            end
+
+            if i == 3 then
+                shapeName = shapeName .. "X"
+            end
+
+            local backdropEntity = Isaac.Spawn(StageAPI.E.Backdrop.T, StageAPI.E.Backdrop.V, 0, zeroVector, zeroVector, nil)
+            local sprite = backdropEntity:GetSprite()
+
+            if i == 1 or i == 3 then
+                sprite:Load("stageapi/WallBackdrop.anm2", false)
+
+                if backdrop.Walls then
+                    for num = 1, StageAPI.ShapeToWallAnm2Layers[shapeName] do
+                        local wall_to_use = backdrop.Walls[StageAPI.Random(1, #backdrop.Walls, backdropRNG)]
+                        sprite:ReplaceSpritesheet(num, wall_to_use)
+                    end
+                end
+                if backdrop.Corners and string.sub(shapeName, 1, 1) == "L" then
+                    local corner_to_use = backdrop.Corners[StageAPI.Random(1, #backdrop.Corners, backdropRNG)]
+                    sprite:ReplaceSpritesheet(0, corner_to_use)
+                end
+            else
+                sprite:Load("stageapi/FloorBackdrop.anm2", false)
+
+                if backdrop.Walls then
+                    local numWalls
+                    if roomShape == RoomShape.ROOMSHAPE_1x1 then
+                        numWalls = 4
+                    elseif roomShape == RoomShape.ROOMSHAPE_1x2 or roomShape == RoomShape.ROOMSHAPE_2x1 then
+                        numWalls = 8
+                    elseif roomShape == RoomShape.ROOMSHAPE_2x2 then
+                        numWalls = 16
+                    end
+
+                    if numWalls then
+                        for i = 0, numWalls - 1 do
+                            sprite:ReplaceSpritesheet(i, backdrop.Walls[StageAPI.Random(1, #backdrop.Walls, backdropRNG)])
+                        end
+                    end
+                end
+
+                if backdrop.NFloors and string.sub(shapeName, 1, 1) == "I" then
+                    for num = 18, 19 do
+                        sprite:ReplaceSpritesheet(num, backdrop.NFloors[StageAPI.Random(1, #backdrop.NFloors, backdropRNG)])
+                    end
+                end
+
+                if backdrop.LFloors and string.sub(shapeName, 1, 1) == "L" then
+                    for num = 16, 17 do
+                        sprite:ReplaceSpritesheet(num, backdrop.LFloors[StageAPI.Random(1, #backdrop.LFloors, backdropRNG)])
+                    end
+                end
+            end
+
+            sprite:LoadGraphics()
+
+            local renderPos = room:GetTopLeftPos()
+            if i ~= 2 then
+                renderPos = renderPos - Vector(80, 80)
+            end
+
+            sprite:Play(shapeName, true)
+
+            backdropEntity.Position = renderPos
+            if i == 1 or i == 3 then
+                backdropEntity:AddEntityFlags(EntityFlag.FLAG_RENDER_WALL)
+            else
+                backdropEntity:AddEntityFlags(EntityFlag.FLAG_RENDER_FLOOR)
             end
         end
-
-        if backdrop.NFloors then
-            local nfloor_to_use = backdrop.NFloors[StageAPI.Random(1, #backdrop.NFloors, backdropRNG)]
-            for num = 16, 17 do
-                sprite:ReplaceSpritesheet(num, nfloor_to_use)
-            end
-        end
-
-        if backdrop.LFloors then
-            local lfloor_to_use = backdrop.LFloors[StageAPI.Random(1, #backdrop.LFloors, backdropRNG)]
-            for num = 18, 22 do
-                sprite:ReplaceSpritesheet(num, lfloor_to_use)
-            end
-        end
-
-        if backdrop.Corners then
-            local corner_to_use = backdrop.Corners[StageAPI.Random(1, #backdrop.Corners, backdropRNG)]
-            sprite:ReplaceSpritesheet(23, corner_to_use)
-        end
-
-        sprite:LoadGraphics()
-
-        local topLeft = room:GetTopLeftPos()
-        local renderPos = topLeft + backdropDefaultOffset
-
-        if roomShape == RoomShape.ROOMSHAPE_1x1 then sprite:Play("1x1_room", true)
-        elseif roomShape ==  RoomShape.ROOMSHAPE_IH then sprite:Play("IH_room", true)
-        elseif roomShape ==  RoomShape.ROOMSHAPE_IV then
-            sprite:Play("IV_room", true)
-            renderPos = topLeft + backdropIvOffset
-        elseif roomShape ==  RoomShape.ROOMSHAPE_1x2 then sprite:Play("1x2_room", true)
-        elseif roomShape == RoomShape.ROOMSHAPE_IIV then
-            sprite:Play("IIV_room", true)
-            renderPos = topLeft + backdropIvOffset
-        elseif roomShape == RoomShape.ROOMSHAPE_2x1 then sprite:Play("2x1_room", true)
-        elseif roomShape == RoomShape.ROOMSHAPE_IIH then sprite:Play("IIH_room", true)
-        elseif roomShape == RoomShape.ROOMSHAPE_2x2 then sprite:Play("2x2_room", true)
-        elseif roomShape == RoomShape.ROOMSHAPE_LTL then sprite:Play("LTL_room", true)
-        elseif roomShape == RoomShape.ROOMSHAPE_LTR then sprite:Play("LTR_room", true)
-        elseif roomShape == RoomShape.ROOMSHAPE_LBL then sprite:Play("LBL_room", true)
-        elseif roomShape == RoomShape.ROOMSHAPE_LBR then sprite:Play("LBR_room", true) end
-
-        backdropEntity.Position = renderPos
-        backdropEntity:AddEntityFlags(EntityFlag.FLAG_RENDER_WALL | EntityFlag.FLAG_RENDER_FLOOR)
     end
 
     local shadingDefaultOffset = Vector(-80,-80)
