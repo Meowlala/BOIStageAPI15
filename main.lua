@@ -3147,7 +3147,14 @@ do -- Backdrop & RoomGfx
             else
                 sprite:Load("stageapi/FloorBackdrop.anm2", false)
 
-                if backdrop.Walls then
+                local floors
+                if backdrop.FloorVariants then
+                    floors = backdrop.FloorVariants[StageAPI.Random(1, #backdrop.FloorVariants, backdropRNG)]
+                else
+                    floors = backdrop.Floors or backdrop.Walls
+                end
+
+                if floors then
                     local numWalls
                     if roomShape == RoomShape.ROOMSHAPE_1x1 then
                         numWalls = 4
@@ -3159,7 +3166,7 @@ do -- Backdrop & RoomGfx
 
                     if numWalls then
                         for i = 0, numWalls - 1 do
-                            sprite:ReplaceSpritesheet(i, backdrop.Walls[StageAPI.Random(1, #backdrop.Walls, backdropRNG)])
+                            sprite:ReplaceSpritesheet(i, floors[StageAPI.Random(1, #floors, backdropRNG)])
                         end
                     end
                 end
@@ -3360,6 +3367,10 @@ do -- Custom Stage
         end
     end
 
+    function StageAPI.CustomStage:SetStageMusic(music)
+        self:SetMusic(music, {RoomType.ROOM_DEFAULT, RoomType.ROOM_TREASURE})
+    end
+
     function StageAPI.CustomStage:SetBossMusic(music, clearedMusic)
         self.BossMusic = {
             Fight = music,
@@ -3427,8 +3438,8 @@ do -- Custom Stage
         end
     end
 
-    function StageAPI.CustomStage:OverrideRockAltEffects()
-        self.OverrideRockAltEffects = true
+    function StageAPI.CustomStage:OverrideRockAltEffects(rooms)
+        self.OverridingRockAltEffects = rooms or true
     end
 
     function StageAPI.CustomStage:SetTransitionIcon(icon)
@@ -3467,7 +3478,13 @@ do -- Definitions
         for i, backdropVariant in ipairs(backdrop) do
             for k, backdropFiles in pairs(backdropVariant) do
                 for i2, file in ipairs(backdropFiles) do
-                    backdrop[i][k][i2] = prefix .. file .. suffix
+                    if type(file) == "table" then
+                        for i3, file2 in ipairs(file) do
+                            backdrop[i][k][i2][i3] = prefix .. file2 .. suffix
+                        end
+                    else
+                        backdrop[i][k][i2] = prefix .. file .. suffix
+                    end
                 end
             end
         end
@@ -3481,15 +3498,23 @@ do -- Definitions
     StageAPI.CatacombsGridGfx:SetBridges("stageapi/floors/catacombs/grid_bridge_catacombs.png")
     StageAPI.CatacombsGridGfx:SetDecorations("gfx/grid/props_03_caves.png")
 
+    StageAPI.CatacombsFloors = {
+        {"Catacombs1_1", "Catacombs1_2"},
+        {"Catacombs2_1", "Catacombs2_2"},
+        {"CatacombsExtraFloor_1", "CatacombsExtraFloor_2"}
+    }
+
     StageAPI.CatacombsBackdrop = {
         {
             Walls = {"Catacombs1_1", "Catacombs1_2"},
+            FloorVariants = StageAPI.CatacombsFloors,
             NFloors = {"Catacombs_nfloor"},
             LFloors = {"Catacombs_lfloor"},
             Corners = {"Catacombs1_corner"}
         },
         {
             Walls = {"Catacombs2_1", "Catacombs2_2"},
+            FloorVariants = StageAPI.CatacombsFloors,
             NFloors = {"Catacombs_nfloor"},
             LFloors = {"Catacombs_lfloor"},
             Corners = {"Catacombs2_corner"}
@@ -3500,7 +3525,7 @@ do -- Definitions
     StageAPI.CatacombsRoomGfx = StageAPI.RoomGfx(StageAPI.CatacombsBackdrop, StageAPI.CatacombsGridGfx, "_default")
     StageAPI.CatacombsMusicID = Isaac.GetMusicIdByName("Catacombs")
     StageAPI.Catacombs = StageAPI.CustomStage("Catacombs", nil, true)
-    StageAPI.Catacombs:SetMusic(StageAPI.CatacombsMusicID, RoomType.ROOM_DEFAULT)
+    StageAPI.Catacombs:SetStageMusic(StageAPI.CatacombsMusicID)
     StageAPI.Catacombs:SetBossMusic({Music.MUSIC_BOSS, Music.MUSIC_BOSS2}, Music.MUSIC_BOSS_OVER)
     StageAPI.Catacombs:SetRoomGfx(StageAPI.CatacombsRoomGfx, {RoomType.ROOM_DEFAULT, RoomType.ROOM_TREASURE, RoomType.ROOM_MINIBOSS, RoomType.ROOM_BOSS})
     StageAPI.Catacombs.DisplayName = "Catacombs I"
@@ -4247,6 +4272,19 @@ do -- Rock Alt Override
         StageAPI.JustBrokenGridSpawns = {}
     end)
 
+    function StageAPI.AreRockAltEffectsOverridden()
+        if (StageAPI.CurrentStage and StageAPI.CurrentStage.OverridingRockAltEffects) or StageAPI.TemporaryOverrideRockAltEffects then
+            local isOverriden = true
+            if not StageAPI.TemporaryOverrideRockAltEffects then
+                if type(StageAPI.CurrentStage.OverridingRockAltEffects) == "table" then
+                    isOverriden = StageAPI.IsIn(StageAPI.CurrentStage.OverridingRockAltEffects, StageAPI.GetCurrentRoomType())
+                end
+            end
+
+            return isOverriden
+        end
+    end
+
     function StageAPI.TemporarilyOverrideRockAltEffects()
         StageAPI.TemporaryOverrideRockAltEffects = true
     end
@@ -4259,7 +4297,7 @@ do -- Rock Alt Override
     end)
 
     StageAPI.AddCallback("StageAPI", "POST_GRID_UPDATE", 0, function()
-        if (StageAPI.CurrentStage and StageAPI.CurrentStage.OverrideRockAltEffects) or StageAPI.TemporaryOverrideRockAltEffects then
+        if StageAPI.AreRockAltEffectsOverridden() then
             for i = room:GetGridWidth(), room:GetGridSize() do
                 local grid = room:GetGridEntity(i)
                 if not StageAPI.SpawnOverriddenGrids[i] and grid and (grid.Desc.Type == GridEntityType.GRID_ROCK_ALT and grid.State ~= 2) then
@@ -4281,7 +4319,11 @@ do -- Callbacks
         Music.MUSIC_JINGLE_BOSS_OVER,
         Music.MUSIC_JINGLE_BOSS_OVER2,
         Music.MUSIC_JINGLE_DEVILROOM_FIND,
-        Music.MUSIC_JINGLE_HOLYROOM_FIND
+        Music.MUSIC_JINGLE_HOLYROOM_FIND,
+        Music.MUSIC_JINGLE_TREASUREROOM_ENTRY_0,
+        Music.MUSIC_JINGLE_TREASUREROOM_ENTRY_1,
+        Music.MUSIC_JINGLE_TREASUREROOM_ENTRY_2,
+        Music.MUSIC_JINGLE_TREASUREROOM_ENTRY_3
     }
 
     function StageAPI.StopOverridingMusic(music)
