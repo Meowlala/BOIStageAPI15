@@ -4099,8 +4099,14 @@ do -- Rock Alt Override
     StageAPI.SpawnOverriddenGrids = {}
     StageAPI.JustBrokenGridSpawns = {}
     StageAPI.RecentFarts = {}
+    StageAPI.LastRockAltCheckedRoom = nil
     local sfx = SFXManager()
     mod:AddCallback(ModCallbacks.MC_PRE_ENTITY_SPAWN, function(_, id, variant, subtype, position, velocity, spawner, seed)
+        if StageAPI.LastRockAltCheckedRoom ~= level:GetCurrentRoomIndex() then
+            StageAPI.LastRockAltCheckedRoom = level:GetCurrentRoomIndex()
+            StageAPI.SpawnOverriddenGrids = {}
+        end
+
         local lindex = StageAPI.GetCurrentRoomID()
         local grindex = room:GetGridIndex(position)
         if StageAPI.SpawnOverriddenGrids[grindex] then
