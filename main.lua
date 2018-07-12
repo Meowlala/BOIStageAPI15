@@ -472,12 +472,15 @@ local localToStageAPIMap = {
     zeroVector = "ZeroVector"
 }
 
-local localEnv = _ENV
+local oldENV = _ENV
+local _ENV = {}
 
-setmetatable(localEnv, {
+oldENV.setmetatable(_ENV, {
     __index = function(tbl, k)
         if localToStageAPIMap[k] then
             return StageAPI[localToStageAPIMap[k]]
+        elseif oldENV[k] then
+            return oldENV[k]
         end
     end
 })
@@ -1365,7 +1368,7 @@ do -- RoomsList
     end
 
     StageAPI.RoomChooseRNG = RNG()
-    function StageAPI.ChooseRoomLayout(roomList, seed, shape, rtype, requireRoomType)
+    function StageAPI.ChooseRoomLayout(roomList, seed, shape, rtype, requireRoomType, ignoreDoors, doors)
         local callbacks = StageAPI.GetCallbacks("POST_CHECK_VALID_ROOM")
         local validRooms = {}
 
@@ -1380,16 +1383,17 @@ do -- RoomsList
         if possibleRooms then
             for _, layout in ipairs(possibleRooms) do
                 local isValid = true
-                for _, door in ipairs(layout.Doors) do
-                    if door.Slot then
-                        if not door.Exists and room:GetDoor(door.Slot) then
-                            isValid = false
-                        end
-                    end
-                end
 
                 if requireRoomType and layout.Type ~= rtype then
                     isValid = false
+                elseif not ignoreDoors then
+                    for _, door in ipairs(layout.Doors) do
+                        if door.Slot then
+                            if not door.Exists and ((not doors and room:GetDoor(door.Slot)) or (doors and doors[door.Slot])) then
+                                isValid = false
+                            end
+                        end
+                    end
                 end
 
                 local weight = layout.Weight
@@ -1605,6 +1609,24 @@ do -- RoomsList
         end
 
         return spawnGrids
+    end
+
+    function StageAPI.ObtainSpawnObjects(layout, seed)
+        local spawnEntities, lastPersistentIndex = StageAPI.SelectSpawnEntities(layout.EntitiesByIndex, seed)
+        local spawnGrids = StageAPI.SelectSpawnGrids(layout.GridEntitiesByIndex, seed)
+
+        local gridTakenIndices = {}
+        local entityTakenIndices = {}
+
+        for index, entity in pairs(spawnEntities) do
+            entityTakenIndices[index] = true
+        end
+
+        for _, grid in ipairs(spawnGrids) do
+            gridTakenIndices[grid.Index] = true
+        end
+
+        return spawnEntities, spawnGrids, entityTakenIndices, gridTakenIndices, lastPersistentIndex
     end
 
     StageAPI.ActiveEntityPersistenceData = {}
@@ -1847,7 +1869,7 @@ do -- RoomsList
     end
 
     StageAPI.LevelRoom = StageAPI.Class("LevelRoom")
-    function StageAPI.LevelRoom:Init(layoutName, roomsList, seed, shape, roomType, isExtraRoom, fromSaveData, requireRoomType)
+    function StageAPI.LevelRoom:Init(layoutName, roomsList, seed, shape, roomType, isExtraRoom, fromSaveData, requireRoomType, ignoreDoors, doors)
         StageAPI.CurrentlyInitializing = self
         if fromSaveData then
             self:LoadSaveData(fromSaveData)
@@ -1856,9 +1878,19 @@ do -- RoomsList
             shape = shape or room:GetRoomShape()
             seed = seed or room:GetSpawnSeed()
 
+            if not doors then
+                doors = {}
+                for i = 0, 7 do
+                    if room:GetDoor(i) then
+                        doors[i] = true
+                    end
+                end
+            end
+
             self.Data = {}
             self.PersistentData = {}
 
+            self.Doors = doors
             self.Shape = shape
             self.RoomType = roomType
             self.Seed = seed
@@ -1883,7 +1915,7 @@ do -- RoomsList
             if not layout then
                 roomsList = StageAPI.CallCallbacks("PRE_ROOMS_LIST_USE", true, self) or roomsList
                 self.RoomsListName = roomsList.Name
-                layout = StageAPI.ChooseRoomLayout(roomsList.ByShape, seed, shape, roomType, requireRoomType)
+                layout = StageAPI.ChooseRoomLayout(roomsList.ByShape, seed, shape, roomType, requireRoomType, ignoreDoors, self.Doors)
             end
 
             self.Layout = layout
@@ -1900,6 +1932,9 @@ do -- RoomsList
             Isaac.DebugString("[StageAPI] No layout!")
         end
 
+        self.SpawnEntities, self.SpawnGrids, self.EntityTakenIndices, self.GridTakenIndices, self.LastPersistentIndex = StageAPI.ObtainSpawnObjects(self.Layout, seed)
+
+        --[[
         self.SpawnEntities, self.LastPersistentIndex = StageAPI.SelectSpawnEntities(self.Layout.EntitiesByIndex, seed)
         self.SpawnGrids = StageAPI.SelectSpawnGrids(self.Layout.GridEntitiesByIndex, seed)
 
@@ -1912,7 +1947,7 @@ do -- RoomsList
 
         for _, grid in ipairs(self.SpawnGrids) do
             self.GridTakenIndices[grid.Index] = true
-        end
+        end]]
     end
 
     function StageAPI.LevelRoom:IsGridIndexFree(index, ignoreEntities, ignoreGrids)
@@ -2044,7 +2079,7 @@ do -- RoomsList
         saveData.RoomType = self.RoomType
         saveData.TypeOverride = self.TypeOverride
         saveData.PersistentData = self.PersistentData
-        saveData.IsExtraRoom = self.IsExtraRoom
+        saveData.IsExtraRoom = isExtraRoom
         saveData.LastPersistentIndex = self.LastPersistentIndex
         saveData.RequireRoomType = self.RequireRoomType
 
@@ -2102,6 +2137,13 @@ do -- RoomsList
         self.RequireRoomType = saveData.RequireRoomType
         self.TypeOverride = saveData.TypeOverride
 
+        if saveData.Doors then
+            self.Doors = {}
+            for _, door in ipairs(saveData.Doors) do
+                self.Doors[door] = true
+            end
+        end
+
         local layout
         if self.LayoutName then
             layout = StageAPI.Layouts[layoutName]
@@ -2114,7 +2156,7 @@ do -- RoomsList
                 if retLayout then
                     layout = retLayout
                 else
-                    layout = StageAPI.ChooseRoomLayout(roomsList.ByShape, self.Seed, self.Shape, self.RoomType, self.RequireRoomType)
+                    layout = StageAPI.ChooseRoomLayout(roomsList.ByShape, self.Seed, self.Shape, self.RoomType, self.RequireRoomType, false, self.Doors)
                 end
             end
         end
