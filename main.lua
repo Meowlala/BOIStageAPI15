@@ -369,16 +369,27 @@ do -- Core Definitions
         StageAPI = {}
     end
 
+    StageAPI.PoopVariant = {
+        Normal = 0,
+        Red = 1,
+        Eternal = 2,
+        Golden = 3,
+        Rainbow = 4,
+        Black = 5,
+        White = 6
+    }
+
     StageAPI.CorrectedGridTypes = {
         [1000]=GridEntityType.GRID_ROCK,
         [1001]=GridEntityType.GRID_ROCK_BOMB,
         [1002]=GridEntityType.GRID_ROCK_ALT,
         [1300]=GridEntityType.GRID_TNT,
-        [1497]=GridEntityType.GRID_POOP,
-        [1496]=GridEntityType.GRID_POOP,
-        [1495]=GridEntityType.GRID_POOP,
-        [1494]=GridEntityType.GRID_POOP,
-        [1490]=GridEntityType.GRID_POOP,
+        [1498]={Type = GridEntityType.GRID_POOP, Variant = StageAPI.PoopVariant.White},
+        [1497]={Type = GridEntityType.GRID_POOP, Variant = StageAPI.PoopVariant.Black},
+        [1496]={Type = GridEntityType.GRID_POOP, Variant = StageAPI.PoopVariant.Golden},
+        [1495]={Type = GridEntityType.GRID_POOP, Variant = StageAPI.PoopVariant.Eternal},
+        [1494]={Type = GridEntityType.GRID_POOP, Variant = StageAPI.PoopVariant.Rainbow},
+        [1490]={Type = GridEntityType.GRID_POOP, Variant = StageAPI.PoopVariant.Red},
         [1500]=GridEntityType.GRID_POOP,
         [1900]=GridEntityType.GRID_ROCKB,
         [1930]=GridEntityType.GRID_SPIKES,
@@ -937,9 +948,15 @@ do -- RoomsList
                 local index = StageAPI.VectorToGrid(object.GRIDX, object.GRIDY, outLayout.Width)
                 for _, entityData in ipairs(object) do
                     if StageAPI.CorrectedGridTypes[entityData.TYPE] then
+                        local t, v = StageAPI.CorrectedGridTypes[entityData.TYPE], entityData.VARIANT
+                        if type(t) == "table" then
+                            v = t.Variant
+                            t = t.Type
+                        end
+
                         local gridData = {
-                            Type = StageAPI.CorrectedGridTypes[entityData.TYPE],
-                            Variant = entityData.VARIANT,
+                            Type = t,
+                            Variant = v,
                             GridX = object.GRIDX,
                             GridY = object.GRIDY,
                             Index = index
@@ -2739,14 +2756,6 @@ do -- GridGfx
             Suffix = suffix or ""
         }
     end
-
-    StageAPI.PoopVariant = {
-        Normal = 0,
-        Red = 1,
-        Eternal = 2,
-        Golden = 3,
-        Black = 4
-    }
 
     -- No SetPoop, do GridGfx:SetGrid(filename, GridEntityType.GRID_POOP, StageAPI.PoopVariant.Normal)
 
@@ -4867,7 +4876,7 @@ do -- Callbacks
                 if selectedLayout then
                     StageAPI.RegisterLayout("StageAPITest", selectedLayout)
                     local testRoom = StageAPI.LevelRoom("StageAPITest", nil, REVEL.room:GetSpawnSeed(), selectedLayout.Shape, selectedLayout.Variant)
-                    testRoom:SetTypeOverride(selectedLayout.Type)
+                    testRoom.RoomType = selectedLayout.Type
                     StageAPI.SetExtraRoom("StageAPITest", testRoom)
                     local doors = {}
                     for _, door in ipairs(selectedLayout.Doors) do
