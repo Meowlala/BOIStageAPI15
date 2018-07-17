@@ -4869,7 +4869,12 @@ do -- Callbacks
                     local testRoom = StageAPI.LevelRoom("StageAPITest", nil, REVEL.room:GetSpawnSeed(), selectedLayout.Shape, selectedLayout.Variant)
                     testRoom:SetTypeOverride(selectedLayout.Type)
                     StageAPI.SetExtraRoom("StageAPITest", testRoom)
-                    StageAPI.TransitionToExtraRoom("StageAPITest", DoorSlot.DOWN0)
+                    local doors = {}
+                    for _, door in ipairs(selectedLayout.Doors) do
+                        doors[#doors + 1] = door.Slot
+                    end
+
+                    StageAPI.TransitionToExtraRoom("StageAPITest", doors[StageAPI.Random(1, #doors)])
                 else
                     Isaac.ConsoleOutput("Room with ID or name " .. tostring(name) .. " does not exist.")
                 end
