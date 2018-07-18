@@ -4880,7 +4880,9 @@ do -- Callbacks
                     StageAPI.SetExtraRoom("StageAPITest", testRoom)
                     local doors = {}
                     for _, door in ipairs(selectedLayout.Doors) do
-                        doors[#doors + 1] = door.Slot
+                        if door.Exists then
+                            doors[#doors + 1] = door.Slot
+                        end
                     end
 
                     StageAPI.TransitionToExtraRoom("StageAPITest", doors[StageAPI.Random(1, #doors)])
