@@ -735,26 +735,39 @@ do -- Core Functions
     local streakDefaultColor = KColor(1,1,1,1,0,0,0)
     local streakDefaultPos = Vector(240, 48)
     local oneVector = Vector(1, 1)
-    function StageAPI.PlayTextStreak(text, extratext, extratextOffset, extratextScaleMulti)
+    function StageAPI.PlayTextStreak(text, extratext, extratextOffset, extratextScaleMulti, replaceSpritesheet, spriteOffset, font, smallFont, color)
         local index = #Streaks + 1
         if not StreakSprites[index] then -- this system loads as many sprites as it has to play at once
             StreakSprites[index] = Sprite()
             StreakSprites[index]:Load("stageapi/streak.anm2", true)
+        elseif not replaceSpritesheet then
+            StreakSprites[index]:ReplaceSpritesheet(0, "stageapi/streak.png")
+            StreakSprites[index]:LoadGraphics()
         end
 
+        if replaceSpritesheet then
+            StreakSprites[index]:ReplaceSpritesheet(0, replaceSpritesheet)
+            StreakSprites[index]:LoadGraphics()
+        end
+
+        StreakSprites[index].Offset = spriteOffset or zeroVector
         StreakSprites[index]:Play("Text", true)
 
+        local useFont = font or streakFont
+        local useSmallFont = smallFont or streakSmallFont
         Streaks[index] = {
             Text = text,
             ExtraText = extratext,
-            Color = streakDefaultColor,
+            Color = color or streakDefaultColor,
             Frame = 0,
-            Width = streakFont:GetStringWidth(text) / 2,
+            Font = useFont,
+            SmallFont = useSmallFont,
+            Width = useFont:GetStringWidth(text) / 2,
             RenderPos = streakDefaultPos,
             FontScale = oneVector,
             ExtraFontScale = extratextScaleMulti,
             ExtraOffset = extratextOffset,
-            ExtraWidth = streakSmallFont:GetStringWidth(extratext or "")
+            ExtraWidth = useSmallFont:GetStringWidth(extratext or "")
         }
     end
 
@@ -783,9 +796,9 @@ do -- Core Functions
             if streakPlaying.PositionX then
                 local sprite = StreakSprites[index]
                 sprite:Render(streakPlaying.RenderPos, zeroVector, zeroVector)
-                streakFont:DrawStringScaled(streakPlaying.Text, streakPlaying.PositionX, streakPlaying.RenderPos.Y - 9, streakPlaying.FontScale.X, 1, streakPlaying.Color, 0, true)
+                streakPlaying.Font:DrawStringScaled(streakPlaying.Text, streakPlaying.PositionX, streakPlaying.RenderPos.Y - 9, streakPlaying.FontScale.X, 1, streakPlaying.Color, 0, true)
                 if streakPlaying.ExtraText then
-                    streakSmallFont:DrawStringScaled(streakPlaying.ExtraText, streakPlaying.ExtraPositionX + streakPlaying.ExtraOffset.X, (streakPlaying.RenderPos.Y - 9) + streakPlaying.ExtraOffset.Y, streakPlaying.FontScale.X * streakPlaying.ExtraFontScale.X, 1 * streakPlaying.ExtraFontScale.Y, streakPlaying.Color, 0, true)
+                    streakPlaying.SmallFont:DrawStringScaled(streakPlaying.ExtraText, streakPlaying.ExtraPositionX + streakPlaying.ExtraOffset.X, (streakPlaying.RenderPos.Y - 9) + streakPlaying.ExtraOffset.Y, streakPlaying.FontScale.X * streakPlaying.ExtraFontScale.X, 1 * streakPlaying.ExtraFontScale.Y, streakPlaying.Color, 0, true)
                 end
             end
         end
@@ -2738,9 +2751,10 @@ do -- GridGfx
         end
     end
 
-    function StageAPI.GridGfx:SetPits(filename, alt)
+    function StageAPI.GridGfx:SetPits(filename, alt, hasExtraFrames)
         self.Pits = filename
         self.AltPits = alt
+        --self.HasExtraPitFrames = hasExtraFrames
     end
 
     function StageAPI.GridGfx:SetBridges(filename)
@@ -2852,7 +2866,7 @@ do -- GridGfx
     end
 
     StageAPI.PitSprite = Sprite()
-    StageAPI.PitSprite:Load("gfx/grid/grid_pit.anm2", true)
+    StageAPI.PitSprite:Load("stageapi/pit.anm2", true)
     function StageAPI.ChangePit(pit, filename, bridgefilename, alt)
         local grid = pit.Grid
 
@@ -3096,16 +3110,44 @@ do -- GridGfx
 
     function StageAPI.ChangeGrids(grids)
         StageAPI.GridGfxRNG:SetSeed(room:GetDecorationSeed(), 0)
+        local pits = {}
         for i = 0, room:GetGridSize() do
             if not StageAPI.CustomGridIndices[i] then
                 local grid = room:GetGridEntity(i)
                 if grid then
-                    StageAPI.ChangeSingleGrid(grid, grids, i)
+                    if grids.HasExtraPitFrames and grid.Desc.Type == GridEntityType.GRID_PIT then
+                        pits[i] = grid
+                    else
+                        StageAPI.ChangeSingleGrid(grid, grids, i)
+                    end
                 end
             end
         end
 
         StageAPI.CallGridPostInit()
+
+        if grids.HasExtraPitFrames and next(pits) then
+            local width = room:GetGridWidth()
+            for index, pit in pairs(pits) do
+                StageAPI.ChangePit({Grid = pit, Index = index}, grids.Pits, grids.Bridges, grids.AltPits)
+                local sprite = pit.Sprite
+
+                local adj = {index - 1, index + 1, index - width, index + width, index - width - 1, index + width - 1, index - width + 1, index + width + 1}
+                local adjPits = {}
+                for _, ind in ipairs(adj) do
+                    local grid = room:GetGridEntity(ind)
+                    if grid and grid.Desc.Type == GridEntityType.GRID_PIT then
+                        adjPits[#adjPits + 1] = true
+                    else
+                        adjPits[#adjPits + 1] = false
+                    end
+                end
+
+                adjPits[#adjPits + 1] = true
+                sprite:SetFrame("pit", StageAPI.GetPitFrame(table.unpack(adjPits)))
+                pit.Sprite = sprite
+            end
+        end
     end
 end
 
@@ -5065,7 +5107,7 @@ end
 Isaac.DebugString("[StageAPI] Loading Miscellaneous Functions")
 do -- Misc helpful functions
     -- Takes whether or not there is a pit in each adjacent space, returns frame to set pit sprite to.
-    function StageAPI.GetPitFrame(L, R, U, D, UL, DL, UR, DR)
+    function StageAPI.GetPitFrame(L, R, U, D, UL, DL, UR, DR, hasExtraFrames)
         -- Words were shortened to make writing code simpler.
         local F = 0 -- Sprite frame to set
 
@@ -5093,6 +5135,16 @@ do -- Misc helpful functions
         if L and R and D and DR and not U and not DL then       F = 31 end
         if L and R and D and not U and not DL and not DR then   F = 32 end
 
+        if hasExtraFrames then
+            if U and L and D and UL and not DL then                                 F = 35 end
+            if U and R and D and UR and not DR then                                 F = 36 end
+            if U and R and D and not L and not UR and not DR then                   F = 33 end
+            if U and L and D and not R and not UL and not DL then                   F = 34 end
+            if U and R and D and L and UL and UR and DL and not DR then             F = 37 end
+            if U and R and D and L and UL and UR and DR and not DL then             F = 38 end
+            if U and R and D and L and not UL and not UR and not DR and not DL then F = 39 end
+        end
+
         return F
     end
 
@@ -5107,7 +5159,7 @@ do -- Misc helpful functions
         {X = 1, Y = 1}
     }
 
-    function StageAPI.GetPitFramesForLayoutEntities(t, v, s, entities, width, height)
+    function StageAPI.GetPitFramesForLayoutEntities(t, v, s, entities, width, height, hasExtraFrames)
         width = width or room:GetGridWidth()
         height = height or room:GetGridHeight()
         local indicesWithEntity = {}
@@ -5139,9 +5191,8 @@ do -- Misc helpful functions
                     adjIndices[#adjIndices + 1] = false
                 end
             end
-            frames[tostring(index)] = StageAPI.GetPitFrame(
-                table.unpack(adjIndices)
-            )
+            adjIndices[#adjIndices + 1] = hasExtraFrames
+            frames[tostring(index)] = StageAPI.GetPitFrame(table.unpack(adjIndices))
         end
 
         return frames
