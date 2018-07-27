@@ -1435,7 +1435,6 @@ do -- RoomsList
                             break
                         elseif type(ret) == "number" then
                             weight = ret
-                            break
                         end
                     end
                 end
