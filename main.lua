@@ -126,6 +126,9 @@ Callback List:
 - PRE_SELECT_NEXT_STAGE(currentstage)
 -- return a stage to go to instead of currentstage.NextStage or none.
 
+- PRE_SHADING_RENDER(shadingEntity)
+- POST_SHADING_RENDER(shadingEntity)
+
 -- StageAPI Structures:
 EntityData {
     Type = integer,
@@ -2627,6 +2630,7 @@ do -- Extra Rooms
         end
 
         local door = Isaac.Spawn(StageAPI.E.Door.T, StageAPI.E.Door.V, 0, room:GetGridPosition(index), zeroVector, nil)
+        door.Visible = false
         local data, sprite = door:GetData(), door:GetSprite()
         sprite:Load(doorData.Anm2, true)
 
@@ -2668,6 +2672,12 @@ do -- Extra Rooms
             end
         end
     end, "CustomDoor")
+
+    StageAPI.AddCallback("StageAPI", "PRE_SHADING_RENDER", 0, function(shading)
+        for _, door in ipairs(Isaac.FindByType(StageAPI.E.Door.T, StageAPI.E.Door.V, -1, false, false)) do
+            door:GetSprite():Render(Isaac.WorldToScreen(door.Position), zeroVector, zeroVector)
+        end
+    end)
 
     function StageAPI.SetDoorOpen(open, door)
         local grid = room:GetGridEntityFromPos(door.Position)
@@ -2753,7 +2763,7 @@ do -- GridGfx
     function StageAPI.GridGfx:SetPits(filename, alt, hasExtraFrames)
         self.Pits = filename
         self.AltPits = alt
-        --self.HasExtraPitFrames = hasExtraFrames
+        self.HasExtraPitFrames = hasExtraFrames
     end
 
     function StageAPI.GridGfx:SetBridges(filename)
@@ -3335,15 +3345,35 @@ do -- Backdrop & RoomGfx
 
         sheet = prefix .. sheet .. name .. ".png"
 
+        --[[
         local sprite = shadingEntity:GetSprite()
         sprite:Load("stageapi/Shading.anm2", false)
         sprite:ReplaceSpritesheet(0, sheet)
         sprite:LoadGraphics()
-        sprite:Play("Default", true)
+        sprite:Play("Default", true)]]
 
+        shadingEntity:GetData().Sheet = sheet
         shadingEntity.Position = renderPos
         shadingEntity:AddEntityFlags(EntityFlag.FLAG_DONT_OVERWRITE)
     end
+
+    local shadingSprite = Sprite()
+    shadingSprite:Load("stageapi/Shading.anm2", false)
+    shadingSprite:Play("Default", true)
+    local lastUsedShadingSpritesheet
+    mod:AddCallback(ModCallbacks.MC_POST_EFFECT_RENDER, function(_, eff)
+        StageAPI.CallCallbacks("PRE_SHADING_RENDER", false, eff)
+
+        local sheet = eff:GetData().Sheet
+        if sheet and sheet ~= lastUsedShadingSpritesheet then
+            shadingSprite:ReplaceSpritesheet(0, sheet)
+            shadingSprite:LoadGraphics()
+            lastUsedShadingSpritesheet = sheet
+        end
+
+        shadingSprite:Render(Isaac.WorldToScreen(eff.Position), zeroVector, zeroVector)
+        StageAPI.CallCallbacks("POST_SHADING_RENDER", false, eff)
+    end, StageAPI.E.Shading.V)
 
     function StageAPI.ChangeRoomGfx(roomgfx)
         StageAPI.BackdropRNG:SetSeed(room:GetDecorationSeed(), 0)
@@ -4916,7 +4946,7 @@ do -- Callbacks
 
                 if selectedLayout then
                     StageAPI.RegisterLayout("StageAPITest", selectedLayout)
-                    local testRoom = StageAPI.LevelRoom("StageAPITest", nil, REVEL.room:GetSpawnSeed(), selectedLayout.Shape, selectedLayout.Variant)
+                    local testRoom = StageAPI.LevelRoom("StageAPITest", nil, room:GetSpawnSeed(), selectedLayout.Shape, selectedLayout.Variant)
                     testRoom.RoomType = selectedLayout.Type
                     StageAPI.SetExtraRoom("StageAPITest", testRoom)
                     local doors = {}
@@ -5142,6 +5172,13 @@ do -- Misc helpful functions
             if U and R and D and L and UL and UR and DL and not DR then             F = 37 end
             if U and R and D and L and UL and UR and DR and not DL then             F = 38 end
             if U and R and D and L and not UL and not UR and not DR and not DL then F = 39 end
+            if U and R and D and L and DL and DR and not UL and not UR then F = 40 end
+            if U and R and D and L and DL and UR and not UL and not DR then F = 41 end
+            if U and R and D and L and UL and DR and not DL and not UR then F = 42 end
+            if U and R and D and L and UL and not DL and not UR and not DR then F = 43 end
+            if U and R and D and L and UR and not UL and not DL and not DR then F = 44 end
+            if U and R and D and L and DL and not UL and not UR and not DR then F = 45 end
+            if U and R and D and L and DR and not UL and not UR and not DL then F = 46 end
         end
 
         return F
