@@ -1750,6 +1750,9 @@ do -- RoomsList
                                         nil
                                     )
 
+                                    ent:GetData().StageAPISpawnedPosition = entityInfo.Position or StageAPI.ZeroVector
+                                    ent:GetData().StageAPIEntityListIndex = index
+
                                     if entityInfo.Persistent then
                                         StageAPI.SetEntityPersistenceData(ent, entityInfo.PersistentIndex, entityInfo.PersistenceData)
                                     end
