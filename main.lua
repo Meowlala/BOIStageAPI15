@@ -1826,6 +1826,10 @@ do -- RoomsList
 
                     grids_spawned[#grids_spawned + 1] = grid
                 end
+
+                if gridData.Type == GridEntityType.GRID_PRESSURE_PLATE and gridData.Variant == 0 then
+                    StageAPI.Room:SetClear(false)
+                end
             end
         end
 
