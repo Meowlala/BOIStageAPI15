@@ -996,6 +996,11 @@ do -- RoomsList
 
                         if entData.Type == 1400 or entData.Type == 1410 then
                             entData.Type = EntityType.ENTITY_FIREPLACE
+                            if entData.Type == 1410 then
+                                entData.Variant = 1
+                            else
+                                entData.Variant = 0
+                            end
                         end
 
                         if not outLayout.EntitiesByIndex[entData.Index] then
@@ -5205,10 +5210,14 @@ do -- Misc helpful functions
         if R and D and not DR and not L and not U then          F = 20 end
         if L and U and R and D and not UL then                  F = 21 end
         if L and U and R and D and not UR then                  F = 22 end
-        if L and U and R and D and not DL and not DR then       F = 24 end
-        if L and U and R and D and not UR and not UL then       F = 23 end
         if U and R and D and not L and not UR then              F = 25 end
         if L and U and D and not R and not UL then              F = 26 end
+        if hasExtraFrames then
+            if U and L and D and UL and not DL then                                 F = 35 end
+            if U and R and D and UR and not DR then                                 F = 36 end
+        end
+        if L and U and R and D and not DL and not DR then       F = 24 end
+        if L and U and R and D and not UR and not UL then       F = 23 end
         if L and U and R and UL and not UR and not D then       F = 27 end
         if L and U and R and UR and not UL and not D then       F = 28 end
         if L and U and R and not D and not UR and not UL then   F = 29 end
@@ -5217,8 +5226,6 @@ do -- Misc helpful functions
         if L and R and D and not U and not DL and not DR then   F = 32 end
 
         if hasExtraFrames then
-            if U and L and D and UL and not DL then                                 F = 35 end
-            if U and R and D and UR and not DR then                                 F = 36 end
             if U and R and D and not L and not UR and not DR then                   F = 33 end
             if U and L and D and not R and not UL and not DL then                   F = 34 end
             if U and R and D and L and UL and UR and DL and not DR then             F = 37 end
