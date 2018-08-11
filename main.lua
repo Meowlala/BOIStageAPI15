@@ -1761,7 +1761,7 @@ do -- RoomsList
     end
 
     function StageAPI.AddMetadataEntities(tbl)
-        if next(tbl).Name then
+        if type(next(tbl)) == "table" and next(tbl).Name then
             for variant, data in pairs(tbl) do
                 data.Type = 900
                 data.Variant = variant
@@ -1777,6 +1777,8 @@ do -- RoomsList
                         StageAPI.MetadataEntities[id][variant] = data
                         StageAPI.MetadataEntitiesByName[data.Name] = data
                     end
+                else
+                    StageAPI.MetadataEntities[id] = variantTable
                 end
             end
         end
@@ -2423,11 +2425,15 @@ do -- RoomsList
         return groups
     end
 
-    function StageAPI.LevelRoom:IndicesShareGroup(index, index2)
-        local groups = self:GetEntityMetadataGroups(index)
-        for _, group in ipairs(groups) do
-            if self:HasEntityMetadata(index2, group) then
-                return true
+    function StageAPI.LevelRoom:IndicesShareGroup(index, index2, specificGroup)
+        if specificGroup then
+            return self:HasEntityMetadata(index, specificGroup) and self:HasEntityMetadata(index2, specificGroup)
+        else
+            local groups = self:GetEntityMetadataGroups(index)
+            for _, group in ipairs(groups) do
+                if self:HasEntityMetadata(index2, group) then
+                    return true
+                end
             end
         end
 
