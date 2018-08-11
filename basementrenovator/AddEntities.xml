@@ -1,0 +1,31 @@
+<data>
+	<entity BaseHP="0" Group="StageAPI Groups" ID="900" Image="resources/Entities/stageapi/group_0.png" Kind="Stage" Name="Group 0" Subtype="0" Variant="0" />
+	<entity BaseHP="0" Group="StageAPI Groups" ID="900" Image="resources/Entities/stageapi/group_1.png" Kind="Stage" Name="Group 1" Subtype="0" Variant="1" />
+	<entity BaseHP="0" Group="StageAPI Groups" ID="900" Image="resources/Entities/stageapi/group_2.png" Kind="Stage" Name="Group 2" Subtype="0" Variant="2" />
+	<entity BaseHP="0" Group="StageAPI Groups" ID="900" Image="resources/Entities/stageapi/group_3.png" Kind="Stage" Name="Group 3" Subtype="0" Variant="3" />
+	<entity BaseHP="0" Group="StageAPI Groups" ID="900" Image="resources/Entities/stageapi/group_4.png" Kind="Stage" Name="Group 4" Subtype="0" Variant="4" />
+	<entity BaseHP="0" Group="StageAPI Groups" ID="900" Image="resources/Entities/stageapi/group_5.png" Kind="Stage" Name="Group 5" Subtype="0" Variant="5" />
+	<entity BaseHP="0" Group="StageAPI Groups" ID="900" Image="resources/Entities/stageapi/group_6.png" Kind="Stage" Name="Group 6" Subtype="0" Variant="6" />
+	<entity BaseHP="0" Group="StageAPI Groups" ID="900" Image="resources/Entities/stageapi/group_7.png" Kind="Stage" Name="Group 7" Subtype="0" Variant="7" />
+	<entity BaseHP="0" Group="StageAPI Groups" ID="900" Image="resources/Entities/stageapi/group_8.png" Kind="Stage" Name="Group 8" Subtype="0" Variant="8" />
+	<entity BaseHP="0" Group="StageAPI Groups" ID="900" Image="resources/Entities/stageapi/group_9.png" Kind="Stage" Name="Group 9" Subtype="0" Variant="9" />
+	<entity BaseHP="0" Group="StageAPI Groups" ID="900" Image="resources/Entities/stageapi/group_randomizer.png" Kind="Stage" Name="Group Randomizer" Subtype="0" Variant="10" />
+
+	<entity BaseHP="0" Group="StageAPI Directions" ID="900" Image="resources/Entities/stageapi/left.png" Kind="Stage" Name="Left" Subtype="0" Variant="11" />
+	<entity BaseHP="0" Group="StageAPI Directions" ID="900" Image="resources/Entities/stageapi/right.png" Kind="Stage" Name="Right" Subtype="0" Variant="12" />
+	<entity BaseHP="0" Group="StageAPI Directions" ID="900" Image="resources/Entities/stageapi/up.png" Kind="Stage" Name="Up" Subtype="0" Variant="13" />
+	<entity BaseHP="0" Group="StageAPI Directions" ID="900" Image="resources/Entities/stageapi/down.png" Kind="Stage" Name="Down" Subtype="0" Variant="14" />
+	<entity BaseHP="0" Group="StageAPI Directions" ID="900" Image="resources/Entities/stageapi/up_left.png" Kind="Stage" Name="Up Left" Subtype="0" Variant="15" />
+	<entity BaseHP="0" Group="StageAPI Directions" ID="900" Image="resources/Entities/stageapi/up_right.png" Kind="Stage" Name="Up Right" Subtype="0" Variant="16" />
+	<entity BaseHP="0" Group="StageAPI Directions" ID="900" Image="resources/Entities/stageapi/down_left.png" Kind="Stage" Name="Down Left" Subtype="0" Variant="17" />
+	<entity BaseHP="0" Group="StageAPI Directions" ID="900" Image="resources/Entities/stageapi/down_right.png" Kind="Stage" Name="Down Right" Subtype="0" Variant="18" />
+	<!-- No image !-->
+	<!--<entity BaseHP="0" Group="StageAPI Directions" ID="900" Image="resources/Entities/stageapi/down_right.png" Kind="Stage" Name="Prevent Direction Conflict" Subtype="0" Variant="19" />!-->
+	<entity BaseHP="0" Group="StageAPI Utilities" ID="900" Image="resources/Entities/stageapi/swap.png" Kind="Stage" Name="Swapper" Subtype="0" Variant="20" />
+	<!--<entity BaseHP="0" Group="StageAPI Utilities" ID="900" Image="resources/Entities/stageapi/detonate.png" Kind="Stage" Name="Detonator" Subtype="0" Variant="21" />!-->
+	<entity BaseHP="0" Group="StageAPI Utilities" ID="900" Image="resources/Entities/stageapi/clear.png" Kind="Stage" Name="Room Clear Trigger" Subtype="0" Variant="22" />
+	<entity BaseHP="0" Group="StageAPI Utilities" ID="900" Image="resources/Entities/stageapi/spawn.png" Kind="Stage" Name="Spawn When Triggered" Subtype="0" Variant="23" />
+	<entity BaseHP="0" Group="StageAPI Utilities" ID="900" Image="resources/Entities/stageapi/lock.png" Kind="Stage" Name="Prevent Randomization" Subtype="0" Variant="24" />
+	<entity BaseHP="0" Group="StageAPI Utilities" ID="900" Image="resources/Entities/stageapi/bridge_failsafe.png" Kind="Stage" Name="Bridge Failsafe" Subtype="0" Variant="25" />
+	<!--<entity BaseHP="0" Group="StageAPI Utilities" ID="900" Image="resources/Entities/stageapi/detonate_trigger.png" Kind="Stage" Name="Detonator Trigger" Subtype="0" Variant="26" />!-->
+</data>

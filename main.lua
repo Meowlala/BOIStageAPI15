@@ -940,6 +940,25 @@ end
 
 Isaac.DebugString("[StageAPI] Loading Room Handler")
 do -- RoomsList
+    StageAPI.RemappedEntities = {}
+    function StageAPI.RemapEntity(t1, v1, s1, t2, v2, s2)
+        v1 = v1 or "Default"
+        s1 = s1 or "Default"
+        if not StageAPI.RemappedEntities[t1] then
+            StageAPI.RemappedEntities[t1] = {}
+        end
+
+        if v1 and not StageAPI.RemappedEntities[t1][v1] then
+            StageAPI.RemappedEntities[t1][v1] = {}
+        end
+
+        StageAPI.RemappedEntities[t1][v1][s1] = {
+            Type = t2,
+            Variant = v2,
+            SubType = s2
+        }
+    end
+
     function StageAPI.SimplifyRoomLayout(layout)
         local outLayout = {
             GridEntities = {},
@@ -1000,6 +1019,34 @@ do -- RoomsList
                                 entData.Variant = 1
                             else
                                 entData.Variant = 0
+                            end
+                        end
+
+                        if entData.Type == 999 then
+                            entData.Type = 1000
+                        end
+
+                        if StageAPI.RemappedEntities[entData.Type] then
+                            local remapTo
+                            if entData.Variant and StageAPI.RemappedEntities[entData.Type][entData.Variant] then
+                                if entData.SubType and StageAPI.RemappedEntities[entData.Type][entData.Variant][entData.SubType] then
+                                    remapTo = StageAPI.RemappedEntities[entData.Type][entData.Variant][entData.SubType]
+                                elseif StageAPI.RemappedEntities[entData.Type][entData.Variant]["Default"] then
+                                    remapTo = StageAPI.RemappedEntities[entData.Type][entData.Variant]["Default"]
+                                end
+                            elseif StageAPI.RemappedEntities[entData.Type]["Default"] then
+                                remapTo = StageAPI.RemappedEntities[entData.Type]["Default"]["Default"]
+                            end
+
+                            if remapTo then
+                                entData.Type = remapTo.Type
+                                if remapTo.Variant then
+                                    entData.Variant = remapTo.Variant
+                                end
+
+                                if remapTo.SubType then
+                                    entData.SubType = remapTo.SubType
+                                end
                             end
                         end
 
@@ -1547,7 +1594,364 @@ do -- RoomsList
     end
 
     StageAPI.RoomLoadRNG = RNG()
-    function StageAPI.SelectSpawnEntities(entities, seed)
+
+    StageAPI.MetadataEntities = {
+        [900] = {
+            [0] = {
+                Name = "Group 0",
+                Group = "Groups",
+                Conflicts = true,
+                StoreAsGroup = true,
+                OnlyConflictWith = "RandomizeGroup"
+            },
+            [1] = {
+                Name = "Group 1",
+                Group = "Groups",
+                Conflicts = true,
+                StoreAsGroup = true,
+                OnlyConflictWith = "RandomizeGroup"
+            },
+            [2] = {
+                Name = "Group 2",
+                Group = "Groups",
+                Conflicts = true,
+                StoreAsGroup = true,
+                OnlyConflictWith = "RandomizeGroup"
+            },
+            [3] = {
+                Name = "Group 3",
+                Group = "Groups",
+                Conflicts = true,
+                StoreAsGroup = true,
+                OnlyConflictWith = "RandomizeGroup"
+            },
+            [4] = {
+                Name = "Group 4",
+                Group = "Groups",
+                Conflicts = true,
+                StoreAsGroup = true,
+                OnlyConflictWith = "RandomizeGroup"
+            },
+            [5] = {
+                Name = "Group 5",
+                Group = "Groups",
+                Conflicts = true,
+                StoreAsGroup = true,
+                OnlyConflictWith = "RandomizeGroup"
+            },
+            [6] = {
+                Name = "Group 6",
+                Group = "Groups",
+                Conflicts = true,
+                StoreAsGroup = true,
+                OnlyConflictWith = "RandomizeGroup"
+            },
+            [7] = {
+                Name = "Group 7",
+                Group = "Groups",
+                Conflicts = true,
+                StoreAsGroup = true,
+                OnlyConflictWith = "RandomizeGroup"
+            },
+            [8] = {
+                Name = "Group 8",
+                Group = "Groups",
+                Conflicts = true,
+                StoreAsGroup = true,
+                OnlyConflictWith = "RandomizeGroup"
+            },
+            [9] = {
+                Name = "Group 9",
+                Group = "Groups",
+                Conflicts = true,
+                StoreAsGroup = true,
+                OnlyConflictWith = "RandomizeGroup"
+            },
+            [10] = {
+                Name = "RandomizeGroup"
+            },
+            [11] = {
+                Name = "Left",
+                Group = "Direction",
+                Conflicts = true,
+                PreventConflictWith = "PreventDirectionConflict"
+            },
+            [12] = {
+                Name = "Right",
+                Group = "Direction",
+                Conflicts = true,
+                PreventConflictWith = "PreventDirectionConflict"
+            },
+            [13] = {
+                Name = "Up",
+                Group = "Direction",
+                Conflicts = true,
+                PreventConflictWith = "PreventDirectionConflict"
+            },
+            [14] = {
+                Name = "Down",
+                Group = "Direction",
+                Conflicts = true,
+                PreventConflictWith = "PreventDirectionConflict"
+            },
+            [15] = {
+                Name = "UpLeft",
+                Group = "Direction",
+                Conflicts = true,
+                PreventConflictWith = "PreventDirectionConflict"
+            },
+            [16] = {
+                Name = "UpRight",
+                Group = "Direction",
+                Conflicts = true,
+                PreventConflictWith = "PreventDirectionConflict"
+            },
+            [17] = {
+                Name = "DownLeft",
+                Group = "Direction",
+                Conflicts = true,
+                PreventConflictWith = "PreventDirectionConflict"
+            },
+            [18] = {
+                Name = "DownRight",
+                Group = "Direction",
+                Conflicts = true,
+                PreventConflictWith = "PreventDirectionConflict"
+            },
+            [19] = {
+                Name = "PreventDirectionConflict"
+            },
+            [20] = {
+                Name = "Swapper"
+            },
+            --[[
+            [21] = {
+                Name = "Detonator"
+            },]]
+            [22] = {
+                Name = "RoomClearTrigger",
+                Trigger = true
+            },
+            [23] = {
+                Name = "Spawner",
+                BlockEntities = true
+            },
+            [24] = {
+                Name = "PreventRandomization"
+            },
+            [25] = {
+                Name = "BridgeFailsafe"
+            },
+            --[[
+            [26] = {
+                Name = "DetonatorTrigger",
+                Trigger = true
+            }]]
+        }
+    }
+
+    StageAPI.MetadataEntitiesByName = {}
+
+    for id, variants in pairs(StageAPI.MetadataEntities) do
+        for variant, metadata in pairs(variants) do
+            metadata.Variant = variant
+            metadata.Type = id
+            StageAPI.MetadataEntitiesByName[metadata.Name] = metadata
+        end
+    end
+
+    function StageAPI.AddMetadataEntities(tbl)
+        if next(tbl).Name then
+            for variant, data in pairs(tbl) do
+                data.Type = 900
+                data.Variant = variant
+                StageAPI.MetadataEntities[900][variant] = data
+                StageAPI.MetadataEntitiesByName[data.Name] = data
+            end
+        else
+            for id, variantTable in pairs(tbl) do
+                if StageAPI.MetadataEntities[id] then
+                    for variant, data in pairs(variantTable) do
+                        data.Variant = variant
+                        data.Type = id
+                        StageAPI.MetadataEntities[id][variant] = data
+                        StageAPI.MetadataEntitiesByName[data.Name] = data
+                    end
+                end
+            end
+        end
+    end
+
+    function StageAPI.SeparateEntityMetadata(entities, seed)
+        StageAPI.RoomLoadRNG:SetSeed(seed or room:GetSpawnSeed(), 1)
+        local outEntities, entityMeta = {}, {}
+        for index, entityList in pairs(entities) do
+            local outList = {}
+            for _, entity in ipairs(entityList) do
+                if StageAPI.MetadataEntities[entity.Type] and entity.Variant and StageAPI.MetadataEntities[entity.Type][entity.Variant] and (not entity.SubType or entity.SubType == 0) then
+                    local metadata = StageAPI.MetadataEntities[entity.Type][entity.Variant]
+                    if not entityMeta[index] then
+                        entityMeta[index] = {}
+                    end
+
+                    if not entityMeta[index][metadata.Name] then
+                        entityMeta[index][metadata.Name] = 0
+                    end
+
+                    entityMeta[index][metadata.Name] = entityMeta[index][metadata.Name] + 1
+                else
+                    outList[#outList + 1] = entity
+                end
+            end
+
+            outEntities[index] = outList
+        end
+
+        local swapIndexToGroups = {}
+        local swapGroupToIndices = {}
+        local blockedEntities = {}
+
+        for index, metadataSet in pairs(entityMeta) do
+            local setsOfConflicting = {}
+            for name, count in pairs(metadataSet) do
+                local metadata = StageAPI.MetadataEntitiesByName[name]
+                if metadata.BlockEntities then
+                    blockedEntities[index] = outEntities[index]
+                    outEntities[index] = nil
+                end
+
+                if metadata.Group then
+                    if metadata.Conflicts and not setsOfConflicting[metadata.Group] then
+                        local shouldConflict = true
+                        if metadata.PreventConflictWith or metadata.OnlyConflictWith then
+                            if metadata.PreventConflictWith then
+                                local noConflictWith = metadata.PreventConflictWith
+                                if type(noConflictWith) ~= "table" then
+                                    noConflictWith = {noConflictWith}
+                                end
+
+                                for _, preventName in ipairs(noConflictWith) do
+                                    if metadataSet[preventName] then
+                                        shouldConflict = false
+                                    end
+                                end
+                            elseif metadata.OnlyConflictWith then
+                                shouldConflict = false
+                                local needsToConflict = metadata.OnlyConflictWith
+                                if type(needsToConflict) ~= "table" then
+                                    needsToConflict = {needsToConflict}
+                                end
+
+                                for _, needsName in ipairs(needsToConflict) do
+                                    if metadataSet[needsName] then
+                                        shouldConflict = true
+                                    end
+                                end
+                            end
+                        end
+
+                        if shouldConflict then
+                            setsOfConflicting[metadata.Group] = {}
+
+                            for name2, count2 in pairs(metadataSet) do
+                                local metadata2 = StageAPI.MetadataEntitiesByName[name2]
+                                if metadata2.Conflicts and metadata2.Group == metadata.Group then
+                                    setsOfConflicting[metadata.Group][#setsOfConflicting[metadata.Group] + 1] = name2
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+
+            for group, conflicts in pairs(setsOfConflicting) do
+                local use = conflicts[StageAPI.Random(1, #conflicts, StageAPI.RoomLoadRNG)]
+                for _, conflictName in ipairs(conflicts) do
+                    if conflictName ~= use then
+                        metadataSet[conflictName] = nil
+                    end
+                end
+            end
+
+            for name, count in pairs(metadataSet) do
+                local metadata = StageAPI.MetadataEntitiesByName[name]
+                if metadata and metadata.Group then
+                    if metadata.StoreAsGroup then
+                        if not metadataSet[metadata.Group] then
+                            metadataSet[metadata.Group] = {}
+                        end
+
+                        if not metadataSet[metadata.Group][name] then
+                            metadataSet[metadata.Group][name] = 0
+                        end
+
+                        metadataSet[metadata.Group][name] = metadataSet[metadata.Group][name] + 1
+                    elseif type(metadataSet[metadata.Group]) ~= "table" then
+                        if not metadataSet[metadata.Group] then
+                            metadataSet[metadata.Group] = 0
+                        end
+
+                        metadataSet[metadata.Group] = metadataSet[metadata.Group] + 1
+                    end
+                end
+            end
+
+            if metadataSet["Swapper"] then
+                if metadataSet["Groups"] then
+                    for _, group in ipairs(metadataSet["Groups"]) do
+                        if not swapGroupToIndices[group] then
+                            swapGroupToIndices[group] = {}
+                        else
+                            swapGroupToIndices[group][#swapGroupToIndices[group] + 1] = index
+                        end
+                    end
+
+                    swapIndexToGroups[index] = metadataSet["Groups"]
+                else
+                    if not swapGroupToIndices["None"] then
+                        swapGroupToIndices["None"] = {}
+                    end
+
+                    swapGroupToIndices["None"][#swapGroupToIndices["None"] + 1] = index
+                    swapIndexToGroups[index] = {"None"}
+                end
+            end
+        end
+
+        local alreadySwapped = {}
+
+        for index, groups in pairs(swapIndexToGroups) do
+            if not alreadySwapped[index] then
+                local canSwapWith = {}
+                for _, group in ipairs(groups) do
+                    local indices = swapGroupToIndices[group]
+                    for _, index2 in ipairs(indices) do
+                        if index2 ~= index then
+                            canSwapWith[#canSwapWith + 1] = index2
+                        end
+                    end
+                end
+
+                if #canSwapWith > 0 then
+                    local swapWith = canSwapWith[StageAPI.Random(1, #canSwapWith)]
+                    local swappingEntityList = outEntities[swapWith]
+                    outEntities[swapWith] = outEntities[index]
+                    outEntities[index] = swappingEntityList
+                    local swappingEntityMeta = entityMeta[swapWith]
+                    entityMeta[swapWith] = entityMeta[index]
+                    entityMeta[index] = swappingEntityMeta
+                end
+            end
+        end
+
+        entityMeta.BlockedEntities = blockedEntities
+        entityMeta.Triggers = {}
+        entityMeta.RecentTriggers = {}
+
+        return outEntities, entityMeta
+    end
+
+    function StageAPI.SelectSpawnEntities(entities, seed, entityMeta)
         StageAPI.RoomLoadRNG:SetSeed(seed or room:GetSpawnSeed(), 1)
         local entitiesToSpawn = {}
         local callbacks = StageAPI.GetCallbacks("PRE_SELECT_ENTITY_LIST")
@@ -1649,7 +2053,8 @@ do -- RoomsList
     end
 
     function StageAPI.ObtainSpawnObjects(layout, seed)
-        local spawnEntities, lastPersistentIndex = StageAPI.SelectSpawnEntities(layout.EntitiesByIndex, seed)
+        local entitiesByIndex, entityMeta = StageAPI.SeparateEntityMetadata(layout.EntitiesByIndex, seed)
+        local spawnEntities, lastPersistentIndex = StageAPI.SelectSpawnEntities(entitiesByIndex, seed, entityMeta)
         local spawnGrids = StageAPI.SelectSpawnGrids(layout.GridEntitiesByIndex, seed)
 
         local gridTakenIndices = {}
@@ -1663,7 +2068,7 @@ do -- RoomsList
             gridTakenIndices[grid.Index] = true
         end
 
-        return spawnEntities, spawnGrids, entityTakenIndices, gridTakenIndices, lastPersistentIndex
+        return spawnEntities, spawnGrids, entityTakenIndices, gridTakenIndices, lastPersistentIndex, entityMeta
     end
 
     StageAPI.ActiveEntityPersistenceData = {}
@@ -1976,7 +2381,7 @@ do -- RoomsList
             Isaac.DebugString("[StageAPI] No layout!")
         end
 
-        self.SpawnEntities, self.SpawnGrids, self.EntityTakenIndices, self.GridTakenIndices, self.LastPersistentIndex = StageAPI.ObtainSpawnObjects(self.Layout, seed)
+        self.SpawnEntities, self.SpawnGrids, self.EntityTakenIndices, self.GridTakenIndices, self.LastPersistentIndex, self.EntityMetadata = StageAPI.ObtainSpawnObjects(self.Layout, seed)
 
         --[[
         self.SpawnEntities, self.LastPersistentIndex = StageAPI.SelectSpawnEntities(self.Layout.EntitiesByIndex, seed)
@@ -1992,6 +2397,127 @@ do -- RoomsList
         for _, grid in ipairs(self.SpawnGrids) do
             self.GridTakenIndices[grid.Index] = true
         end]]
+    end
+
+    function StageAPI.LevelRoom:HasEntityMetadata(index, name)
+        return self.EntityMetadata[index] and (not name or self.EntityMetadata[index][name])
+    end
+
+    function StageAPI.LevelRoom:GetEntityMetadata(index, name)
+        if not name then
+            return self.EntityMetadata[index]
+        elseif self.EntityMetadata[index] and self.EntityMetadata[index][name] then
+            return self.EntityMetadata[index][name]
+        end
+    end
+
+    function StageAPI.LevelRoom:GetEntityMetadataGroups(index)
+        local groups = {}
+        local groupTbl = self:GetEntityMetadata(index, "Groups")
+        if groupTbl then
+            for group, count in pairs(groupTbl) do
+                groups[#groups + 1] = group
+            end
+        end
+
+        return groups
+    end
+
+    function StageAPI.LevelRoom:IndicesShareGroup(index, index2)
+        local groups = self:GetEntityMetadataGroups(index)
+        for _, group in ipairs(groups) do
+            if self:HasEntityMetadata(index2, group) then
+                return true
+            end
+        end
+
+        return false
+    end
+
+    function StageAPI.LevelRoom:GroupHasMetadata(group, name)
+        for index, metadataSet in pairs(self.EntityMetadata) do
+            if metadataSet[group] and metadataSet[name] then
+                return true
+            end
+        end
+
+        return false
+    end
+
+    function StageAPI.LevelRoom:IndexSharesGroupWithMetadata(index, name)
+        local groups = self:GetEntityMetadataGroups(index)
+        for _, group in ipairs(groups) do
+            if self:GroupHasMetadata(group, name) then
+                return true
+            end
+        end
+
+        return false
+    end
+
+    function StageAPI.LevelRoom:IndexIsAssociatedWithMetadata(index, name)
+        return self:HasEntityMetadata(index, name) or self:IndexSharesGroupWithMetadata(index, name)
+    end
+
+    function StageAPI.LevelRoom:SetMetadataTrigger(name, index, groups, value)
+        if not groups then
+            groups = {index}
+        elseif index then
+            groups[#groups + 1] = index
+        end
+
+        Isaac.DebugString("Triggering " .. name)
+
+        for _, group in ipairs(groups) do
+            Isaac.DebugString("With group " .. tostring(group))
+            if not self.EntityMetadata.Triggers[group] then
+                self.EntityMetadata.Triggers[group] = {}
+                self.EntityMetadata.RecentTriggers[group] = {}
+            end
+
+            if value then
+                self.EntityMetadata.Triggers[group][name] = value
+                self.EntityMetadata.RecentTriggers[group][name] = 0
+            else
+                self.EntityMetadata.Triggers[group][name] = nil
+                self.EntityMetadata.RecentTriggers[group][name] = nil
+            end
+        end
+    end
+
+    function StageAPI.LevelRoom:WasMetadataTriggered(name, frames, index, groups)
+        frames = frames or 0
+        if not groups then
+            groups = {index}
+        elseif index then
+            groups[#groups + 1] = index
+        end
+
+        for group, names in pairs(self.EntityMetadata.RecentTriggers) do
+            if not groups or StageAPI.IsIn(groups, group) then
+                for name2, timeSince in pairs(names) do
+                    if (not name or name2 == name) and timeSince <= frames then
+                        return true
+                    end
+                end
+            end
+        end
+    end
+
+    function StageAPI.LevelRoom:TriggerIndexMetadata(index, name, value)
+        if value == nil then
+            value = true
+        end
+
+        local groups = self:GetEntityMetadataGroups(index)
+        for _, group in ipairs(groups) do
+            Isaac.DebugString("Triggering group " .. group)
+        end
+        self:SetMetadataTrigger(name, index, groups, value)
+    end
+
+    function StageAPI.LevelRoom:WasIndexTriggered(index, frames)
+        return self:WasMetadataTriggered(nil, frames, index, self:GetEntityMetadataGroups(index))
     end
 
     function StageAPI.LevelRoom:IsGridIndexFree(index, ignoreEntities, ignoreGrids)
@@ -4473,7 +4999,13 @@ do -- Callbacks
     mod:AddCallback(ModCallbacks.MC_POST_UPDATE, function()
         local currentRoom = StageAPI.GetCurrentRoom()
         if currentRoom then
+            local isClear = currentRoom.IsClear
             currentRoom.IsClear = room:IsClear()
+            currentRoom.JustCleared = nil
+            if not isClear and currentRoom.IsClear then
+                StageAPI.CallCallbacks("POST_ROOM_CLEAR", false)
+                currentRoom.JustCleared = true
+            end
         end
     end)
 
@@ -4757,31 +5289,6 @@ do -- Callbacks
     mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, function()
         StageAPI.CallCallbacks("PRE_STAGEAPI_NEW_ROOM", false)
 
-        if not StageAPI.TransitioningToExtraRoom() then
-            StageAPI.CurrentExtraRoom = nil
-            StageAPI.CurrentExtraRoomName = nil
-            StageAPI.InExtraRoom = false
-        end
-
-        if StageAPI.TransitionExitSlot then
-            local pos = room:GetDoorSlotPosition(StageAPI.TransitionExitSlot) + (StageAPI.DoorOffsetsByDirection[StageAPI.DoorToDirection[StageAPI.TransitionExitSlot]] * 3)
-            for _, player in ipairs(players) do
-                player.Position = pos
-            end
-
-            StageAPI.TransitionExitSlot = nil
-        end
-
-        if StageAPI.CurrentExtraRoom then
-            for i = 0, 7 do
-                if room:GetDoor(i) then
-                    room:RemoveDoor(i)
-                end
-            end
-
-            StageAPI.CurrentExtraRoom:Load(true)
-        end
-
         local isNewStage, override = StageAPI.InOverriddenStage()
         local currentListIndex = StageAPI.GetCurrentRoomID()
         local currentRoom, justGenerated = StageAPI.GetCurrentRoom(), nil
@@ -4808,6 +5315,32 @@ do -- Callbacks
 
                 StageAPI.NextStage = nil
             end
+        end
+
+        if not StageAPI.TransitioningToExtraRoom() then
+            StageAPI.CurrentExtraRoom = nil
+            StageAPI.CurrentExtraRoomName = nil
+            StageAPI.InExtraRoom = false
+        end
+
+        if StageAPI.TransitionExitSlot then
+            local pos = room:GetDoorSlotPosition(StageAPI.TransitionExitSlot) + (StageAPI.DoorOffsetsByDirection[StageAPI.DoorToDirection[StageAPI.TransitionExitSlot]] * 3)
+            for _, player in ipairs(players) do
+                player.Position = pos
+            end
+
+            StageAPI.TransitionExitSlot = nil
+        end
+
+        if StageAPI.CurrentExtraRoom then
+            for i = 0, 7 do
+                if room:GetDoor(i) then
+                    room:RemoveDoor(i)
+                end
+            end
+
+            StageAPI.CurrentExtraRoom:Load(true)
+            justGenerated = true
         end
 
         local boss
@@ -4985,6 +5518,14 @@ do -- Callbacks
             for name, modData in pairs(StageAPI.LoadedMods) do
                 if modData.Version then
                     Isaac.ConsoleOutput(name .. " " .. modData.Prefix .. modData.Version .. "\n")
+                end
+            end
+        elseif cmd == "roomtest" then
+            local roomsList = REVEL.level:GetRooms()
+            for i = 0, roomsList.Size do
+                local roomDesc = roomsList:Get(i)
+                if roomDesc and roomDesc.Data.Type == RoomType.ROOM_DEFAULT then
+                    game:ChangeRoom(roomDesc.SafeGridIndex)
                 end
             end
         end
@@ -5238,6 +5779,9 @@ do -- Misc helpful functions
             if U and R and D and L and UR and not UL and not DL and not DR then F = 44 end
             if U and R and D and L and DL and not UL and not UR and not DR then F = 45 end
             if U and R and D and L and DR and not UL and not UR and not DL then F = 46 end
+            if U and R and D and L and DL and DR and not UL and not UR then F = 47 end
+            if U and R and D and L and DL and UL and not UR and not DR then F = 48 end
+            if U and R and D and L and DR and UR and not UL and not DL then F = 49 end
         end
 
         return F
@@ -5292,6 +5836,108 @@ do -- Misc helpful functions
 
         return frames
     end
+end
+
+Isaac.DebugString("[StageAPI] Loading Editor Features")
+do
+    local recentlyDetonated = {}
+    mod:AddCallback(ModCallbacks.MC_POST_UPDATE, function()
+        local currentRoom = StageAPI.GetCurrentRoom()
+        if not currentRoom then
+            return
+        end
+
+        for index, timer in pairs(recentlyDetonated) do
+            recentlyDetonated[index] = timer - 1
+            if recentlyDetonated[index] <= 0 then
+                recentlyDetonated[index] = nil
+            end
+        end
+
+        for group, names in pairs(currentRoom.EntityMetadata.RecentTriggers) do
+            for name, timer in pairs(names) do
+                names[name] = timer + 1
+            end
+        end
+
+        local width = room:GetGridWidth()
+        for index, metadataSet in pairs(currentRoom.EntityMetadata) do
+            if type(index) == "number" then
+                if metadataSet["RoomClearTrigger"] and currentRoom.JustCleared then
+                    currentRoom:TriggerIndexMetadata(index, "RoomClearTrigger")
+                end
+
+                if metadataSet["BridgeFailsafe"] then
+                    if room:GetGridCollision(index) ~= 0 then
+                        local adjacent = {index - 1, index + 1, index - width, index + width}
+                        for _, index2 in ipairs(adjacent) do
+                            local grid = room:GetGridEntity(index2)
+                            if grid and room:GetGridCollision(index2) == 0 and (grid:ToRock() or grid.Desc.Type == GridEntityType.GRID_POOP) then
+                                room:GetGridEntity(index):ToPit():MakeBridge()
+                                break
+                            end
+                        end
+                    end
+                end
+
+                --[[
+                if metadataSet["Detonator"] then
+                    if room:GetGridCollision(index) ~= 0 then
+                        local checking = room:GetGridEntity(index)
+                        local shouldDetonate = currentRoom:WasIndexTriggered(index, 100)
+                        if not shouldDetonate then
+                            local adjacent = {index - 1, index + 1, index - width, index + width}
+                            for _, index2 in ipairs(adjacent) do
+                                if not recentlyDetonated[index2] and currentRoom.EntityMetadata[index2] and currentRoom.EntityMetadata[index2]["Detonator"] then
+                                    if room:GetGridCollision(index2) == 0 then
+                                        local grid = room:GetGridEntity(index2)
+                                        if grid then
+                                            if checking:ToRock() and grid:ToRock() then
+                                                checking:Destroy()
+                                            elseif checking:ToPit() and grid:ToPit() then
+                                                checking:ToPit():MakeBridge()
+                                            end
+                                            Isaac.Spawn(EntityType.ENTITY_EFFECT, EffectVariant.POOF01, 0, room:GetGridPosition(index), zeroVector, nil)
+                                            recentlyDetonated[index] = 5
+
+                                            if metadataSet["DetonatorTrigger"] then
+                                                currentRoom:TriggerIndexMetadata(index, "DetonatorTrigger")
+                                            end
+                                        end
+                                    end
+                                end
+                            end
+                        end
+
+                        if shouldDetonate then
+                            if checking:ToRock() then
+                                checking:Destroy()
+                            elseif checking:ToPit() then
+                                checking:ToPit():MakeBridge()
+                            end
+                            Isaac.Spawn(EntityType.ENTITY_EFFECT, EffectVariant.POOF01, 0, room:GetGridPosition(index), zeroVector, nil)
+                            recentlyDetonated[index] = 5
+                            if metadataSet["DetonatorTrigger"] then
+                                currentRoom:TriggerIndexMetadata(index, "DetonatorTrigger")
+                            end
+                        end
+                    end
+                end]]
+
+                if metadataSet["Spawner"] then
+                    if currentRoom:WasIndexTriggered(index) then
+                        local blockedEntities = currentRoom.EntityMetadata.BlockedEntities[index]
+                        if blockedEntities then
+                            if #blockedEntities > 0 then
+                                local spawn = blockedEntities[StageAPI.Random(1, #blockedEntities)]
+                                Isaac.Spawn(spawn.Type or 20, spawn.Variant or 0, spawn.SubType or 0, room:GetGridPosition(index), zeroVector, nil)
+                            end
+                        end
+                    end
+                end
+            end
+        end
+    end)
 end
 
 Isaac.DebugString("[StageAPI] Fully Loaded, loading dependent mods.")
