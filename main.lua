@@ -5375,9 +5375,10 @@ do -- Callbacks
             boss = StageAPI.GetBossData(currentRoom.PersistentData.BossID)
         end
 
+        --[[
         if StageAPI.RoomGrids[currentListIndex] and not justGenerated then
             StageAPI.RemoveExtraGrids(StageAPI.RoomGrids[currentListIndex])
-        end
+        end]]
 
         if currentRoom and not StageAPI.InExtraRoom and not justGenerated then
             currentRoom:Load()
@@ -5527,12 +5528,43 @@ do -- Callbacks
                 end
             end
         elseif cmd == "roomtest" then
-            local roomsList = REVEL.level:GetRooms()
+            local roomsList = level:GetRooms()
             for i = 0, roomsList.Size do
                 local roomDesc = roomsList:Get(i)
                 if roomDesc and roomDesc.Data.Type == RoomType.ROOM_DEFAULT then
                     game:ChangeRoom(roomDesc.SafeGridIndex)
                 end
+            end
+        end
+    end)
+
+    local gridBlacklist = {
+        [EntityType.ENTITY_STONEHEAD] = true,
+        [EntityType.ENTITY_CONSTANT_STONE_SHOOTER] = true,
+        [EntityType.ENTITY_STONE_EYE] = true,
+        [EntityType.ENTITY_BRIMSTONE_HEAD] = true,
+        [EntityType.ENTITY_GAPING_MAW] = true,
+        [EntityType.ENTITY_BROKEN_GAPING_MAW] = true
+    }
+
+    mod:AddCallback(ModCallbacks.MC_PRE_ROOM_ENTITY_SPAWN, function(_, t, v, s, index, seed)
+        if StageAPI.ShouldOverrideRoom() and (t >= 1000 or gridBlacklist[t]) and not StageAPI.InExtraRoom then
+            local shouldReturn
+            if room:IsFirstVisit() then
+                shouldReturn = true
+            else
+                local currentListIndex = StageAPI.GetCurrentListIndex()
+                if StageAPI.RoomGrids[currentListIndex] and not StageAPI.RoomGrids[currentListIndex][index] then
+                    shouldReturn = true
+                end
+            end
+
+            if shouldReturn then
+                return {
+                    999,
+                    StageAPI.E.DeleteMeEffect.V,
+                    0
+                }
             end
         end
     end)
