@@ -4348,9 +4348,16 @@ do -- Bosses
             portraitbig = "gfx/ui/stage/playerportraitbig_" .. v .. "_" .. use .. ".png"
         end
 
+        local name
+        if k == "keeper" then
+            name = "gfx/ui/boss/playername_" .. v .. "_the" .. use .. ".png"
+        else
+            name = "gfx/ui/boss/playername_" .. v .. "_" .. use .. ".png"
+        end
+
         StageAPI.PlayerBossInfo[k] = {
             Portrait = "gfx/ui/boss/playerportrait_" .. v .. "_" .. use .. ".png",
-            Name = "gfx/ui/boss/playername_" .. v .. "_" .. use .. ".png",
+            Name = name,
             PortraitBig = portraitbig
         }
     end
@@ -4420,18 +4427,12 @@ do -- Bosses
     end
 
     StageAPI.IsOddRenderFrame = nil
+    local menuConfirmTriggered
     mod:AddCallback(ModCallbacks.MC_POST_RENDER, function()
         StageAPI.IsOddRenderFrame = not StageAPI.IsOddRenderFrame
         local isPlaying = StageAPI.BossSprite:IsPlaying("Scene") or StageAPI.BossSprite:IsPlaying("DoubleTrouble")
-        local menuConfirmActive
-        for _, player in ipairs(players) do
-            if Input.IsActionTriggered(ButtonAction.ACTION_MENUCONFIRM, player.ControllerIndex) then
-                menuConfirmActive = true
-                break
-            end
-        end
 
-        if game:IsPaused() and isPlaying and not menuConfirmActive then
+        if game:IsPaused() and isPlaying and not menuConfirmTriggered then
             if StageAPI.IsOddRenderFrame then
                 StageAPI.BossSprite:Update()
             end
@@ -4439,6 +4440,14 @@ do -- Bosses
             StageAPI.BossSprite:Render(StageAPI.GetScreenCenterPosition(), zeroVector, zeroVector)
         elseif isPlaying then
             StageAPI.BossSprite:Stop()
+        end
+
+        menuConfirmTriggered = nil
+        for _, player in ipairs(players) do
+            if Input.IsActionTriggered(ButtonAction.ACTION_MENUCONFIRM, player.ControllerIndex) then
+                menuConfirmTriggered = true
+                break
+            end
         end
     end)
 
