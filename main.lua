@@ -5888,6 +5888,11 @@ end
 Isaac.DebugString("[StageAPI] Loading Editor Features")
 do
     local recentlyDetonated = {}
+    local d12Used = false
+    mod:AddCallback(ModCallbacks.MC_USE_ITEM, function()
+        d12Used = true
+    end, CollectibleType.COLLECTIBLE_D12)
+
     mod:AddCallback(ModCallbacks.MC_POST_UPDATE, function()
         local currentRoom = StageAPI.GetCurrentRoom()
         if not currentRoom then
@@ -5916,12 +5921,16 @@ do
 
                 if metadataSet["BridgeFailsafe"] then
                     if room:GetGridCollision(index) ~= 0 then
-                        local adjacent = {index - 1, index + 1, index - width, index + width}
-                        for _, index2 in ipairs(adjacent) do
-                            local grid = room:GetGridEntity(index2)
-                            if grid and room:GetGridCollision(index2) == 0 and (grid:ToRock() or grid.Desc.Type == GridEntityType.GRID_POOP) then
-                                room:GetGridEntity(index):ToPit():MakeBridge()
-                                break
+                        if d12Used then
+                            room:GetGridEntity(index):ToPit():MakeBridge()
+                        else
+                            local adjacent = {index - 1, index + 1, index - width, index + width}
+                            for _, index2 in ipairs(adjacent) do
+                                local grid = room:GetGridEntity(index2)
+                                if grid and room:GetGridCollision(index2) == 0 and (grid:ToRock() or grid.Desc.Type == GridEntityType.GRID_POOP) then
+                                    room:GetGridEntity(index):ToPit():MakeBridge()
+                                    break
+                                end
                             end
                         end
                     end
