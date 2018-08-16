@@ -2401,6 +2401,22 @@ do -- RoomsList
         end]]
     end
 
+    function StageAPI.LevelRoom:SetEntityMetadata(index, name, value)
+        if not self.EntityMetadata[index] then
+            self.EntityMetadata[index] = {}
+        end
+
+        if not value and not self.EntityMetadata[index][name] then
+            self.EntityMetadata[index][name] = 0
+        end
+
+        if not value then
+            self.EntityMetadata[index][name] = self.EntityMetadata[index][name] + 1
+        else
+            self.EntityMetadata[index][name] = value
+        end
+    end
+
     function StageAPI.LevelRoom:HasEntityMetadata(index, name)
         return self.EntityMetadata[index] and (not name or self.EntityMetadata[index][name])
     end
