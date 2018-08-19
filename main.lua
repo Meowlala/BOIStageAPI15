@@ -1784,7 +1784,7 @@ do -- RoomsList
         end
     end
 
-    function StageAPI.SeparateEntityMetadata(entities, seed)
+    function StageAPI.SeparateEntityMetadata(entities, grids, seed)
         StageAPI.RoomLoadRNG:SetSeed(seed or room:GetSpawnSeed(), 1)
         local outEntities, entityMeta = {}, {}
         for index, entityList in pairs(entities) do
@@ -1942,6 +1942,9 @@ do -- RoomsList
                     local swappingEntityMeta = entityMeta[swapWith]
                     entityMeta[swapWith] = entityMeta[index]
                     entityMeta[index] = swappingEntityMeta
+                    local swappingGrid = grids[swapWith]
+                    grids[swapWith] = grids[index]
+                    grids[index] = swappingGrid
                 end
             end
         end
@@ -1950,7 +1953,7 @@ do -- RoomsList
         entityMeta.Triggers = {}
         entityMeta.RecentTriggers = {}
 
-        return outEntities, entityMeta
+        return outEntities, grids, entityMeta
     end
 
     function StageAPI.SelectSpawnEntities(entities, seed, entityMeta)
@@ -2055,9 +2058,9 @@ do -- RoomsList
     end
 
     function StageAPI.ObtainSpawnObjects(layout, seed)
-        local entitiesByIndex, entityMeta = StageAPI.SeparateEntityMetadata(layout.EntitiesByIndex, seed)
+        local entitiesByIndex, gridsByIndex, entityMeta = StageAPI.SeparateEntityMetadata(layout.EntitiesByIndex, layout.GridEntitiesByIndex, seed)
         local spawnEntities, lastPersistentIndex = StageAPI.SelectSpawnEntities(entitiesByIndex, seed, entityMeta)
-        local spawnGrids = StageAPI.SelectSpawnGrids(layout.GridEntitiesByIndex, seed)
+        local spawnGrids = StageAPI.SelectSpawnGrids(gridsByIndex, seed)
 
         local gridTakenIndices = {}
         local entityTakenIndices = {}
