@@ -1900,15 +1900,16 @@ do -- RoomsList
 
             if metadataSet["Swapper"] then
                 if metadataSet["Groups"] then
-                    for _, group in ipairs(metadataSet["Groups"]) do
+                    local groupList = {}
+                    for group, count in pairs(metadataSet["Groups"]) do
+                        groupList[#groupList + 1] = group
                         if not swapGroupToIndices[group] then
                             swapGroupToIndices[group] = {}
-                        else
-                            swapGroupToIndices[group][#swapGroupToIndices[group] + 1] = index
                         end
+                        swapGroupToIndices[group][#swapGroupToIndices[group] + 1] = index
                     end
 
-                    swapIndexToGroups[index] = metadataSet["Groups"]
+                    swapIndexToGroups[index] = groupList
                 else
                     if not swapGroupToIndices["None"] then
                         swapGroupToIndices["None"] = {}
@@ -1920,32 +1921,31 @@ do -- RoomsList
             end
         end
 
-        local alreadySwapped = {}
+        local outGrids = {}
+        for index, gridList in pairs(grids) do
+            outGrids[index] = gridList
+        end
 
         for index, groups in pairs(swapIndexToGroups) do
-            if not alreadySwapped[index] then
-                local canSwapWith = {}
-                for _, group in ipairs(groups) do
-                    local indices = swapGroupToIndices[group]
-                    for _, index2 in ipairs(indices) do
-                        if index2 ~= index then
-                            canSwapWith[#canSwapWith + 1] = index2
-                        end
-                    end
+            local canSwapWith = {}
+            for _, group in ipairs(groups) do
+                local indices = swapGroupToIndices[group]
+                for _, index2 in ipairs(indices) do
+                    canSwapWith[#canSwapWith + 1] = index2
                 end
+            end
 
-                if #canSwapWith > 0 then
-                    local swapWith = canSwapWith[StageAPI.Random(1, #canSwapWith)]
-                    local swappingEntityList = outEntities[swapWith]
-                    outEntities[swapWith] = outEntities[index]
-                    outEntities[index] = swappingEntityList
-                    local swappingEntityMeta = entityMeta[swapWith]
-                    entityMeta[swapWith] = entityMeta[index]
-                    entityMeta[index] = swappingEntityMeta
-                    local swappingGrid = grids[swapWith]
-                    grids[swapWith] = grids[index]
-                    grids[index] = swappingGrid
-                end
+            if #canSwapWith > 0 then
+                local swapWith = canSwapWith[StageAPI.Random(1, #canSwapWith)]
+                local swappingEntityList = outEntities[swapWith]
+                outEntities[swapWith] = outEntities[index]
+                outEntities[index] = swappingEntityList
+                local swappingEntityMeta = entityMeta[swapWith]
+                entityMeta[swapWith] = entityMeta[index]
+                entityMeta[index] = swappingEntityMeta
+                local swappingGrid = outGrids[swapWith]
+                outGrids[swapWith] = outGrids[index]
+                outGrids[index] = swappingGrid
             end
         end
 
@@ -1953,7 +1953,7 @@ do -- RoomsList
         entityMeta.Triggers = {}
         entityMeta.RecentTriggers = {}
 
-        return outEntities, grids, entityMeta
+        return outEntities, outGrids, entityMeta
     end
 
     function StageAPI.SelectSpawnEntities(entities, seed, entityMeta)
@@ -2048,7 +2048,7 @@ do -- RoomsList
                     end
 
                     if spawnGrid then
-                        spawnGrids[#spawnGrids + 1] = spawnGrid
+                        spawnGrids[index] = spawnGrid
                     end
                 end
             end
@@ -2069,8 +2069,8 @@ do -- RoomsList
             entityTakenIndices[index] = true
         end
 
-        for _, grid in ipairs(spawnGrids) do
-            gridTakenIndices[grid.Index] = true
+        for index, gridData in pairs(spawnGrids) do
+            gridTakenIndices[index] = true
         end
 
         return spawnEntities, spawnGrids, entityTakenIndices, gridTakenIndices, lastPersistentIndex, entityMeta
@@ -2208,7 +2208,7 @@ do -- RoomsList
         local grids_spawned = {}
         StageAPI.GridSpawnRNG:SetSeed(room:GetSpawnSeed(), 0)
         local callbacks = StageAPI.GetCallbacks("PRE_SPAWN_GRID")
-        for _, gridData in ipairs(grids) do
+        for index, gridData in pairs(grids) do
             local shouldSpawn = true
             for _, callback in ipairs(callbacks) do
                 local ret = callback.Function(gridData, gridInformation, entities, StageAPI.GridSpawnRNG)
@@ -2220,7 +2220,6 @@ do -- RoomsList
                 end
             end
 
-            local index = gridData.Index
             if shouldSpawn and StageAPI.Room:IsPositionInRoom(StageAPI.Room:GetGridPosition(index), 0) then
                 room:RemoveGridEntity(index, 0, false)
                 local grid = Isaac.GridSpawn(gridData.Type, gridData.Variant, StageAPI.Room:GetGridPosition(index), true)
@@ -2496,10 +2495,7 @@ do -- RoomsList
             groups[#groups + 1] = index
         end
 
-        Isaac.DebugString("Triggering " .. name)
-
         for _, group in ipairs(groups) do
-            Isaac.DebugString("With group " .. tostring(group))
             if not self.EntityMetadata.Triggers[group] then
                 self.EntityMetadata.Triggers[group] = {}
                 self.EntityMetadata.RecentTriggers[group] = {}
@@ -2540,9 +2536,6 @@ do -- RoomsList
         end
 
         local groups = self:GetEntityMetadataGroups(index)
-        for _, group in ipairs(groups) do
-            Isaac.DebugString("Triggering group " .. group)
-        end
         self:SetMetadataTrigger(name, index, groups, value)
     end
 
