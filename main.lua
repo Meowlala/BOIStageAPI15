@@ -5330,8 +5330,6 @@ do -- Callbacks
         StageAPI.CallCallbacks("PRE_STAGEAPI_NEW_ROOM", false)
 
         local isNewStage, override = StageAPI.InOverriddenStage()
-        local currentListIndex = StageAPI.GetCurrentRoomID()
-        local currentRoom, justGenerated = StageAPI.GetCurrentRoom(), nil
         local inStartingRoom = level:GetCurrentRoomIndex() == level:GetStartingRoomIndex()
         StageAPI.CustomGridIndices = {}
 
@@ -5341,7 +5339,6 @@ do -- Callbacks
                 StageAPI.LevelRooms = {}
                 StageAPI.CurrentStage = nil
                 if isNewStage then
-                    currentRoom = nil
                     if not StageAPI.NextStage then
                         StageAPI.CurrentStage = override.ReplaceWith
                     else
@@ -5356,6 +5353,9 @@ do -- Callbacks
                 StageAPI.NextStage = nil
             end
         end
+
+        local currentListIndex = StageAPI.GetCurrentRoomID()
+        local currentRoom, justGenerated = StageAPI.GetCurrentRoom(), nil
 
         if not StageAPI.TransitioningToExtraRoom() then
             StageAPI.CurrentExtraRoom = nil
