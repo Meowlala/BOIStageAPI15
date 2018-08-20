@@ -2324,10 +2324,13 @@ do -- RoomsList
 
     StageAPI.LevelRoom = StageAPI.Class("LevelRoom")
     function StageAPI.LevelRoom:Init(layoutName, roomsList, seed, shape, roomType, isExtraRoom, fromSaveData, requireRoomType, ignoreDoors, doors)
+        Isaac.DebugString("[StageAPI] Initializing room")
         StageAPI.CurrentlyInitializing = self
         if fromSaveData then
+            Isaac.DebugString("[StageAPI] Loading from save data")
             self:LoadSaveData(fromSaveData)
         else
+            Isaac.DebugString("[StageAPI] Generating room")
             roomType = roomType or room:GetType()
             shape = shape or room:GetRoomShape()
             seed = seed or room:GetSpawnSeed()
@@ -2357,6 +2360,7 @@ do -- RoomsList
 
             local replaceLayoutName = StageAPI.CallCallbacks("PRE_ROOM_LAYOUT_CHOOSE", true, self)
             if replaceLayoutName then
+                Isaac.DebugString("[StageAPI] Layout replaced")
                 self.LayoutName = replaceLayoutName
                 layoutName = replaceLayoutName
             end
@@ -2373,6 +2377,7 @@ do -- RoomsList
             end
 
             self.Layout = layout
+            Isaac.DebugString("[StageAPI] Initialized room " .. self.Layout.Name .. "." .. tostring(self.Layout.Variant) .. " from file " .. tostring(self.Layout.RoomFilename))
             self:PostGetLayout(seed)
         end
 
@@ -2626,6 +2631,7 @@ do -- RoomsList
     end
 
     function StageAPI.LevelRoom:Load(isExtraRoom)
+        Isaac.DebugString("[StageAPI] Loading room " .. self.Layout.Name .. "." .. tostring(self.Layout.Variant) .. " from file " .. tostring(self.Layout.RoomFilename))
         if isExtraRoom == nil then
             isExtraRoom = self.IsExtraRoom
         end
