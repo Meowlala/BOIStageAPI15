@@ -4973,14 +4973,14 @@ do -- Rock Alt Override
 
     function StageAPI.AreRockAltEffectsOverridden()
         if (StageAPI.CurrentStage and StageAPI.CurrentStage.OverridingRockAltEffects) or StageAPI.TemporaryOverrideRockAltEffects then
-            local isOverriden = true
+            local isOverridden = true
             if not StageAPI.TemporaryOverrideRockAltEffects then
                 if type(StageAPI.CurrentStage.OverridingRockAltEffects) == "table" then
-                    isOverriden = StageAPI.IsIn(StageAPI.CurrentStage.OverridingRockAltEffects, StageAPI.GetCurrentRoomType())
+                    isOverridden = StageAPI.IsIn(StageAPI.CurrentStage.OverridingRockAltEffects, StageAPI.GetCurrentRoomType())
                 end
             end
 
-            return isOverriden
+            return isOverridden
         end
     end
 
@@ -5011,6 +5011,7 @@ Isaac.DebugString("[StageAPI] Loading Core Callbacks")
 do -- Callbacks
     StageAPI.NonOverrideMusic = {
         Music.MUSIC_GAME_OVER,
+        Music.MUSIC_JINGLE_GAME_OVER,
         Music.MUSIC_JINGLE_SECRETROOM_FIND,
         Music.MUSIC_JINGLE_NIGHTMARE,
         Music.MUSIC_JINGLE_GAME_START,
