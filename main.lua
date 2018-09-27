@@ -3919,24 +3919,26 @@ do -- Backdrop & RoomGfx
             e:Remove()
         end
 
-        local shadowEntity = Isaac.Spawn(StageAPI.E.StageShadow.T, StageAPI.E.StageShadow.V, 0, zeroVector, zeroVector, nil)
         local roomShape = room:GetRoomShape()
         local anim
 
         if roomShape == RoomShape.ROOMSHAPE_1x1 or roomShape == RoomShape.ROOMSHAPE_IH or roomShape == RoomShape.ROOMSHAPE_IV then anim = "1x1"
         elseif roomShape == RoomShape.ROOMSHAPE_1x2 or roomShape == RoomShape.ROOMSHAPE_IIV then anim = "1x2"
         elseif roomShape == RoomShape.ROOMSHAPE_2x1 or roomShape == RoomShape.ROOMSHAPE_IIH then anim = "2x1"
-        elseif roomShape == RoomShape.ROOMSHAPE_2x2 or roomShape == RoomShape.ROOMSHAPE_LBL or roomShape == RoomShape.ROOMSHAPE_LBR or roomShape == RoomShape.rOOMSHAPE_LTL or roomShape == RoomShape.ROOMSHAPE_LTR then anim = "2x2"
+        elseif roomShape == RoomShape.ROOMSHAPE_2x2 or roomShape == RoomShape.ROOMSHAPE_LBL or roomShape == RoomShape.ROOMSHAPE_LBR or roomShape == RoomShape.ROOMSHAPE_LTL or roomShape == RoomShape.ROOMSHAPE_LTR then anim = "2x2"
         end
 
-        StageAPI.StageShadowRNG:SetSeed(room:GetDecorationSeed(), 0)
-        local usingShadow = StageAPI.Random(1, count, StageAPI.StageShadowRNG)
-        local sheet = prefix .. anim .. "_overlay_" .. tostring(usingShadow) .. ".png"
+        if anim then
+            StageAPI.StageShadowRNG:SetSeed(room:GetDecorationSeed(), 0)
+            local usingShadow = StageAPI.Random(1, count, StageAPI.StageShadowRNG)
+            local sheet = prefix .. anim .. "_overlay_" .. tostring(usingShadow) .. ".png"
 
-        shadowEntity:GetData().Sheet = sheet
-        shadowEntity:GetData().Animation = anim
-        shadowEntity.Position = room:GetCenterPos()
-        shadowEntity:AddEntityFlags(EntityFlag.FLAG_DONT_OVERWRITE)
+            local shadowEntity = Isaac.Spawn(StageAPI.E.StageShadow.T, StageAPI.E.StageShadow.V, 0, zeroVector, zeroVector, nil)
+            shadowEntity:GetData().Sheet = sheet
+            shadowEntity:GetData().Animation = anim
+            shadowEntity.Position = room:GetCenterPos()
+            shadowEntity:AddEntityFlags(EntityFlag.FLAG_DONT_OVERWRITE)
+        end
     end
 
     local shadingDefaultOffset = Vector(-80,-80)
