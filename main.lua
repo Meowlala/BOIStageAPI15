@@ -412,6 +412,7 @@ do -- Core Definitions
         Backdrop = "StageAPIBackdrop",
         Bridge = "StageAPIBridge",
         Shading = "StageAPIShading",
+        StageShadow = "StageAPIStageShadow",
         GenericEffect = "StageAPIGenericEffect",
         FloorEffect = "StageAPIFloorEffect",
         Trapdoor = "StageAPITrapdoor",
@@ -3079,6 +3080,11 @@ do -- Extra Rooms
         [RoomShape.ROOMSHAPE_LBR] = "4561"
     }
 
+    local shadowSprite = Sprite()
+    shadowSprite:Load("stageapi/stage_shadow.anm2", false)
+    shadowSprite:Play("1x1", true)
+    local lastUsedShadowSpritesheet
+
     mod:AddCallback(ModCallbacks.MC_POST_RENDER, function()
         if not game:IsPaused() then
             if StageAPI.TransitioningTo or StageAPI.TransitioningFromTo then
@@ -3125,6 +3131,23 @@ do -- Extra Rooms
                     overlay:Render()
                 end
             end
+        end
+
+        local shadows = Isaac.FindByType(StageAPI.E.StageShadow.T, StageAPI.E.StageShadow.V, -1, false, false)
+        local shadow = shadows[1]
+        if shadow then
+            local shadowSheet, shadowAnim = shadow:GetData().Sheet, shadow:GetData().Animation
+            if shadowSheet and shadowSheet ~= lastUsedShadowSpritesheet then
+                shadowSprite:ReplaceSpritesheet(0, shadowSheet)
+                shadowSprite:LoadGraphics()
+                lastUsedShadowSpritesheet = shadowSheet
+            end
+
+            if shadowAnim and not (shadowSprite:IsPlaying(shadowAnim) or shadowSprite:IsFinished(shadowAnim)) then
+                shadowSprite:Play(shadowAnim, true)
+            end
+
+            shadowSprite:Render(Isaac.WorldToScreen(shadow.Position), zeroVector, zeroVector)
         end
 
         StageAPI.CallCallbacks("PRE_TRANSITION_RENDER")
@@ -3884,6 +3907,36 @@ do -- Backdrop & RoomGfx
                 backdropEntity:AddEntityFlags(EntityFlag.FLAG_RENDER_FLOOR)
             end
         end
+    end
+
+    StageAPI.StageShadowRNG = RNG()
+    function StageAPI.ChangeStageShadow(prefix, count)
+        prefix = prefix or "stageapi/floors/catacombs/overlays/"
+        count = count or 5
+
+        local shadows = Isaac.FindByType(StageAPI.E.StageShadow.T, StageAPI.E.StageShadow.V, -1, false, false)
+        for _, e in ipairs(shadows) do
+            e:Remove()
+        end
+
+        local shadowEntity = Isaac.Spawn(StageAPI.E.StageShadow.T, StageAPI.E.StageShadow.V, 0, zeroVector, zeroVector, nil)
+        local roomShape = room:GetRoomShape()
+        local anim
+
+        if roomShape == RoomShape.ROOMSHAPE_1x1 or roomShape == RoomShape.ROOMSHAPE_IH or roomShape == RoomShape.ROOMSHAPE_IV then anim = "1x1"
+        elseif roomShape == RoomShape.ROOMSHAPE_1x2 or roomShape == RoomShape.ROOMSHAPE_IIV then anim = "1x2"
+        elseif roomShape == RoomShape.ROOMSHAPE_2x1 or roomShape == RoomShape.ROOMSHAPE_IIH then anim = "2x1"
+        elseif roomShape == RoomShape.ROOMSHAPE_2x2 or roomShape == RoomShape.ROOMSHAPE_LBL or roomShape == RoomShape.ROOMSHAPE_LBR or roomShape == RoomShape.rOOMSHAPE_LTL or roomShape == RoomShape.ROOMSHAPE_LTR then anim = "2x2"
+        end
+
+        StageAPI.StageShadowRNG:SetSeed(room:GetDecorationSeed(), 0)
+        local usingShadow = StageAPI.Random(1, count, StageAPI.StageShadowRNG)
+        local sheet = prefix .. anim .. "_overlay_" .. tostring(usingShadow) .. ".png"
+
+        shadowEntity:GetData().Sheet = sheet
+        shadowEntity:GetData().Animation = anim
+        shadowEntity.Position = room:GetCenterPos()
+        shadowEntity:AddEntityFlags(EntityFlag.FLAG_DONT_OVERWRITE)
     end
 
     local shadingDefaultOffset = Vector(-80,-80)
@@ -5585,6 +5638,17 @@ do -- Callbacks
         end
 
         StageAPI.CallCallbacks("POST_STAGEAPI_NEW_ROOM", false, justGenerated)
+
+        if not StageAPI.InNewStage() then
+            local stage = level:GetStage()
+            if stage == LevelStage.STAGE2_1 or stage == LevelStage.STAGE2_2 then
+                StageAPI.ChangeStageShadow("stageapi/floors/catacombs/overlays/", 5)
+            elseif stage == LevelStage.STAGE3_1 or stage == LevelStage.STAGE3_2 then
+                StageAPI.ChangeStageShadow("stageapi/floors/necropolis/overlays/", 5)
+            elseif stage == LevelStage.STAGE4_1 or stage == LevelStage.STAGE4_2 then
+                StageAPI.ChangeStageShadow("stageapi/floors/utero/overlays/", 5)
+            end
+        end
 
         if isNewStage then
             local rtype = StageAPI.GetCurrentRoomType()
