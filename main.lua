@@ -401,6 +401,8 @@ do -- Core Definitions
         [3000]=GridEntityType.GRID_PIT,
         [4000]=GridEntityType.GRID_LOCK,
         [4500]=GridEntityType.GRID_PRESSURE_PLATE,
+        [5000]=GridEntityType.GRID_STATUE,
+        [5001]={Type = GridEntityType.GRID_STATUE, Variant = 1},
         [9000]=GridEntityType.GRID_TRAPDOOR,
         [9100]=GridEntityType.GRID_STAIRS,
         [10000]=GridEntityType.GRID_GRAVITY
