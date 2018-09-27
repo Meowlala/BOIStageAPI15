@@ -2636,6 +2636,7 @@ do -- RoomsList
             self.WasClearAtStart = room:IsClear()
             self.IsClear = self.WasClearAtStart
             self.FirstLoad = false
+            self.HasEnemies = room:GetAliveEnemiesCount() > 0
         else
             StageAPI.LoadRoomLayout(self.SpawnGrids, {self.SpawnEntities, self.ExtraSpawn}, isExtraRoom, true, self.IsClear, isExtraRoom, self.GridInformation, self.AvoidSpawning, self.PersistentPositions)
             self.IsClear = room:IsClear()
@@ -2795,6 +2796,10 @@ do -- RoomsList
 
     function StageAPI.LevelRoom:SetTypeOverride(override)
         self.TypeOverride = override
+    end
+
+    function StageAPI.LevelRoom:GetType()
+        return self.TypeOverride or self.RoomType
     end
 
     function StageAPI.RemovePersistentEntity(entity)
