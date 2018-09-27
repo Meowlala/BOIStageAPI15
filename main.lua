@@ -3114,6 +3114,19 @@ do -- Extra Rooms
             end
         end
 
+        if not StageAPI.InNewStage() then
+            local btype, stage, stype = room:GetBackdropType(), level:GetStage(), level:GetStageType()
+            if (btype == 10 or btype == 11) and (stage == LevelStage.STAGE4_1 or stage == LevelStage.STAGE4_2) then
+                for _, overlay in ipairs(StageAPI.UteroOverlays) do
+                    overlay:Render()
+                end
+            elseif (btype == 7 or btype == 8 or btype == 16) and (stage == LevelStage.STAGE3_1 or stage == LevelStage.STAGE3_2 or stage == LevelStage.STAGE6) then
+                for _, overlay in ipairs(StageAPI.NecropolisOverlays) do
+                    overlay:Render()
+                end
+            end
+        end
+
         StageAPI.CallCallbacks("PRE_TRANSITION_RENDER")
         if StageAPI.TransitionTimer then
             for _, player in ipairs(players) do
@@ -4157,6 +4170,10 @@ do -- Custom Stage
     function StageAPI.CustomStage:SetRequireRoomTypeBoss(rtype)
         self.RequireRoomTypeBoss = rtype
     end
+
+    function StageAPI.ShouldPlayStageMusic()
+        return room:GetType() == RoomType.ROOM_DEFAULT or room:GetType() == RoomType.ROOM_TREASURE, not room:IsClear()
+    end
 end
 
 Isaac.DebugString("[StageAPI] Loading Stage Override Definitions")
@@ -4226,6 +4243,79 @@ do -- Definitions
 
     StageAPI.CatacombsXL = StageAPI.Catacombs("Catacombs XL")
     StageAPI.CatacombsXL.DisplayName = "Catacombs XL"
+    StageAPI.Catacombs:SetXLStage(StageAPI.CatacombsXL)
+
+    StageAPI.NecropolisGridGfx = StageAPI.GridGfx()
+    StageAPI.NecropolisGridGfx:SetRocks("gfx/grid/rocks_depths.png")
+    StageAPI.NecropolisGridGfx:SetPits("gfx/grid/grid_pit_necropolis.png")
+    StageAPI.NecropolisGridGfx:SetBridges("stageapi/floors/necropolis/grid_bridge_necropolis.png")
+    StageAPI.NecropolisGridGfx:SetDecorations("gfx/grid/props_05_depths.png", "gfx/grid/props_05_depths.anm2", 43)
+
+    StageAPI.NecropolisBackdrop = {
+        {
+            Walls = {"necropolis1_1"},
+            NFloors = {"necropolis_nfloor1", "necropolis_nfloor2"},
+            LFloors = {"necropolis_lfloor"},
+            Corners = {"necropolis1_corner"}
+        }
+    }
+
+    StageAPI.NecropolisOverlays = {
+        StageAPI.Overlay("stageapi/floors/necropolis/overlay.anm2", Vector(0.66, 0.66)),
+        StageAPI.Overlay("stageapi/floors/necropolis/overlay.anm2", Vector(-0.66, 0.66))
+    }
+
+    StageAPI.NecropolisBackdrop = StageAPI.BackdropHelper(StageAPI.NecropolisBackdrop, "stageapi/floors/necropolis/", ".png")
+    StageAPI.NecropolisRoomGfx = StageAPI.RoomGfx(StageAPI.NecropolisBackdrop, StageAPI.NecropolisGridGfx, "_default")
+    StageAPI.NecropolisMusicID = Isaac.GetMusicIdByName("Necropolis")
+    StageAPI.Necropolis = StageAPI.CustomStage("Necropolis", nil, true)
+    StageAPI.Necropolis:SetStageMusic(StageAPI.NecropolisMusicID)
+    StageAPI.Necropolis:SetBossMusic({Music.MUSIC_BOSS, Music.MUSIC_BOSS2}, Music.MUSIC_BOSS_OVER)
+    StageAPI.Necropolis:SetRoomGfx(StageAPI.NecropolisRoomGfx, {RoomType.ROOM_DEFAULT, RoomType.ROOM_TREASURE, RoomType.ROOM_MINIBOSS, RoomType.ROOM_BOSS})
+    StageAPI.Necropolis.DisplayName = "Necropolis I"
+
+    StageAPI.NecropolisTwo = StageAPI.Necropolis("Necropolis 2")
+    StageAPI.NecropolisTwo.DisplayName = "Necropolis II"
+
+    StageAPI.NecropolisXL = StageAPI.Necropolis("Necropolis XL")
+    StageAPI.NecropolisXL.DisplayName = "Necropolis XL"
+    StageAPI.Necropolis:SetXLStage(StageAPI.NecropolisXL)
+
+    StageAPI.UteroGridGfx = StageAPI.GridGfx()
+    StageAPI.UteroGridGfx:SetRocks("gfx/grid/rocks_womb.png")
+    StageAPI.UteroGridGfx:SetPits("gfx/grid/grid_pit_womb.png", "gfx/grid/grid_pit_blood_womb")
+    StageAPI.UteroGridGfx:SetBridges("stageapi/floors/utero/grid_bridge_womb.png")
+    StageAPI.UteroGridGfx:SetDecorations("gfx/grid/props_07_the womb.png", "gfx/grid/props_07_the womb.anm2", 43)
+
+    StageAPI.UteroBackdrop = {
+        {
+            Walls = {"utero1_1", "utero1_2", "utero1_3", "utero1_4"},
+            NFloors = {"utero_nfloor"},
+            LFloors = {"utero_lfloor"},
+            Corners = {"utero1_corner"}
+        }
+    }
+
+    StageAPI.UteroOverlays = {
+        StageAPI.Overlay("stageapi/floors/utero/overlay.anm2", Vector(0.66, 0.66)),
+        StageAPI.Overlay("stageapi/floors/utero/overlay.anm2", Vector(-0.66, 0.66))
+    }
+
+    StageAPI.UteroBackdrop = StageAPI.BackdropHelper(StageAPI.UteroBackdrop, "stageapi/floors/utero/", ".png")
+    StageAPI.UteroRoomGfx = StageAPI.RoomGfx(StageAPI.UteroBackdrop, StageAPI.UteroGridGfx, "_default")
+    StageAPI.UteroMusicID = Isaac.GetMusicIdByName("Womb/Utero")
+    StageAPI.Utero = StageAPI.CustomStage("Utero", nil, true)
+    StageAPI.Utero:SetStageMusic(StageAPI.UteroMusicID)
+    StageAPI.Utero:SetBossMusic({Music.MUSIC_BOSS, Music.MUSIC_BOSS2}, Music.MUSIC_BOSS_OVER)
+    StageAPI.Utero:SetRoomGfx(StageAPI.UteroRoomGfx, {RoomType.ROOM_DEFAULT, RoomType.ROOM_TREASURE, RoomType.ROOM_MINIBOSS, RoomType.ROOM_BOSS})
+    StageAPI.Utero.DisplayName = "Utero I"
+
+    StageAPI.UteroTwo = StageAPI.Utero("Utero 2")
+    StageAPI.UteroTwo.DisplayName = "Utero II"
+
+    StageAPI.UteroXL = StageAPI.Utero("Utero XL")
+    StageAPI.UteroXL.DisplayName = "Utero XL"
+    StageAPI.Utero:SetXLStage(StageAPI.UteroXL)
 
     StageAPI.StageOverride = {
         CatacombsOne = {
@@ -4237,12 +4327,37 @@ do -- Definitions
             OverrideStage = LevelStage.STAGE2_2,
             OverrideStageType = StageType.STAGETYPE_WOTL,
             ReplaceWith = StageAPI.CatacombsTwo
+        },
+        NecropolisOne = {
+            OverrideStage = LevelStage.STAGE3_1,
+            OverrideStageType = StageType.STAGETYPE_WOTL,
+            ReplaceWith = StageAPI.Necropolis
+        },
+        NecropolisTwo = {
+            OverrideStage = LevelStage.STAGE3_2,
+            OverrideStageType = StageType.STAGETYPE_WOTL,
+            ReplaceWith = StageAPI.NecropolisTwo
+        },
+        UteroOne = {
+            OverrideStage = LevelStage.STAGE4_1,
+            OverrideStageType = StageType.STAGETYPE_WOTL,
+            ReplaceWith = StageAPI.Utero
+        },
+        UteroTwo = {
+            OverrideStage = LevelStage.STAGE4_2,
+            OverrideStageType = StageType.STAGETYPE_WOTL,
+            ReplaceWith = StageAPI.UteroTwo
         }
     }
 
     StageAPI.Catacombs:SetReplace(StageAPI.StageOverride.CatacombsOne)
-    StageAPI.Catacombs:SetXLStage(StageAPI.CatacombsXL)
     StageAPI.CatacombsTwo:SetReplace(StageAPI.StageOverride.CatacombsTwo)
+
+    StageAPI.Necropolis:SetReplace(StageAPI.StageOverride.NecropolisOne)
+    StageAPI.NecropolisTwo:SetReplace(StageAPI.StageOverride.NecropolisTwo)
+
+    StageAPI.Utero:SetReplace(StageAPI.StageOverride.UteroOne)
+    StageAPI.UteroTwo:SetReplace(StageAPI.StageOverride.UteroTwo)
 
     function StageAPI.InOverriddenStage()
         for name, override in pairs(StageAPI.StageOverride) do
@@ -5139,6 +5254,12 @@ do -- Callbacks
         end
     end)
 
+    mod:AddCallback(ModCallbacks.MC_POST_EFFECT_INIT, function(_, eff)
+        if StageAPI.InNewStage() and not eff:GetData().StageAPIDoNotDelete then
+            eff:Remove()
+        end
+    end, EffectVariant.WATER_DROPLET)
+
     mod:AddCallback(ModCallbacks.MC_POST_UPDATE, function()
         if StageAPI.JustUsedD7 then
             StageAPI.JustUsedD7 = nil
@@ -5276,7 +5397,37 @@ do -- Callbacks
             end
         end
 
+        if stype == StageType.STAGETYPE_ORIGINAL and (stage == LevelStage.STAGE4_1 or stage == LevelStage.STAGE4_2) then
+            local shouldPlayMusic, shouldLayer = StageAPI.ShouldPlayStageMusic()
+            if shouldPlayMusic then
+                local id = StageAPI.Music:GetCurrentMusicID()
+                local musicID = StageAPI.UteroMusicID
+                local queuedID = StageAPI.Music:GetQueuedMusicID()
+                if queuedID ~= musicID and not StageAPI.IsIn(StageAPI.NonOverrideMusic, queuedID) then
+                    StageAPI.Music:Queue(musicID)
+                end
+
+                if id ~= musicID and not StageAPI.IsIn(StageAPI.NonOverrideMusic, id) then
+                    StageAPI.Music:Play(musicID, 0)
+                end
+
+                StageAPI.Music:UpdateVolume()
+
+                if shouldLayer and not StageAPI.Music:IsLayerEnabled() then
+                    StageAPI.Music:EnableLayer()
+                elseif not shouldLayer and StageAPI.Music:IsLayerEnabled() then
+                    StageAPI.Music:DisableLayer()
+                end
+            end
+        end
+
         local btype = room:GetBackdropType()
+        if btype == 10 then
+            for _, grid in ipairs(pits) do
+                StageAPI.CheckBridge(grid[1], grid[2], "stageapi/floors/utero/grid_bridge_womb.png")
+            end
+        end
+
         if StageAPI.OldBackdropType ~= btype then
             if btype == 5 and not StageAPI.InOverriddenStage() then
                 StageAPI.ChangeRoomGfx(StageAPI.CatacombsRoomGfx)

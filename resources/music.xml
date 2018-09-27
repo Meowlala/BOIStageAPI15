@@ -3,8 +3,6 @@
 	<track id="2" name="Caves" intro="The Caves Intro.ogg" path="The Caves.ogg" layerintro="The Caves Layer Intro.ogg" layer="The Caves Layer.ogg" loop="true" />
 	<track id="3" name="Depths" intro="The Depths Intro.ogg" path="The Depths.ogg" layerintro="The Depths Layer Intro.ogg" layer="The Depths Layer.ogg" loop="true" />
 	<track id="4" name="Cellar" intro="The Cellar Alt Intro.ogg" path="The Cellar Alt.ogg" layerintro="The Cellar Layer Intro.ogg" layer="The Cellar Layer.ogg" loop="true" />
-	<track id="6" name="Necropolis" intro="Necropolis Intro.ogg" path="Necropolis.ogg" layerintro="Necropolis Layer Intro.ogg" layer="Necropolis Layer.ogg" loop="true" />
-	<track id="7" name="Womb/Utero" intro="The Womb Chapter Four Intro.ogg" path="The Womb Chapter Four.ogg" layerintro="The Womb Layer Intro.ogg" layer="The Womb Layer.ogg" loop="true" />
 	<track id="8" name="Game Over" path="You Died.ogg" loop="true" />
 	<track id="9" name="Boss" path="Fight Ogg/Basic Boss Fight.ogg" loop="true" />
 	<track id="10" name="Cathedral" intro="Cathedral Intro.ogg" path="Cathedral Chant.ogg" layerintro="Cathedral Layer Intro.ogg" layer="Cathedral Layer.ogg" loop="true" />
