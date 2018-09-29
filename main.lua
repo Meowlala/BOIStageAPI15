@@ -5558,6 +5558,12 @@ do -- Callbacks
                 end
 
                 StageAPI.NextStage = nil
+                if StageAPI.CurrentStage and StageAPI.CurrentStage.GetPlayingMusic then
+                    local musicID = StageAPI.CurrentStage:GetPlayingMusic()
+                    if musicID then
+                        StageAPI.Music:Queue(musicID)
+                    end
+                end
             end
         end
 
