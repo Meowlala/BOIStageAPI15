@@ -5729,6 +5729,7 @@ do -- Callbacks
             if name then
                 local list
                 if listName then
+                    listName = string.gsub(listName, "_", " ")
                     if StageAPI.RoomsLists[listName] then
                         list = StageAPI.RoomsLists[listName]
                     else
