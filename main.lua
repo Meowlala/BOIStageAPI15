@@ -3120,34 +3120,36 @@ do -- Extra Rooms
             end
         end
 
-        if not StageAPI.InNewStage() then
-            local btype, stage, stype = room:GetBackdropType(), level:GetStage(), level:GetStageType()
-            if (btype == 10 or btype == 11) and (stage == LevelStage.STAGE4_1 or stage == LevelStage.STAGE4_2) then
-                for _, overlay in ipairs(StageAPI.UteroOverlays) do
-                    overlay:Render()
+        if not StageAPI.IsHUDAnimationPlaying() then
+            if not StageAPI.InNewStage() then
+                local btype, stage, stype = room:GetBackdropType(), level:GetStage(), level:GetStageType()
+                if (btype == 10 or btype == 11) and (stage == LevelStage.STAGE4_1 or stage == LevelStage.STAGE4_2) then
+                    for _, overlay in ipairs(StageAPI.UteroOverlays) do
+                        overlay:Render()
+                    end
+                elseif (btype == 7 or btype == 8 or btype == 16) and (stage == LevelStage.STAGE3_1 or stage == LevelStage.STAGE3_2 or stage == LevelStage.STAGE6) then
+                    for _, overlay in ipairs(StageAPI.NecropolisOverlays) do
+                        overlay:Render()
+                    end
                 end
-            elseif (btype == 7 or btype == 8 or btype == 16) and (stage == LevelStage.STAGE3_1 or stage == LevelStage.STAGE3_2 or stage == LevelStage.STAGE6) then
-                for _, overlay in ipairs(StageAPI.NecropolisOverlays) do
-                    overlay:Render()
+            end
+
+            local shadows = Isaac.FindByType(StageAPI.E.StageShadow.T, StageAPI.E.StageShadow.V, -1, false, false)
+            local shadow = shadows[1]
+            if shadow then
+                local shadowSheet, shadowAnim = shadow:GetData().Sheet, shadow:GetData().Animation
+                if shadowSheet and shadowSheet ~= lastUsedShadowSpritesheet then
+                    shadowSprite:ReplaceSpritesheet(0, shadowSheet)
+                    shadowSprite:LoadGraphics()
+                    lastUsedShadowSpritesheet = shadowSheet
                 end
-            end
-        end
 
-        local shadows = Isaac.FindByType(StageAPI.E.StageShadow.T, StageAPI.E.StageShadow.V, -1, false, false)
-        local shadow = shadows[1]
-        if shadow then
-            local shadowSheet, shadowAnim = shadow:GetData().Sheet, shadow:GetData().Animation
-            if shadowSheet and shadowSheet ~= lastUsedShadowSpritesheet then
-                shadowSprite:ReplaceSpritesheet(0, shadowSheet)
-                shadowSprite:LoadGraphics()
-                lastUsedShadowSpritesheet = shadowSheet
-            end
+                if shadowAnim and not (shadowSprite:IsPlaying(shadowAnim) or shadowSprite:IsFinished(shadowAnim)) then
+                    shadowSprite:Play(shadowAnim, true)
+                end
 
-            if shadowAnim and not (shadowSprite:IsPlaying(shadowAnim) or shadowSprite:IsFinished(shadowAnim)) then
-                shadowSprite:Play(shadowAnim, true)
+                shadowSprite:Render(Isaac.WorldToScreen(shadow.Position), zeroVector, zeroVector)
             end
-
-            shadowSprite:Render(Isaac.WorldToScreen(shadow.Position), zeroVector, zeroVector)
         end
 
         StageAPI.CallCallbacks("PRE_TRANSITION_RENDER")
@@ -4014,11 +4016,13 @@ do -- Backdrop & RoomGfx
 
     function StageAPI.ChangeRoomGfx(roomgfx)
         StageAPI.BackdropRNG:SetSeed(room:GetDecorationSeed(), 0)
-        if #roomgfx.Backdrops > 0 then
-            local backdrop = StageAPI.Random(1, #roomgfx.Backdrops, StageAPI.BackdropRNG)
-            StageAPI.ChangeBackdrop(roomgfx.Backdrops[backdrop])
-        else
-            StageAPI.ChangeBackdrop(roomgfx.Backdrops)
+        if roomgfx.Backdrops then
+            if #roomgfx.Backdrops > 0 then
+                local backdrop = StageAPI.Random(1, #roomgfx.Backdrops, StageAPI.BackdropRNG)
+                StageAPI.ChangeBackdrop(roomgfx.Backdrops[backdrop])
+            else
+                StageAPI.ChangeBackdrop(roomgfx.Backdrops)
+            end
         end
 
         if roomgfx.Grids then
@@ -4171,7 +4175,8 @@ do -- Custom Stage
             if self.BossMusic then
                 local music = self.BossMusic
                 local musicID
-                if room:GetAliveBossesCount() < 1 or room:IsClear() then
+                local isCleared = room:GetAliveBossesCount() < 1 or room:IsClear()
+                if isCleared then
                     musicID = music.Cleared
                 else
                     musicID = music.Fight
@@ -4182,6 +4187,11 @@ do -- Custom Stage
                     musicID = musicID[StageAPI.Random(1, #musicID, StageAPI.MusicRNG)]
                 end
 
+                local newMusicID = StageAPI.CallCallbacks("POST_SELECT_BOSS_MUSIC", true, self, musicID, isCleared, StageAPI.MusicRNG)
+                if newMusicID then
+                    musicID = newMusicID
+                end
+
                 if musicID then
                     return musicID, not room:IsClear()
                 end
@@ -4190,6 +4200,11 @@ do -- Custom Stage
             local music = self.Music
             if music then
                 local musicID = music[roomType]
+                local newMusicID = StageAPI.CallCallbacks("POST_SELECT_STAGE_MUSIC", true, self, musicID, roomType, StageAPI.MusicRNG)
+                if newMusicID then
+                    musicID = newMusicID
+                end
+
                 if musicID then
                     return musicID, not room:IsClear()
                 end
@@ -4338,7 +4353,7 @@ do -- Definitions
 
     StageAPI.UteroGridGfx = StageAPI.GridGfx()
     StageAPI.UteroGridGfx:SetRocks("gfx/grid/rocks_womb.png")
-    StageAPI.UteroGridGfx:SetPits("gfx/grid/grid_pit_womb.png", "gfx/grid/grid_pit_blood_womb")
+    StageAPI.UteroGridGfx:SetPits("gfx/grid/grid_pit_womb.png", "gfx/grid/grid_pit_blood_womb.png")
     StageAPI.UteroGridGfx:SetBridges("stageapi/floors/utero/grid_bridge_womb.png")
     StageAPI.UteroGridGfx:SetDecorations("gfx/grid/props_07_the womb.png", "gfx/grid/props_07_the womb.anm2", 43)
 
@@ -4804,7 +4819,7 @@ do -- Transition
     end)
 
     function StageAPI.IsHUDAnimationPlaying()
-        return StageAPI.TransitionAnimation:IsPlaying("Scene") or StageAPI.TransitionAnimation:IsPlaying("SceneNoShake") or StageAPI.BossSprite:IsPlaying("Scene") or StageAPI.BossSprite:IsPlaying("DoubleTrouble")
+        return StageAPI.TransitionAnimation:IsPlaying("Scene") or StageAPI.TransitionAnimation:IsPlaying("SceneNoShake") or StageAPI.BossSprite:IsPlaying("Scene") or StageAPI.BossSprite:IsPlaying("DoubleTrouble") or (room:GetType() == RoomType.ROOM_BOSS and room:GetFrameCount() <= 0 and game:IsPaused())
     end
 
     mod:AddCallback(ModCallbacks.MC_ENTITY_TAKE_DMG, function(_, e)
@@ -5339,6 +5354,20 @@ do -- Callbacks
             return true
         end
     end
+
+    StageAPI.AddCallback("StageAPI", "POST_SELECT_BOSS_MUSIC", 0, function(stage, usingMusic, isCleared)
+        if not isCleared then
+            if stage.Name == "Necropolis" or stage.Alias == "Necropolis" then
+                if room:IsCurrentRoomLastBoss() and (level:GetCurses() & LevelCurse.CURSE_OF_LABYRINTH ~= 0 or level:GetStage() == LevelStage.STAGE3_2) then
+                    return Music.MUSIC_MOM_BOSS
+                end
+            elseif stage.Name == "Utero" or stage.Alias == "Utero" then
+                if room:IsCurrentRoomLastBoss() and (level:GetCurses() & LevelCurse.CURSE_OF_LABYRINTH ~= 0 or level:GetStage() == LevelStage.STAGE3_2) then
+                    return Music.MUSIC_MOMS_HEART_BOSS
+                end
+            end
+        end
+    end)
 
     StageAPI.Music = MusicManager()
     StageAPI.MusicRNG = RNG()
