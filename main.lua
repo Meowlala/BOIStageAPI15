@@ -827,9 +827,9 @@ do -- Core Functions
         S = 12545
     }
 
-    function StageAPI.SpawnFloorEffect(pos, velocity, spawner, anm2, loadGraphics)
+    function StageAPI.SpawnFloorEffect(pos, velocity, spawner, anm2, loadGraphics, variant)
         local eff = Isaac.Spawn(StageAPI.E.FloorEffectCreep.T, StageAPI.E.FloorEffectCreep.V, StageAPI.E.FloorEffectCreep.S, pos or zeroVector, velocity or zeroVector, spawner)
-        eff.Variant = StageAPI.E.FloorEffect.V
+        eff.Variant = variant or StageAPI.E.FloorEffect.V
         if anm2 then
             eff:GetSprite():Load(anm2, loadGraphics)
         end
