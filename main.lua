@@ -5949,7 +5949,7 @@ do
             end
 
             for name, indices in pairs(customGrids) do
-                for index, _ in pairs(indices) do
+                for index, value in pairs(indices) do
                     if not levelSaveData[strindex].CustomGrids then
                         levelSaveData[strindex].CustomGrids = {}
                     end
@@ -5958,7 +5958,11 @@ do
                         levelSaveData[strindex].CustomGrids[name] = {}
                     end
 
-                    levelSaveData[strindex].CustomGrids[name][#levelSaveData[strindex].CustomGrids[name] + 1] = index
+                    if value == true then
+                        levelSaveData[strindex].CustomGrids[name][#levelSaveData[strindex].CustomGrids[name] + 1] = index
+                    else
+                        levelSaveData[strindex].CustomGrids[name][#levelSaveData[strindex].CustomGrids[name] + 1] = {index, value}
+                    end
                 end
             end
         end
@@ -5993,6 +5997,7 @@ do
     end
 
     function StageAPI.LoadSaveString(str)
+        StageAPI.CallCallbacks("PRE_STAGEAPI_LOAD_SAVE", false)
         local retLevelRooms = {}
         local retRoomGrids = {}
         local retCustomGrids = {}
@@ -6036,7 +6041,11 @@ do
                             retCustomGrids[lindex][name] = {}
                         end
 
-                        retCustomGrids[lindex][name][index] = true
+                        if type(index) == "table" then
+                            retCustomGrids[lindex][name][index[1]] = index[2]
+                        else
+                            retCustomGrids[lindex][name][index] = true
+                        end
                     end
                 end
             end
@@ -6054,6 +6063,7 @@ do
         StageAPI.RoomGrids = retRoomGrids
         StageAPI.LevelRooms = retLevelRooms
         StageAPI.CustomGrids = retCustomGrids
+        StageAPI.CallCallbacks("POST_STAGEAPI_LOAD_SAVE", false)
     end
 end
 
