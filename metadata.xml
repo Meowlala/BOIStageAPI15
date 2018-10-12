@@ -8,7 +8,7 @@
 Built from scratch to replace Revelations' StageAPI. Incompatible with old Revelations, needed for new version.
 	</description>
     <version>1.60</version>
-    <visibility>Friends Only</visibility>
+    <visibility>Public</visibility>
     <tag id="Lua"/>
     <tag id="Rooms"/>
     <tag id="Floors"/>
