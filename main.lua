@@ -2325,11 +2325,12 @@ do -- RoomsList
     end
 
     StageAPI.LevelRoom = StageAPI.Class("LevelRoom")
-    function StageAPI.LevelRoom:Init(layoutName, roomsList, seed, shape, roomType, isExtraRoom, fromSaveData, requireRoomType, ignoreDoors, doors)
+    function StageAPI.LevelRoom:Init(layoutName, roomsList, seed, shape, roomType, isExtraRoom, fromSaveData, requireRoomType, ignoreDoors, doors, levelIndex)
         Isaac.DebugString("[StageAPI] Initializing room")
         StageAPI.CurrentlyInitializing = self
         if fromSaveData then
             Isaac.DebugString("[StageAPI] Loading from save data")
+            self.LevelIndex = levelIndex
             self:LoadSaveData(fromSaveData)
         else
             Isaac.DebugString("[StageAPI] Generating room")
@@ -2349,6 +2350,7 @@ do -- RoomsList
             self.Data = {}
             self.PersistentData = {}
 
+            self.LevelIndex = levelIndex
             self.Doors = doors
             self.Shape = shape
             self.RoomType = roomType
@@ -2841,7 +2843,8 @@ do -- RoomsList
     end
 
     function StageAPI.SetRoomFromList(roomsList, roomType, requireRoomType, isExtraRoom, load, seed, shape, fromSaveData)
-        local newRoom = StageAPI.LevelRoom(nil, roomsList, seed, shape, roomType, isExtraRoom, fromSaveData, requireRoomType)
+        local levelIndex = StageAPI.GetCurrentRoomID()
+        local newRoom = StageAPI.LevelRoom(nil, roomsList, seed, shape, roomType, isExtraRoom, fromSaveData, requireRoomType, nil, nil, levelIndex)
         StageAPI.SetCurrentRoom(newRoom)
 
         if load then
@@ -5552,7 +5555,8 @@ do -- Callbacks
             StageAPI.SetBossEncountered(boss.NameTwo)
         end
 
-        local newRoom = StageAPI.LevelRoom(nil, boss.Rooms, nil, nil, nil, nil, nil, requireRoomTypeBoss)
+        local levelIndex = StageAPI.GetCurrentRoomID()
+        local newRoom = StageAPI.LevelRoom(nil, boss.Rooms, nil, nil, nil, nil, nil, requireRoomTypeBoss, nil, nil, levelIndex)
         newRoom.PersistentData.BossID = bossID
         StageAPI.CallCallbacks("POST_BOSS_ROOM_INIT", false, newRoom, boss, bossID)
         StageAPI.SetCurrentRoom(newRoom)
@@ -5628,7 +5632,8 @@ do -- Callbacks
         local boss
         if not StageAPI.InExtraRoom and StageAPI.InNewStage() then
             if not inStartingRoom and room:GetType() == RoomType.ROOM_DEFAULT and not currentRoom then
-                local newRoom = StageAPI.LevelRoom(nil, StageAPI.CurrentStage.Rooms, nil, nil, nil, nil, nil, StageAPI.CurrentStage.RequireRoomTypeNormal)
+                local levelIndex = StageAPI.GetCurrentRoomID()
+                local newRoom = StageAPI.LevelRoom(nil, StageAPI.CurrentStage.Rooms, nil, nil, nil, nil, nil, StageAPI.CurrentStage.RequireRoomTypeNormal, nil, nil, levelIndex)
                 StageAPI.SetCurrentRoom(newRoom)
                 newRoom:Load()
                 currentRoom = newRoom
@@ -5841,7 +5846,7 @@ do -- Callbacks
             if room:IsFirstVisit() then
                 shouldReturn = true
             else
-                local currentListIndex = StageAPI.GetCurrentListIndex()
+                local currentListIndex = StageAPI.GetCurrentRoomID()
                 if StageAPI.RoomGrids[currentListIndex] and not StageAPI.RoomGrids[currentListIndex][index] then
                     shouldReturn = true
                 end
@@ -6051,7 +6056,7 @@ do
             end
 
             if roomSaveData.Room then
-                local customRoom = StageAPI.LevelRoom(nil, nil, nil, nil, nil, nil, roomSaveData.Room)
+                local customRoom = StageAPI.LevelRoom(nil, nil, nil, nil, nil, nil, roomSaveData.Room, nil, nil, nil, lindex)
                 retLevelRooms[lindex] = customRoom
             end
         end
