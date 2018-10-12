@@ -3298,10 +3298,18 @@ do -- Extra Rooms
         end
     end
 
+    local framesWithoutDoorData = 0
+    local hadFrameWithoutDoorData = false
     mod:AddCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, function(_, door)
         local data, sprite = door:GetData(), door:GetSprite()
         local doorData = data.DoorData
         if StageAPI.TransitioningToExtraRoom() then
+            return
+        end
+
+        if not doorData then
+            framesWithoutDoorData = framesWithoutDoorData + 1
+            hadFrameWithoutDoorData = true
             return
         end
 
@@ -3341,6 +3349,15 @@ do -- Extra Rooms
             end
         end
     end, StageAPI.E.Door.V)
+
+    mod:AddCallback(ModCallbacks.MC_POST_UPDATE, function()
+        if hadFrameWithoutDoorData then
+            hadFrameWithoutDoorData = false
+        elseif framesWithoutDoorData > 0 then
+            Isaac.ConsoleOutput("Had no door data for " .. tostring(framesWithoutDoorData) .. " frames\n")
+            Isaac.DebugString("Had no door data for " .. tostring(framesWithoutDoorData) .. " frames\n")
+        end
+    end)
 end
 
 Isaac.DebugString("[StageAPI] Loading GridGfx Handler")
