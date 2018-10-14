@@ -3026,6 +3026,7 @@ end
 
 do -- Extra Rooms
     StageAPI.InExtraRoom = false
+    StageAPI.LoadedExtraRoom = false
     StageAPI.CurrentExtraRoom = nil
     StageAPI.CurrentExtraRoomName = nil
     function StageAPI.SetExtraRoom(name, room)
@@ -3124,7 +3125,7 @@ do -- Extra Rooms
                     StageAPI.TransitionTimer = nil
                 end
             end
-        elseif StageAPI.InExtraRoom and not StageAPI.StoredExtraRoomThisPause then
+        elseif StageAPI.LoadedExtraRoom and not StageAPI.StoredExtraRoomThisPause then
             StageAPI.StoredExtraRoomThisPause = true
             StageAPI.CurrentExtraRoom:SaveGridInformation()
             StageAPI.CurrentExtraRoom:SavePersistentEntities()
@@ -5628,6 +5629,7 @@ do -- Callbacks
             StageAPI.CurrentExtraRoom = nil
             StageAPI.CurrentExtraRoomName = nil
             StageAPI.InExtraRoom = false
+            StageAPI.LoadedExtraRoom = false
         end
 
         if StageAPI.TransitionExitSlot then
@@ -5647,6 +5649,7 @@ do -- Callbacks
             end
 
             StageAPI.CurrentExtraRoom:Load(true)
+            StageAPI.LoadedExtraRoom = true
             justGenerated = true
         end
 
@@ -6318,6 +6321,11 @@ do -- Mod Compatibility
     mod:AddCallback(ModCallbacks.MC_POST_GAME_STARTED, function()
         if REVEL and REVEL.AddChangelog and not REVEL.AddedStageAPIChangelogs then
             REVEL.AddedStageAPIChangelogs = true
+            REVEL.AddChangelog("StageAPI v1.62", [[-Fixed extra rooms containing
+persistent entities from the
+previous room
+            ]])
+
             REVEL.AddChangelog("StageAPI v1.61", [[-Fixed Mom's Heart track
 not playing properly in Utero 2
 
