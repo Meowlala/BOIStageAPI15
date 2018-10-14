@@ -3118,6 +3118,8 @@ do -- Extra Rooms
                         game:ChangeRoom(StageAPI.TransitioningFromTo)
                         StageAPI.TransitioningFromTo = nil
                     end
+
+                    StageAPI.LoadedExtraRoom = false
                 end
             elseif StageAPI.TransitionTimer then
                 StageAPI.TransitionTimer = StageAPI.TransitionTimer - 1
@@ -3364,6 +3366,7 @@ do -- Extra Rooms
         elseif framesWithoutDoorData > 0 then
             Isaac.ConsoleOutput("Had no door data for " .. tostring(framesWithoutDoorData) .. " frames\n")
             Isaac.DebugString("Had no door data for " .. tostring(framesWithoutDoorData) .. " frames\n")
+            framesWithoutDoorData = 0
         end
     end)
 end
@@ -5651,6 +5654,8 @@ do -- Callbacks
             StageAPI.CurrentExtraRoom:Load(true)
             StageAPI.LoadedExtraRoom = true
             justGenerated = true
+        else
+            StageAPI.LoadedExtraRoom = false
         end
 
         local currentListIndex = StageAPI.GetCurrentRoomID()
@@ -6321,6 +6326,12 @@ do -- Mod Compatibility
     mod:AddCallback(ModCallbacks.MC_POST_GAME_STARTED, function()
         if REVEL and REVEL.AddChangelog and not REVEL.AddedStageAPIChangelogs then
             REVEL.AddedStageAPIChangelogs = true
+            REVEL.AddChangelog("StageAPI v1.63", [[-Fixed extra rooms containing
+persistent entities from the
+previous room, after you
+re-enter the room twice
+            ]])
+
             REVEL.AddChangelog("StageAPI v1.62", [[-Fixed extra rooms containing
 persistent entities from the
 previous room
