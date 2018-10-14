@@ -701,6 +701,16 @@ do -- Core Functions
         return StageAPI.GetScreenBottomRight() / 2
     end
 
+    StageAPI.DefaultScreenSize = Vector(480, 270)
+    function StageAPI.GetScreenScale(vec)
+        local bottomRight = StageAPI.GetScreenBottomRight()
+        if vec then
+            return Vector(bottomRight.X / StageAPI.DefaultScreenSize.X, bottomRight.Y / StageAPI.DefaultScreenSize.Y)
+        else
+            return bottomRight.X / StageAPI.DefaultScreenSize.X, bottomRight.Y / StageAPI.DefaultScreenSize.Y
+        end
+    end
+
     function StageAPI.Lerp(first, second, percent)
     	return first * (1 - percent) + second * percent
     end
@@ -3046,10 +3056,16 @@ do -- Extra Rooms
     end
 
     StageAPI.RoomTransitionOverlay = Sprite()
-    StageAPI.RoomTransitionOverlay:Load("stageapi/overlay.anm2", false)
+    StageAPI.RoomTransitionOverlay:Load("stageapi/overlay_black.anm2", false)
     StageAPI.RoomTransitionOverlay:ReplaceSpritesheet(0, "stageapi/overlay_black.png")
     StageAPI.RoomTransitionOverlay:LoadGraphics()
     StageAPI.RoomTransitionOverlay:Play("Idle", true)
+    function StageAPI.RenderBlackScreen(alpha)
+        alpha = alpha or 1
+        StageAPI.RoomTransitionOverlay.Scale = StageAPI.GetScreenScale(true) * 8
+        StageAPI.RoomTransitionOverlay.Color = Color(1, 1, 1, alpha, 0, 0, 0)
+        StageAPI.RoomTransitionOverlay:Render(StageAPI.GetScreenCenterPosition(), zeroVector, zeroVector)
+    end
 
     StageAPI.TransitionFadeTime = 30
 
@@ -3172,8 +3188,7 @@ do -- Extra Rooms
                 player.ControlsCooldown = 2
             end
 
-            StageAPI.RoomTransitionOverlay.Color = Color(1, 1, 1, StageAPI.TransitionTimer / StageAPI.TransitionFadeTime, 0, 0, 0)
-            StageAPI.RoomTransitionOverlay:Render(zeroVector, zeroVector, zeroVector)
+            StageAPI.RenderBlackScreen(StageAPI.TransitionTimer / StageAPI.TransitionFadeTime)
         end
     end)
 
@@ -3969,7 +3984,7 @@ do -- Backdrop & RoomGfx
             local shadowEntity = Isaac.Spawn(StageAPI.E.StageShadow.T, StageAPI.E.StageShadow.V, 0, zeroVector, zeroVector, nil)
             shadowEntity:GetData().Sheet = sheet
             shadowEntity:GetData().Animation = anim
-            shadowEntity.Position = room:GetCenterPos()
+            shadowEntity.Position = StageAPI.Lerp(room:GetTopLeftPos(), room:GetBottomRightPos(), 0.5)
             shadowEntity:AddEntityFlags(EntityFlag.FLAG_DONT_OVERWRITE)
         end
     end
@@ -4829,6 +4844,7 @@ do -- Transition
             end
 
             StageAPI.TransitionIsPlaying = true
+            StageAPI.RenderBlackScreen()
             StageAPI.TransitionAnimation:Render(StageAPI.GetScreenCenterPosition(), zeroVector, zeroVector)
         elseif StageAPI.TransitionIsPlaying then
             StageAPI.TransitionIsPlaying = false
@@ -6326,6 +6342,15 @@ do -- Mod Compatibility
     mod:AddCallback(ModCallbacks.MC_POST_GAME_STARTED, function()
         if REVEL and REVEL.AddChangelog and not REVEL.AddedStageAPIChangelogs then
             REVEL.AddedStageAPIChangelogs = true
+            REVEL.AddChangelog("StageAPI v1.64", [[-Fixed stage shadows not
+being properly centered
+in some L shaped rooms
+
+-Fixed black overlay in
+stage and room transitions
+not scaling with screen.
+            ]])
+
             REVEL.AddChangelog("StageAPI v1.63", [[-Fixed extra rooms containing
 persistent entities from the
 previous room, after you
