@@ -3088,8 +3088,11 @@ do -- Extra Rooms
     shadowSprite:Play("1x1", true)
     local lastUsedShadowSpritesheet
 
+    StageAPI.StoredExtraRoomThisPause = false
+
     mod:AddCallback(ModCallbacks.MC_POST_RENDER, function()
         if not game:IsPaused() then
+            StageAPI.StoredExtraRoomThisPause = false
             if StageAPI.TransitioningTo or StageAPI.TransitioningFromTo then
                 StageAPI.TransitionTimer = StageAPI.TransitionTimer + 1
                 if StageAPI.TransitionTimer == StageAPI.TransitionFadeTime then
@@ -3121,6 +3124,10 @@ do -- Extra Rooms
                     StageAPI.TransitionTimer = nil
                 end
             end
+        elseif StageAPI.InExtraRoom and not StageAPI.StoredExtraRoomThisPause then
+            StageAPI.StoredExtraRoomThisPause = true
+            StageAPI.CurrentExtraRoom:SaveGridInformation()
+            StageAPI.CurrentExtraRoom:SavePersistentEntities()
         end
 
         if not StageAPI.IsHUDAnimationPlaying() then
@@ -5382,7 +5389,7 @@ do -- Callbacks
                     return Music.MUSIC_MOM_BOSS
                 end
             elseif stage.Name == "Utero" or stage.Alias == "Utero" then
-                if room:IsCurrentRoomLastBoss() and (level:GetCurses() & LevelCurse.CURSE_OF_LABYRINTH ~= 0 or level:GetStage() == LevelStage.STAGE3_2) then
+                if room:IsCurrentRoomLastBoss() and (level:GetCurses() & LevelCurse.CURSE_OF_LABYRINTH ~= 0 or level:GetStage() == LevelStage.STAGE4_2) then
                     return Music.MUSIC_MOMS_HEART_BOSS
                 end
             end
@@ -5617,9 +5624,6 @@ do -- Callbacks
             end
         end
 
-        local currentListIndex = StageAPI.GetCurrentRoomID()
-        local currentRoom, justGenerated = StageAPI.GetCurrentRoom(), nil
-
         if not StageAPI.TransitioningToExtraRoom() then
             StageAPI.CurrentExtraRoom = nil
             StageAPI.CurrentExtraRoomName = nil
@@ -5645,6 +5649,9 @@ do -- Callbacks
             StageAPI.CurrentExtraRoom:Load(true)
             justGenerated = true
         end
+
+        local currentListIndex = StageAPI.GetCurrentRoomID()
+        local currentRoom, justGenerated = StageAPI.GetCurrentRoom(), nil
 
         local boss
         if not StageAPI.InExtraRoom and StageAPI.InNewStage() then
@@ -6307,8 +6314,25 @@ do
     end)
 end
 
+do -- Mod Compatibility
+    mod:AddCallback(ModCallbacks.MC_POST_GAME_STARTED, function()
+        if REVEL and REVEL.AddChangelog and not REVEL.AddedStageAPIChangelogs then
+            REVEL.AddedStageAPIChangelogs = true
+            REVEL.AddChangelog("StageAPI v1.61", [[-Fixed Mom's Heart track
+not playing properly in Utero 2
+
+-Fixed extra rooms (for example
+revelations' mirror room)
+not correctly unloading
+when exited by means
+other than a door
+            ]])
+        end
+    end)
+end
+
 Isaac.DebugString("[StageAPI] Fully Loaded, loading dependent mods.")
-StageAPI.MarkLoaded("StageAPI", "1.0", true, true)
+StageAPI.MarkLoaded("StageAPI", "1.61", true, true)
 
 StageAPI.Loaded = true
 if StageAPI.ToCall then
