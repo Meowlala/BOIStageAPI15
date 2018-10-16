@@ -6380,7 +6380,7 @@ other than a door
 end
 
 Isaac.DebugString("[StageAPI] Fully Loaded, loading dependent mods.")
-StageAPI.MarkLoaded("StageAPI", "1.64", true, true)
+StageAPI.MarkLoaded("StageAPI", "1.65", true, true)
 
 StageAPI.Loaded = true
 if StageAPI.ToCall then
