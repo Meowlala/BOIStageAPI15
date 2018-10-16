@@ -4346,7 +4346,7 @@ do -- Definitions
     }
 
     StageAPI.CatacombsBackdrop = StageAPI.BackdropHelper(StageAPI.CatacombsBackdrop, "stageapi/floors/catacombs/", ".png")
-    StageAPI.CatacombsRoomGfx = StageAPI.RoomGfx(StageAPI.CatacombsBackdrop, StageAPI.CatacombsGridGfx, "_default")
+    StageAPI.CatacombsRoomGfx = StageAPI.RoomGfx(--[[StageAPI.CatacombsBackdrop]] nil, StageAPI.CatacombsGridGfx, "_default")
     StageAPI.CatacombsMusicID = Isaac.GetMusicIdByName("Catacombs")
     StageAPI.Catacombs = StageAPI.CustomStage("Catacombs", nil, true)
     StageAPI.Catacombs:SetStageMusic(StageAPI.CatacombsMusicID)
@@ -4382,7 +4382,7 @@ do -- Definitions
     }
 
     StageAPI.NecropolisBackdrop = StageAPI.BackdropHelper(StageAPI.NecropolisBackdrop, "stageapi/floors/necropolis/", ".png")
-    StageAPI.NecropolisRoomGfx = StageAPI.RoomGfx(StageAPI.NecropolisBackdrop, StageAPI.NecropolisGridGfx, "_default")
+    StageAPI.NecropolisRoomGfx = StageAPI.RoomGfx(--[[StageAPI.NecropolisBackdrop]] nil, StageAPI.NecropolisGridGfx, "_default")
     StageAPI.NecropolisMusicID = Isaac.GetMusicIdByName("Necropolis")
     StageAPI.Necropolis = StageAPI.CustomStage("Necropolis", nil, true)
     StageAPI.Necropolis:SetStageMusic(StageAPI.NecropolisMusicID)
@@ -4418,7 +4418,7 @@ do -- Definitions
     }
 
     StageAPI.UteroBackdrop = StageAPI.BackdropHelper(StageAPI.UteroBackdrop, "stageapi/floors/utero/", ".png")
-    StageAPI.UteroRoomGfx = StageAPI.RoomGfx(StageAPI.UteroBackdrop, StageAPI.UteroGridGfx, "_default")
+    StageAPI.UteroRoomGfx = StageAPI.RoomGfx(--[[StageAPI.UteroBackdrop]] nil, StageAPI.UteroGridGfx, "_default")
     StageAPI.UteroMusicID = Isaac.GetMusicIdByName("Womb/Utero")
     StageAPI.Utero = StageAPI.CustomStage("Utero", nil, true)
     StageAPI.Utero:SetStageMusic(StageAPI.UteroMusicID)
@@ -6342,7 +6342,11 @@ do -- Mod Compatibility
     mod:AddCallback(ModCallbacks.MC_POST_GAME_STARTED, function()
         if REVEL and REVEL.AddChangelog and not REVEL.AddedStageAPIChangelogs then
             REVEL.AddedStageAPIChangelogs = true
-            REVEL.AddChangelog("StageAPI v1.64", [[-Fixed stage shadows not
+            REVEL.AddChangelog("StageAPI v1.64", [[-Disabled backdrop setting
+on non-custom floors
+            ]])
+
+            REVEL.AddChangelog("StageAPI v1.63", [[-Fixed stage shadows not
 being properly centered
 in some L shaped rooms
 
@@ -6351,18 +6355,18 @@ stage and room transitions
 not scaling with screen.
             ]])
 
-            REVEL.AddChangelog("StageAPI v1.63", [[-Fixed extra rooms containing
+            REVEL.AddChangelog("StageAPI v1.62", [[-Fixed extra rooms containing
 persistent entities from the
 previous room, after you
 re-enter the room twice
             ]])
 
-            REVEL.AddChangelog("StageAPI v1.62", [[-Fixed extra rooms containing
+            REVEL.AddChangelog("StageAPI v1.61", [[-Fixed extra rooms containing
 persistent entities from the
 previous room
             ]])
 
-            REVEL.AddChangelog("StageAPI v1.61", [[-Fixed Mom's Heart track
+            REVEL.AddChangelog("StageAPI v1.60", [[-Fixed Mom's Heart track
 not playing properly in Utero 2
 
 -Fixed extra rooms (for example
