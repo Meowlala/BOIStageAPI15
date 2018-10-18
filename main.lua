@@ -1482,6 +1482,7 @@ do -- RoomsList
             for _, layout in ipairs(possibleRooms) do
                 local isValid = true
 
+                local numNonExistingDoors = 0
                 if requireRoomType and layout.Type ~= rtype then
                     isValid = false
                 elseif not ignoreDoors then
@@ -1489,6 +1490,8 @@ do -- RoomsList
                         if door.Slot then
                             if not door.Exists and ((not doors and room:GetDoor(door.Slot)) or (doors and doors[door.Slot])) then
                                 isValid = false
+                            elseif not door.Exists then
+                                numNonExistingDoors = numNonExistingDoors + 1
                             end
                         end
                     end
@@ -1505,6 +1508,11 @@ do -- RoomsList
                             weight = ret
                         end
                     end
+                end
+
+                weight = weight * 2 ^ numNonExistingDoors
+                if shape == RoomShape.ROOMSHAPE_1x1 and numNonExistingDoors > 0 then
+                    weight = weight + 4
                 end
 
                 if isValid then
