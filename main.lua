@@ -1770,6 +1770,9 @@ do -- RoomsList
                 Name = "DetonatorTrigger",
                 Trigger = true
             }]]
+            [27] = {
+                Name = "DoorLocker"
+            }
         }
     }
 
@@ -6361,6 +6364,34 @@ do
                         end
                     end
                 end
+
+                --[[
+                if metadataSet["DoorLocker"] then
+                    if room:IsClear() then
+                        local isClear = true
+                        for _, entity in ipairs(Isaac.GetRoomEntities()) do
+                            if entity:CanShutDoors() then
+                                isClear = false
+                                break
+                            end
+                        end
+
+                        if isClear then
+                            for i = 0, room:GetGridSize() do
+                                local grid = room:GetGridEntity(i)
+                                if grid and grid:ToPressurePlate() and grid:GetVariant() == 0 and grid.State ~= 3 then
+                                    isClear = false
+                                    break
+                                end
+                            end
+                        end
+
+                        if not isClear then
+                            room:SetClear(false)
+                            StageAPI.CloseDoors()
+                        end
+                    end
+                end]]
             end
         end
     end)

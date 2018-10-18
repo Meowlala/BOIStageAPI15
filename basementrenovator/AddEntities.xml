@@ -28,4 +28,5 @@
 	<entity BaseHP="0" Group="StageAPI Utilities" ID="900" Image="resources/Entities/stageapi/lock.png" Kind="Stage" Name="Prevent Randomization" Subtype="0" Variant="24" />
 	<entity BaseHP="0" Group="StageAPI Utilities" ID="900" Image="resources/Entities/stageapi/bridge_failsafe.png" Kind="Stage" Name="Bridge Failsafe" Subtype="0" Variant="25" />
 	<!--<entity BaseHP="0" Group="StageAPI Utilities" ID="900" Image="resources/Entities/stageapi/detonate_trigger.png" Kind="Stage" Name="Detonator Trigger" Subtype="0" Variant="26" />!-->
+	<entity BaseHP="0" Group="StageAPI Utilities" ID="900" Image="resources/Entities/stageapi/door_locker.png" Kind="Stage" Name="Door Locker" Subtype="0" Variant="27" />
 </data>
