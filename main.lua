@@ -1576,6 +1576,8 @@ do -- RoomsList
                         end
                     elseif entity.Type == EntityType.ENTITY_FIREPLACE then
                         return entity.HitPoints <= 2
+                    elseif entity.Type == EntityType.ENTITY_SLOT then
+                        return entity:GetSprite():IsPlaying("Death") or entity:GetSprite():IsPlaying("Broken") or entity:GetSprite():IsFinished("Death") or entity:GetSprite():IsFinished("Broken")
                     end
                 end
             }
@@ -2570,6 +2572,24 @@ do -- RoomsList
         for index, spawns in pairs(self.ExtraSpawn) do
             for _, spawn in ipairs(spawns) do
                 if spawn.PersistenceData.RemoveOnRemove then
+                    local hasMatch = false
+                    local matching = Isaac.FindByType(spawn.Data.Type, spawn.Data.Variant, spawn.Data.SubType, false, false)
+                    for _, match in ipairs(matching) do
+                        if not spawn.PersistenceData.StoreCheck or not spawn.PersistenceData.StoreCheck(match, match:GetData()) then
+                            hasMatch = true
+                        end
+                    end
+
+                    if not hasMatch then
+                        self.AvoidSpawning[spawn.PersistentIndex] = true
+                    end
+                end
+            end
+        end
+
+        for index, spawns in pairs(self.SpawnEntities) do
+            for _, spawn in ipairs(spawns) do
+                if spawn.PersistenceData and spawn.PersistenceData.RemoveOnRemove then
                     local hasMatch = false
                     local matching = Isaac.FindByType(spawn.Data.Type, spawn.Data.Variant, spawn.Data.SubType, false, false)
                     for _, match in ipairs(matching) do
@@ -6342,6 +6362,10 @@ do -- Mod Compatibility
     mod:AddCallback(ModCallbacks.MC_POST_GAME_STARTED, function()
         if REVEL and REVEL.AddChangelog and not REVEL.AddedStageAPIChangelogs then
             REVEL.AddedStageAPIChangelogs = true
+            REVEL.AddChangelog("StageAPI v1.65", [[-Fixed dead slot machines
+respawning in extra rooms
+            ]])
+
             REVEL.AddChangelog("StageAPI v1.64", [[-Disabled backdrop setting
 on non-custom floors
             ]])
