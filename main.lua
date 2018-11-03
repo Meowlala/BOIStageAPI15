@@ -1510,9 +1510,10 @@ do -- RoomsList
                     end
                 end
 
+                local originalWeight = weight
                 weight = weight * 2 ^ numNonExistingDoors
                 if shape == RoomShape.ROOMSHAPE_1x1 and numNonExistingDoors > 0 then
-                    weight = weight + 4
+                    weight = weight + math.min(originalWeight * 4, 4)
                 end
 
                 if isValid then
@@ -6406,6 +6407,10 @@ do -- Mod Compatibility
     mod:AddCallback(ModCallbacks.MC_POST_GAME_STARTED, function()
         if REVEL and REVEL.AddChangelog and not REVEL.AddedStageAPIChangelogs then
             REVEL.AddedStageAPIChangelogs = true
+            REVEL.AddChangelog("StageAPI v1.67", [[-Missing door weight is now
+scaled correctly by original weight
+            ]])
+
             REVEL.AddChangelog("StageAPI v1.66", [[-Fixed persistent entity data
 not always unloading when
 the room changes
