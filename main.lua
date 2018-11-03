@@ -2144,6 +2144,7 @@ do -- RoomsList
                     if shouldSpawn and #entityList > 0 then
                         for _, entityInfo in ipairs(entityList) do
                             local shouldSpawnEntity = true
+
                             if shouldSpawnEntity and avoidSpawning and avoidSpawning[entityInfo.PersistentIndex] then
                                 shouldSpawnEntity = false
                             end
@@ -2318,6 +2319,7 @@ do -- RoomsList
 
     StageAPI.LevelRooms = {}
     function StageAPI.SetCurrentRoom(room)
+        StageAPI.ActiveEntityPersistenceData = {}
         StageAPI.LevelRooms[StageAPI.GetCurrentRoomID()] = room
     end
 
@@ -2348,9 +2350,12 @@ do -- RoomsList
     end
 
     StageAPI.LevelRoom = StageAPI.Class("LevelRoom")
+    StageAPI.NextUniqueRoomIdentifier = 0
     function StageAPI.LevelRoom:Init(layoutName, roomsList, seed, shape, roomType, isExtraRoom, fromSaveData, requireRoomType, ignoreDoors, doors, levelIndex)
         Isaac.DebugString("[StageAPI] Initializing room")
         StageAPI.CurrentlyInitializing = self
+        self.UniqueRoomIdentifier = StageAPI.NextUniqueRoomIdentifier
+        StageAPI.NextUniqueRoomIdentifier = StageAPI.NextUniqueRoomIdentifier + 1
         if fromSaveData then
             Isaac.DebugString("[StageAPI] Loading from save data")
             self.LevelIndex = levelIndex
@@ -6401,6 +6406,18 @@ do -- Mod Compatibility
     mod:AddCallback(ModCallbacks.MC_POST_GAME_STARTED, function()
         if REVEL and REVEL.AddChangelog and not REVEL.AddedStageAPIChangelogs then
             REVEL.AddedStageAPIChangelogs = true
+            REVEL.AddChangelog("StageAPI v1.66", [[-Fixed persistent entity data
+not always unloading when
+the room changes
+
+-Room weight is now scaled
+by number of unavailable
+doors to make rooms
+with a large amount
+of unavailable doors
+more likely to appear
+            ]])
+
             REVEL.AddChangelog("StageAPI v1.65", [[-Fixed dead slot machines
 respawning in extra rooms
             ]])
@@ -6443,7 +6460,7 @@ other than a door
 end
 
 Isaac.DebugString("[StageAPI] Fully Loaded, loading dependent mods.")
-StageAPI.MarkLoaded("StageAPI", "1.65", true, true)
+StageAPI.MarkLoaded("StageAPI", "1.66", true, true)
 
 StageAPI.Loaded = true
 if StageAPI.ToCall then
