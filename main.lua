@@ -1575,7 +1575,7 @@ do -- RoomsList
                             return entity.SubType == 0
                         else
                             local sprite = entity:GetSprite()
-                            if sprite:IsPlaying("Open") or sprite:IsPlaying("Opened") or sprite:IsPlaying("Collect") then
+                            if sprite:IsPlaying("Open") or sprite:IsPlaying("Opened") or sprite:IsPlaying("Collect") or sprite:IsFinished("Open") or sprite:IsFinished("Opened") or sprite:IsFinished("Collect") then
                                 return true
                             end
 
@@ -2651,6 +2651,7 @@ do -- RoomsList
                                 SubType = entity.SubType,
                                 Index = grindex
                             },
+                            Persistent = true,
                             PersistentIndex = index,
                             PersistenceData = persistentData
                         }
@@ -2658,6 +2659,8 @@ do -- RoomsList
                         if persistentData.UpdatePosition then
                             self.PersistentPositions[index] = {X = entity.Position.X, Y = entity.Position.Y}
                         end
+
+                        StageAPI.SetEntityPersistenceData(entity, index, persistentData)
                     end
                 end
             end
@@ -5681,7 +5684,26 @@ do -- Callbacks
             end
         end
 
-        if not StageAPI.TransitioningToExtraRoom() then
+        local enteringExtraRoomFromOffGridRoom
+        if StageAPI.PreviousExtraRoom and room:GetType() == RoomType.ROOM_BARREN and level:GetCurrentRoomIndex() == -3 then
+            StageAPI.CurrentExtraRoom = StageAPI.PreviousExtraRoom
+            StageAPI.CurrentExtraRoomName = StageAPI.PreviousExtraRoomName
+            StageAPI.InExtraRoom = true
+            StageAPI.TransitionExitSlot = level.LeaveDoor
+            StageAPI.PreviousExtraRoom = nil
+            StageAPI.PreviousExtraRoomName = nil
+            enteringExtraRoomFromOffGridRoom = true
+        end
+
+        if not StageAPI.TransitioningToExtraRoom() and not enteringExtraRoomFromOffGridRoom then
+            if StageAPI.InExtraRoom then
+                StageAPI.PreviousExtraRoom = StageAPI.CurrentExtraRoom
+                StageAPI.PreviousExtraRoomName = StageAPI.CurrentExtraRoomName
+            else
+                StageAPI.PreviousExtraRoom = nil
+                StageAPI.PreviousExtraRoomName = nil
+            end
+
             StageAPI.CurrentExtraRoom = nil
             StageAPI.CurrentExtraRoomName = nil
             StageAPI.InExtraRoom = false
@@ -5706,6 +5728,8 @@ do -- Callbacks
 
             StageAPI.CurrentExtraRoom:Load(true)
             StageAPI.LoadedExtraRoom = true
+            StageAPI.PreviousExtraRoom = nil
+            StageAPI.PreviousExtraRoomName = nil
             justGenerated = true
         else
             StageAPI.LoadedExtraRoom = false
@@ -6407,6 +6431,20 @@ do -- Mod Compatibility
     mod:AddCallback(ModCallbacks.MC_POST_GAME_STARTED, function()
         if REVEL and REVEL.AddChangelog and not REVEL.AddedStageAPIChangelogs then
             REVEL.AddedStageAPIChangelogs = true
+            REVEL.AddChangelog("StageAPI v1.68", [[-Fixed some persistent entities
+duplicating or respawning
+when they shouldn't
+in extra rooms
+
+-Fixed escaping from an
+extra room to a base
+game off-grid room
+(such as devil via joker)
+then re-entering the extra
+room resulting in an infinitely
+looping bedroom
+            ]])
+
             REVEL.AddChangelog("StageAPI v1.67", [[-Missing door weight is now
 scaled correctly by original weight
             ]])
