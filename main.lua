@@ -310,7 +310,7 @@ IsDoorSlotAllowed(slot) -- needed in custom rooms
 SetExtraRoom(name, room)
 GetExtraRoom(name)
 InOrTransitioningToExtraRoom()
-TransitioningToExtraRoom()
+TransitioningToOrFromExtraRoom()
 TransitionToExtraRoom(name, exitSlot)
 TransitionFromExtraRoom(toNormalRoomIndex, exitSlot)
 SpawnCustomDoor(slot, leadsToExtraRoomName, leadsToNormalRoomIndex, CustomDoorName, data(at persistData.Data), exitSlot)
@@ -3103,8 +3103,16 @@ do -- Extra Rooms
         return StageAPI.TransitionTimer or StageAPI.InExtraRoom
     end
 
-    function StageAPI.TransitioningToExtraRoom()
+    function StageAPI.TransitioningToOrFromExtraRoom()
         return not not StageAPI.TransitionTimer
+    end
+
+    function StageAPI.TransitioningToExtraRoom()
+        return StageAPI.TransitioningToOrFromExtraRoom() and StageAPI.TransitionToExtra
+    end
+
+    function StageAPI.TransitioningFromExtraRoom()
+        return StageAPI.TransitioningToOrFromExtraRoom() and not StageAPI.TransitionToExtra
     end
 
     StageAPI.RoomTransitionOverlay = Sprite()
@@ -3125,16 +3133,19 @@ do -- Extra Rooms
     StageAPI.TransitioningTo = nil
     StageAPI.TransitioningFromTo = nil
     StageAPI.TransitionExitSlot = nil
+    StageAPI.TransitionToExtra = nil
     function StageAPI.TransitionToExtraRoom(name, exitSlot)
         StageAPI.TransitionTimer = 0
         StageAPI.TransitioningTo = name
         StageAPI.TransitionExitSlot = exitSlot
+        StageAPI.TransitionToExtra = true
     end
 
     function StageAPI.TransitionFromExtraRoom(toIndex, exitSlot)
         StageAPI.TransitionTimer = 0
         StageAPI.TransitioningFromTo = toIndex
         StageAPI.TransitionExitSlot = exitSlot
+        StageAPI.TransitionToExtra = false
     end
 
     StageAPI.RoomShapeToGotoID = {
@@ -3196,6 +3207,7 @@ do -- Extra Rooms
                 StageAPI.TransitionTimer = StageAPI.TransitionTimer - 1
                 if StageAPI.TransitionTimer <= 0 then
                     StageAPI.TransitionTimer = nil
+                    StageAPI.TransitionToExtra = nil
                 end
             end
         elseif StageAPI.LoadedExtraRoom and not StageAPI.StoredExtraRoomThisPause then
@@ -3382,7 +3394,7 @@ do -- Extra Rooms
     mod:AddCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, function(_, door)
         local data, sprite = door:GetData(), door:GetSprite()
         local doorData = data.DoorData
-        if StageAPI.TransitioningToExtraRoom() then
+        if StageAPI.TransitioningToOrFromExtraRoom() then
             return
         end
 
@@ -5736,7 +5748,7 @@ do -- Callbacks
         end
 
         if not StageAPI.TransitioningToExtraRoom() and not enteringExtraRoomFromOffGridRoom then
-            if StageAPI.InExtraRoom then
+            if StageAPI.InExtraRoom and level:GetCurrentRoomIndex() < 0 then
                 StageAPI.PreviousExtraRoom = StageAPI.CurrentExtraRoom
                 StageAPI.PreviousExtraRoomName = StageAPI.CurrentExtraRoomName
             else
@@ -6558,6 +6570,13 @@ priority over stage
 -Text for "roomnames" command
 is now rendered at 50% scale
 and includes room subtype
+
+-Fixed first transition from
+extra room to normal room
+improperly acting like
+a transition from an
+extra room to
+an off-grid room
             ]])
 
             REVEL.AddChangelog("StageAPI v1.68", [[-Fixed some persistent entities
