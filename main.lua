@@ -1432,7 +1432,7 @@ do -- RoomsList
         return includesAny and #mustIncludeAllCopy == 0
     end
 
-    function StageAPI.ClearRoomLayout(keepDecoration, doGrids, doEnts, doPersistentEnts, onlyRemoveTheseDecorations)
+    function StageAPI.ClearRoomLayout(keepDecoration, doGrids, doEnts, doPersistentEnts, onlyRemoveTheseDecorations, doWalls, doDoors)
         if doEnts or doPersistentEnts then
             for _, ent in ipairs(Isaac.GetRoomEntities()) do
                 local etype = ent.Type
@@ -1453,7 +1453,7 @@ do -- RoomsList
                 local grid = room:GetGridEntity(i)
                 if grid then
                     local gtype = grid.Desc.Type
-                    if gtype ~= GridEntityType.GRID_WALL and gtype ~= GridEntityType.GRID_DOOR and (not onlyRemoveTheseDecorations or gtype ~= GridEntityType.GRID_DECORATION or onlyRemoveTheseDecorations[i]) then
+                    if (doWalls or gtype ~= GridEntityType.GRID_WALL) and (doDoors or gtype ~= GridEntityType.GRID_DOOR) and (not onlyRemoveTheseDecorations or gtype ~= GridEntityType.GRID_DECORATION or onlyRemoveTheseDecorations[i]) then
                         StageAPI.Room:RemoveGridEntity(i, 0, keepDecoration)
                     end
                 end
@@ -2193,6 +2193,15 @@ do -- RoomsList
                                         nil
                                     )
 
+                                    local currentRoom = StageAPI.GetCurrentRoom()
+                                    if currentRoom and not currentRoom.IgnoreRoomRules then
+                                        if entityData.Type == EntityType.ENTITY_PICKUP and entityData.Variant == PickupVariant.PICKUP_COLLECTIBLE then
+                                            if currentRoom.RoomType == RoomType.ROOM_TREASURE and (currentRoom.Layout.Variant > 0 or string.find(string.lower(currentRoom.Layout.Name), "choice")) then
+                                                ent:ToPickup().TheresOptionsPickup = true
+                                            end
+                                        end
+                                    end
+
                                     ent:GetData().StageAPISpawnedPosition = entityInfo.Position or StageAPI.ZeroVector
                                     ent:GetData().StageAPIEntityListIndex = index
 
@@ -2352,7 +2361,7 @@ do -- RoomsList
 
     StageAPI.LevelRoom = StageAPI.Class("LevelRoom")
     StageAPI.NextUniqueRoomIdentifier = 0
-    function StageAPI.LevelRoom:Init(layoutName, roomsList, seed, shape, roomType, isExtraRoom, fromSaveData, requireRoomType, ignoreDoors, doors, levelIndex)
+    function StageAPI.LevelRoom:Init(layoutName, roomsList, seed, shape, roomType, isExtraRoom, fromSaveData, requireRoomType, ignoreDoors, doors, levelIndex, ignoreRoomRules)
         Isaac.DebugString("[StageAPI] Initializing room")
         StageAPI.CurrentlyInitializing = self
         self.UniqueRoomIdentifier = StageAPI.NextUniqueRoomIdentifier
@@ -2390,6 +2399,7 @@ do -- RoomsList
             self.PersistentPositions = {}
             self.FirstLoad = true
             self.RequireRoomType = requireRoomType
+            self.IgnoreRoomRules = ignoreRoomRules
 
             local replaceLayoutName = StageAPI.CallCallbacks("PRE_ROOM_LAYOUT_CHOOSE", true, self)
             if replaceLayoutName then
@@ -2732,6 +2742,7 @@ do -- RoomsList
         saveData.IsExtraRoom = isExtraRoom
         saveData.LastPersistentIndex = self.LastPersistentIndex
         saveData.RequireRoomType = self.RequireRoomType
+        saveData.IgnoreRoomRules = self.IgnoreRoomRules
 
         if self.GridInformation then
             for index, gridInfo in pairs(self.GridInformation) do
@@ -2786,6 +2797,7 @@ do -- RoomsList
         self.RoomType = saveData.RoomType
         self.RequireRoomType = saveData.RequireRoomType
         self.TypeOverride = saveData.TypeOverride
+        self.IgnoreRoomRules = saveData.IgnoreRoomRules
 
         if saveData.Doors then
             self.Doors = {}
@@ -3153,6 +3165,11 @@ do -- Extra Rooms
             if StageAPI.TransitioningTo or StageAPI.TransitioningFromTo then
                 StageAPI.TransitionTimer = StageAPI.TransitionTimer + 1
                 if StageAPI.TransitionTimer == StageAPI.TransitionFadeTime then
+                    if StageAPI.CurrentExtraRoom then
+                        StageAPI.CurrentExtraRoom:SaveGridInformation()
+                        StageAPI.CurrentExtraRoom:SavePersistentEntities()
+                    end
+
                     if StageAPI.TransitioningTo then
                         if not StageAPI.InExtraRoom then
                             StageAPI.LastNonExtraRoom = level:GetCurrentRoomIndex()
@@ -3166,12 +3183,10 @@ do -- Extra Rooms
                         StageAPI.TransitioningTo = nil
                         Isaac.ExecuteCommand("goto s.barren." .. id)
                     elseif StageAPI.TransitioningFromTo then
-                        StageAPI.CurrentExtraRoom:SaveGridInformation()
-                        StageAPI.CurrentExtraRoom:SavePersistentEntities()
                         StageAPI.InExtraRoom = nil
                         StageAPI.CurrentExtraRoom = nil
                         StageAPI.CurrentExtraRoomName = nil
-                        game:ChangeRoom(StageAPI.TransitioningFromTo)
+                        game:StartRoomTransition(StageAPI.TransitioningFromTo, Direction.NO_DIRECTION, 0)
                         StageAPI.TransitioningFromTo = nil
                     end
 
@@ -3224,7 +3239,6 @@ do -- Extra Rooms
         StageAPI.CallCallbacks("PRE_TRANSITION_RENDER")
         if StageAPI.TransitionTimer then
             for _, player in ipairs(players) do
-                player.Velocity = zeroVector
                 player.ControlsCooldown = 2
             end
 
@@ -3396,14 +3410,23 @@ do -- Extra Rooms
             end
         end
 
+        local transitionStarted
         for _, player in ipairs(players) do
             local size = 32 + player.Size
             if not room:IsPositionInRoom(player.Position, -16) and player.Position:DistanceSquared(door.Position) < size * size then
                 if data.DoorGridData.LeadsToExtra then
+                    transitionStarted = true
                     StageAPI.TransitionToExtraRoom(data.DoorGridData.LeadsToExtra, data.DoorGridData.ExitSlot)
                 elseif data.DoorGridData.LeadsToNormal then
+                    transitionStarted = true
                     StageAPI.TransitionFromExtraRoom(data.DoorGridData.LeadsToNormal, data.DoorGridData.ExitSlot)
                 end
+            end
+        end
+
+        if transitionStarted then
+            for _, player in ipairs(players) do
+                player.Velocity = zeroVector
             end
         end
 
@@ -4198,8 +4221,26 @@ do -- Custom Stage
         end
     end
 
-    function StageAPI.CustomStage:SetRooms(rooms)
-        self.Rooms = rooms
+    function StageAPI.CustomStage:SetRooms(rooms, rtype)
+        if not self.Rooms then
+            self.Rooms = {}
+        end
+
+        if type(rooms) == "table" then
+            for rtype, rooms in pairs(rooms) do
+                self.Rooms[rtype] = rooms
+            end
+        else
+            rtype = rtype or RoomType.ROOM_DEFAULT
+            self.Rooms[rtype] = rooms
+        end
+    end
+
+    function StageAPI.CustomStage:SetChallengeWaves(rooms, bossChallengeRooms)
+        self.ChallengeWaves = {
+            Normal = rooms,
+            Boss = bossChallengeRooms
+        }
     end
 
     function StageAPI.CustomStage:SetMusic(music, rtype)
@@ -4319,12 +4360,12 @@ do -- Custom Stage
         return false
     end
 
-    function StageAPI.CustomStage:SetRequireRoomTypeNormal(rtype)
-        self.RequireRoomTypeNormal = rtype
+    function StageAPI.CustomStage:SetRequireRoomTypeMatching()
+        self.RequireRoomTypeMatching = true
     end
 
-    function StageAPI.CustomStage:SetRequireRoomTypeBoss(rtype)
-        self.RequireRoomTypeBoss = rtype
+    function StageAPI.CustomStage:SetRequireRoomTypeBoss()
+        self.RequireRoomTypeBoss = true
     end
 
     function StageAPI.ShouldPlayStageMusic()
@@ -4963,7 +5004,6 @@ do -- Transition
 
     StageAPI.StageRNG = RNG()
     function StageAPI.GotoCustomStage(stage, playTransition)
-
         if stage.NormalStage then
             StageAPI.PreReseed = true
             StageAPI.Seeds:ForgetStageSeed(stage.Stage)
@@ -5617,9 +5657,9 @@ do -- Callbacks
         if StageAPI.RoomNamesEnabled then
             local currentRoom = StageAPI.LevelRooms[currentListIndex]
             if currentRoom and currentRoom.Layout.RoomFilename and currentRoom.Layout.Name and currentRoom.Layout.Variant then
-                Isaac.RenderText("Room File: " .. currentRoom.Layout.RoomFilename .. ", Name: " .. currentRoom.Layout.Name .. ", ID: " .. tostring(currentRoom.Layout.Variant), 60, 35, 255, 255, 255, 0.75)
+                Isaac.RenderScaledText("Room File: " .. currentRoom.Layout.RoomFilename .. ", Name: " .. currentRoom.Layout.Name .. ", ID: " .. tostring(currentRoom.Layout.Variant) .. ", Subtype: " .. tostring(currentRoom.Layout.SubType), 60, 35, 0.5, 0.5, 255, 255, 255, 0.75)
             else
-                Isaac.RenderText("Room names enabled, room N/A", 60, 35, 255, 255, 255, 0.75)
+                Isaac.RenderScaledText("Room names enabled, room N/A", 60, 35, 0.5, 0.5, 255, 255, 255, 0.75)
             end
         end
     end)
@@ -5740,16 +5780,17 @@ do -- Callbacks
 
         local boss
         if not StageAPI.InExtraRoom and StageAPI.InNewStage() then
-            if not inStartingRoom and room:GetType() == RoomType.ROOM_DEFAULT and not currentRoom then
+            local rtype = room:GetType()
+            if not inStartingRoom and not currentRoom and StageAPI.CurrentStage.Rooms and StageAPI.CurrentStage.Rooms[rtype] then
                 local levelIndex = StageAPI.GetCurrentRoomID()
-                local newRoom = StageAPI.LevelRoom(nil, StageAPI.CurrentStage.Rooms, nil, nil, nil, nil, nil, StageAPI.CurrentStage.RequireRoomTypeNormal, nil, nil, levelIndex)
+                local newRoom = StageAPI.LevelRoom(nil, StageAPI.CurrentStage.Rooms[rtype], nil, nil, nil, nil, nil, StageAPI.CurrentStage.RequireRoomTypeMatching, nil, nil, levelIndex)
                 StageAPI.SetCurrentRoom(newRoom)
                 newRoom:Load()
                 currentRoom = newRoom
                 justGenerated = true
             end
 
-            if not currentRoom and StageAPI.CurrentStage.Bosses and room:GetType() == RoomType.ROOM_BOSS then
+            if not currentRoom and StageAPI.CurrentStage.Bosses and rtype == RoomType.ROOM_BOSS then
                 local newRoom
                 newRoom, boss = StageAPI.SetCurrentBossRoom(nil, true, StageAPI.CurrentStage.Bosses, StageAPI.CurrentStage.Bosses.HasHorseman, StageAPI.CurrentStage.RequireRoomTypeBoss)
 
@@ -5801,30 +5842,30 @@ do -- Callbacks
             end
         end
 
-        if isNewStage then
+        local usingGfx
+        if currentRoom and currentRoom.Data.RoomGfx then
+            usingGfx = currentRoom.Data.RoomGfx
+        elseif isNewStage then
             local rtype = StageAPI.GetCurrentRoomType()
-            if StageAPI.CurrentStage.RoomGfx[rtype] then
-                local callbacks = StageAPI.GetCallbacks("PRE_CHANGE_ROOM_GFX")
-                local gfxOverride
-                for _, callback in ipairs(callbacks) do
-                    local ret = callback.Function(currentRoom)
-                    if ret ~= nil then
-                        gfxOverride = ret
-                    end
-                end
+            usingGfx = StageAPI.CurrentStage.RoomGfx[rtype]
+        end
 
-                if gfxOverride == nil then
-                    StageAPI.ChangeRoomGfx(StageAPI.CurrentStage.RoomGfx[rtype])
-                elseif gfxOverride ~= false then
-                    StageAPI.ChangeRoomGfx(gfxOverride)
+        if usingGfx then
+            local callbacks = StageAPI.GetCallbacks("PRE_CHANGE_ROOM_GFX")
+            for _, callback in ipairs(callbacks) do
+                local ret = callback.Function(currentRoom, usingGfx)
+                if ret ~= nil then
+                    usingGfx = ret
                 end
+            end
 
-                local callbacks = StageAPI.GetCallbacks("POST_CHANGE_ROOM_GFX")
-                for _, callback in ipairs(callbacks) do
-                    callback.Function()
-                end
-            elseif rtype ~= RoomType.ROOM_DUNGEON then
-                StageAPI.ChangeShading("_default")
+            if usingGfx then
+                StageAPI.ChangeRoomGfx(usingGfx)
+            end
+
+            local callbacks = StageAPI.GetCallbacks("POST_CHANGE_ROOM_GFX")
+            for _, callback in ipairs(callbacks) do
+                callback.Function()
             end
         else
             if room:GetBackdropType() == 5 then
@@ -5879,8 +5920,8 @@ do -- Callbacks
                         Isaac.ConsoleOutput("Room List name invalid.")
                         return
                     end
-                elseif StageAPI.CurrentStage and StageAPI.CurrentStage.Rooms then
-                    list = StageAPI.CurrentStage.Rooms
+                elseif StageAPI.CurrentStage and StageAPI.CurrentStage.Rooms and StageAPI.CurrentStage.Rooms[RoomType.ROOM_DEFAULT] then
+                    list = StageAPI.CurrentStage.Rooms[RoomType.ROOM_DEFAULT]
                 else
                     Isaac.ConsoleOutput("Must supply Room List name or be in a custom stage with rooms.")
                     return
@@ -5937,6 +5978,10 @@ do -- Callbacks
                     game:ChangeRoom(roomDesc.SafeGridIndex)
                 end
             end
+        elseif cmd == "clearroom" then
+            StageAPI.ClearRoomLayout(false, true, true, true)
+        elseif cmd == "superclearroom" then
+            StageAPI.ClearRoomLayout(false, true, true, true, nil, true, true)
         end
     end)
 
@@ -6427,10 +6472,94 @@ do
     end)
 end
 
+do -- Challenge Rooms
+    StageAPI.ChallengeWaveChanged = false
+    StageAPI.LastChallengeWaveFrame = nil
+    mod:AddCallback(ModCallbacks.MC_POST_NPC_INIT, function(_, npc)
+        if room:GetType() == RoomType.ROOM_CHALLENGE and game:GetFrameCount() ~= StageAPI.LastChallengeWaveFrame then
+            if npc.CanShutDoors and not (npc:HasEntityFlags(EntityFlag.FLAG_FRIENDLY) or npc:HasEntityFlags(EntityFlag.FLAG_PERSISTENT) or npc:HasEntityFlags(EntityFlag.FLAG_NO_TARGET)) then
+                local preventCounting
+                for _, entity in ipairs(Isaac.GetRoomEntities()) do
+                    if entity:ToNPC() and entity:CanShutDoors() and not (entity:HasEntityFlags(EntityFlag.FLAG_FRIENDLY) or entity:HasEntityFlags(EntityFlag.FLAG_PERSISTENT) or entity:HasEntityFlags(EntityFlag.FLAG_NO_TARGET)) and entity.FrameCount > 1 then
+                        preventCounting = true
+                        break
+                    end
+                end
+
+                if not preventCounting then
+                    StageAPI.LastChallengeWaveFrame = game:GetFrameCount()
+                    StageAPI.ChallengeWaveChanged = true
+                end
+            end
+        end
+    end)
+
+    StageAPI.ChallengeWaveRNG = RNG()
+    mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, function()
+        StageAPI.ChallengeWaveChanged = false
+        StageAPI.LastChallengeWaveFrame = nil
+        StageAPI.ChallengeWaveRNG:SetSeed(room:GetSpawnSeed(), 0)
+    end)
+
+    mod:AddCallback(ModCallbacks.MC_POST_UPDATE, function()
+        if StageAPI.ChallengeWaveChanged then
+            if room:GetType() ~= RoomType.ROOM_CHALLENGE then
+                StageAPI.ChallengeWaveChanged = false
+                StageAPI.LastChallengeWaveFrame = nil
+                return
+            end
+
+            if StageAPI.CurrentStage and StageAPI.CurrentStage.ChallengeWaves then
+                StageAPI.ClearRoomLayout(true, false, true, false)
+                local seed = StageAPI.ChallengeWaveRNG:Next()
+                local wave = StageAPI.ChooseRoomLayout(StageAPI.CurrentStage.ChallengeWaves.Normal, seed, room:GetShape(), room:GetType(), false, false)
+                local spawnEntities, spawnGrids = StageAPI.ObtainSpawnObjects(wave, seed)
+                StageAPI.LoadRoomLayout(spawnGrids, spawnEntities, false, true, false, true)
+
+                StageAPI.CallCallbacks("POST_ROOM_LOAD", false, StageAPI.GetCurrentRoom(), false, false, true)
+            end
+
+            StageAPI.CallCallbacks("CHALLENGE_WAVE_CHANGED")
+
+            StageAPI.ChallengeWaveChanged = nil
+        end
+    end)
+end
+
 do -- Mod Compatibility
     mod:AddCallback(ModCallbacks.MC_POST_GAME_STARTED, function()
         if REVEL and REVEL.AddChangelog and not REVEL.AddedStageAPIChangelogs then
             REVEL.AddedStageAPIChangelogs = true
+            REVEL.AddChangelog("StageAPI v1.69", [[-Fixed transitions out of special rooms
+not properly resetting the music
+
+-Allowed following base game
+room rules such as multiple
+choice treasure rooms when filling
+a special room layout
+
+-Added support for all special rooms
+to be easily overriden by a
+custom stage like default rooms
+
+-Extra rooms now properly
+save when moving from
+one extra room to another
+
+-Added support for custom
+challenge waves (details
+can be found in main.lua)
+
+-Added support for tying
+RoomGfx to a specific
+room, which takes
+priority over stage
+
+-Text for "roomnames" command
+is now rendered at 50% scale
+and includes room subtype
+            ]])
+
             REVEL.AddChangelog("StageAPI v1.68", [[-Fixed some persistent entities
 duplicating or respawning
 when they shouldn't
