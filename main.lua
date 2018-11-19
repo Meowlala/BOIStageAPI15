@@ -6485,6 +6485,18 @@ do
 end
 
 do -- Challenge Rooms
+    --[[
+    Custom Challenge Waves
+
+    CustomStage:SetChallengeWaves(rooms, bossChallengeRooms)
+
+    Challenge waves must be rooms with only entities, and no metadata entities, to properly merge into the existing room.
+
+    If the existing room has a non-zero SubType, only challenge waves with a SubType that matches or is zero will be selected.
+    This allows the editor to design waves that fit each room layout, or some with SubType 0 that fit all.
+    If you'd prefer it to be random, just use SubType 0 for the initial challenge rooms.
+    ]]
+
     StageAPI.ChallengeWaveChanged = false
     StageAPI.LastChallengeWaveFrame = nil
     mod:AddCallback(ModCallbacks.MC_POST_NPC_INIT, function(_, npc)
@@ -6513,6 +6525,15 @@ do -- Challenge Rooms
         StageAPI.ChallengeWaveRNG:SetSeed(room:GetSpawnSeed(), 0)
     end)
 
+    StageAPI.CheckingChallengeWaveSubtype = nil
+    StageAPI.AddCallback("StageAPI", "POST_CHECK_VALID_ROOM", 0, function(layout)
+        if StageAPI.CheckingChallengeWaveSubtype then
+            if not (layout.SubType == 0 or layout.SubType == StageAPI.CheckingChallengeWaveSubtype) then
+                return 0
+            end
+        end
+    end)
+
     mod:AddCallback(ModCallbacks.MC_POST_UPDATE, function()
         if StageAPI.ChallengeWaveChanged then
             if room:GetType() ~= RoomType.ROOM_CHALLENGE then
@@ -6522,13 +6543,18 @@ do -- Challenge Rooms
             end
 
             if StageAPI.CurrentStage and StageAPI.CurrentStage.ChallengeWaves then
+                local currentRoom = StageAPI.GetCurrentRoom()
+                if currentRoom and currentRoom.Layout.SubType ~= 0 then
+                    StageAPI.CheckingChallengeWaveSubtype = currentRoom.Layout.SubType
+                end
+
                 StageAPI.ClearRoomLayout(true, false, true, false)
                 local seed = StageAPI.ChallengeWaveRNG:Next()
                 local wave = StageAPI.ChooseRoomLayout(StageAPI.CurrentStage.ChallengeWaves.Normal, seed, room:GetShape(), room:GetType(), false, false)
                 local spawnEntities, spawnGrids = StageAPI.ObtainSpawnObjects(wave, seed)
                 StageAPI.LoadRoomLayout(spawnGrids, spawnEntities, false, true, false, true)
 
-                StageAPI.CallCallbacks("POST_ROOM_LOAD", false, StageAPI.GetCurrentRoom(), false, false, true)
+                StageAPI.CheckingChallengeWaveSubtype = nil
             end
 
             StageAPI.CallCallbacks("CHALLENGE_WAVE_CHANGED")
