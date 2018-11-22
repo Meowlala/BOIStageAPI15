@@ -2196,7 +2196,7 @@ do -- RoomsList
                                     local currentRoom = StageAPI.GetCurrentRoom()
                                     if currentRoom and not currentRoom.IgnoreRoomRules then
                                         if entityData.Type == EntityType.ENTITY_PICKUP and entityData.Variant == PickupVariant.PICKUP_COLLECTIBLE then
-                                            if currentRoom.RoomType == RoomType.ROOM_TREASURE and (currentRoom.Layout.Variant > 0 or string.find(string.lower(currentRoom.Layout.Name), "choice")) then
+                                            if currentRoom.RoomType == RoomType.ROOM_TREASURE and (currentRoom.Layout.Variant > 0 or string.find(string.lower(currentRoom.Layout.Name), "choice") or string.find(string.lower(currentRoom.Layout.Name), "choose")) then
                                                 ent:ToPickup().TheresOptionsPickup = true
                                             end
                                         end
@@ -6550,7 +6550,13 @@ do -- Challenge Rooms
 
                 StageAPI.ClearRoomLayout(true, false, true, false)
                 local seed = StageAPI.ChallengeWaveRNG:Next()
-                local wave = StageAPI.ChooseRoomLayout(StageAPI.CurrentStage.ChallengeWaves.Normal, seed, room:GetShape(), room:GetType(), false, false)
+
+                local useWaves = StageAPI.CurrentStage.ChallengeWaves.Normal
+                if level:HasBossChallenge() then
+                    useWaves = StageAPI.CurrentStage.ChallengeWaves.Boss
+                end
+
+                local wave = StageAPI.ChooseRoomLayout(useWaves, seed, room:GetShape(), room:GetType(), false, false)
                 local spawnEntities, spawnGrids = StageAPI.ObtainSpawnObjects(wave, seed)
                 StageAPI.LoadRoomLayout(spawnGrids, spawnEntities, false, true, false, true)
 
