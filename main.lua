@@ -4273,10 +4273,12 @@ do -- Custom Stage
         self:SetMusic(music, {RoomType.ROOM_DEFAULT, RoomType.ROOM_TREASURE})
     end
 
-    function StageAPI.CustomStage:SetBossMusic(music, clearedMusic)
+    function StageAPI.CustomStage:SetBossMusic(music, clearedMusic, intro, outro)
         self.BossMusic = {
             Fight = music,
-            Cleared = clearedMusic
+            Cleared = clearedMusic,
+            Intro = intro,
+            Outro = outro
         }
     end
 
@@ -4313,12 +4315,24 @@ do -- Custom Stage
         if roomType == RoomType.ROOM_BOSS then
             if self.BossMusic then
                 local music = self.BossMusic
-                local musicID
-                local isCleared = room:GetAliveBossesCount() < 1 or room:IsClear()
-                if isCleared then
-                    musicID = music.Cleared
+                local musicID, queue, disregardNonOverride
+
+                if (music.Outro and (id == Music.MUSIC_JINGLE_BOSS_OVER or id == Music.MUSIC_JINGLE_BOSS_OVER2 or id == music.Outro or (type(music.Outro) == "table" and StageAPI.IsIn(music.Outro, id))))
+                or (music.Intro and (id == Music.MUSIC_JINGLE_BOSS or id == music.Intro or (type(music.Intro) == "table" and StageAPI.IsIn(music.Intro, id)))) then
+                    if id == Music.MUSIC_JINGLE_BOSS or id == music.Intro or (type(music.Intro) == "table" and StageAPI.IsIn(music.Intro, id)) then
+                        musicID, queue = music.Intro, music.Fight
+                    else
+                        musicID, queue = music.Outro, music.Cleared
+                    end
+
+                    disregardNonOverride = true
                 else
-                    musicID = music.Fight
+                    local isCleared = room:GetAliveBossesCount() < 1 or room:IsClear()
+                    if isCleared then
+                        musicID = music.Cleared
+                    else
+                        musicID = music.Fight
+                    end
                 end
 
                 if type(musicID) == "table" then
@@ -4332,7 +4346,7 @@ do -- Custom Stage
                 end
 
                 if musicID then
-                    return musicID, not room:IsClear()
+                    return musicID, not room:IsClear(), queue, disregardNonOverride
                 end
             end
         else
@@ -5598,14 +5612,18 @@ do -- Callbacks
                 end
 
                 local id = StageAPI.Music:GetCurrentMusicID()
-                local musicID, shouldLayer = StageAPI.CurrentStage:GetPlayingMusic()
+                local musicID, shouldLayer, shouldQueue, disregardNonOverride = StageAPI.CurrentStage:GetPlayingMusic()
                 if musicID then
-                    local queuedID = StageAPI.Music:GetQueuedMusicID()
-                    if queuedID ~= musicID and not StageAPI.IsIn(StageAPI.NonOverrideMusic, queuedID) then
-                        StageAPI.Music:Queue(musicID)
+                    if not shouldQueue then
+                        shouldQueue = musicID
                     end
 
-                    if id ~= musicID and not StageAPI.IsIn(StageAPI.NonOverrideMusic, id) then
+                    local queuedID = StageAPI.Music:GetQueuedMusicID()
+                    if queuedID ~= shouldQueue and (not StageAPI.IsIn(StageAPI.NonOverrideMusic, queuedID) or disregardNonOverride) then
+                        StageAPI.Music:Queue(shouldQueue)
+                    end
+
+                    if id ~= musicID and (not StageAPI.IsIn(StageAPI.NonOverrideMusic, id) or disregardNonOverride) then
                         StageAPI.Music:Play(musicID, 0)
                     end
 
@@ -6609,6 +6627,10 @@ improperly acting like
 a transition from an
 extra room to
 an off-grid room
+
+-Added support for custom
+boss intros and outros
+for custom stages
             ]])
 
             REVEL.AddChangelog("StageAPI v1.68", [[-Fixed some persistent entities
