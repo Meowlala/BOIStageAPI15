@@ -4273,6 +4273,10 @@ do -- Custom Stage
         self:SetMusic(music, {RoomType.ROOM_DEFAULT, RoomType.ROOM_TREASURE})
     end
 
+    function StageAPI.CustomStage:SetTransitionMusic(music)
+        self.TransitionMusic = music
+    end
+
     function StageAPI.CustomStage:SetBossMusic(music, clearedMusic, intro, outro)
         self.BossMusic = {
             Fight = music,
@@ -4358,7 +4362,7 @@ do -- Custom Stage
                     musicID = newMusicID
                 end
 
-                if musicID then
+                if musicID and id ~= self.TransitionMusic then
                     return musicID, not room:IsClear()
                 end
             end
@@ -6629,7 +6633,11 @@ extra room to
 an off-grid room
 
 -Added support for custom
-boss intros and outros
+boss intro and outro music
+for custom stages
+
+-Added support for custom
+level transition stingers
 for custom stages
             ]])
 
