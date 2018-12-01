@@ -4887,7 +4887,7 @@ do -- Bosses
                         encountered = StageAPI.GetBossEncountered(potentialBoss.NameTwo)
                     end
 
-                    local weight = potentialBoss.Weight
+                    local weight = potentialBoss.Weight or 1
                     if not encountered then
                         totalUnencounteredWeight = totalUnencounteredWeight + weight
                         unencounteredBosses[#unencounteredBosses + 1] = {potentialBossID, weight}
@@ -5698,7 +5698,7 @@ do -- Callbacks
         end
     end)
 
-    function StageAPI.SetCurrentBossRoom(bossID, checkEncountered, bosses, hasHorseman, requireRoomTypeBoss)
+    function StageAPI.SetCurrentBossRoom(bossID, checkEncountered, bosses, hasHorseman, requireRoomTypeBoss, noPlayBossAnim)
         if not bossID then
             bossID = StageAPI.SelectBoss(bosses, hasHorseman)
         elseif checkEncountered then
@@ -5720,7 +5720,12 @@ do -- Callbacks
         StageAPI.SetCurrentRoom(newRoom)
         newRoom:Load()
 
-        StageAPI.PlayBossAnimation(boss)
+        if not boss.IsMiniboss then
+            StageAPI.PlayBossAnimation(boss)
+        else
+            StageAPI.PlayTextStreak(players[1]:GetName() .. " VS " .. boss.Name)
+        end
+
         return newRoom, boss
     end
 
@@ -5810,9 +5815,11 @@ do -- Callbacks
         end
 
         local currentListIndex = StageAPI.GetCurrentRoomID()
-        local currentRoom, justGenerated = StageAPI.GetCurrentRoom(), nil
+        local currentRoom, justGenerated, boss = StageAPI.GetCurrentRoom(), nil, nil
 
-        local boss
+        local retCurrentRoom, retJustGenerated, retBoss = StageAPI.CallCallbacks("PRE_STAGEAPI_NEW_ROOM_GENERATION", true, currentRoom, justGenerated, currentListIndex)
+        currentRoom, justGenerated, boss = retCurrentRoom or currentRoom, retJustGenerated or justGenerated, retBoss or boss
+
         if not StageAPI.InExtraRoom and StageAPI.InNewStage() then
             local rtype = room:GetType()
             if not inStartingRoom and not currentRoom and StageAPI.CurrentStage.Rooms and StageAPI.CurrentStage.Rooms[rtype] then
@@ -5833,8 +5840,8 @@ do -- Callbacks
             end
         end
 
-        local retJustGenerated, retCurrentRoom = StageAPI.CallCallbacks("POST_STAGEAPI_NEW_ROOM_GENERATION", true, justGenerated, currentRoom)
-        justGenerated, currentRoom = retJustGenerated or justGenerated, retCurrentRoom or currentRoom
+        retCurrentRoom, retJustGenerated, retBoss = StageAPI.CallCallbacks("POST_STAGEAPI_NEW_ROOM_GENERATION", true, currentRoom, justGenerated, currentListIndex, boss)
+        currentRoom, justGenerated, boss = retCurrentRoom or currentRoom, retJustGenerated or justGenerated, retBoss or boss
 
         if not boss and currentRoom and currentRoom.PersistentData.BossID then
             boss = StageAPI.GetBossData(currentRoom.PersistentData.BossID)
@@ -5848,7 +5855,11 @@ do -- Callbacks
         if currentRoom and not StageAPI.InExtraRoom and not justGenerated then
             currentRoom:Load()
             if not room:IsClear() and boss then
-                StageAPI.PlayBossAnimation(boss)
+                if not boss.IsMiniboss then
+                    StageAPI.PlayBossAnimation(boss)
+                else
+                    StageAPI.PlayTextStreak(players[1]:GetName() .. " VS " .. boss.Name)
+                end
             end
         end
 
