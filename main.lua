@@ -3055,6 +3055,18 @@ do -- Custom Grid Entities
         return {}
     end
 
+    function StageAPI.GetCustomGrid(index, name)
+        local lindex = StageAPI.GetCurrentRoomID()
+        if StageAPI.CustomGrids[lindex] and StageAPI.CustomGrids[lindex][name] and StageAPI.CustomGrids[lindex][name][index] then
+            return {
+                Name = name,
+                PersistData = StageAPI.CustomGrids[lindex][name][index],
+                Data = StageAPI.CustomGridTypes[name],
+                Index = index
+            }
+        end
+    end
+
     function StageAPI.IsCustomGrid(index, name)
         if not name then
             return StageAPI.CustomGridIndices[index]
