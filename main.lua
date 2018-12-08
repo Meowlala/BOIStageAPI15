@@ -6634,7 +6634,7 @@ do -- Challenge Rooms
     StageAPI.ChallengeWaveChanged = false
     StageAPI.LastChallengeWaveFrame = nil
     mod:AddCallback(ModCallbacks.MC_POST_NPC_INIT, function(_, npc)
-        if room:GetType() == RoomType.ROOM_CHALLENGE and game:GetFrameCount() ~= StageAPI.LastChallengeWaveFrame then
+        if room:GetType() == RoomType.ROOM_CHALLENGE and (not StageAPI.LastChallengeWaveFrame or game:GetFrameCount() > StageAPI.LastChallengeWaveFrame) then
             if npc.CanShutDoors and not (npc:HasEntityFlags(EntityFlag.FLAG_FRIENDLY) or npc:HasEntityFlags(EntityFlag.FLAG_PERSISTENT) or npc:HasEntityFlags(EntityFlag.FLAG_NO_TARGET)) then
                 local preventCounting
                 for _, entity in ipairs(Isaac.GetRoomEntities()) do
@@ -6677,6 +6677,7 @@ do -- Challenge Rooms
             end
 
             if StageAPI.CurrentStage and StageAPI.CurrentStage.ChallengeWaves then
+                StageAPI.LastChallengeWaveFrame = game:GetFrameCount() + 1
                 local currentRoom = StageAPI.GetCurrentRoom()
                 if currentRoom and currentRoom.Layout.SubType ~= 0 then
                     StageAPI.CheckingChallengeWaveSubtype = currentRoom.Layout.SubType
@@ -6690,16 +6691,16 @@ do -- Challenge Rooms
                     useWaves = StageAPI.CurrentStage.ChallengeWaves.Boss
                 end
 
-                local wave = StageAPI.ChooseRoomLayout(useWaves, seed, room:GetShape(), room:GetType(), false, false)
-                local spawnEntities, spawnGrids = StageAPI.ObtainSpawnObjects(wave, seed)
-                StageAPI.LoadRoomLayout(spawnGrids, spawnEntities, false, true, false, true)
+                local wave = StageAPI.ChooseRoomLayout(useWaves.ByShape, seed, room:GetRoomShape(), room:GetType(), false, false)
+                local spawnEntities = StageAPI.ObtainSpawnObjects(wave, seed)
+                StageAPI.LoadRoomLayout(nil, {spawnEntities}, false, true, false, true)
 
                 StageAPI.CheckingChallengeWaveSubtype = nil
             end
 
             StageAPI.CallCallbacks("CHALLENGE_WAVE_CHANGED")
 
-            StageAPI.ChallengeWaveChanged = nil
+            StageAPI.ChallengeWaveChanged = false
         end
     end)
 end
