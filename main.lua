@@ -972,6 +972,65 @@ do -- RoomsList
         }
     end
 
+    StageAPI.RoomShapeToWidthHeight = {
+        [RoomShape.ROOMSHAPE_1x1] = {
+            Width = 15,
+            Height = 9
+        },
+        [RoomShape.ROOMSHAPE_IV] = {
+            Width = 15,
+            Height = 9
+        },
+        [RoomShape.ROOMSHAPE_IH] = {
+            Width = 15,
+            Height = 9
+        },
+        [RoomShape.ROOMSHAPE_2x2] = {
+            Width = 28,
+            Height = 16
+        },
+        [RoomShape.ROOMSHAPE_2x1] = {
+            Width = 28,
+            Height = 9
+        },
+        [RoomShape.ROOMSHAPE_1x2] = {
+            Width = 15,
+            Height = 16
+        },
+        [RoomShape.ROOMSHAPE_IIV] = {
+            Width = 15,
+            Height = 16
+        },
+        [RoomShape.ROOMSHAPE_LTL] = {
+            Width = 28,
+            Height = 16,
+            LWidthEnd = 14,
+            LHeightEnd = 8
+        },
+        [RoomShape.ROOMSHAPE_LBL] = {
+            Width = 28,
+            Height = 16,
+            LWidthEnd = 14,
+            LHeightStart = 8
+        },
+        [RoomShape.ROOMSHAPE_LBR] = {
+            Width = 28,
+            Height = 16,
+            LWidthStart = 14,
+            LHeightStart = 8
+        },
+        [RoomShape.ROOMSHAPE_LTR] = {
+            Width = 28,
+            Height = 16,
+            LWidthStart = 14,
+            LHeightEnd = 8
+        },
+        [RoomShape.ROOMSHAPE_IIH] = {
+            Width = 28,
+            Height = 9
+        }
+    }
+
     function StageAPI.SimplifyRoomLayout(layout)
         local outLayout = {
             GridEntities = {},
@@ -990,6 +1049,14 @@ do -- RoomsList
             SubType = layout.SUBTYPE,
             PreSimplified = true
         }
+
+        local widthHeight = StageAPI.RoomShapeToWidthHeight[outLayout.Shape]
+        if widthHeight then
+            outLayout.LWidthStart = widthHeight.LWidthStart
+            outLayout.LWidthEnd = widthHeight.LWidthEnd
+            outLayout.LHeightStart = widthHeight.LHeightStart
+            outLayout.LHeightEnd = widthHeight.LHeightEnd
+        end
 
         for _, object in ipairs(layout) do
             if not object.ISDOOR then
@@ -1082,65 +1149,14 @@ do -- RoomsList
         return outLayout
     end
 
-    StageAPI.RoomShapeToWidthHeight = {
-        [RoomShape.ROOMSHAPE_1x1] = {
-            Width = 15,
-            Height = 9
-        },
-        [RoomShape.ROOMSHAPE_IV] = {
-            Width = 15,
-            Height = 9
-        },
-        [RoomShape.ROOMSHAPE_IH] = {
-            Width = 15,
-            Height = 9
-        },
-        [RoomShape.ROOMSHAPE_2x2] = {
-            Width = 28,
-            Height = 16
-        },
-        [RoomShape.ROOMSHAPE_2x1] = {
-            Width = 28,
-            Height = 9
-        },
-        [RoomShape.ROOMSHAPE_1x2] = {
-            Width = 15,
-            Height = 16
-        },
-        [RoomShape.ROOMSHAPE_IIV] = {
-            Width = 15,
-            Height = 16
-        },
-        [RoomShape.ROOMSHAPE_LTL] = {
-            Width = 28,
-            Height = 16
-        },
-        [RoomShape.ROOMSHAPE_LBL] = {
-            Width = 28,
-            Height = 16
-        },
-        [RoomShape.ROOMSHAPE_LBR] = {
-            Width = 28,
-            Height = 16
-        },
-        [RoomShape.ROOMSHAPE_LTR] = {
-            Width = 28,
-            Height = 16
-        },
-        [RoomShape.ROOMSHAPE_IIH] = {
-            Width = 28,
-            Height = 9
-        }
-    }
-
     function StageAPI.CreateEmptyRoomLayout(shape)
         shape = shape or RoomShape.ROOMSHAPE_1x1
         local widthHeight = StageAPI.RoomShapeToWidthHeight[shape]
-        local width, height
+        local width, height, lWidthStart, lWidthEnd, lHeightStart, lHeightEnd
         if not widthHeight then
             width, height = StageAPI.RoomShapeToWidthHeight[RoomShape.ROOMSHAPE_1x1].Width, StageAPI.RoomShapeToWidthHeight[RoomShape.ROOMSHAPE_1x1].Height
         else
-            width, height = widthHeight.Width, widthHeight.Height
+            width, height, lWidthStart, lWidthEnd, lHeightStart, lHeightEnd = widthHeight.Width, widthHeight.Height, widthHeight.LWidthStart, widthHeight.LWidthEnd, widthHeight.LHeightStart, widthHeight.LHeightEnd
         end
         local newRoom = {
             Name = "Empty",
@@ -1152,6 +1168,10 @@ do -- RoomsList
             Difficulty = 1,
             Width = width,
             Height = height,
+            LWidthStart = lWidthStart,
+            LWidthEnd = lWidthEnd,
+            LHeightStart = lHeightStart,
+            LHeightEnd = lHeightEnd,
             Weight = 1,
             GridEntities = {},
             GridEntitiesByIndex = {},
@@ -1336,6 +1356,31 @@ do -- RoomsList
         end
 
         return retBossData
+    end
+
+    function StageAPI.IsIndexInLayout(layout, x, y)
+        if not y then
+            x, y = StageAPI.GridToVector(x, layout.Width)
+        end
+
+        if x < 0 or x > layout.Width - 3 or y < 0 or y > layout.Height - 3 then
+            return false
+        elseif layout.LWidthStart or layout.LWidthEnd or layout.LHeightStart or layout.lHeightEnd then
+            local inHole = true
+            if layout.LWidthEnd and x > layout.LWidthEnd - 2 then
+                inHole = false
+            elseif layout.LWidthStart and x < layout.LWidthStart - 1 then
+                inHole = false
+            elseif layout.LHeightEnd and y > layout.LHeightEnd - 2 then
+                inHole = false
+            elseif layout.LHeightStart and y < layout.LHeightStart - 1 then
+                inHole = false
+            end
+
+            return not inHole
+        end
+
+        return true
     end
 
     function StageAPI.DoesEntityDataMatchParameters(param, data)
@@ -1983,6 +2028,49 @@ do -- RoomsList
         return outEntities, outGrids, entityMeta
     end
 
+    function StageAPI.AddEntityToSpawnList(tbl, entData, persistentIndex, index)
+        local currentRoom = StageAPI.CurrentlyInitializing or StageAPI.GetCurrentRoom()
+        if persistentIndex == nil and currentRoom then
+            persistentIndex = currentRoom.LastPersistentIndex
+            if currentRoom.LastPersistentIndex then
+                currentRoom.LastPersistentIndex = currentRoom.LastPersistentIndex + 1
+            end
+        end
+
+        if index and (tbl[index] and type(tbl[index]) == "table") then
+            tbl = tbl[index]
+        end
+
+        entData.Type = entData.Type or 10
+        entData.Variant = entData.Variant or 0
+        entData.SubType = entData.SubType or 0
+        entData.Index = entData.Index or index or 0
+
+        if not entData.GridX or not entData.GridY then
+            local width
+            if currentRoom and currentRoom.Layout and currentRoom.Layout.Width then
+                width = currentRoom.Layout.Width
+            else
+                width = room:GetGridWidth()
+            end
+
+            entData.GridX, entData.GridY = StageAPI.GridToVector(index, width)
+        end
+
+        persistentIndex = persistentIndex + 1
+
+        local persistentData = StageAPI.CheckPersistence(entData.Type, entData.Variant, entData.SubType)
+
+        tbl[#tbl + 1] = {
+            Data = entData,
+            PersistentIndex = persistentIndex,
+            Persistent = not not persistentData,
+            PersistenceData = persistentData
+        }
+
+        return persistentIndex
+    end
+
     function StageAPI.SelectSpawnEntities(entities, seed, entityMeta)
         StageAPI.RoomLoadRNG:SetSeed(seed or room:GetSpawnSeed(), 1)
         local entitiesToSpawn = {}
@@ -2027,16 +2115,17 @@ do -- RoomsList
                     end
 
                     for _, entData in ipairs(addEntities) do
+                        persistentIndex = StageAPI.AddEntityToSpawnList(entitiesToSpawn[index], entData, persistentIndex)
+
+                        --[[
                         persistentIndex = persistentIndex + 1
-
                         local persistentData = StageAPI.CheckPersistence(entData.Type, entData.Variant, entData.SubType)
-
                         entitiesToSpawn[index][#entitiesToSpawn[index] + 1] = {
                             Data = entData,
                             PersistentIndex = persistentIndex,
                             Persistent = not not persistentData,
                             PersistenceData = persistentData
-                        }
+                        }]]
                     end
                 end
             end
