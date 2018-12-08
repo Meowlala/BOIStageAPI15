@@ -6752,6 +6752,16 @@ for custom stages
 -Added support for custom
 level transition stingers
 for custom stages
+
+-Added a miniboss flag
+for bosses that plays
+a text streak rather than
+a boss animation
+
+-Added functions
+-- IsIndexInLayout
+-- GetCustomGrid
+-- AddEntityToSpawnList
             ]])
 
             REVEL.AddChangelog("StageAPI v1.68", [[-Fixed some persistent entities
