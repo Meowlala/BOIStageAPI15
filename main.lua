@@ -5975,6 +5975,27 @@ do -- Callbacks
             end
         end
 
+        if currentRoom then
+            local invalidEntrance
+            local validDoors = {}
+            for _, door in ipairs(currentRoom.Layout.Doors) do
+                if door.Slot then
+                    if not door.Exists and level.EnterDoor == door.Slot then
+                        invalidEntrance = true
+                    elseif door.Exists then
+                        validDoors[#validDoors + 1] = door.Slot
+                    end
+                end
+            end
+
+            if invalidEntrance and #validDoors > 0 then
+                local changeEntrance = validDoors[StageAPI.Random(1, #validDoors)]
+                for _, player in ipairs(REVEL.players) do
+                    player.Position = room:GetDoorSlotPosition(changeEntrance)
+                end
+            end
+        end
+
         StageAPI.CallCallbacks("POST_STAGEAPI_NEW_ROOM", false, justGenerated)
 
         if not StageAPI.InNewStage() then
@@ -6709,7 +6730,7 @@ do -- Mod Compatibility
     mod:AddCallback(ModCallbacks.MC_POST_GAME_STARTED, function()
         if REVEL and REVEL.AddChangelog and not REVEL.AddedStageAPIChangelogs then
             REVEL.AddedStageAPIChangelogs = true
-            REVEL.AddChangelog("StageAPI v1.69", [[-Fixed transitions out of special rooms
+            REVEL.AddChangelog("StageAPI v1.69 + 70", [[-Fixed transitions out of special rooms
 not properly resetting the music
 
 -Allowed following base game
@@ -6762,6 +6783,11 @@ a boss animation
 -- IsIndexInLayout
 -- GetCustomGrid
 -- AddEntityToSpawnList
+
+-Fixed teleportation cards
+and items potentially
+sending the player to
+invalid door slots
             ]])
 
             REVEL.AddChangelog("StageAPI v1.68", [[-Fixed some persistent entities
