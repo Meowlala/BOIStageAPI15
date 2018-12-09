@@ -4339,7 +4339,7 @@ do -- Custom Stage
             self.Rooms = {}
         end
 
-        if type(rooms) == "table" then
+        if type(rooms) == "table" and rooms.Type ~= "RoomsList" then
             for rtype, rooms in pairs(rooms) do
                 self.Rooms[rtype] = rooms
             end
@@ -6730,7 +6730,7 @@ do -- Mod Compatibility
     mod:AddCallback(ModCallbacks.MC_POST_GAME_STARTED, function()
         if REVEL and REVEL.AddChangelog and not REVEL.AddedStageAPIChangelogs then
             REVEL.AddedStageAPIChangelogs = true
-            REVEL.AddChangelog("StageAPI v1.69 + 70", [[-Fixed transitions out of special rooms
+            REVEL.AddChangelog("StageAPI v1.69 - 71", [[-Fixed transitions out of special rooms
 not properly resetting the music
 
 -Allowed following base game
@@ -6788,6 +6788,9 @@ a boss animation
 and items potentially
 sending the player to
 invalid door slots
+
+-Fixed rooms only being accepted
+as a table rather than alone
             ]])
 
             REVEL.AddChangelog("StageAPI v1.68", [[-Fixed some persistent entities
