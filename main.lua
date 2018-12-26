@@ -858,12 +858,12 @@ do -- Overlays
         local timesRendered = 0
         for x = -1, math.ceil(screenFitX) do
             for y = -1, math.ceil(screenFitY) do
-                local pos = position + Vector(size.X * x, size.Y * y)
+                local pos = position + Vector(size.X * x, size.Y * y):Rotated(sprite.Rotation)
                 if centerCorrect then
                     pos = pos + Vector(
                         size.X * x,
                         size.Y * y
-                    )
+                    ):Rotated(sprite.Rotation)
                 end
 
                 sprite:Render(pos, zeroVector, zeroVector)
@@ -930,24 +930,33 @@ do -- Overlays
 
         if self.Velocity then
             self.Position = self.Position + self.Velocity
+
+            self.Position = self.Position:Rotated(-self.Sprite.Rotation)
+
             if self.Position.X >= self.Size.X then
-                self.Position = Vector(0, self.Position.Y)
+                self.Position = Vector(self.Position.X - self.Size.X, self.Position.Y)
             end
 
             if self.Position.Y >= self.Size.Y then
-                self.Position = Vector(self.Position.X, 0)
+                self.Position = Vector(self.Position.X, self.Position.Y - self.Size.Y)
             end
 
             if self.Position.X < 0 then
-                self.Position = Vector(self.Size.X, self.Position.Y)
+                self.Position = Vector(self.Position.X + self.Size.X, self.Position.Y)
             end
 
             if self.Position.Y < 0 then
-                self.Position = Vector(self.Position.X, self.Size.Y)
+                self.Position = Vector(self.Position.X, self.Position.Y + self.Size.Y)
             end
+
+            self.Position = self.Position:Rotated(self.Sprite.Rotation)
         end
 
         StageAPI.RenderSpriteTiled(self.Sprite, self.Position + (self.Offset or zeroVector), self.Size, centerCorrect)
+
+        if StageAPI.DebugTiling then
+            Isaac.RenderText("OriginPoint: " .. tostring(self.Position.X) .. ", " .. tostring(self.Position.Y), self.Position.X, self.Position.Y, 0, 255, 0, 1)
+        end
     end
 end
 
