@@ -3640,9 +3640,14 @@ do -- GridGfx
         NotEither = {}
     }
     ]]
+
     function StageAPI.GridGfx:AddDoors(filename, doorInfo)
         if not self.Doors then
             self.Doors = {}
+        end
+
+        if doorInfo.IsBossAmbush then
+            self.HasBossAmbushDoor = true
         end
 
         self.Doors[#self.Doors + 1] = {
@@ -3652,7 +3657,8 @@ do -- GridGfx
             RequireEither = doorInfo.RequireEither,
             NotCurrent = doorInfo.NotCurrent,
             NotTarget = doorInfo.NotTarget,
-            NotEither = doorInfo.NotEither
+            NotEither = doorInfo.NotEither,
+            IsBossAmbush = doorInfo.IsBossAmbush
         }
     end
 
@@ -3769,7 +3775,7 @@ do -- GridGfx
         "ArcadeSign"
     }
 
-    function StageAPI.DoesDoorMatch(door, doorSpawn, current, target)
+    function StageAPI.DoesDoorMatch(door, doorSpawn, current, target, hasBossAmbushDoor)
         current = current or door.CurrentRoomType
         target = target or door.TargetRoomType
         local valid = true
@@ -3851,11 +3857,15 @@ do -- GridGfx
             end
         end
 
+        if (doorSpawn.IsBossAmbush and not level:HasBossChallenge()) or (not doorSpawn.IsBossAmbush and hasBossAmbushDoor and level:HasBossChallenge()) then
+            valid = false
+        end
+
         return valid
     end
 
     StageAPI.DoorSprite = Sprite()
-    function StageAPI.ChangeDoor(door, doors, payToPlay)
+    function StageAPI.ChangeDoor(door, doors, payToPlay, hasBossAmbushDoor)
         local grid = door.Grid:ToDoor()
         local current = grid.CurrentRoomType
         local target = grid.TargetRoomType
@@ -3877,7 +3887,7 @@ do -- GridGfx
         end
 
         for _, doorOption in ipairs(doors) do
-            if StageAPI.DoesDoorMatch(grid, doorOption, current, target) then
+            if StageAPI.DoesDoorMatch(grid, doorOption, current, target, hasBossAmbushDoor) then
                 local sprite = grid.Sprite
                 for i = 0, 5 do
                     sprite:ReplaceSpritesheet(i, doorOption.File)
@@ -3910,7 +3920,7 @@ do -- GridGfx
         local gtype = desc.Type
         local send = {Grid = grid, Index = i, Type = gtype, Desc = desc}
         if gtype == GridEntityType.GRID_DOOR and grids.Doors then
-            StageAPI.ChangeDoor(send, grids.Doors, grids.PayToPlayDoor)
+            StageAPI.ChangeDoor(send, grids.Doors, grids.PayToPlayDoor, grids.HasBossAmbushDoor)
         elseif grid:ToRock() and grids.Rocks then
             StageAPI.ChangeRock(send, grids.Rocks)
         elseif gtype == GridEntityType.GRID_PIT and grids.Pits then
