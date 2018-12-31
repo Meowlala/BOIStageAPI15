@@ -3779,10 +3779,15 @@ do -- GridGfx
         current = current or door.CurrentRoomType
         target = target or door.TargetRoomType
         local valid = true
+        local isChallengeRequired = false
         if doorSpawn.RequireCurrent then
             local has = false
             for _, roomType in ipairs(doorSpawn.RequireCurrent) do
                 if current == roomType then
+                    if roomType == RoomType.ROOM_CHALLENGE then
+                        isChallengeRequired = true
+                    end
+
                     has = true
                 end
             end
@@ -3796,6 +3801,10 @@ do -- GridGfx
             local has = false
             for _, roomType in ipairs(doorSpawn.RequireTarget) do
                 if target == roomType then
+                    if roomType == RoomType.ROOM_CHALLENGE then
+                        isChallengeRequired = true
+                    end
+
                     has = true
                 end
             end
@@ -3809,6 +3818,10 @@ do -- GridGfx
             local has = false
             for _, roomType in ipairs(doorSpawn.RequireEither) do
                 if current == roomType or target == roomType then
+                    if roomType == RoomType.ROOM_CHALLENGE then
+                        isChallengeRequired = true
+                    end
+
                     has = true
                 end
             end
@@ -3857,7 +3870,7 @@ do -- GridGfx
             end
         end
 
-        if (doorSpawn.IsBossAmbush and not level:HasBossChallenge()) or (not doorSpawn.IsBossAmbush and hasBossAmbushDoor and level:HasBossChallenge()) then
+        if isChallengeRequired and (current == RoomType.ROOM_CHALLENGE or target == RoomType.ROOM_CHALLENGE) and ((doorSpawn.IsBossAmbush and not level:HasBossChallenge()) or (not doorSpawn.IsBossAmbush and hasBossAmbushDoor and level:HasBossChallenge())) then
             valid = false
         end
 
