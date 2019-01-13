@@ -423,6 +423,10 @@ do -- Core Definitions
         DeleteMePickup = "StageAPIDeleteMePickup"
     }
 
+    StageAPI.S = {
+        BossIntro = Isaac.GetSoundIdByName("StageAPI Boss Intro")
+    }
+
     StageAPI.Game = Game()
     StageAPI.Players = {}
 
@@ -488,6 +492,8 @@ local localToStageAPIMap = {
     players = "Players",
     zeroVector = "ZeroVector"
 }
+
+local sfx = SFXManager()
 
 local oldENV = _ENV
 local _ENV = {}
@@ -5275,7 +5281,6 @@ do -- Rock Alt Override
     StageAPI.JustBrokenGridSpawns = {}
     StageAPI.RecentFarts = {}
     StageAPI.LastRockAltCheckedRoom = nil
-    local sfx = SFXManager()
     mod:AddCallback(ModCallbacks.MC_PRE_ENTITY_SPAWN, function(_, id, variant, subtype, position, velocity, spawner, seed)
         if StageAPI.LastRockAltCheckedRoom ~= level:GetCurrentRoomIndex() then
             StageAPI.LastRockAltCheckedRoom = level:GetCurrentRoomIndex()
@@ -5714,6 +5719,11 @@ do -- Callbacks
             end
 
             StageAPI.PreviousGridCount = gridCount
+        end
+
+        if sfx:IsPlaying(SoundEffect.SOUND_CASTLEPORTCULLIS) and not (StageAPI.CurrentStage and StageAPI.CurrentStage.BossMusic and StageAPI.CurrentStage.BossMusic.Intro) then
+            sfx:Stop(SoundEffect.SOUND_CASTLEPORTCULLIS)
+            sfx:Play(StageAPI.S.BossIntro, 1, 0, false, 1)
         end
 
         if StageAPI.InOverriddenStage() then

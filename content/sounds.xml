@@ -1,0 +1,5 @@
+<sounds root="sfx/">
+	<sound name="StageAPI Boss Intro">
+		<sample weight="1" path="stageapi/castleportcullis.wav" />
+	</sound>
+</sounds>
