@@ -1,0 +1,32 @@
+<data>
+	<entity Metadata="1" Group="StageAPI Groups" ID="900" Image="stageapi/group_0.png" Kind="Stage" Name="Group 0" Subtype="0" Variant="0" />
+	<entity Metadata="1" Group="StageAPI Groups" ID="900" Image="stageapi/group_1.png" Kind="Stage" Name="Group 1" Subtype="0" Variant="1" />
+	<entity Metadata="1" Group="StageAPI Groups" ID="900" Image="stageapi/group_2.png" Kind="Stage" Name="Group 2" Subtype="0" Variant="2" />
+	<entity Metadata="1" Group="StageAPI Groups" ID="900" Image="stageapi/group_3.png" Kind="Stage" Name="Group 3" Subtype="0" Variant="3" />
+	<entity Metadata="1" Group="StageAPI Groups" ID="900" Image="stageapi/group_4.png" Kind="Stage" Name="Group 4" Subtype="0" Variant="4" />
+	<entity Metadata="1" Group="StageAPI Groups" ID="900" Image="stageapi/group_5.png" Kind="Stage" Name="Group 5" Subtype="0" Variant="5" />
+	<entity Metadata="1" Group="StageAPI Groups" ID="900" Image="stageapi/group_6.png" Kind="Stage" Name="Group 6" Subtype="0" Variant="6" />
+	<entity Metadata="1" Group="StageAPI Groups" ID="900" Image="stageapi/group_7.png" Kind="Stage" Name="Group 7" Subtype="0" Variant="7" />
+	<entity Metadata="1" Group="StageAPI Groups" ID="900" Image="stageapi/group_8.png" Kind="Stage" Name="Group 8" Subtype="0" Variant="8" />
+	<entity Metadata="1" Group="StageAPI Groups" ID="900" Image="stageapi/group_9.png" Kind="Stage" Name="Group 9" Subtype="0" Variant="9" />
+	<entity Metadata="1" Group="StageAPI Groups" ID="900" Image="stageapi/group_randomizer.png" Kind="Stage" Name="Group Randomizer" Subtype="0" Variant="10" />
+
+	<entity Metadata="1" Group="StageAPI Directions" ID="900" Image="stageapi/left.png" Kind="Stage" Name="Left" Subtype="0" Variant="11" />
+	<entity Metadata="1" Group="StageAPI Directions" ID="900" Image="stageapi/right.png" Kind="Stage" Name="Right" Subtype="0" Variant="12" />
+	<entity Metadata="1" Group="StageAPI Directions" ID="900" Image="stageapi/up.png" Kind="Stage" Name="Up" Subtype="0" Variant="13" />
+	<entity Metadata="1" Group="StageAPI Directions" ID="900" Image="stageapi/down.png" Kind="Stage" Name="Down" Subtype="0" Variant="14" />
+	<entity Metadata="1" Group="StageAPI Directions" ID="900" Image="stageapi/up_left.png" Kind="Stage" Name="Up Left" Subtype="0" Variant="15" />
+	<entity Metadata="1" Group="StageAPI Directions" ID="900" Image="stageapi/up_right.png" Kind="Stage" Name="Up Right" Subtype="0" Variant="16" />
+	<entity Metadata="1" Group="StageAPI Directions" ID="900" Image="stageapi/down_left.png" Kind="Stage" Name="Down Left" Subtype="0" Variant="17" />
+	<entity Metadata="1" Group="StageAPI Directions" ID="900" Image="stageapi/down_right.png" Kind="Stage" Name="Down Right" Subtype="0" Variant="18" />
+	<!-- No image !-->
+	<!--<entity Metadata="1" Group="StageAPI Directions" ID="900" Image="stageapi/down_right.png" Kind="Stage" Name="Prevent Direction Conflict" Subtype="0" Variant="19" />!-->
+	<entity Metadata="1" Group="StageAPI Utilities" ID="900" Image="stageapi/swap.png" Kind="Stage" Name="Swapper" Subtype="0" Variant="20" />
+	<!--<entity Metadata="1" Group="StageAPI Utilities" ID="900" Image="stageapi/detonate.png" Kind="Stage" Name="Detonator" Subtype="0" Variant="21" />!-->
+	<entity Metadata="1" Group="StageAPI Utilities" ID="900" Image="stageapi/clear.png" Kind="Stage" Name="Room Clear Trigger" Subtype="0" Variant="22" />
+	<entity Metadata="1" Group="StageAPI Utilities" ID="900" Image="stageapi/spawn.png" Kind="Stage" Name="Spawn When Triggered" Subtype="0" Variant="23" />
+	<entity Metadata="1" Group="StageAPI Utilities" ID="900" Image="stageapi/lock.png" Kind="Stage" Name="Prevent Randomization" Subtype="0" Variant="24" />
+	<entity Metadata="1" Group="StageAPI Utilities" ID="900" Image="stageapi/bridge_failsafe.png" Kind="Stage" Name="Bridge Failsafe" Subtype="0" Variant="25" />
+	<!--<entity Metadata="1" Group="StageAPI Utilities" ID="900" Image="stageapi/detonate_trigger.png" Kind="Stage" Name="Detonator Trigger" Subtype="0" Variant="26" />!-->
+	<entity Metadata="1" Group="StageAPI Utilities" ID="900" Image="stageapi/door_locker.png" Kind="Stage" Name="Door Locker" Subtype="0" Variant="27" />
+</data>
