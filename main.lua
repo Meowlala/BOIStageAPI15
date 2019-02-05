@@ -522,6 +522,10 @@ do -- Core Functions
         end
     end)
 
+    mod:AddCallback(ModCallbacks.MC_POST_NEW_LEVEL, function()
+        StageAPI.SaveModData()
+    end)
+
     StageAPI.RandomRNG = RNG()
     StageAPI.RandomRNG:SetSeed(Random(), 0)
     function StageAPI.Random(min, max, rng)
@@ -1257,6 +1261,10 @@ do -- RoomsList
         end
     end
 
+    function StageAPI.RoomsList:CopyRooms(roomsList)
+        self:AddRooms(roomsList.All)
+    end
+
     function StageAPI.CreateSingleEntityLayout(t, v, s, name, rtype, shape)
         local layout = StageAPI.CreateEmptyRoomLayout(shape)
         layout.Type = rtype or RoomType.ROOM_DEFAULT
@@ -1285,6 +1293,153 @@ do -- RoomsList
 
         return StageAPI.RoomsList(name, layouts)
     end
+
+    --[[ Entity Splitting Data
+
+    {
+        Type = ,
+        Variant = ,
+        SubType = ,
+        ListName =
+    }
+
+    ]]
+
+    function StageAPI.SplitRoomsOnEntities(rooms, entities, roomEntityPairs)
+        local singleMode = false
+        if #entities == 0 then
+            singleMode = true
+            entities = {entities}
+        end
+
+        roomEntityPairs = roomEntityPairs or {}
+
+        for _, room in ipairs(rooms) do
+            local hasEntities = {}
+            for _, object in ipairs(room) do
+                for _, entData in ipairs(object) do
+                    for _, entity in ipairs(entities) do
+                        local useEnt = entity.Entity or entity
+                        if entData.TYPE == useEnt.Type and (not useEnt.Variant or entData.VARIANT == useEnt.Variant) and (not useEnt.SubType or entData.SUBTYPE == useEnt.SubType) then
+                            hasEntities[entity.ListName] = true
+                            break
+                        end
+                    end
+                end
+            end
+
+            for listName, _ in pairs(hasEntities) do
+                if not roomEntityPairs[listName] then
+                    roomEntityPairs[listName] = {}
+                end
+
+                roomEntityPairs[listName][#roomEntityPairs[listName] + 1] = room
+            end
+        end
+
+        return roomEntityPairs
+    end
+
+    --[[ Type Splitting Data
+
+    {
+        Type = RoomType,
+        ListName =
+    }
+
+    ]]
+
+    function StageAPI.SplitRoomsOnTypes(rooms, types, roomTypePairs)
+        roomTypePairs = roomTypePairs or {}
+        for _, room in ipairs(rooms) do
+            for _, rtype in ipairs(types) do
+                if room.TYPE == rtype then
+                    if not roomTypePairs[rtype.ListName] then
+                        roomTypePairs[rtype.ListName] = {}
+                    end
+
+                    roomTypePairs[rtype.ListName][#roomTypePairs[rtype.ListName] + 1] = room
+                end
+            end
+        end
+
+        return roomTypePairs
+    end
+
+    --[[ Splitting List Data
+
+    {
+        ListName = ,
+        SplitBy = Entity Splitting Data or Type Splitting Data
+    }
+
+    ]]
+
+    function StageAPI.SplitRoomsIntoLists(roomsList, splitBy, splitByType, createEntityPlaceholders, listNamePrefix)
+        listNamePrefix = listNamePrefix or ""
+        local roomPairs
+
+        if roomsList[1] and roomsList[1].TYPE then
+            roomsList = {roomsList}
+        end
+
+        if splitByType then
+            for _, rooms in ipairs(roomsList) do
+                roomPairs = StageAPI.SplitRoomsOnTypes(rooms, splitBy, roomPairs)
+            end
+        else
+            for _, rooms in ipairs(roomsList) do
+                roomPairs = StageAPI.SplitRoomsOnEntities(rooms, splitBy, roomPairs)
+            end
+        end
+
+        for listName, rooms in pairs(roomPairs) do
+            if StageAPI.RoomsLists[listNamePrefix .. listName] then
+                StageAPI.RoomsLists[listNamePrefix .. listName]:AddRooms(rooms)
+            else
+                StageAPI.RoomsList(listNamePrefix .. listName, rooms)
+            end
+        end
+
+        if not splitByType and createEntityPlaceholders then
+            for _, splitData in ipairs(splitBy) do
+                if not StageAPI.RoomsLists[listNamePrefix .. splitData.ListName] then
+                    StageAPI.CreateSingleEntityRoomList(splitData.Type, splitData.Variant, splitData.SubType, listNamePrefix .. splitData.ListName, splitData.RoomType, splitData.RoomName)
+                end
+            end
+        end
+    end
+
+    StageAPI.SinsSplitData = {
+        {
+            Type = EntityType.ENTITY_GLUTTONY,
+            ListName = "Gluttony"
+        },
+        {
+            Type = EntityType.ENTITY_ENVY,
+            ListName = "Envy"
+        },
+        {
+            Type = EntityType.ENTITY_GREED,
+            ListName = "Greed"
+        },
+        {
+            Type = EntityType.ENTITY_WRATH,
+            ListName = "Wrath"
+        },
+        {
+            Type = EntityType.ENTITY_PRIDE,
+            ListName = "Pride"
+        },
+        {
+            Type = EntityType.ENTITY_LUST,
+            ListName = "Lust"
+        },
+        {
+            Type = EntityType.ENTITY_SLOTH,
+            ListName = "Sloth"
+        }
+    }
 
     --[[ BossData
     {
@@ -5046,6 +5201,12 @@ do -- Bosses
                 bossID = StageAPI.WeightedRNG(unencounteredBosses, rng, nil, totalUnencounteredWeight)
             elseif #validBosses > 0 then
                 bossID = StageAPI.WeightedRNG(validBosses, rng, nil, totalValidWeight)
+            else
+                Isaac.ConsoleOutput("[StageAPI] Trying to select boss, but none are valid!!\n")
+                for _, potentialBossID in ipairs(bosses) do
+                    Isaac.ConsoleOutput(potentialBossID .. "\n")
+                end
+                Isaac.ConsoleOutput("Were the options\n")
             end
         end
 
@@ -5851,6 +6012,12 @@ do -- Callbacks
         end
 
         local boss = StageAPI.GetBossData(bossID)
+        if not boss then
+            Isaac.ConsoleOutput("[StageAPI] Trying to set boss with invalid ID: " .. tostring(bossID) .. "\n")
+            Isaac.DebugString("[StageAPI] Trying to set boss with invalid ID: " .. tostring(bossID))
+            return
+        end
+
         StageAPI.SetBossEncountered(boss.Name)
         if boss.NameTwo then
             StageAPI.SetBossEncountered(boss.NameTwo)
@@ -6191,6 +6358,8 @@ do -- Callbacks
             StageAPI.ClearRoomLayout(false, true, true, true)
         elseif cmd == "superclearroom" then
             StageAPI.ClearRoomLayout(false, true, true, true, nil, true, true)
+        elseif cmd == "crashit" then
+            game:ShowHallucination(0, 0)
         end
     end)
 
