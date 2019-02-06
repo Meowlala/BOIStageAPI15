@@ -6937,6 +6937,29 @@ do -- Challenge Rooms
     end)
 end
 
+Isaac.DebugString("[StageAPI] Loading BR Compatibility")
+do -- BR Compatability
+    local status, brTestRoom = pcall(require, 'basementrenovator.roomTest')
+    if not status then
+        brTestRoom = '[StageAPI] Error loading BR compatibility file: ' .. tostring(brTestRoom)
+        print(brTestRoom)
+        Isaac.DebugString(brTestRoom)
+    elseif brTestRoom then
+        local testList = StageAPI.RoomsList("BRTest", brTestRoom)
+
+        BasementRenovator = BasementRenovator or { subscribers = {} }
+        BasementRenovator.subscribers['StageAPI'] = {
+            TestRoom = function()
+                StageAPI.SetRoomFromList(testList, nil, nil, nil, true, nil, nil, nil)
+            end,
+            TestRoomEntitySpawn = function()
+                -- makes sure placeholder/meta entities can't spawn
+                return { 999, StageAPI.E.DeleteMeEffect.V, 0 }
+            end
+        }
+    end
+end
+
 do -- Mod Compatibility
     mod:AddCallback(ModCallbacks.MC_POST_GAME_STARTED, function()
         if REVEL and REVEL.AddChangelog and not REVEL.AddedStageAPIChangelogs then
