@@ -1393,11 +1393,13 @@ do -- RoomsList
             end
         end
 
-        for listName, rooms in pairs(roomPairs) do
-            if StageAPI.RoomsLists[listNamePrefix .. listName] then
-                StageAPI.RoomsLists[listNamePrefix .. listName]:AddRooms(rooms)
-            else
-                StageAPI.RoomsList(listNamePrefix .. listName, rooms)
+        if roomPairs then
+            for listName, rooms in pairs(roomPairs) do
+                if StageAPI.RoomsLists[listNamePrefix .. listName] then
+                    StageAPI.RoomsLists[listNamePrefix .. listName]:AddRooms(rooms)
+                else
+                    StageAPI.RoomsList(listNamePrefix .. listName, rooms)
+                end
             end
         end
 
