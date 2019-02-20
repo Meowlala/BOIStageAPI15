@@ -1415,31 +1415,78 @@ do -- RoomsList
     StageAPI.SinsSplitData = {
         {
             Type = EntityType.ENTITY_GLUTTONY,
+            Variant = 0,
             ListName = "Gluttony"
         },
         {
             Type = EntityType.ENTITY_ENVY,
+            Variant = 0,
             ListName = "Envy"
         },
         {
             Type = EntityType.ENTITY_GREED,
+            Variant = 0,
             ListName = "Greed"
         },
         {
             Type = EntityType.ENTITY_WRATH,
+            Variant = 0,
             ListName = "Wrath"
         },
         {
             Type = EntityType.ENTITY_PRIDE,
+            Variant = 0,
             ListName = "Pride"
         },
         {
             Type = EntityType.ENTITY_LUST,
+            Variant = 0,
             ListName = "Lust"
         },
         {
             Type = EntityType.ENTITY_SLOTH,
+            Variant = 0,
             ListName = "Sloth"
+        },
+        {
+            Type = EntityType.ENTITY_GLUTTONY,
+            Variant = 1,
+            ListName = "SuperGluttony"
+        },
+        {
+            Type = EntityType.ENTITY_ENVY,
+            Variant = 1,
+            ListName = "SuperEnvy"
+        },
+        {
+            Type = EntityType.ENTITY_GREED,
+            Variant = 1,
+            ListName = "SuperGreed"
+        },
+        {
+            Type = EntityType.ENTITY_WRATH,
+            Variant = 1,
+            ListName = "SuperWrath"
+        },
+        {
+            Type = EntityType.ENTITY_PRIDE,
+            Variant = 1,
+            ListName = "SuperPride"
+        },
+        {
+            Type = EntityType.ENTITY_LUST,
+            Variant = 1,
+            ListName = "SuperLust"
+        },
+        {
+            Type = EntityType.ENTITY_SLOTH,
+            Variant = 1,
+            ListName = "SuperSloth"
+        },
+        {
+            Type = EntityType.ENTITY_SLOTH,
+            Variant = 2,
+            ListName = "UltraPride"
         }
     }
 
@@ -4609,6 +4656,17 @@ do -- Custom Stage
         self.Bosses = bosses
     end
 
+    function StageAPI.CustomStage:SetSinRooms(sins)
+        if type(sins) == "string" then -- allows passing in a prefix to a room list name, which all sins can be grabbed from
+            self.SinRooms = {}
+            for _, sin in ipairs(StageAPI.SinsSplitData) do
+                self.SinRooms[sin.ListName] = StageAPI.RoomsLists[sins .. sin.ListName]
+            end
+        else
+            self.SinRooms = sins
+        end
+    end
+
     function StageAPI.CustomStage:GetPlayingMusic()
         local roomType = room:GetType()
         local id = StageAPI.Music:GetCurrentMusicID()
@@ -6149,6 +6207,31 @@ do -- Callbacks
 
                 currentRoom = newRoom
                 justGenerated = true
+            end
+
+            if not currentRoom and StageAPI.CurrentStage.SinRooms and rtype == RoomType.ROOM_MINIBOSS then
+                local usingRoomsList
+                for _, entity in ipairs(Isaac.GetRoomEntities()) do
+                    for _, sin in ipairs(StageAPI.SinsSplitData) do
+                        if entity.Type == sin.Type and StageAPI.CurrentStage.SinRooms[sin.ListName] then
+                            usingRoomsList = StageAPI.CurrentStage.SinRooms[sin.ListName]
+                            break
+                        end
+                    end
+
+                    if usingRoomsList then
+                        break
+                    end
+                end
+
+                if usingRoomsList then
+                    local levelIndex = StageAPI.GetCurrentRoomID()
+                    local newRoom = StageAPI.LevelRoom(nil, usingRoomsList, nil, nil, nil, nil, nil, StageAPI.CurrentStage.RequireRoomTypeMatching, nil, nil, levelIndex)
+                    StageAPI.SetCurrentRoom(newRoom)
+                    newRoom:Load()
+                    currentRoom = newRoom
+                    justGenerated = true
+                end
             end
         end
 
