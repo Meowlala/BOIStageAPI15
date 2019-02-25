@@ -5053,13 +5053,18 @@ do -- Bosses
         lilith = "13",
         keeper = "14",
         apollyon = "15",
-        theforgotten = "16"
+        theforgotten = "16",
+        thesoul = "16"
     }
 
     for k, v in pairs(StageAPI.PlayerBossInfo) do
         local use = k
         if k == "???" then
             use = "bluebaby"
+        end
+
+        if k == "thesoul" then
+            use = "theforgotten"
         end
 
         local portraitbig
@@ -5086,6 +5091,7 @@ do -- Bosses
     StageAPI.PlayerBossInfo["???"].NoShake = true
     StageAPI.PlayerBossInfo.keeper.NoShake = true
     StageAPI.PlayerBossInfo.theforgotten.NoShake = true
+    StageAPI.PlayerBossInfo.thesoul.NoShake = true
     StageAPI.PlayerBossInfo.thelost.NoShake = true
 
     function StageAPI.AddPlayerGraphicsInfo(name, portrait, namefile, portraitbig, noshake)
