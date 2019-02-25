@@ -919,8 +919,8 @@ do -- Overlays
         self.FadingFinished = false
     end
 
-    function StageAPI.Overlay:Render(centerCorrect)
-        centerCorrect = not centerCorrect
+    function StageAPI.Overlay:Render(noCenterCorrect, additionalOffset)
+        local centerCorrect = not noCenterCorrect
         if self.Fading and self.FadeTime and self.FadeTotal and self.FadeStep then
             self.FadeTime = self.FadeTime + self.FadeStep
             if self.FadeTime < 0 then
@@ -962,7 +962,7 @@ do -- Overlays
             self.Position = self.Position:Rotated(self.Sprite.Rotation)
         end
 
-        StageAPI.RenderSpriteTiled(self.Sprite, self.Position + (self.Offset or zeroVector), self.Size, centerCorrect)
+        StageAPI.RenderSpriteTiled(self.Sprite, self.Position + (self.Offset or zeroVector) + (additionalOffset or zeroVector), self.Size, centerCorrect)
 
         if StageAPI.DebugTiling then
             Isaac.RenderText("OriginPoint: " .. tostring(self.Position.X) .. ", " .. tostring(self.Position.Y), self.Position.X, self.Position.Y, 0, 255, 0, 1)
