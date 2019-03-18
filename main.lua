@@ -7088,6 +7088,36 @@ do -- Mod Compatibility
     mod:AddCallback(ModCallbacks.MC_POST_GAME_STARTED, function()
         if REVEL and REVEL.AddChangelog and not REVEL.AddedStageAPIChangelogs then
             REVEL.AddedStageAPIChangelogs = true
+            REVEL.AddChangelog("StageAPI v1.72 - 73", [[-Basement renovator integration
+
+-Added stb converter to mod folder
+
+-StageAPI now saved on new level,
+fixing some issues with
+lingering custom stages
+after a crash
+
+-Added room splitting by
+type or entities functionality,
+used for sins
+
+-Custom stages can now set
+sin rooms to take the place
+of base minibosses
+
+-Fixed The Soul not counting
+as The Forgotten in
+transitions
+
+-An additional offset can
+now be added to custom
+overlays
+
+-Custom stages can now
+override StageAPI's default
+trapdoor replacement system
+            ]])
+
             REVEL.AddChangelog("StageAPI v1.69 - 71", [[-Fixed transitions out of special rooms
 not properly resetting the music
 
@@ -7223,7 +7253,7 @@ other than a door
 end
 
 Isaac.DebugString("[StageAPI] Fully Loaded, loading dependent mods.")
-StageAPI.MarkLoaded("StageAPI", "1.72", true, true)
+StageAPI.MarkLoaded("StageAPI", "1.73", true, true)
 
 StageAPI.Loaded = true
 if StageAPI.ToCall then
