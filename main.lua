@@ -3405,9 +3405,10 @@ do -- Custom Grid Entities
         local lindex = StageAPI.GetCurrentRoomID()
         if StageAPI.CustomGrids[lindex] then
             for name, grindices in pairs(StageAPI.CustomGrids[lindex]) do
+                local customGridType = StageAPI.CustomGridTypes[name]
                 for grindex, persistData in pairs(grindices) do
                     local grid = room:GetGridEntity(grindex)
-                    if not grid then
+                    if not grid and customGridType.BaseType then
                         grindices[grindex] = nil
                     else
                         local callbacks = StageAPI.GetCallbacks("POST_CUSTOM_GRID_UPDATE")
@@ -4744,6 +4745,10 @@ do -- Custom Stage
         self.OverridingRockAltEffects = rooms or true
     end
 
+    function StageAPI.CustomStage:OverrideTrapdoors()
+        self.OverridingTrapdoors = true
+    end
+
     function StageAPI.CustomStage:SetTransitionIcon(icon)
         self.TransitionIcon = icon
     end
@@ -5929,7 +5934,7 @@ do -- Callbacks
                 end
 
                 local nextStage = StageAPI.CallCallbacks("PRE_SELECT_NEXT_STAGE", true, StageAPI.CurrentStage)
-                if (StageAPI.CurrentStage and StageAPI.CurrentStage.NextStage) or nextStage then
+                if ((StageAPI.CurrentStage and StageAPI.CurrentStage.NextStage) or nextStage) and not (StageAPI.CurrentStage and StageAPI.CurrentStage.OverridingTrapdoors) then
                     if grid.Desc.Type == GridEntityType.GRID_TRAPDOOR and grid.State == 1 then
                         local entering = false
                         for _, player in ipairs(players) do
