@@ -7092,9 +7092,10 @@ do -- Mod Compatibility
     mod:AddCallback(ModCallbacks.MC_POST_GAME_STARTED, function()
         if REVEL and REVEL.AddChangelog and not REVEL.AddedStageAPIChangelogs then
             REVEL.AddedStageAPIChangelogs = true
-            REVEL.AddChangelog("StageAPI v1.72 - 73", [[-Basement renovator integration
+            REVEL.AddChangelog("StageAPI v1.72 - 74", [[-Basement renovator integration
 
--Added stb converter to mod folder
+-Added stb converter to mod folder,
+contained within scripts zip
 
 -StageAPI now saved on new level,
 fixing some issues with
@@ -7257,7 +7258,7 @@ other than a door
 end
 
 Isaac.DebugString("[StageAPI] Fully Loaded, loading dependent mods.")
-StageAPI.MarkLoaded("StageAPI", "1.73", true, true)
+StageAPI.MarkLoaded("StageAPI", "1.74", true, true)
 
 StageAPI.Loaded = true
 if StageAPI.ToCall then

@@ -6,6 +6,12 @@
     <description>It's an API for making custom stages.
 
 Built from scratch to replace Revelations' StageAPI. Incompatible with old Revelations, needed for new version.
+
+Special thanks to the artists whose floors make up the thumbnail!
+
+HappyHead - Cove, Bottom Right
+Origami - Crystal Caves, Bottom Left
+Ashkal - Glacier and Tomb, Top
 	</description>
     <version>1.74</version>
     <visibility>Public</visibility>
