@@ -1318,17 +1318,27 @@ do -- RoomsList
             local hasEntities = {}
             for _, object in ipairs(room) do
                 for _, entData in ipairs(object) do
-                    for _, entity in ipairs(entities) do
+                    for i, entity in ipairs(entities) do
                         local useEnt = entity.Entity or entity
                         if entData.TYPE == useEnt.Type and (not useEnt.Variant or entData.VARIANT == useEnt.Variant) and (not useEnt.SubType or entData.SUBTYPE == useEnt.SubType) then
-                            hasEntities[entity.ListName] = true
+                            if not hasEntities[i] then
+                                hasEntities[i] = 0
+                            end
+
+                            hasEntities[i] = hasEntities[i] + 1
                             break
                         end
                     end
                 end
             end
 
-            for listName, _ in pairs(hasEntities) do
+            for ind, count in pairs(hasEntities) do
+                local entity = entities[ind]
+                local listName = entity.ListName
+                if entity.MultipleListName and count > 1 then
+                    listName = entity.MultipleListName
+                end
+
                 if not roomEntityPairs[listName] then
                     roomEntityPairs[listName] = {}
                 end
@@ -1416,37 +1426,44 @@ do -- RoomsList
         {
             Type = EntityType.ENTITY_GLUTTONY,
             Variant = 0,
-            ListName = "Gluttony"
+            ListName = "Gluttony",
+            MultipleListName = "SuperGluttony"
         },
         {
             Type = EntityType.ENTITY_ENVY,
             Variant = 0,
-            ListName = "Envy"
+            ListName = "Envy",
+            MultipleListName = "SuperEnvy"
         },
         {
             Type = EntityType.ENTITY_GREED,
             Variant = 0,
-            ListName = "Greed"
+            ListName = "Greed",
+            MultipleListName = "SuperGreed"
         },
         {
             Type = EntityType.ENTITY_WRATH,
             Variant = 0,
-            ListName = "Wrath"
+            ListName = "Wrath",
+            MultipleListName = "SuperWrath"
         },
         {
             Type = EntityType.ENTITY_PRIDE,
             Variant = 0,
-            ListName = "Pride"
+            ListName = "Pride",
+            MultipleListName = "SuperPride"
         },
         {
             Type = EntityType.ENTITY_LUST,
             Variant = 0,
-            ListName = "Lust"
+            ListName = "Lust",
+            MultipleListName = "SuperLust"
         },
         {
             Type = EntityType.ENTITY_SLOTH,
             Variant = 0,
-            ListName = "Sloth"
+            ListName = "Sloth",
+            MultipleListName = "SuperSloth"
         },
         {
             Type = EntityType.ENTITY_GLUTTONY,
@@ -6198,6 +6215,42 @@ do -- Callbacks
 
         if not StageAPI.InExtraRoom and StageAPI.InNewStage() then
             local rtype = room:GetType()
+            if not currentRoom and StageAPI.CurrentStage.SinRooms and (rtype == RoomType.ROOM_MINIBOSS or rtype == RoomType.ROOM_SECRET or rtype == RoomType.ROOM_SHOP) then
+                local usingRoomsList
+                local includedSins = {}
+                for _, entity in ipairs(Isaac.GetRoomEntities()) do
+                    for i, sin in ipairs(StageAPI.SinsSplitData) do
+                        if entity.Type == sin.Type and (sin.Variant and entity.Variant == sin.Variant) and ((sin.ListName and StageAPI.CurrentStage.SinRooms[sin.ListName]) or (sin.MultipleListName and StageAPI.CurrentStage.SinRooms[sin.MultipleListName])) then
+                            if not includedSins[i] then
+                                includedSins[i] = 0
+                            end
+
+                            includedSins[i] = includedSins[i] + 1
+                            break
+                        end
+                    end
+                end
+
+                for ind, count in pairs(includedSins) do
+                    local sin = StageAPI.SinsSplitData[ind]
+                    local listName = sin.ListName
+                    if count > 1 and sin.MultipleListName then
+                        listName = sin.MultipleListName
+                    end
+
+                    usingRoomsList = StageAPI.CurrentStage.SinRooms[listName]
+                end
+
+                if usingRoomsList then
+                    local levelIndex = StageAPI.GetCurrentRoomID()
+                    local newRoom = StageAPI.LevelRoom(nil, usingRoomsList, nil, nil, nil, nil, nil, StageAPI.CurrentStage.RequireRoomTypeMatching, nil, nil, levelIndex)
+                    StageAPI.SetCurrentRoom(newRoom)
+                    newRoom:Load()
+                    currentRoom = newRoom
+                    justGenerated = true
+                end
+            end
+
             if not inStartingRoom and not currentRoom and StageAPI.CurrentStage.Rooms and StageAPI.CurrentStage.Rooms[rtype] then
                 local levelIndex = StageAPI.GetCurrentRoomID()
                 local newRoom = StageAPI.LevelRoom(nil, StageAPI.CurrentStage.Rooms[rtype], nil, nil, nil, nil, nil, StageAPI.CurrentStage.RequireRoomTypeMatching, nil, nil, levelIndex)
@@ -6213,31 +6266,6 @@ do -- Callbacks
 
                 currentRoom = newRoom
                 justGenerated = true
-            end
-
-            if not currentRoom and StageAPI.CurrentStage.SinRooms and rtype == RoomType.ROOM_MINIBOSS then
-                local usingRoomsList
-                for _, entity in ipairs(Isaac.GetRoomEntities()) do
-                    for _, sin in ipairs(StageAPI.SinsSplitData) do
-                        if entity.Type == sin.Type and StageAPI.CurrentStage.SinRooms[sin.ListName] then
-                            usingRoomsList = StageAPI.CurrentStage.SinRooms[sin.ListName]
-                            break
-                        end
-                    end
-
-                    if usingRoomsList then
-                        break
-                    end
-                end
-
-                if usingRoomsList then
-                    local levelIndex = StageAPI.GetCurrentRoomID()
-                    local newRoom = StageAPI.LevelRoom(nil, usingRoomsList, nil, nil, nil, nil, nil, StageAPI.CurrentStage.RequireRoomTypeMatching, nil, nil, levelIndex)
-                    StageAPI.SetCurrentRoom(newRoom)
-                    newRoom:Load()
-                    currentRoom = newRoom
-                    justGenerated = true
-                end
             end
         end
 
