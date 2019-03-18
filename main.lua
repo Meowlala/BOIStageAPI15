@@ -1248,7 +1248,7 @@ do -- RoomsList
                         simplified = room
                     end
 
-                    simplified.RoomFilename = roomfile
+                    simplified.RoomFilename = not waitToSimplify and room.RoomFilename or roomfile
                     self.All[#self.All + 1] = simplified
                     if not self.ByShape[simplified.Shape] then
                         self.Shapes[#self.Shapes + 1] = simplified.Shape
@@ -2745,7 +2745,8 @@ do -- RoomsList
             end
 
             self.Layout = layout
-            Isaac.DebugString("[StageAPI] Initialized room " .. self.Layout.Name .. "." .. tostring(self.Layout.Variant) .. " from file " .. tostring(self.Layout.RoomFilename))
+            Isaac.DebugString("[StageAPI] Initialized room " .. self.Layout.Name .. "." .. tostring(self.Layout.Variant) .. " from file " .. tostring(self.Layout.RoomFilename)
+                                .. (roomsList and (' from list ' .. roomsList.Name) or ''))
             self:PostGetLayout(seed)
         end
 
@@ -6247,12 +6248,15 @@ do -- Callbacks
                 end
 
                 if usingRoomsList then
-                    local levelIndex = StageAPI.GetCurrentRoomID()
-                    local newRoom = StageAPI.LevelRoom(nil, usingRoomsList, nil, nil, nil, nil, nil, StageAPI.CurrentStage.RequireRoomTypeMatching, nil, nil, levelIndex)
-                    StageAPI.SetCurrentRoom(newRoom)
-                    newRoom:Load()
-                    currentRoom = newRoom
-                    justGenerated = true
+                    local shape = room:GetRoomShape()
+                    if #usingRoomsList.ByShape[shape] > 0 then
+                        local levelIndex = StageAPI.GetCurrentRoomID()
+                        local newRoom = StageAPI.LevelRoom(nil, usingRoomsList, nil, nil, nil, nil, nil, StageAPI.CurrentStage.RequireRoomTypeMatching, nil, nil, levelIndex)
+                        StageAPI.SetCurrentRoom(newRoom)
+                        newRoom:Load()
+                        currentRoom = newRoom
+                        justGenerated = true
+                    end
                 end
             end
 
