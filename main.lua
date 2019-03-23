@@ -5750,7 +5750,7 @@ do -- Callbacks
         Music.MUSIC_GAME_OVER,
         Music.MUSIC_JINGLE_GAME_OVER,
         Music.MUSIC_JINGLE_SECRETROOM_FIND,
-        Music.MUSIC_JINGLE_NIGHTMARE,
+        {Music.MUSIC_JINGLE_NIGHTMARE, true},
         Music.MUSIC_JINGLE_GAME_START,
         Music.MUSIC_JINGLE_BOSS,
         Music.MUSIC_JINGLE_BOSS_OVER,
@@ -5763,8 +5763,28 @@ do -- Callbacks
         Music.MUSIC_JINGLE_TREASUREROOM_ENTRY_3
     }
 
-    function StageAPI.StopOverridingMusic(music)
-        StageAPI.NonOverrideMusic[#StageAPI.NonOverrideMusic + 1] = music
+    function StageAPI.StopOverridingMusic(music, allowOverrideQueue)
+        if allowOverrideQueue ~= nil then
+            StageAPI.NonOverrideMusic[#StageAPI.NonOverrideMusic + 1] = {music, allowOverrideQueue}
+        else
+            StageAPI.NonOverrideMusic[#StageAPI.NonOverrideMusic + 1] = music
+        end
+    end
+
+    function StageAPI.CanOverrideMusic(music)
+        for _, id in ipairs(StageAPI.NonOverrideMusic) do
+            if type(id) == "number" then
+                if music == id then
+                    return false
+                end
+            else
+                if music == id[1] then
+                    return false, id[2]
+                end
+            end
+        end
+
+        return true
     end
 
     mod:AddCallback(ModCallbacks.MC_POST_UPDATE, function()
@@ -6016,11 +6036,13 @@ do -- Callbacks
                     end
 
                     local queuedID = StageAPI.Music:GetQueuedMusicID()
-                    if queuedID ~= shouldQueue and (not StageAPI.IsIn(StageAPI.NonOverrideMusic, queuedID) or disregardNonOverride) then
+                    local canOverride, canOverrideQueue = StageAPI.CanOverrideMusic(queuedID)
+                    if queuedID ~= shouldQueue and (canOverride or canOverrideQueue or disregardNonOverride) then
                         StageAPI.Music:Queue(shouldQueue)
                     end
 
-                    if id ~= musicID and (not StageAPI.IsIn(StageAPI.NonOverrideMusic, id) or disregardNonOverride) then
+                    local canOverride = StageAPI.CanOverrideMusic(id)
+                    if id ~= musicID and (canOverride or disregardNonOverride) then
                         StageAPI.Music:Play(musicID, 0)
                     end
 
@@ -6041,11 +6063,14 @@ do -- Callbacks
                 local id = StageAPI.Music:GetCurrentMusicID()
                 local musicID = StageAPI.UteroMusicID
                 local queuedID = StageAPI.Music:GetQueuedMusicID()
-                if queuedID ~= musicID and not StageAPI.IsIn(StageAPI.NonOverrideMusic, queuedID) then
+
+                local canOverride, canOverrideQueue = StageAPI.CanOverrideMusic(queuedID)
+                if queuedID ~= musicID and (canOverride or canOverrideQueue) then
                     StageAPI.Music:Queue(musicID)
                 end
 
-                if id ~= musicID and not StageAPI.IsIn(StageAPI.NonOverrideMusic, id) then
+                local canOverride = StageAPI.CanOverrideMusic(id)
+                if id ~= musicID and canOverride then
                     StageAPI.Music:Play(musicID, 0)
                 end
 
@@ -6083,11 +6108,29 @@ do -- Callbacks
 
         if StageAPI.RoomNamesEnabled then
             local currentRoom = StageAPI.LevelRooms[currentListIndex]
-            if currentRoom and currentRoom.Layout.RoomFilename and currentRoom.Layout.Name and currentRoom.Layout.Variant then
-                Isaac.RenderScaledText("Room File: " .. currentRoom.Layout.RoomFilename .. ", Name: " .. currentRoom.Layout.Name .. ", ID: " .. tostring(currentRoom.Layout.Variant) .. ", Subtype: " .. tostring(currentRoom.Layout.SubType), 60, 35, 0.5, 0.5, 255, 255, 255, 0.75)
+            local roomDescriptorData = level:GetCurrentRoomDesc().Data
+            local scale = 0.5
+            local base, custom
+
+            if StageAPI.RoomNamesEnabled == 2 then
+                base = tostring(roomDescriptorData.StageID) .. "." .. tostring(roomDescriptorData.Variant) .. "." .. tostring(roomDescriptorData.Subtype) .. " " .. roomDescriptorData.Name
             else
-                Isaac.RenderScaledText("Room names enabled, room N/A", 60, 35, 0.5, 0.5, 255, 255, 255, 0.75)
+                base = "Base Room Stage ID: " .. tostring(roomDescriptorData.StageID) .. ", Name: " .. roomDescriptorData.Name .. ", ID: " .. tostring(roomDescriptorData.Variant) .. ", Difficulty: " .. tostring(roomDescriptorData.Difficulty) .. ", Subtype: " .. tostring(roomDescriptorData.Subtype)
             end
+
+            if currentRoom and currentRoom.Layout.RoomFilename and currentRoom.Layout.Name and currentRoom.Layout.Variant then
+                if StageAPI.RoomNamesEnabled == 2 then
+                    custom = "Room File: " .. currentRoom.Layout.RoomFilename .. ", Name: " .. currentRoom.Layout.Name .. ", ID: " .. tostring(currentRoom.Layout.Variant)
+                else
+                    custom = "Room File: " .. currentRoom.Layout.RoomFilename .. ", Name: " .. currentRoom.Layout.Name .. ", ID: " .. tostring(currentRoom.Layout.Variant) .. ", Difficulty: " .. tostring(currentRoom.Layout.Difficulty) .. ", Subtype: " .. tostring(currentRoom.Layout.SubType)
+                end
+            else
+                custom = "Room names enabled, custom room N/A"
+            end
+
+
+            Isaac.RenderScaledText(custom, 60, 35, scale, scale, 255, 255, 255, 0.75)
+            Isaac.RenderScaledText(base, 60, 45, scale, scale, 255, 255, 255, 0.75)
         end
     end)
 
@@ -6467,7 +6510,17 @@ do -- Callbacks
                 StageAPI.GotoCustomStage(StageAPI.CurrentStage)
             end
         elseif cmd == "roomnames" then
-            StageAPI.RoomNamesEnabled = not StageAPI.RoomNamesEnabled
+            if StageAPI.RoomNamesEnabled then
+                StageAPI.RoomNamesEnabled = false
+            else
+                StageAPI.RoomNamesEnabled = 1
+            end
+        elseif cmd == "trimroomnames" then
+            if StageAPI.RoomNamesEnabled then
+                StageAPI.RoomNamesEnabled = false
+            else
+                StageAPI.RoomNamesEnabled = 2
+            end
         elseif cmd == "modversion" then
             for name, modData in pairs(StageAPI.LoadedMods) do
                 if modData.Version then
@@ -7092,6 +7145,21 @@ do -- Mod Compatibility
     mod:AddCallback(ModCallbacks.MC_POST_GAME_STARTED, function()
         if REVEL and REVEL.AddChangelog and not REVEL.AddedStageAPIChangelogs then
             REVEL.AddedStageAPIChangelogs = true
+            REVEL.AddChangelog("StageAPI v1.75", [[-Fixed an issue with nightmare
+jingle not being overridden
+
+-Relocated test room lua, fixing
+harmless error on game start
+
+-"roomnames" command now
+displays base rooms
+as well as difficulty and stage id.
+a new command "trimroomnames" has
+been added which cuts out
+everything other than name and id
+
+            ]])
+
             REVEL.AddChangelog("StageAPI v1.72 - 74", [[-Basement renovator integration
 
 -Added stb converter to mod folder,
