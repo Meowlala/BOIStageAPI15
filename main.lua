@@ -2808,10 +2808,23 @@ do -- RoomsList
 
     function StageAPI.LevelRoom:GetEntityMetadataGroups(index)
         local groups = {}
-        local groupTbl = self:GetEntityMetadata(index, "Groups")
-        if groupTbl then
-            for group, count in pairs(groupTbl) do
-                groups[#groups + 1] = group
+
+        if index then
+            local groupTbl = self:GetEntityMetadata(index, "Groups")
+            if groupTbl then
+                for group, count in pairs(groupTbl) do
+                    groups[#groups + 1] = group
+                end
+            end
+        else
+            for index, metadataSet in pairs(self.EntityMetadata) do
+                if metadataSet["Groups"] then
+                    for group, count in pairs(metadataSet["Groups"]) do
+                        if not StageAPI.IsIn(groups, group) then
+                            groups[#groups + 1] = group
+                        end
+                    end
+                end
             end
         end
 
@@ -2831,6 +2844,17 @@ do -- RoomsList
         end
 
         return false
+    end
+
+    function StageAPI.LevelRoom:GetIndicesInGroup(group)
+        local indices = {}
+        for index, metadataSet in pairs(self.EntityMetadata) do
+            if metadataSet[group] then
+                indices[#indices + 1] = index
+            end
+        end
+
+        return indices
     end
 
     function StageAPI.LevelRoom:GroupHasMetadata(group, name)
@@ -2881,7 +2905,7 @@ do -- RoomsList
         end
     end
 
-    function StageAPI.LevelRoom:WasMetadataTriggered(name, frames, index, groups)
+    function StageAPI.LevelRoom:WasMetadataTriggered(name, frames, index, groups, exactFrame)
         frames = frames or 0
         if not groups then
             groups = {index}
@@ -2892,7 +2916,7 @@ do -- RoomsList
         for group, names in pairs(self.EntityMetadata.RecentTriggers) do
             if not groups or StageAPI.IsIn(groups, group) then
                 for name2, timeSince in pairs(names) do
-                    if (not name or name2 == name) and timeSince <= frames then
+                    if (not name or name2 == name) and (timeSince == exactFrame or timeSince <= frames) then
                         return true
                     end
                 end
@@ -2909,8 +2933,8 @@ do -- RoomsList
         self:SetMetadataTrigger(name, index, groups, value)
     end
 
-    function StageAPI.LevelRoom:WasIndexTriggered(index, frames)
-        return self:WasMetadataTriggered(nil, frames, index, self:GetEntityMetadataGroups(index))
+    function StageAPI.LevelRoom:WasIndexTriggered(index, frames, exactFrame)
+        return self:WasMetadataTriggered(nil, frames, index, self:GetEntityMetadataGroups(index), exactFrame)
     end
 
     function StageAPI.LevelRoom:IsGridIndexFree(index, ignoreEntities, ignoreGrids)
@@ -6988,7 +7012,7 @@ do
                 end]]
 
                 if metadataSet["Spawner"] then
-                    if currentRoom:WasIndexTriggered(index) then
+                    if currentRoom:WasIndexTriggered(index, nil, 1) then
                         local blockedEntities = currentRoom.EntityMetadata.BlockedEntities[index]
                         if blockedEntities then
                             if #blockedEntities > 0 then
