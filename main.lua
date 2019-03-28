@@ -5448,7 +5448,6 @@ do -- Transition
     StageAPI.StageRNG = RNG()
     function StageAPI.GotoCustomStage(stage, playTransition)
         if stage.NormalStage then
-            StageAPI.PreReseed = true
             StageAPI.Seeds:ForgetStageSeed(stage.Stage)
             local stageType = stage.StageType
             if not stageType then
