@@ -5981,7 +5981,7 @@ do -- Callbacks
         if currentRoom then
             StageAPI.JustUsedD7 = true
         else
-            players[1]:UseActiveItem(CollectibleType.COLLECTIBLE_D7, true, true, true, false)
+            players[1]:UseActiveItem(CollectibleType.COLLECTIBLE_D7, false, true, true, false)
         end
 
         return true
