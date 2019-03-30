@@ -1416,7 +1416,8 @@ do -- RoomsList
         if not splitByType and createEntityPlaceholders then
             for _, splitData in ipairs(splitBy) do
                 if not StageAPI.RoomsLists[listNamePrefix .. splitData.ListName] then
-                    StageAPI.CreateSingleEntityRoomList(splitData.Type, splitData.Variant, splitData.SubType, listNamePrefix .. splitData.ListName, splitData.RoomType, splitData.RoomName)
+                    local entity = splitData.Entity or splitData
+                    StageAPI.CreateSingleEntityRoomList(entity.Type, entity.Variant, entity.SubType, listNamePrefix .. splitData.ListName, splitData.RoomType or entity.RoomType, splitData.RoomName or entity.RoomName)
                 end
             end
         end
@@ -2060,6 +2061,8 @@ do -- RoomsList
 
     StageAPI.MetadataEntitiesByName = {}
 
+    StageAPI.UnblockableEntities = {}
+
     for id, variants in pairs(StageAPI.MetadataEntities) do
         for variant, metadata in pairs(variants) do
             metadata.Variant = variant
@@ -2086,7 +2089,35 @@ do -- RoomsList
                         StageAPI.MetadataEntitiesByName[data.Name] = data
                     end
                 else
-                    StageAPI.MetadataEntities[id] = variantTable
+                    StageAPI.MetadataEntities[id] = {}
+                    for variant, data in pairs(variantTable) do
+                        data.Variant = variant
+                        data.Type = id
+                        StageAPI.MetadataEntities[id][variant] = data
+                        StageAPI.MetadataEntitiesByName[data.Name] = data
+                    end
+                end
+            end
+        end
+    end
+
+    function StageAPI.AddUnblockableEntities(etype, variant, subtype) -- an entity that will not be blocked by the Spawner or other BlockEntities triggers
+        if type(etype) == "table" then
+            for _, ent in ipairs(etype) do
+                StageAPI.AddUnblockableEntities(ent[1], ent[2], ent[3])
+            end
+        else
+            if not StageAPI.UnblockableEntities[etype] then
+                if variant then
+                    StageAPI.UnblockableEntities[etype] = {}
+                    if subtype then
+                        StageAPI.UnblockableEntities[etype][variant] = {}
+                        StageAPI.UnblockableEntities[etype][variant][subtype] = true
+                    else
+                        StageAPI.UnblockableEntities[etype][variant] = true
+                    end
+                else
+                    StageAPI.UnblockableEntities[etype] = true
                 end
             end
         end
@@ -2125,9 +2156,24 @@ do -- RoomsList
             local setsOfConflicting = {}
             for name, count in pairs(metadataSet) do
                 local metadata = StageAPI.MetadataEntitiesByName[name]
-                if metadata.BlockEntities then
-                    blockedEntities[index] = outEntities[index]
-                    outEntities[index] = nil
+                if metadata.BlockEntities and outEntities[index] then
+                    blockedEntities[index] = {}
+                    for i, entity in StageAPI.ReverseIterate(outEntities[index]) do
+                        if not (StageAPI.UnblockableEntities[entity.Type] and (StageAPI.UnblockableEntities[entity.Type] == true
+                        or (StageAPI.UnblockableEntities[entity.Type][entity.Variant] and (StageAPI.UnblockableEntities[entity.Type][entity.Variant] == true
+                        or StageAPI.UnblockableEntities[entity.Type][entity.Variant][entity.SubType] == true)))) then
+                            blockedEntities[index][#blockedEntities[index] + 1] = entity
+                            table.remove(outEntities[index], i)
+                        end
+                    end
+
+                    if #blockedEntities[index] == 0 then
+                        blockedEntities[index] = nil
+                    end
+
+                    if #outEntities[index] == 0 then
+                        outEntities[index] = nil
+                    end
                 end
 
                 if metadata.Group then
@@ -2801,8 +2847,48 @@ do -- RoomsList
     function StageAPI.LevelRoom:GetEntityMetadata(index, name)
         if not name then
             return self.EntityMetadata[index]
+        elseif not index then
+            local indicesWithMetadata = {}
+            for index, metadataSet in pairs(self.EntityMetadata) do
+                if metadataSet[name] then
+                    indicesWithMetadata[index] = metadataSet[name]
+                end
+            end
+
+            return indicesWithMetadata
         elseif self.EntityMetadata[index] and self.EntityMetadata[index][name] then
             return self.EntityMetadata[index][name]
+        end
+    end
+
+    function StageAPI.LevelRoom:GetEntityMetadataOfType(metatype, index)
+        if index then
+            if self.EntityMetadata[index] then
+                local includedMetadata = {}
+                for name, val in pairs(self.EntityMetadata[index]) do
+                    if type(val) == "table" and name == metatype then
+                        for _, v in ipairs(val) do
+                            includedMetadata[#includedMetadata + 1] = v
+                        end
+                    elseif type(val) ~= "table" then
+                        if StageAPI.MetadataEntitiesByName[name] and StageAPI.MetadataEntitiesByName[name].Group == metatype then
+                            includedMetadata[#includedMetadata + 1] = name
+                        end
+                    end
+                end
+
+                return includedMetadata
+            end
+        else
+            local includedMetadataByIndex = {}
+            for index, metadataSet in pairs(self.EntityMetadata) do
+                local includedMetadata = self:GetEntityMetadataOfType(metatype, index)
+                if #includedMetadata > 0 then
+                    includedMetadataByIndex[index] = includedMetadata
+                end
+            end
+
+            return includedMetadataByIndex
         end
     end
 
@@ -5446,10 +5532,20 @@ do -- Transition
     end
 
     StageAPI.StageRNG = RNG()
-    function StageAPI.GotoCustomStage(stage, playTransition)
+    function StageAPI.GotoCustomStage(stage, playTransition, noForgetSeed)
+        if not noForgetSeed then
+            local realstage
+            if stage.NormalStage then
+                realstage = stage.Stage
+            else
+                realstage = stage.Replaces.OverrideStage
+            end
+
+            StageAPI.Seeds:ForgetStageSeed(realstage)
+        end
+
         if stage.NormalStage then
             StageAPI.PreReseed = true
-            StageAPI.Seeds:ForgetStageSeed(stage.Stage)
             local stageType = stage.StageType
             if not stageType then
                 StageAPI.StageRNG:SetSeed(StageAPI.Seeds:GetStageSeed(stage.Stage), 0)
@@ -5470,7 +5566,6 @@ do -- Transition
                 StageAPI.PlayTransitionAnimation(stage)
             end
 
-            StageAPI.Seeds:ForgetStageSeed(absolute)
             Isaac.ExecuteCommand("stage " .. tostring(absolute) .. StageAPI.StageTypeToString[replace.OverrideStageType])
         end
     end
