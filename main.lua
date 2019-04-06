@@ -7277,6 +7277,31 @@ a new command "trimroomnames" has
 been added which cuts out
 everything other than name and id
 
+-Overridden d7 no
+longer force-plays
+active use animation
+
+-Added several new
+entity metadata features
+-- AddUnblockableEntities allows
+setting unblockable entities,
+like custom grids
+-- GetEntityMetadata allows
+specifying name but not index,
+to get all metadata entities
+with a particular name
+-- GetEntityMetadataOfType allows
+getting all metadata entities
+within a certain group, like
+directions
+
+-GotoCustomStage now allows
+not forgetting the stage
+seed, in case mods want to
+do special stage RNG
+
+-Included XML to Lua script
+is now much faster
             ]])
 
             REVEL.AddChangelog("StageAPI v1.72 - 74", [[-Basement renovator integration
