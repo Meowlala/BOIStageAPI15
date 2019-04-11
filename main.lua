@@ -372,6 +372,12 @@ do -- Core Definitions
         StageAPI = {}
     end
 
+    function StageAPI.Log(str)
+        str = '[StageAPI] ' .. str
+        Isaac.ConsoleOutput(str .. '\n')
+        Isaac.DebugString(str)
+    end
+
     StageAPI.PoopVariant = {
         Normal = 0,
         Red = 1,
@@ -1804,14 +1810,14 @@ do -- RoomsList
                 end
             end
         else
-            Isaac.DebugString("No rooms for shape!")
+            StageAPI.Log("No rooms for shape!")
         end
 
         if #validRooms > 0 then
             StageAPI.RoomChooseRNG:SetSeed(seed, 0)
             return StageAPI.WeightedRNG(validRooms, StageAPI.RoomChooseRNG, nil, totalWeight)
         else
-            Isaac.DebugString("No rooms with correct shape and doors!")
+            StageAPI.Log("No rooms with correct shape and doors!")
         end
     end
 
@@ -2776,12 +2782,11 @@ do -- RoomsList
             if replaceLayoutName then
                 Isaac.DebugString("[StageAPI] Layout replaced")
                 self.LayoutName = replaceLayoutName
-                layoutName = replaceLayoutName
             end
 
             local layout
-            if layoutName then
-                layout = StageAPI.Layouts[layoutName]
+            if self.LayoutName then
+                layout = StageAPI.Layouts[self.LayoutName]
             end
 
             if not layout then
@@ -2803,7 +2808,7 @@ do -- RoomsList
     function StageAPI.LevelRoom:PostGetLayout(seed)
         if not self.Layout then
             self.Layout = StageAPI.CreateEmptyRoomLayout(self.Shape)
-            Isaac.DebugString("[StageAPI] No layout!")
+            StageAPI.Log("No layout!")
         end
 
         self.SpawnEntities, self.SpawnGrids, self.EntityTakenIndices, self.GridTakenIndices, self.LastPersistentIndex, self.EntityMetadata = StageAPI.ObtainSpawnObjects(self.Layout, seed)
@@ -3903,8 +3908,7 @@ do -- Extra Rooms
         if hadFrameWithoutDoorData then
             hadFrameWithoutDoorData = false
         elseif framesWithoutDoorData > 0 then
-            Isaac.ConsoleOutput("Had no door data for " .. tostring(framesWithoutDoorData) .. " frames\n")
-            Isaac.DebugString("Had no door data for " .. tostring(framesWithoutDoorData) .. " frames\n")
+            StageAPI.Log("Had no door data for " .. tostring(framesWithoutDoorData) .. " frames")
             framesWithoutDoorData = 0
         end
     end)
@@ -5075,9 +5079,8 @@ do -- Definitions
 
     function StageAPI.InOverriddenStage()
         for name, override in pairs(StageAPI.StageOverride) do
-            local overridden = true
-
-            local isStage = level:GetStage() == override.OverrideStage and level:GetStageType() == override.OverrideStageType
+            local isStage = level:GetStage() == override.OverrideStage and
+                            level:GetStageType() == override.OverrideStageType
             if isStage then
                 return true, override, name
             end
@@ -6264,8 +6267,7 @@ do -- Callbacks
 
         local boss = StageAPI.GetBossData(bossID)
         if not boss then
-            Isaac.ConsoleOutput("[StageAPI] Trying to set boss with invalid ID: " .. tostring(bossID) .. "\n")
-            Isaac.DebugString("[StageAPI] Trying to set boss with invalid ID: " .. tostring(bossID))
+            StageAPI.Log("Trying to set boss with invalid ID: " .. tostring(bossID))
             return
         end
 
@@ -6297,29 +6299,27 @@ do -- Callbacks
         local inStartingRoom = level:GetCurrentRoomIndex() == level:GetStartingRoomIndex()
         StageAPI.CustomGridIndices = {}
 
-        if inStartingRoom then
-            if room:IsFirstVisit() then
-                StageAPI.CustomGrids = {}
-                StageAPI.LevelRooms = {}
-                StageAPI.CurrentStage = nil
-                if isNewStage then
-                    if not StageAPI.NextStage then
-                        StageAPI.CurrentStage = override.ReplaceWith
-                    else
-                        StageAPI.CurrentStage = StageAPI.NextStage
-                    end
-
-                    if level:GetCurses() & LevelCurse.CURSE_OF_LABYRINTH ~= 0 and StageAPI.CurrentStage.XLStage then
-                        StageAPI.CurrentStage = StageAPI.CurrentStage.XLStage
-                    end
+        if inStartingRoom and room:IsFirstVisit() then
+            StageAPI.CustomGrids = {}
+            StageAPI.LevelRooms = {}
+            StageAPI.CurrentStage = nil
+            if isNewStage then
+                if not StageAPI.NextStage then
+                    StageAPI.CurrentStage = override.ReplaceWith
+                else
+                    StageAPI.CurrentStage = StageAPI.NextStage
                 end
 
-                StageAPI.NextStage = nil
-                if StageAPI.CurrentStage and StageAPI.CurrentStage.GetPlayingMusic then
-                    local musicID = StageAPI.CurrentStage:GetPlayingMusic()
-                    if musicID then
-                        StageAPI.Music:Queue(musicID)
-                    end
+                if level:GetCurses() & LevelCurse.CURSE_OF_LABYRINTH ~= 0 and StageAPI.CurrentStage.XLStage then
+                    StageAPI.CurrentStage = StageAPI.CurrentStage.XLStage
+                end
+            end
+
+            StageAPI.NextStage = nil
+            if StageAPI.CurrentStage and StageAPI.CurrentStage.GetPlayingMusic then
+                local musicID = StageAPI.CurrentStage:GetPlayingMusic()
+                if musicID then
+                    StageAPI.Music:Queue(musicID)
                 end
             end
         end
@@ -6379,7 +6379,11 @@ do -- Callbacks
         local currentRoom, justGenerated, boss = StageAPI.GetCurrentRoom(), nil, nil
 
         local retCurrentRoom, retJustGenerated, retBoss = StageAPI.CallCallbacks("PRE_STAGEAPI_NEW_ROOM_GENERATION", true, currentRoom, justGenerated, currentListIndex)
+        local prevRoom = currentRoom
         currentRoom, justGenerated, boss = retCurrentRoom or currentRoom, retJustGenerated or justGenerated, retBoss or boss
+        if prevRoom ~= currentRoom then
+            StageAPI.SetCurrentRoom(currentRoom)
+        end
 
         if not StageAPI.InExtraRoom and StageAPI.InNewStage() then
             local rtype = room:GetType()
@@ -6441,7 +6445,11 @@ do -- Callbacks
         end
 
         retCurrentRoom, retJustGenerated, retBoss = StageAPI.CallCallbacks("POST_STAGEAPI_NEW_ROOM_GENERATION", true, currentRoom, justGenerated, currentListIndex, boss)
+        prevRoom = currentRoom
         currentRoom, justGenerated, boss = retCurrentRoom or currentRoom, retJustGenerated or justGenerated, retBoss or boss
+        if prevRoom ~= currentRoom then
+            StageAPI.SetCurrentRoom(currentRoom)
+        end
 
         if not boss and currentRoom and currentRoom.PersistentData.BossID then
             boss = StageAPI.GetBossData(currentRoom.PersistentData.BossID)
@@ -6706,8 +6714,7 @@ do -- Callbacks
 
         if prntVersion then
             prefix = prefix or "v"
-            Isaac.ConsoleOutput(name .. " Loaded " .. prefix .. version .. "\n")
-            Isaac.DebugString(name .. " Loaded " .. prefix .. version)
+            StageAPI.Log(name .. " Loaded " .. prefix .. version)
         end
     end
 
@@ -7241,22 +7248,35 @@ Isaac.DebugString("[StageAPI] Loading BR Compatibility")
 do -- BR Compatability
     local status, brTestRoom = pcall(require, 'basementrenovator.roomTest')
     if not status then
-        brTestRoom = '[StageAPI] Error loading BR compatibility file: ' .. tostring(brTestRoom)
-        print(brTestRoom)
-        Isaac.DebugString(brTestRoom)
+        StageAPI.Log('Error loading BR compatibility file: ' .. tostring(brTestRoom))
     elseif brTestRoom then
         local testList = StageAPI.RoomsList("BRTest", brTestRoom)
+        local testLayout = testList.All[1]
+        StageAPI.RegisterLayout("BRTest", testLayout)
 
         BasementRenovator = BasementRenovator or { subscribers = {} }
         BasementRenovator.subscribers['StageAPI'] = {
-            TestRoom = function()
-                StageAPI.SetRoomFromList(testList, nil, nil, nil, true, nil, nil, nil)
+            TestStage = function(test)
+                -- TestStage fires in post_curse_eval,
+                -- before StageAPI's normal stage handling code
+                if test.IsModStage then
+                    StageAPI.NextStage = StageAPI.CustomStages[test.StageName]
+                end
             end,
             TestRoomEntitySpawn = function()
                 -- makes sure placeholder/meta entities can't spawn
                 return { 999, StageAPI.E.DeleteMeEffect.V, 0 }
             end
         }
+
+        StageAPI.AddCallback("StageAPI", "PRE_STAGEAPI_NEW_ROOM_GENERATION", 0, function()
+            if not BasementRenovator.TestRoomData then return end
+
+            if BasementRenovator.InTestStage() and BasementRenovator.InTestRoom() then
+                local testRoom = StageAPI.LevelRoom("BRTest", nil, room:GetSpawnSeed(), testLayout.Shape, testLayout.Type, nil, nil, nil, nil, nil, StageAPI.GetCurrentRoomID())
+                return testRoom
+            end
+        end)
     end
 end
 
@@ -7264,7 +7284,7 @@ do -- Mod Compatibility
     mod:AddCallback(ModCallbacks.MC_POST_GAME_STARTED, function()
         if REVEL and REVEL.AddChangelog and not REVEL.AddedStageAPIChangelogs then
             REVEL.AddedStageAPIChangelogs = true
-            REVEL.AddChangelog("StageAPI v1.75", [[-Fixed an issue with nightmare
+            REVEL.AddChangelog("StageAPI v1.75 - 76", [[-Fixed an issue with nightmare
 jingle not being overridden
 
 -Relocated test room lua, fixing
@@ -7302,6 +7322,12 @@ do special stage RNG
 
 -Included XML to Lua script
 is now much faster
+
+- Enhanced Basement Renovator
+compatibility: layout will now
+load directly so roomlist callbacks
+can't interfere, set up stage
+support
             ]])
 
             REVEL.AddChangelog("StageAPI v1.72 - 74", [[-Basement renovator integration
