@@ -7257,6 +7257,16 @@ do -- BR Compatability
         BasementRenovator = BasementRenovator or { subscribers = {} }
         BasementRenovator.subscribers['StageAPI'] = {
             TestStage = function(test)
+                if not BasementRenovator.TestRoomData then return end
+
+                if BasementRenovator.TestRoomData.Type    ~= testLayout.Type
+                or BasementRenovator.TestRoomData.Variant ~= testLayout.Variant
+                or BasementRenovator.TestRoomData.Subtype ~= testLayout.SubType
+                or BasementRenovator.TestRoomData.Name    ~= testLayout.Name then
+                    StageAPI.Log("basementrenovator/roomTest.lua did not have values matching the BR test! Make sure your hooks are set up properly")
+                    return
+                end
+
                 -- TestStage fires in post_curse_eval,
                 -- before StageAPI's normal stage handling code
                 if test.IsModStage then
@@ -7284,7 +7294,7 @@ do -- Mod Compatibility
     mod:AddCallback(ModCallbacks.MC_POST_GAME_STARTED, function()
         if REVEL and REVEL.AddChangelog and not REVEL.AddedStageAPIChangelogs then
             REVEL.AddedStageAPIChangelogs = true
-            REVEL.AddChangelog("StageAPI v1.75 - 76", [[-Fixed an issue with nightmare
+            REVEL.AddChangelog("StageAPI v1.75 - 77", [[-Fixed an issue with nightmare
 jingle not being overridden
 
 -Relocated test room lua, fixing
@@ -7496,7 +7506,7 @@ other than a door
 end
 
 Isaac.DebugString("[StageAPI] Fully Loaded, loading dependent mods.")
-StageAPI.MarkLoaded("StageAPI", "1.76", true, true)
+StageAPI.MarkLoaded("StageAPI", "1.77", true, true)
 
 StageAPI.Loaded = true
 if StageAPI.ToCall then
