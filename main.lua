@@ -5438,7 +5438,26 @@ do -- Transition
 
     StageAPI.Seeds = game:GetSeeds()
 
+    local alreadyStopped = false
+
+    function StageAPI.StopStageTransition()
+        if not alreadyStopped then
+            for _, player in ipairs(players) do
+                player.Position = room:GetCenterPos()
+                player:AnimateAppear()
+                player.ControlsCooldown = 80
+            end
+            if StageAPI.TransitionAnimation:IsPlaying("Scene") or StageAPI.TransitionAnimation:IsPlaying("SceneNoShake") then
+                StageAPI.TransitionAnimation:Stop()
+            end
+
+            alreadyStopped = true
+        end
+    end
+
     mod:AddCallback(ModCallbacks.MC_POST_RENDER, function()
+        alreadyStopped = false
+
         if StageAPI.TransitionAnimation:IsPlaying("Scene") or StageAPI.TransitionAnimation:IsPlaying("SceneNoShake") then
             if StageAPI.IsOddRenderFrame then
                 StageAPI.TransitionAnimation:Update()
@@ -5446,20 +5465,27 @@ do -- Transition
 
             for _, player in ipairs(players) do
                 player.ControlsCooldown = 80
+
+                local data =  player:GetData()
+                data.StageAPI_PrevTransitionCharge = data.StageAPI_PrevTransitionCharge or player:GetActiveCharge()
+                if data.StageAPI_PrevTransitionCharge > player:GetActiveCharge() then
+                    StageAPI.StopStageTransition()
+                end
+
+                if Input.IsActionTriggered(ButtonAction.ACTION_MENUCONFIRM, player.ControllerIndex) or
+                        Input.IsActionTriggered(ButtonAction.ACTION_MENUBACK, player.ControllerIndex) then
+                    StageAPI.StopStageTransition()
+                end
             end
 
             if StageAPI.TransitionAnimation:IsEventTriggered("LastFrame") then
-                for _, player in ipairs(players) do
-                    player.Position = room:GetCenterPos()
-                    player:AnimateAppear()
-                    player.ControlsCooldown = 80
-                end
+                StageAPI.StopStageTransition()
             end
 
             StageAPI.TransitionIsPlaying = true
             StageAPI.RenderBlackScreen()
             StageAPI.TransitionAnimation:Render(StageAPI.GetScreenCenterPosition(), zeroVector, zeroVector)
-        elseif StageAPI.TransitionIsPlaying then
+        elseif StageAPI.TransitionIsPlaying then -- Finished transition
             StageAPI.TransitionIsPlaying = false
             if StageAPI.CurrentStage then
                 local name = StageAPI.CurrentStage.DisplayName or StageAPI.CurrentStage.Name
@@ -5478,9 +5504,15 @@ do -- Transition
         end
     end)
 
-    function StageAPI.IsHUDAnimationPlaying()
-        return StageAPI.TransitionAnimation:IsPlaying("Scene") or StageAPI.TransitionAnimation:IsPlaying("SceneNoShake") or StageAPI.BossSprite:IsPlaying("Scene") or StageAPI.BossSprite:IsPlaying("DoubleTrouble") or (room:GetType() == RoomType.ROOM_BOSS and room:GetFrameCount() <= 0 and game:IsPaused())
+    function StageAPI.IsHUDAnimationPlaying(spriteOnly)
+        return StageAPI.TransitionAnimation:IsPlaying("Scene") or StageAPI.TransitionAnimation:IsPlaying("SceneNoShake") or StageAPI.BossSprite:IsPlaying("Scene") or StageAPI.BossSprite:IsPlaying("DoubleTrouble") or (room:GetType() == RoomType.ROOM_BOSS and room:GetFrameCount() <= 0 and game:IsPaused() and not spriteOnly)
     end
+
+    mod:AddCallback(ModCallbacks.MC_PRE_USE_ITEM, function()
+        if StageAPI.IsHUDAnimationPlaying() then
+            return true
+        end
+    end)
 
     mod:AddCallback(ModCallbacks.MC_ENTITY_TAKE_DMG, function(_, e)
         if StageAPI.IsHUDAnimationPlaying() then
