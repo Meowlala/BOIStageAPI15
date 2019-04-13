@@ -5438,48 +5438,29 @@ do -- Transition
 
     StageAPI.Seeds = game:GetSeeds()
 
-    local alreadyStopped = false
-
-    function StageAPI.StopStageTransition()
-        if not alreadyStopped then
-            for _, player in ipairs(players) do
-                player.Position = room:GetCenterPos()
-                player:AnimateAppear()
-                player.ControlsCooldown = 80
-            end
-            if StageAPI.TransitionAnimation:IsPlaying("Scene") or StageAPI.TransitionAnimation:IsPlaying("SceneNoShake") then
-                StageAPI.TransitionAnimation:Stop()
-            end
-
-            alreadyStopped = true
-        end
-    end
-
     mod:AddCallback(ModCallbacks.MC_POST_RENDER, function()
-        alreadyStopped = false
-
         if StageAPI.TransitionAnimation:IsPlaying("Scene") or StageAPI.TransitionAnimation:IsPlaying("SceneNoShake") then
             if StageAPI.IsOddRenderFrame then
                 StageAPI.TransitionAnimation:Update()
             end
 
+            local stop
             for _, player in ipairs(players) do
                 player.ControlsCooldown = 80
 
-                local data =  player:GetData()
-                data.StageAPI_PrevTransitionCharge = data.StageAPI_PrevTransitionCharge or player:GetActiveCharge()
-                if data.StageAPI_PrevTransitionCharge > player:GetActiveCharge() then
-                    StageAPI.StopStageTransition()
-                end
-
                 if Input.IsActionTriggered(ButtonAction.ACTION_MENUCONFIRM, player.ControllerIndex) or
-                        Input.IsActionTriggered(ButtonAction.ACTION_MENUBACK, player.ControllerIndex) then
-                    StageAPI.StopStageTransition()
+                Input.IsActionTriggered(ButtonAction.ACTION_MENUBACK, player.ControllerIndex) then
+                    stop = true
                 end
             end
 
-            if StageAPI.TransitionAnimation:IsEventTriggered("LastFrame") then
-                StageAPI.StopStageTransition()
+            if stop or StageAPI.TransitionAnimation:IsEventTriggered("LastFrame") then
+                for _, player in ipairs(players) do
+                    player.Position = room:GetCenterPos()
+                    player:AnimateAppear()
+                end
+
+                StageAPI.TransitionAnimation:Stop()
             end
 
             StageAPI.TransitionIsPlaying = true
