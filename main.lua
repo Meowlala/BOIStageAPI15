@@ -426,7 +426,8 @@ do -- Core Definitions
         DeleteMeEffect = "StageAPIDeleteMeEffect",
         DeleteMeNPC = "StageAPIDeleteMeNPC",
         DeleteMeProjectile = "StageAPIDeleteMeProjectile",
-        DeleteMePickup = "StageAPIDeleteMePickup"
+        DeleteMePickup = "StageAPIDeleteMePickup",
+        RandomRune = "StageAPIRandomRune"
     }
 
     StageAPI.S = {
@@ -5818,6 +5819,18 @@ do -- Rock Alt Override
     mod:AddCallback(ModCallbacks.MC_POST_EFFECT_INIT, StageAPI.DeleteEntity, StageAPI.E.DeleteMeEffect.V)
     mod:AddCallback(ModCallbacks.MC_POST_PROJECTILE_INIT, StageAPI.DeleteEntity, StageAPI.E.DeleteMeProjectile.V)
     mod:AddCallback(ModCallbacks.MC_POST_PICKUP_INIT, StageAPI.DeleteEntity, StageAPI.E.DeleteMePickup.V)
+
+    StageAPI.PickupChooseRNG = RNG()
+    mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, function()
+        StageAPI.PickupChooseRNG:SetSeed(room:GetSpawnSeed(), 0)
+    end)
+
+    mod:AddCallback(ModCallbacks.MC_POST_PICKUP_UPDATE, function(_, pickup)
+        local card = game:GetItemPool():GetCard(StageAPI.PickupChooseRNG:Next(), false, true, true)
+        local spawned = Isaac.Spawn(5, 300, card, pickup.Position, zeroVector, nil)
+        spawned:Update() -- get the spawned pickup up to speed with the original
+        StageAPI.DeleteEntity(pickup)
+    end, StageAPI.E.RandomRune.V)
 
     mod:AddCallback(ModCallbacks.MC_POST_UPDATE, function()
         for fart, timer in pairs(StageAPI.RecentFarts) do

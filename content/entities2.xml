@@ -38,4 +38,7 @@
     <entity anm2path="stageapi/none.anm2" id="5" name="StageAPIDeleteMePickup" variant="12543" collisionRadius="1" numGridCollisionPoints="1">
         <gibs amount="0" blood="0" bone="0" eye="0" gut="0" large="0" />
     </entity>
+    <entity anm2path="stageapi/none.anm2" id="5" name="StageAPIRandomRune" variant="301" collisionRadius="1" numGridCollisionPoints="1">
+        <gibs amount="0" blood="0" bone="0" eye="0" gut="0" large="0" />
+    </entity>
 </entities>
