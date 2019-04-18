@@ -2369,7 +2369,7 @@ do -- RoomsList
                 local addEntities = {}
                 local overridden, stillAddRandom = false, nil
                 for _, callback in ipairs(callbacks) do
-                    local retAdd, retList, retRandom = callback.Function(entityList, index)
+                    local retAdd, retList, retRandom = callback.Function(entityList, index, entityMeta)
                     if retRandom ~= nil and stillAddRandom == nil then
                         stillAddRandom = retRandom
                     end
