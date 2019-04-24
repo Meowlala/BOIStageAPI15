@@ -6361,7 +6361,7 @@ do -- Callbacks
             enteringExtraRoomFromOffGridRoom = true
         end
 
-        if not StageAPI.TransitioningToExtraRoom() and not enteringExtraRoomFromOffGridRoom then
+        if not StageAPI.TransitioningToExtraRoom() and not enteringExtraRoomFromOffGridRoom and not StageAPI.LoadingExtraRoomFromSave then
             if StageAPI.InExtraRoom and level:GetCurrentRoomIndex() < 0 then
                 StageAPI.PreviousExtraRoom = StageAPI.CurrentExtraRoom
                 StageAPI.PreviousExtraRoomName = StageAPI.CurrentExtraRoomName
@@ -6375,6 +6375,8 @@ do -- Callbacks
             StageAPI.InExtraRoom = false
             StageAPI.LoadedExtraRoom = false
         end
+
+        StageAPI.LoadingExtraRoomFromSave = nil
 
         if StageAPI.TransitionExitSlot then
             local pos = room:GetDoorSlotPosition(StageAPI.TransitionExitSlot) + (StageAPI.DoorOffsetsByDirection[StageAPI.DoorToDirection[StageAPI.TransitionExitSlot]] * 3)
@@ -6928,6 +6930,8 @@ do
 
         if StageAPI.CurrentExtraRoomName then
             StageAPI.CurrentExtraRoom = retLevelRooms[StageAPI.CurrentExtraRoomName]
+            StageAPI.InExtraRoom = true
+            StageAPI.LoadingExtraRoomFromSave = true
         end
 
         StageAPI.RoomGrids = retRoomGrids
@@ -7004,30 +7008,16 @@ do -- Misc helpful functions
         {X = 1, Y = 1}
     }
 
-    function StageAPI.GetPitFramesForLayoutEntities(t, v, s, entities, width, height, hasExtraFrames)
-        width = width or room:GetGridWidth()
-        height = height or room:GetGridHeight()
-        local indicesWithEntity = {}
+    function StageAPI.GetPitFramesFromIndices(indices, width, height, hasExtraFrames)
         local frames = {}
-        for index, entityList in pairs(entities) do
-            for _, entityInfo in ipairs(entityList) do
-                local entityData = entityInfo.Data
-                if not t or entityData.Type == t
-                and not v or entityData.Variant == v
-                and not s or entityData.SubType == s then
-                    indicesWithEntity[index] = true
-                end
-            end
-        end
-
-        for index, _ in pairs(indicesWithEntity) do
+        for index, _ in pairs(indices) do
             local x, y = StageAPI.GridToVector(index, width)
             local adjIndices = {}
             for _, adjust in ipairs(AdjacentAdjustments) do
                 local nX, nY = x + adjust.X, y + adjust.Y
                 if (nX >= 0 and nX <= width) and (nY >= 0 and nY <= height) then
                     local backToGrid = StageAPI.VectorToGrid(nX, nY, width)
-                    if indicesWithEntity[backToGrid] then
+                    if indices[backToGrid] then
                         adjIndices[#adjIndices + 1] = true
                     else
                         adjIndices[#adjIndices + 1] = false
@@ -7041,6 +7031,24 @@ do -- Misc helpful functions
         end
 
         return frames
+    end
+
+    function StageAPI.GetPitFramesForLayoutEntities(t, v, s, entities, width, height, hasExtraFrames)
+        width = width or room:GetGridWidth()
+        height = height or room:GetGridHeight()
+        local indicesWithEntity = {}
+        for index, entityList in pairs(entities) do
+            for _, entityInfo in ipairs(entityList) do
+                local entityData = entityInfo.Data
+                if not t or entityData.Type == t
+                and not v or entityData.Variant == v
+                and not s or entityData.SubType == s then
+                    indicesWithEntity[index] = true
+                end
+            end
+        end
+
+        return StageAPI.GetPitFramesFromIndices(indicesWithEntity, width, height, hasExtraFrames)
     end
 end
 
@@ -7364,6 +7372,10 @@ compatibility: layout will now
 load directly so roomlist callbacks
 can't interfere, set up stage
 support
+
+-Fixed extra rooms not
+being loaded on save
+and continue
             ]])
 
             REVEL.AddChangelog("StageAPI v1.72 - 74", [[-Basement renovator integration
