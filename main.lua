@@ -6523,7 +6523,7 @@ do -- Callbacks
                 end
             end
 
-            if invalidEntrance and #validDoors > 0 then
+            if invalidEntrance and #validDoors > 0 and not currentRoom.Data.PreventDoorFix then
                 local changeEntrance = validDoors[StageAPI.Random(1, #validDoors)]
                 for _, player in ipairs(REVEL.players) do
                     player.Position = room:GetDoorSlotPosition(changeEntrance)
