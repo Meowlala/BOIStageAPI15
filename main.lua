@@ -788,6 +788,7 @@ do -- Core Functions
         streak.ExtraFontScale = streak.ExtraFontScale or extratextScaleMulti
         streak.ExtraOffset = streak.ExtraOffset or extratextOffset
         streak.SpriteOffset = streak.SpriteOffset or spriteOffset or zeroVector
+        streak.Spritesheet = streak.Spritesheet or replaceSpritesheet or "stageapi/streak.png"
 
         local index = #Streaks + 1
         streak.SpriteIndex = index
@@ -795,13 +796,10 @@ do -- Core Functions
         if not StreakSprites[index] then -- this system loads as many sprites as it has to play at once
             StreakSprites[index] = Sprite()
             StreakSprites[index]:Load("stageapi/streak.anm2", true)
-        elseif not replaceSpritesheet then
-            StreakSprites[index]:ReplaceSpritesheet(0, "stageapi/streak.png")
-            StreakSprites[index]:LoadGraphics()
         end
 
-        if replaceSpritesheet then
-            StreakSprites[index]:ReplaceSpritesheet(0, replaceSpritesheet)
+        if streak.Spritesheet then
+            StreakSprites[index]:ReplaceSpritesheet(0, streak.Spritesheet)
             StreakSprites[index]:LoadGraphics()
         end
 
