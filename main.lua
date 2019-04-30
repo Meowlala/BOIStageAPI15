@@ -1062,6 +1062,7 @@ do -- RoomsList
         }
     }
 
+    StageAPI.LastRoomID = 0
     function StageAPI.SimplifyRoomLayout(layout)
         local outLayout = {
             GridEntities = {},
@@ -1078,8 +1079,11 @@ do -- RoomsList
             Type = layout.TYPE,
             Variant = layout.VARIANT,
             SubType = layout.SUBTYPE,
+            StageAPIID = StageAPI.LastRoomID + 1,
             PreSimplified = true
         }
+
+        StageAPI.LastRoomID = outLayout.StageAPIID
 
         local widthHeight = StageAPI.RoomShapeToWidthHeight[outLayout.Shape]
         if widthHeight then
@@ -1209,8 +1213,11 @@ do -- RoomsList
             Entities = {},
             EntitiesByIndex = {},
             Doors = {},
+            StageAPIID = StageAPI.LastRoomID + 1,
             PreSimplified = true
         }
+
+        StageAPI.LastRoomID = newRoom.StageAPIID
 
         for i = 0, 7 do
             newRoom.Doors[#newRoom.Doors + 1] = {
@@ -1760,7 +1767,7 @@ do -- RoomsList
     end
 
     StageAPI.RoomChooseRNG = RNG()
-    function StageAPI.ChooseRoomLayout(roomList, seed, shape, rtype, requireRoomType, ignoreDoors, doors)
+    function StageAPI.ChooseRoomLayout(roomList, seed, shape, rtype, requireRoomType, ignoreDoors, doors, disallowIDs)
         local callbacks = StageAPI.GetCallbacks("POST_CHECK_VALID_ROOM")
         local validRooms = {}
 
@@ -1787,6 +1794,15 @@ do -- RoomsList
                             elseif not door.Exists then
                                 numNonExistingDoors = numNonExistingDoors + 1
                             end
+                        end
+                    end
+                end
+
+                if isValid and disallowIDs then
+                    for _, id in ipairs(disallowIDs) do
+                        if layout.StageAPIID == id then
+                            isValid = false
+                            break
                         end
                     end
                 end
@@ -7200,7 +7216,7 @@ do -- Challenge Rooms
     --[[
     Custom Challenge Waves
 
-    CustomStage:SetChallengeWaves(rooms, bossChallengeRooms)
+    CustomStage:SetChallengeWaves(RoomsList, BossChallengeRoomsList)
 
     Challenge waves must be rooms with only entities, and no metadata entities, to properly merge into the existing room.
 
@@ -7210,21 +7226,32 @@ do -- Challenge Rooms
     ]]
 
     StageAPI.ChallengeWaveChanged = false
-    StageAPI.LastChallengeWaveFrame = nil
+    StageAPI.ChallengeWaveSpawnFrame = nil
     mod:AddCallback(ModCallbacks.MC_POST_NPC_INIT, function(_, npc)
-        if room:GetType() == RoomType.ROOM_CHALLENGE and (not StageAPI.LastChallengeWaveFrame or game:GetFrameCount() > StageAPI.LastChallengeWaveFrame) then
+        if room:GetType() == RoomType.ROOM_CHALLENGE and not StageAPI.ChallengeWaveSpawnFrame then
             if npc.CanShutDoors and not (npc:HasEntityFlags(EntityFlag.FLAG_FRIENDLY) or npc:HasEntityFlags(EntityFlag.FLAG_PERSISTENT) or npc:HasEntityFlags(EntityFlag.FLAG_NO_TARGET)) then
                 local preventCounting
                 for _, entity in ipairs(Isaac.GetRoomEntities()) do
-                    if entity:ToNPC() and entity:CanShutDoors() and not (entity:HasEntityFlags(EntityFlag.FLAG_FRIENDLY) or entity:HasEntityFlags(EntityFlag.FLAG_PERSISTENT) or entity:HasEntityFlags(EntityFlag.FLAG_NO_TARGET)) and entity.FrameCount > 1 then
+                    if entity:ToNPC() and entity:CanShutDoors() and not (entity:HasEntityFlags(EntityFlag.FLAG_FRIENDLY) or entity:HasEntityFlags(EntityFlag.FLAG_PERSISTENT) or entity:HasEntityFlags(EntityFlag.FLAG_NO_TARGET)) and entity.FrameCount ~= npc.FrameCount then
                         preventCounting = true
                         break
                     end
                 end
 
                 if not preventCounting then
-                    StageAPI.LastChallengeWaveFrame = game:GetFrameCount()
                     StageAPI.ChallengeWaveChanged = true
+                end
+
+                if StageAPI.ChallengeWaveChanged and StageAPI.CurrentStage and StageAPI.CurrentStage.ChallengeWaves then
+                    npc:ClearEntityFlags(EntityFlag.FLAG_APPEAR)
+                    npc.Visible = false
+                    for _, effect in ipairs(Isaac.FindByType(EntityType.ENTITY_EFFECT, EffectVariant.POOF01, -1, false, false)) do
+                        if effect.Position.X == npc.Position.X and effect.Position.Y == npc.Position.Y then
+                            effect:Remove()
+                        end
+                    end
+
+                    npc:Remove()
                 end
             end
         end
@@ -7235,6 +7262,11 @@ do -- Challenge Rooms
         StageAPI.ChallengeWaveChanged = false
         StageAPI.LastChallengeWaveFrame = nil
         StageAPI.ChallengeWaveRNG:SetSeed(room:GetSpawnSeed(), 0)
+
+        local currentRoom = StageAPI.GetCurrentRoom()
+        if currentRoom and currentRoom.Data.ChallengeWaveIDs then
+            currentRoom.Data.ChallengeWaveIDs = nil
+        end
     end)
 
     StageAPI.CheckingChallengeWaveSubtype = nil
@@ -7247,21 +7279,33 @@ do -- Challenge Rooms
     end)
 
     mod:AddCallback(ModCallbacks.MC_POST_UPDATE, function()
+        if StageAPI.ChallengeWaveSpawnFrame and game:GetFrameCount() > StageAPI.ChallengeWaveSpawnFrame then
+            StageAPI.ChallengeWaveSpawnFrame = nil
+        end
+
         if StageAPI.ChallengeWaveChanged then
             if room:GetType() ~= RoomType.ROOM_CHALLENGE then
                 StageAPI.ChallengeWaveChanged = false
-                StageAPI.LastChallengeWaveFrame = nil
                 return
             end
 
             if StageAPI.CurrentStage and StageAPI.CurrentStage.ChallengeWaves then
-                StageAPI.LastChallengeWaveFrame = game:GetFrameCount() + 1
+                StageAPI.ChallengeWaveSpawnFrame = game:GetFrameCount()
                 local currentRoom = StageAPI.GetCurrentRoom()
-                if currentRoom and currentRoom.Layout.SubType ~= 0 then
-                    StageAPI.CheckingChallengeWaveSubtype = currentRoom.Layout.SubType
+
+                local challengeWaveIDs
+                if currentRoom then
+                    if currentRoom.Layout.SubType ~= 0 then
+                        StageAPI.CheckingChallengeWaveSubtype = currentRoom.Layout.SubType
+                    end
+
+                    if not currentRoom.Data.ChallengeWaveIDs then
+                        currentRoom.Data.ChallengeWaveIDs = {}
+                    end
+
+                    challengeWaveIDs = currentRoom.Data.ChallengeWaveIDs
                 end
 
-                StageAPI.ClearRoomLayout(true, false, true, false)
                 local seed = StageAPI.ChallengeWaveRNG:Next()
 
                 local useWaves = StageAPI.CurrentStage.ChallengeWaves.Normal
@@ -7269,9 +7313,15 @@ do -- Challenge Rooms
                     useWaves = StageAPI.CurrentStage.ChallengeWaves.Boss
                 end
 
-                local wave = StageAPI.ChooseRoomLayout(useWaves.ByShape, seed, room:GetRoomShape(), room:GetType(), false, false)
+                local wave = StageAPI.ChooseRoomLayout(useWaves.ByShape, seed, room:GetRoomShape(), room:GetType(), false, false, nil, challengeWaveIDs)
+                if currentRoom then
+                    currentRoom.Data.ChallengeWaveIDs[#currentRoom.Data.ChallengeWaveIDs + 1] = wave.StageAPIID
+                end
+
                 local spawnEntities = StageAPI.ObtainSpawnObjects(wave, seed)
+                StageAPI.SpawningChallengeEnemies = true
                 StageAPI.LoadRoomLayout(nil, {spawnEntities}, false, true, false, true)
+                StageAPI.SpawningChallengeEnemies = false
 
                 StageAPI.CheckingChallengeWaveSubtype = nil
             end
