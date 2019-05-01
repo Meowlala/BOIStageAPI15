@@ -7226,19 +7226,23 @@ do -- Challenge Rooms
 
     Challenge waves must be rooms with only entities, and no metadata entities, to properly merge into the existing room.
 
-    If the existing room has a non-zero SubType, only challenge waves with a SubType that matches or is zero will be selected.
+    If the challenge room has a non-zero SubType, only challenge waves with a SubType that matches or is zero will be selected.
     This allows the editor to design waves that fit each room layout, or some with SubType 0 that fit all.
-    If you'd prefer it to be random, just use SubType 0 for the initial challenge rooms.
+    If a challenge room layout can fit any one set of waves, just use SubType 0.
     ]]
 
     StageAPI.ChallengeWaveChanged = false
     StageAPI.ChallengeWaveSpawnFrame = nil
     mod:AddCallback(ModCallbacks.MC_POST_NPC_INIT, function(_, npc)
-        if room:GetType() == RoomType.ROOM_CHALLENGE and not StageAPI.ChallengeWaveSpawnFrame then
-            if npc.CanShutDoors and not (npc:HasEntityFlags(EntityFlag.FLAG_FRIENDLY) or npc:HasEntityFlags(EntityFlag.FLAG_PERSISTENT) or npc:HasEntityFlags(EntityFlag.FLAG_NO_TARGET)) then
+        if room:GetType() == RoomType.ROOM_CHALLENGE and not StageAPI.ChallengeWaveSpawnFrame
+        and room:IsAmbushActive() and not room:IsAmbushDone() then
+            if npc.CanShutDoors
+            and not (npc:HasEntityFlags(EntityFlag.FLAG_FRIENDLY) or npc:HasEntityFlags(EntityFlag.FLAG_PERSISTENT) or npc:HasEntityFlags(EntityFlag.FLAG_NO_TARGET)) then
                 local preventCounting
                 for _, entity in ipairs(Isaac.GetRoomEntities()) do
-                    if entity:ToNPC() and entity:CanShutDoors() and not (entity:HasEntityFlags(EntityFlag.FLAG_FRIENDLY) or entity:HasEntityFlags(EntityFlag.FLAG_PERSISTENT) or entity:HasEntityFlags(EntityFlag.FLAG_NO_TARGET)) and entity.FrameCount ~= npc.FrameCount then
+                    if entity:ToNPC() and entity:CanShutDoors()
+                    and not (entity:HasEntityFlags(EntityFlag.FLAG_FRIENDLY) or entity:HasEntityFlags(EntityFlag.FLAG_PERSISTENT) or entity:HasEntityFlags(EntityFlag.FLAG_NO_TARGET))
+                    and entity.FrameCount ~= npc.FrameCount then
                         preventCounting = true
                         break
                     end
@@ -7275,6 +7279,7 @@ do -- Challenge Rooms
         end
     end)
 
+    -- prevent waves of the wrong subtype from appearing
     StageAPI.CheckingChallengeWaveSubtype = nil
     StageAPI.AddCallback("StageAPI", "POST_CHECK_VALID_ROOM", 0, function(layout)
         if StageAPI.CheckingChallengeWaveSubtype then
@@ -7292,6 +7297,7 @@ do -- Challenge Rooms
         if StageAPI.ChallengeWaveChanged then
             if room:GetType() ~= RoomType.ROOM_CHALLENGE then
                 StageAPI.ChallengeWaveChanged = false
+                StageAPI.CheckingChallengeWaveSubtype = nil
                 return
             end
 
@@ -7301,7 +7307,7 @@ do -- Challenge Rooms
 
                 local challengeWaveIDs
                 if currentRoom then
-                    if currentRoom.Layout.SubType ~= 0 then
+                    if not StageAPI.CheckingChallengeWaveSubtype and currentRoom.Layout.SubType ~= 0 then
                         StageAPI.CheckingChallengeWaveSubtype = currentRoom.Layout.SubType
                     end
 
@@ -7322,14 +7328,17 @@ do -- Challenge Rooms
                 local wave = StageAPI.ChooseRoomLayout(useWaves.ByShape, seed, room:GetRoomShape(), room:GetType(), false, false, nil, challengeWaveIDs)
                 if currentRoom then
                     currentRoom.Data.ChallengeWaveIDs[#currentRoom.Data.ChallengeWaveIDs + 1] = wave.StageAPIID
+
+                    if not StageAPI.CheckingChallengeWaveSubtype
+                    and currentRoom.Layout.SubType == 0 and wave.SubType ~= 0 then
+                        StageAPI.CheckingChallengeWaveSubtype = wave.SubType
+                    end
                 end
 
                 local spawnEntities = StageAPI.ObtainSpawnObjects(wave, seed)
                 StageAPI.SpawningChallengeEnemies = true
                 StageAPI.LoadRoomLayout(nil, {spawnEntities}, false, true, false, true)
                 StageAPI.SpawningChallengeEnemies = false
-
-                StageAPI.CheckingChallengeWaveSubtype = nil
             end
 
             StageAPI.CallCallbacks("CHALLENGE_WAVE_CHANGED")
