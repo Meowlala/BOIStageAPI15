@@ -4789,6 +4789,12 @@ do -- Custom Stage
         self.PlayerSpot = playerSpot
     end
 
+    function StageAPI.CustomStage:SetTrueCoopSpots(twoPlayersSpot, fourPlayersSpot, threePlayersSpot) -- if a three player spot is not defined, uses four instead.
+        self.CoopSpot2P = twoPlayersSpot
+        self.CoopSpot3P = threePlayersSpot
+        self.CoopSpot4P = fourPlayersSpot
+    end
+
     function StageAPI.CustomStage:SetBosses(bosses)
         for _, bossID in ipairs(bosses) do
             local boss = StageAPI.GetBossData(bossID)
