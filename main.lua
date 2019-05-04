@@ -2542,6 +2542,7 @@ do -- RoomsList
                     end
 
                     if shouldSpawn and #entityList > 0 then
+                        roomType = room:GetType()
                         for _, entityInfo in ipairs(entityList) do
                             local shouldSpawnEntity = true
 
@@ -2608,7 +2609,7 @@ do -- RoomsList
                                         StageAPI.SetEntityPersistenceData(ent, entityInfo.PersistentIndex, entityInfo.PersistenceData)
                                     end
 
-                                    if ent:CanShutDoors() then
+                                    if roomType ~= RoomType.ROOM_CHALLENGE and ent:CanShutDoors() then
                                         StageAPI.Room:SetClear(false)
                                     end
 
