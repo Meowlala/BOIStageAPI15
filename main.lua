@@ -7231,10 +7231,13 @@ do -- Challenge Rooms
     If a challenge room layout can fit any one set of waves, just use SubType 0.
     ]]
 
-    StageAPI.ChallengeWaveChanged = false
-    StageAPI.ChallengeWaveSpawnFrame = nil
+    StageAPI.Challenge = {
+        WaveChanged = false,
+        WaveSpawnFrame = nil,
+        WaveSubtype = nil
+    }
     mod:AddCallback(ModCallbacks.MC_POST_NPC_INIT, function(_, npc)
-        if room:GetType() == RoomType.ROOM_CHALLENGE and not StageAPI.ChallengeWaveSpawnFrame
+        if room:GetType() == RoomType.ROOM_CHALLENGE and not StageAPI.Challenge.WaveSpawnFrame
         and room:IsAmbushActive() and not room:IsAmbushDone() then
             if npc.CanShutDoors
             and not (npc:HasEntityFlags(EntityFlag.FLAG_FRIENDLY) or npc:HasEntityFlags(EntityFlag.FLAG_PERSISTENT) or npc:HasEntityFlags(EntityFlag.FLAG_NO_TARGET)) then
@@ -7249,10 +7252,10 @@ do -- Challenge Rooms
                 end
 
                 if not preventCounting then
-                    StageAPI.ChallengeWaveChanged = true
+                    StageAPI.Challenge.WaveChanged = true
                 end
 
-                if StageAPI.ChallengeWaveChanged and StageAPI.CurrentStage and StageAPI.CurrentStage.ChallengeWaves then
+                if StageAPI.Challenge.WaveChanged and StageAPI.CurrentStage and StageAPI.CurrentStage.ChallengeWaves then
                     npc:ClearEntityFlags(EntityFlag.FLAG_APPEAR)
                     npc.Visible = false
                     for _, effect in ipairs(Isaac.FindByType(EntityType.ENTITY_EFFECT, EffectVariant.POOF01, -1, false, false)) do
@@ -7269,8 +7272,9 @@ do -- Challenge Rooms
 
     StageAPI.ChallengeWaveRNG = RNG()
     mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, function()
-        StageAPI.ChallengeWaveChanged = false
-        StageAPI.LastChallengeWaveFrame = nil
+        for k, v in pairs(StageAPI.Challenge) do
+            StageAPI.Challenge[k] = nil
+        end
         StageAPI.ChallengeWaveRNG:SetSeed(room:GetSpawnSeed(), 0)
 
         local currentRoom = StageAPI.GetCurrentRoom()
@@ -7280,35 +7284,34 @@ do -- Challenge Rooms
     end)
 
     -- prevent waves of the wrong subtype from appearing
-    StageAPI.CheckingChallengeWaveSubtype = nil
     StageAPI.AddCallback("StageAPI", "POST_CHECK_VALID_ROOM", 0, function(layout)
-        if StageAPI.CheckingChallengeWaveSubtype then
-            if not (layout.SubType == 0 or layout.SubType == StageAPI.CheckingChallengeWaveSubtype) then
+        if StageAPI.Challenge.WaveSubtype then
+            if not (layout.SubType == 0 or layout.SubType == StageAPI.Challenge.WaveSubtype) then
                 return 0
             end
         end
     end)
 
     mod:AddCallback(ModCallbacks.MC_POST_UPDATE, function()
-        if StageAPI.ChallengeWaveSpawnFrame and game:GetFrameCount() > StageAPI.ChallengeWaveSpawnFrame then
-            StageAPI.ChallengeWaveSpawnFrame = nil
+        if StageAPI.Challenge.WaveSpawnFrame and game:GetFrameCount() > StageAPI.Challenge.WaveSpawnFrame then
+            StageAPI.Challenge.WaveSpawnFrame = nil
         end
 
-        if StageAPI.ChallengeWaveChanged then
+        if StageAPI.Challenge.WaveChanged then
             if room:GetType() ~= RoomType.ROOM_CHALLENGE then
-                StageAPI.ChallengeWaveChanged = false
-                StageAPI.CheckingChallengeWaveSubtype = nil
+                StageAPI.Challenge.WaveChanged = false
+                StageAPI.Challenge.WaveSubtype = nil
                 return
             end
 
             if StageAPI.CurrentStage and StageAPI.CurrentStage.ChallengeWaves then
-                StageAPI.ChallengeWaveSpawnFrame = game:GetFrameCount()
+                StageAPI.Challenge.WaveSpawnFrame = game:GetFrameCount()
                 local currentRoom = StageAPI.GetCurrentRoom()
 
                 local challengeWaveIDs
                 if currentRoom then
-                    if not StageAPI.CheckingChallengeWaveSubtype and currentRoom.Layout.SubType ~= 0 then
-                        StageAPI.CheckingChallengeWaveSubtype = currentRoom.Layout.SubType
+                    if not StageAPI.Challenge.WaveSubtype and currentRoom.Layout.SubType ~= 0 then
+                        StageAPI.Challenge.WaveSubtype = currentRoom.Layout.SubType
                     end
 
                     if not currentRoom.Data.ChallengeWaveIDs then
@@ -7327,11 +7330,11 @@ do -- Challenge Rooms
 
                 local wave = StageAPI.ChooseRoomLayout(useWaves.ByShape, seed, room:GetRoomShape(), room:GetType(), false, false, nil, challengeWaveIDs)
                 if currentRoom then
-                    currentRoom.Data.ChallengeWaveIDs[#currentRoom.Data.ChallengeWaveIDs + 1] = wave.StageAPIID
+                    table.insert(currentRoom.Data.ChallengeWaveIDs, wave.StageAPIID)
 
-                    if not StageAPI.CheckingChallengeWaveSubtype
+                    if not StageAPI.Challenge.WaveSubtype
                     and currentRoom.Layout.SubType == 0 and wave.SubType ~= 0 then
-                        StageAPI.CheckingChallengeWaveSubtype = wave.SubType
+                        StageAPI.Challenge.WaveSubtype = wave.SubType
                     end
                 end
 
@@ -7343,13 +7346,13 @@ do -- Challenge Rooms
 
             StageAPI.CallCallbacks("CHALLENGE_WAVE_CHANGED")
 
-            StageAPI.ChallengeWaveChanged = false
+            StageAPI.Challenge.WaveChanged = false
         end
     end)
 end
 
 Isaac.DebugString("[StageAPI] Loading BR Compatibility")
-do -- BR Compatability
+do -- BR Compatibility
     local status, brTestRoom = pcall(require, 'basementrenovator.roomTest')
     if not status then
         StageAPI.Log('Error loading BR compatibility file: ' .. tostring(brTestRoom))
