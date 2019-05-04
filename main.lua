@@ -641,10 +641,10 @@ do -- Core Functions
             StageAPI.Callbacks[id] = {}
         end
 
-        local index = #StageAPI.Callbacks[id] + 1
+        local index = 1
 
         for i, callback in StageAPI.ReverseIterate(StageAPI.Callbacks[id]) do
-            if callback.Priority > priority then
+            if priority > callback.Priority then
                 index = i + 1
                 break
             end
@@ -5854,7 +5854,7 @@ do -- Rock Alt Override
 
     mod:AddCallback(ModCallbacks.MC_POST_PICKUP_UPDATE, function(_, pickup)
         local card = game:GetItemPool():GetCard(StageAPI.PickupChooseRNG:Next(), false, true, true)
-        local spawned = Isaac.Spawn(5, 300, card, pickup.Position, zeroVector, nil)
+        local spawned = Isaac.Spawn(EntityType.ENTITY_PICKUP, PickupVariant.PICKUP_TAROTCARD, card, pickup.Position, zeroVector, nil)
         spawned:Update() -- get the spawned pickup up to speed with the original
         StageAPI.DeleteEntity(pickup)
     end, StageAPI.E.RandomRune.V)
