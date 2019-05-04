@@ -2518,7 +2518,7 @@ do -- RoomsList
         }
     end
 
-    function StageAPI.LoadEntitiesFromEntitySets(entitysets, doGrids, doPersistentOnly, doAutoPersistent, avoidSpawning, persistentPositions)
+    function StageAPI.LoadEntitiesFromEntitySets(entitysets, doGrids, doPersistentOnly, doAutoPersistent, avoidSpawning, persistentPositions, loadingWave)
         local ents_spawned = {}
         local listCallbacks = StageAPI.GetCallbacks("PRE_SPAWN_ENTITY_LIST")
         local entCallbacks = StageAPI.GetCallbacks("PRE_SPAWN_ENTITY")
@@ -2542,7 +2542,7 @@ do -- RoomsList
                     end
 
                     if shouldSpawn and #entityList > 0 then
-                        roomType = room:GetType()
+                        local roomType = room:GetType()
                         for _, entityInfo in ipairs(entityList) do
                             local shouldSpawnEntity = true
 
@@ -2609,7 +2609,7 @@ do -- RoomsList
                                         StageAPI.SetEntityPersistenceData(ent, entityInfo.PersistentIndex, entityInfo.PersistenceData)
                                     end
 
-                                    if roomType ~= RoomType.ROOM_CHALLENGE and ent:CanShutDoors() then
+                                    if not loadingWave and ent:CanShutDoors() then
                                         StageAPI.Room:SetClear(false)
                                     end
 
@@ -2702,7 +2702,7 @@ do -- RoomsList
         return gridInformation
     end
 
-    function StageAPI.LoadRoomLayout(grids, entities, doGrids, doEntities, doPersistentOnly, doAutoPersistent, gridData, avoidSpawning, persistentPositions)
+    function StageAPI.LoadRoomLayout(grids, entities, doGrids, doEntities, doPersistentOnly, doAutoPersistent, gridData, avoidSpawning, persistentPositions, loadingWave)
         local grids_spawned = {}
         local ents_spawned = {}
 
@@ -2711,7 +2711,7 @@ do -- RoomsList
         end
 
         if entities and doEntities then
-            ents_spawned = StageAPI.LoadEntitiesFromEntitySets(entities, doGrids, doPersistentOnly, doAutoPersistent, avoidSpawning, persistentPositions)
+            ents_spawned = StageAPI.LoadEntitiesFromEntitySets(entities, doGrids, doPersistentOnly, doAutoPersistent, avoidSpawning, persistentPositions, loadingWave)
         end
 
         StageAPI.CallGridPostInit()
@@ -7341,7 +7341,7 @@ do -- Challenge Rooms
 
                 local spawnEntities = StageAPI.ObtainSpawnObjects(wave, seed)
                 StageAPI.SpawningChallengeEnemies = true
-                StageAPI.LoadRoomLayout(nil, {spawnEntities}, false, true, false, true)
+                StageAPI.LoadRoomLayout(nil, {spawnEntities}, false, true, false, true, nil, nil, nil, true)
                 StageAPI.SpawningChallengeEnemies = false
             end
 
