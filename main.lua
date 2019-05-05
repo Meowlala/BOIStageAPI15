@@ -5773,8 +5773,12 @@ do -- Rock Alt Override
 
     mod:AddCallback(ModCallbacks.MC_ENTITY_TAKE_DMG, function(_, e, amount, flag, source)
         if flag == 0 and source and source.Type == 0 and not e:GetData().TrueFart then
-            e:GetData().Farted = {amount, source}
-            return false
+            local hasFarts = next(StageAPI.RecentFarts) ~= nil
+
+            if hasFarts then
+                e:GetData().Farted = {amount, source}
+                return false
+            end
         end
     end)
 
@@ -7402,6 +7406,12 @@ do -- Mod Compatibility
     mod:AddCallback(ModCallbacks.MC_POST_GAME_STARTED, function()
         if REVEL and REVEL.AddChangelog and not REVEL.AddedStageAPIChangelogs then
             REVEL.AddedStageAPIChangelogs = true
+
+            REVEL.AddChangelog("StageAPI v1.78", [[-Fixed an issue where "fart damage" was
+cancelled even with none in the room,
+which broke Sharp Plug.
+]])
+
             REVEL.AddChangelog("StageAPI v1.75 - 77", [[-Fixed an issue with nightmare
 jingle not being overridden
 
