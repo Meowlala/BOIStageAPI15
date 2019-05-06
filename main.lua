@@ -7358,6 +7358,8 @@ end
 
 Isaac.DebugString("[StageAPI] Loading BR Compatibility")
 do -- BR Compatibility
+    StageAPI.InTestMode = false
+
     local status, brTestRoom = pcall(require, 'basementrenovator.roomTest')
     if not status then
         StageAPI.Log('Error loading BR compatibility file: ' .. tostring(brTestRoom))
@@ -7368,17 +7370,21 @@ do -- BR Compatibility
 
         BasementRenovator = BasementRenovator or { subscribers = {} }
         BasementRenovator.subscribers['StageAPI'] = {
-            TestStage = function(test)
-                if not BasementRenovator.TestRoomData then return end
-
-                if BasementRenovator.TestRoomData.Type    ~= testLayout.Type
-                or BasementRenovator.TestRoomData.Variant ~= testLayout.Variant
-                or BasementRenovator.TestRoomData.Subtype ~= testLayout.SubType
-                or BasementRenovator.TestRoomData.Name    ~= testLayout.Name then
+            PostTestInit = function(test)
+                if test.Type    ~= testLayout.Type
+                or test.Variant ~= testLayout.Variant
+                or test.Subtype ~= testLayout.SubType
+                or test.Name    ~= testLayout.Name then
                     StageAPI.Log("basementrenovator/roomTest.lua did not have values matching the BR test! Make sure your hooks are set up properly")
+                    StageAPI.BadTestFile = true
                     return
                 end
 
+                StageAPI.InTestMode = true
+                StageAPI.Log("Basement Renovator test mode")
+            end,
+            TestStage = function(test)
+                if StageAPI.BadTestFile or not BasementRenovator.TestRoomData then return end
                 -- TestStage fires in post_curse_eval,
                 -- before StageAPI's normal stage handling code
                 if test.IsModStage then
@@ -7386,13 +7392,14 @@ do -- BR Compatibility
                 end
             end,
             TestRoomEntitySpawn = function()
+                if StageAPI.BadTestFile then return end
                 -- makes sure placeholder/meta entities can't spawn
                 return { 999, StageAPI.E.DeleteMeEffect.V, 0 }
             end
         }
 
         StageAPI.AddCallback("StageAPI", "PRE_STAGEAPI_NEW_ROOM_GENERATION", 0, function()
-            if not BasementRenovator.TestRoomData then return end
+            if StageAPI.BadTestFile or not BasementRenovator.TestRoomData then return end
 
             if BasementRenovator.InTestStage() and BasementRenovator.InTestRoom() then
                 local testRoom = StageAPI.LevelRoom("BRTest", nil, room:GetSpawnSeed(), testLayout.Shape, testLayout.Type, nil, nil, nil, nil, nil, StageAPI.GetCurrentRoomID())
@@ -7628,7 +7635,7 @@ other than a door
 end
 
 Isaac.DebugString("[StageAPI] Fully Loaded, loading dependent mods.")
-StageAPI.MarkLoaded("StageAPI", "1.77", true, true)
+StageAPI.MarkLoaded("StageAPI", "1.78", true, true)
 
 StageAPI.Loaded = true
 if StageAPI.ToCall then
