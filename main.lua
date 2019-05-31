@@ -2575,7 +2575,13 @@ do -- RoomsList
                                         shouldSpawnEntity = ret
                                         break
                                     elseif ret and type(ret) == "table" then
+                                        if ret.Data then
                                         entityInfo = ret
+                                        else
+                                            entityInfo.Data.Type = ret[1]
+                                            entityInfo.Data.Variant = ret[2]
+                                            entityInfo.Data.SubType = ret[3]
+                                        end
                                         break
                                     end
                                 end
