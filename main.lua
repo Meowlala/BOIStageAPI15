@@ -244,7 +244,9 @@ StageAPI Objects:
 - GridGfx()
 -- SetGrid(filename, GridEntityType, variant)
 -- SetRocks(filename)
--- SetPits(filename, altpitsfilename) -- Alt Pits are used where water pits would be.
+-- SetPits(filename, altpitsfilename, hasExtraFrames) -- Alt Pits are used where water pits would be. HasExtraFrames controls for situations where the base game would not normally tile pits specially
+-- OR, with lists of { File, HasExtraFrames }
+-- SetPits(filenames, altpitsfilenames) (see utero override)
 -- SetBridges(filename)
 -- SetDecorations(filename)
 -- AddDoors(filename, DoorInfo)
@@ -2576,7 +2578,7 @@ do -- RoomsList
                                         break
                                     elseif ret and type(ret) == "table" then
                                         if ret.Data then
-                                        entityInfo = ret
+                                            entityInfo = ret
                                         else
                                             entityInfo.Data.Type = ret[1]
                                             entityInfo.Data.Variant = ret[2]
@@ -3970,10 +3972,22 @@ do -- GridGfx
         end
     end
 
-    function StageAPI.GridGfx:SetPits(filename, alt, hasExtraFrames)
-        self.Pits = filename
-        self.AltPits = alt
-        self.HasExtraPitFrames = hasExtraFrames
+    function StageAPI.GridGfx:SetPits(filenames, alts, hasExtraFrames)
+        if type(filenames) == 'string' then
+            filenames = { {
+                File = filenames,
+                HasExtraFrames = hasExtraFrames
+            } }
+        end
+        if type(alts) == 'string' then
+            alts = { {
+                File = alts,
+                HasExtraFrames = hasExtraFrames
+            } }
+        end
+
+        self.PitFiles = filenames
+        self.AltPitFiles = alts
     end
 
     function StageAPI.GridGfx:SetBridges(filename)
@@ -4092,13 +4106,13 @@ do -- GridGfx
 
     StageAPI.PitSprite = Sprite()
     StageAPI.PitSprite:Load("stageapi/pit.anm2", true)
-    function StageAPI.ChangePit(pit, filename, bridgefilename, alt)
+    function StageAPI.ChangePit(pit, pitFile, bridgefilename, alt)
         local grid = pit.Grid
 
         if alt and room:HasWaterPits() then
-            StageAPI.PitSprite:ReplaceSpritesheet(0, alt)
+            StageAPI.PitSprite:ReplaceSpritesheet(0, alt.File)
         else
-            StageAPI.PitSprite:ReplaceSpritesheet(0, filename)
+            StageAPI.PitSprite:ReplaceSpritesheet(0, pitFile.File)
         end
 
         StageAPI.PitSprite:LoadGraphics()
@@ -4352,12 +4366,25 @@ do -- GridGfx
 
     function StageAPI.ChangeGrids(grids)
         StageAPI.GridGfxRNG:SetSeed(room:GetDecorationSeed(), 0)
+
+        if grids.PitFiles then
+            grids.Pits = grids.PitFiles[StageAPI.Random(1, #grids.PitFiles, StageAPI.GridGfxRNG)]
+        end
+        if grids.AltPitFiles then
+            grids.AltPits = grids.AltPitFiles[StageAPI.Random(1, #grids.AltPitFiles, StageAPI.GridGfxRNG)]
+        end
+
+        local pitsToUse = room:HasWaterPits() and grids.AltPits or grids.Pits
+        local hasExtraPitFrames = pitsToUse and pitsToUse.HasExtraPitFrames
+
+        local gridCount = 0
         local pits = {}
         for i = 0, room:GetGridSize() do
-            if not StageAPI.CustomGridIndices[i] then
-                local grid = room:GetGridEntity(i)
-                if grid then
-                    if grids.HasExtraPitFrames and grid.Desc.Type == GridEntityType.GRID_PIT then
+            local grid = room:GetGridEntity(i)
+            if grid then
+                gridCount = gridCount + 1
+                if not StageAPI.CustomGridIndices[i] then
+                    if hasExtraPitFrames and grid.Desc.Type == GridEntityType.GRID_PIT then
                         pits[i] = grid
                     else
                         StageAPI.ChangeSingleGrid(grid, grids, i)
@@ -4366,9 +4393,11 @@ do -- GridGfx
             end
         end
 
+        StageAPI.PreviousGridCount = gridCount
+
         StageAPI.CallGridPostInit()
 
-        if grids.HasExtraPitFrames and next(pits) then
+        if hasExtraPitFrames and next(pits) then
             local width = room:GetGridWidth()
             for index, pit in pairs(pits) do
                 StageAPI.ChangePit({Grid = pit, Index = index}, grids.Pits, grids.Bridges, grids.AltPits)
@@ -5036,7 +5065,10 @@ do -- Definitions
 
     StageAPI.UteroGridGfx = StageAPI.GridGfx()
     StageAPI.UteroGridGfx:SetRocks("gfx/grid/rocks_womb.png")
-    StageAPI.UteroGridGfx:SetPits("gfx/grid/grid_pit_womb.png", "gfx/grid/grid_pit_blood_womb.png")
+    StageAPI.UteroGridGfx:SetPits("gfx/grid/grid_pit_womb.png", {
+        { File = "gfx/grid/grid_pit_blood_womb.png" },
+        { File = "gfx/grid/grid_pit_acid_womb.png" },
+    })
     StageAPI.UteroGridGfx:SetBridges("stageapi/floors/utero/grid_bridge_womb.png")
     StageAPI.UteroGridGfx:SetDecorations("gfx/grid/props_07_the womb.png", "gfx/grid/props_07_the womb.anm2", 43)
 
@@ -5864,6 +5896,7 @@ do -- Rock Alt Override
     end)
 
     mod:AddCallback(ModCallbacks.MC_POST_PICKUP_UPDATE, function(_, pickup)
+        if not pickup:Exists() then return end
         local card = game:GetItemPool():GetCard(StageAPI.PickupChooseRNG:Next(), false, true, true)
         local spawned = Isaac.Spawn(EntityType.ENTITY_PICKUP, PickupVariant.PICKUP_TAROTCARD, card, pickup.Position, zeroVector, nil)
         spawned:Update() -- get the spawned pickup up to speed with the original
@@ -6120,6 +6153,31 @@ do -- Callbacks
         end
     end)
 
+    function StageAPI.CheckStageTrapdoor(grid, index)
+        if not (grid.Desc.Type == GridEntityType.GRID_TRAPDOOR and grid.State == 1) then
+            return
+        end
+
+        local entering = false
+        for _, player in ipairs(players) do
+            local dist = player.Position:DistanceSquared(grid.Position)
+            local size = player.Size + 32
+            if dist < size * size then
+                entering = true
+                break
+            end
+        end
+
+        if not entering then return end
+
+        local currStage = StageAPI.CurrentStage or {}
+        local nextStage = StageAPI.CallCallbacks("PRE_SELECT_NEXT_STAGE", true, StageAPI.CurrentStage) or currStage.NextStage
+        if nextStage and not currStage.OverridingTrapdoors then
+            StageAPI.SpawnCustomTrapdoor(room:GetGridPosition(index), nextStage, nil, 32, true)
+            room:RemoveGridEntity(index, 0, false)
+        end
+    end
+
     StageAPI.Music = MusicManager()
     StageAPI.MusicRNG = RNG()
     mod:AddCallback(ModCallbacks.MC_POST_RENDER, function()
@@ -6140,41 +6198,19 @@ do -- Callbacks
                     pits[#pits + 1] = {grid, i}
                 end
 
-                local nextStage = StageAPI.CallCallbacks("PRE_SELECT_NEXT_STAGE", true, StageAPI.CurrentStage)
-                if ((StageAPI.CurrentStage and StageAPI.CurrentStage.NextStage) or nextStage) and not (StageAPI.CurrentStage and StageAPI.CurrentStage.OverridingTrapdoors) then
-                    if grid.Desc.Type == GridEntityType.GRID_TRAPDOOR and grid.State == 1 then
-                        local entering = false
-                        for _, player in ipairs(players) do
-                            local dist = player.Position:DistanceSquared(grid.Position)
-                            local size = player.Size + 32
-                            if dist < size * size then
-                                entering = true
-                            end
-                        end
-
-                        if entering then
-                            StageAPI.SpawnCustomTrapdoor(room:GetGridPosition(i), nextStage or StageAPI.CurrentStage.NextStage, nil, 32, true)
-                            room:RemoveGridEntity(i, 0, false)
-                        end
-                    end
-                end
+                StageAPI.CheckStageTrapdoor(grid, i)
 
                 gridCount = gridCount + 1
             end
         end
 
         if gridCount ~= StageAPI.PreviousGridCount then
-            local gridCallbacks = StageAPI.GetCallbacks("POST_GRID_UPDATE")
-            for _, callback in ipairs(gridCallbacks) do
-                callback.Function()
-            end
+            local gridCallbacks = StageAPI.CallCallbacks("POST_GRID_UPDATE")
 
             updatedGrids = true
             if StageAPI.RoomGrids[currentListIndex] then
                 StageAPI.StoreRoomGrids()
             end
-
-            StageAPI.PreviousGridCount = gridCount
         end
 
         if sfx:IsPlaying(SoundEffect.SOUND_CASTLEPORTCULLIS) and not (StageAPI.CurrentStage and StageAPI.CurrentStage.BossMusic and StageAPI.CurrentStage.BossMusic.Intro) then
@@ -6182,63 +6218,55 @@ do -- Callbacks
             sfx:Play(StageAPI.S.BossIntro, 1, 0, false, 1)
         end
 
-        if StageAPI.InOverriddenStage() then
-            if StageAPI.CurrentStage then
-                local roomType = room:GetType()
-                local rtype = StageAPI.GetCurrentRoomType()
-                local grids
-                local gridsOverride
-                local callbacks = StageAPI.GetCallbacks("PRE_UPDATE_GRID_GFX")
-                for _, callback in ipairs(callbacks) do
-                    local ret = callback.Function()
-                    if ret then
-                        gridsOverride = ret
+        if StageAPI.InOverriddenStage() and StageAPI.CurrentStage then
+            local roomType = room:GetType()
+            local rtype = StageAPI.GetCurrentRoomType()
+            local grids
+
+            local gridsOverride = StageAPI.CallCallbacks("PRE_UPDATE_GRID_GFX", false)
+
+            if gridsOverride then
+                grids = gridsOverride
+            elseif StageAPI.CurrentStage.RoomGfx and StageAPI.CurrentStage.RoomGfx[rtype] and StageAPI.CurrentStage.RoomGfx[rtype].Grids then
+                grids = StageAPI.CurrentStage.RoomGfx[rtype].Grids
+            end
+
+            if grids then
+                if grids.Bridges then
+                    for _, grid in ipairs(pits) do
+                        StageAPI.CheckBridge(grid[1], grid[2], grids.Bridges)
                     end
                 end
 
-                if not gridsOverride and StageAPI.CurrentStage.RoomGfx and StageAPI.CurrentStage.RoomGfx[rtype] and StageAPI.CurrentStage.RoomGfx[rtype].Grids then
-                    grids = StageAPI.CurrentStage.RoomGfx[rtype].Grids
-                elseif gridsOverride then
-                    grids = gridsOverride
+                if updatedGrids then
+                    StageAPI.ChangeGrids(grids)
+                end
+            end
+
+            local id = StageAPI.Music:GetCurrentMusicID()
+            local musicID, shouldLayer, shouldQueue, disregardNonOverride = StageAPI.CurrentStage:GetPlayingMusic()
+            if musicID then
+                if not shouldQueue then
+                    shouldQueue = musicID
                 end
 
-                if grids then
-                    if grids.Bridges then
-                        for _, grid in ipairs(pits) do
-                            StageAPI.CheckBridge(grid[1], grid[2], grids.Bridges)
-                        end
-                    end
-
-                    if updatedGrids then
-                        StageAPI.ChangeGrids(grids)
-                    end
+                local queuedID = StageAPI.Music:GetQueuedMusicID()
+                local canOverride, canOverrideQueue = StageAPI.CanOverrideMusic(queuedID)
+                if queuedID ~= shouldQueue and (canOverride or canOverrideQueue or disregardNonOverride) then
+                    StageAPI.Music:Queue(shouldQueue)
                 end
 
-                local id = StageAPI.Music:GetCurrentMusicID()
-                local musicID, shouldLayer, shouldQueue, disregardNonOverride = StageAPI.CurrentStage:GetPlayingMusic()
-                if musicID then
-                    if not shouldQueue then
-                        shouldQueue = musicID
-                    end
+                local canOverride = StageAPI.CanOverrideMusic(id)
+                if id ~= musicID and (canOverride or disregardNonOverride) then
+                    StageAPI.Music:Play(musicID, 0)
+                end
 
-                    local queuedID = StageAPI.Music:GetQueuedMusicID()
-                    local canOverride, canOverrideQueue = StageAPI.CanOverrideMusic(queuedID)
-                    if queuedID ~= shouldQueue and (canOverride or canOverrideQueue or disregardNonOverride) then
-                        StageAPI.Music:Queue(shouldQueue)
-                    end
+                StageAPI.Music:UpdateVolume()
 
-                    local canOverride = StageAPI.CanOverrideMusic(id)
-                    if id ~= musicID and (canOverride or disregardNonOverride) then
-                        StageAPI.Music:Play(musicID, 0)
-                    end
-
-                    StageAPI.Music:UpdateVolume()
-
-                    if shouldLayer and not StageAPI.Music:IsLayerEnabled() then
-                        StageAPI.Music:EnableLayer()
-                    elseif not shouldLayer and StageAPI.Music:IsLayerEnabled() then
-                        StageAPI.Music:DisableLayer()
-                    end
+                if shouldLayer and not StageAPI.Music:IsLayerEnabled() then
+                    StageAPI.Music:EnableLayer()
+                elseif not shouldLayer and StageAPI.Music:IsLayerEnabled() then
+                    StageAPI.Music:DisableLayer()
                 end
             end
         end
