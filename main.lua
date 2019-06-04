@@ -7441,12 +7441,20 @@ do -- Mod Compatibility
         if REVEL and REVEL.AddChangelog and not REVEL.AddedStageAPIChangelogs then
             REVEL.AddedStageAPIChangelogs = true
 
-            REVEL.AddChangelog("StageAPI v1.78", [[-Fixed an issue where "fart damage" was
+            REVEL.AddChangelog("StageAPI v1.78 - 79", [[-Fixed an issue where "fart damage" was
 cancelled even with none in the room,
 which broke Sharp Plug.
+
+- StageAPI's PRE_SPAWN_ENTITY is
+compatible with the return value of
+PRE_ROOM_ENTITY_SPAWN
+
+- Allow multiple pit spritesheets
+
+- Improve RNG (?)
 ]])
 
-            REVEL.AddChangelog("StageAPI v1.75 - 77", [[-Fixed an issue with nightmare
+            REVEL.AddChangelog("StageAPI v1.75 - 78", [[-Fixed an issue with nightmare
 jingle not being overridden
 
 -Relocated test room lua, fixing
@@ -7662,7 +7670,7 @@ other than a door
 end
 
 Isaac.DebugString("[StageAPI] Fully Loaded, loading dependent mods.")
-StageAPI.MarkLoaded("StageAPI", "1.78", true, true)
+StageAPI.MarkLoaded("StageAPI", "1.79", true, true)
 
 StageAPI.Loaded = true
 if StageAPI.ToCall then
