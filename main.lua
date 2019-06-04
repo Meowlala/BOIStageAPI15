@@ -4380,10 +4380,9 @@ do -- GridGfx
         local gridCount = 0
         local pits = {}
         for i = 0, room:GetGridSize() do
-            local grid = room:GetGridEntity(i)
-            if grid then
-                gridCount = gridCount + 1
-                if not StageAPI.CustomGridIndices[i] then
+            if not StageAPI.CustomGridIndices[i] then
+                local grid = room:GetGridEntity(i)
+                if grid then
                     if hasExtraPitFrames and grid.Desc.Type == GridEntityType.GRID_PIT then
                         pits[i] = grid
                     else
@@ -4392,8 +4391,6 @@ do -- GridGfx
                 end
             end
         end
-
-        StageAPI.PreviousGridCount = gridCount
 
         StageAPI.CallGridPostInit()
 
@@ -6211,6 +6208,8 @@ do -- Callbacks
             if StageAPI.RoomGrids[currentListIndex] then
                 StageAPI.StoreRoomGrids()
             end
+
+            StageAPI.PreviousGridCount = gridCount
         end
 
         if sfx:IsPlaying(SoundEffect.SOUND_CASTLEPORTCULLIS) and not (StageAPI.CurrentStage and StageAPI.CurrentStage.BossMusic and StageAPI.CurrentStage.BossMusic.Intro) then
@@ -6238,7 +6237,7 @@ do -- Callbacks
                     end
                 end
 
-                if updatedGrids then
+                if not StageAPI.RoomRendered and updatedGrids then
                     StageAPI.ChangeGrids(grids)
                 end
             end
@@ -6269,6 +6268,8 @@ do -- Callbacks
                     StageAPI.Music:DisableLayer()
                 end
             end
+
+            StageAPI.RoomRendered = true
         end
 
         if stype == StageType.STAGETYPE_ORIGINAL and (stage == LevelStage.STAGE4_1 or stage == LevelStage.STAGE4_2) then
@@ -6645,6 +6646,8 @@ do -- Callbacks
                 StageAPI.ChangeShading("_default")
             end
         end
+
+        StageAPI.RoomRendered = false
     end)
 
     function StageAPI.GetGridPosition(index, width)
