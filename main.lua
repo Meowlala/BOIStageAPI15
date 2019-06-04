@@ -3954,9 +3954,11 @@ do -- GridGfx
         end
 
         if v then
-            self.GridsByVariant[t] = {
-                [v] = filename
-            }
+            if not self.GridsByVariant[t] then
+                self.GridsByVariant[t] = {}
+            end
+
+            self.GridsByVariant[t][v] = filename
         else
             self.Grids[t] = filename
         end
