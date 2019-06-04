@@ -537,24 +537,14 @@ do -- Core Functions
 
     StageAPI.RandomRNG = RNG()
     StageAPI.RandomRNG:SetSeed(Random(), 0)
-    function StageAPI.Random(min, max, rng)
+    function StageAPI.Random(a, b, rng)
         rng = rng or StageAPI.RandomRNG
-        if min and max then
-            return math.floor(rng:RandomFloat() * (max - min + 1) + min)
-        elseif min ~= nil then
-            return math.floor(rng:RandomFloat() * (min + 1))
+        if a and b then
+            return rng:Next() % (b - a + 1) + a
+        elseif a then
+            return rng:Next() % a
         end
-        return rng:RandomFloat()
-    end
-
-    function StageAPI.RandomFloat(min, max, rng)
-        rng = rng or StageAPI.RandomRNG
-        if min and max then
-            return (rng:RandomFloat() * (max - min)) + min
-        elseif min ~= nil then
-            return rng:RandomFloat() * min
-        end
-        return rng:RandomFloat()
+        return rng:Next()
     end
 
     function StageAPI.WeightedRNG(args, rng, key, preCalculatedWeight) -- takes tables {{obj, weight}, {"pie", 3}, {555, 0}}
