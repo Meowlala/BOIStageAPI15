@@ -540,9 +540,19 @@ do -- Core Functions
     function StageAPI.Random(a, b, rng)
         rng = rng or StageAPI.RandomRNG
         if a and b then
+            -- TODO remove after Rev update
+            if b - a < 0 then
+                StageAPI.Log('Bad Random Range! ' .. a .. ', ' .. b)
+                return b - a
+            end
             return rng:Next() % (b - a + 1) + a
         elseif a then
-            return rng:Next() % a
+            -- TODO remove after Rev update
+            if a < 0 then
+                StageAPI.Log('Bad Random Max! ' .. a)
+                return a
+            end
+            return rng:Next() % (a + 1)
         end
         return rng:Next()
     end
@@ -4367,7 +4377,7 @@ do -- GridGfx
         end
 
         local pitsToUse = room:HasWaterPits() and grids.AltPits or grids.Pits
-        local hasExtraPitFrames = pitsToUse and pitsToUse.HasExtraPitFrames
+        local hasExtraPitFrames = pitsToUse and pitsToUse.HasExtraFrames
 
         local gridCount = 0
         local pits = {}
@@ -4396,11 +4406,7 @@ do -- GridGfx
                 local adjPits = {}
                 for _, ind in ipairs(adj) do
                     local grid = room:GetGridEntity(ind)
-                    if grid and grid.Desc.Type == GridEntityType.GRID_PIT then
-                        adjPits[#adjPits + 1] = true
-                    else
-                        adjPits[#adjPits + 1] = false
-                    end
+                    adjPits[#adjPits + 1] = not not (grid and grid.Desc.Type == GridEntityType.GRID_PIT)
                 end
 
                 adjPits[#adjPits + 1] = true
