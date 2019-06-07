@@ -6347,6 +6347,17 @@ do -- Callbacks
         end
     end)
 
+    function StageAPI.SetCurrentBossRoomInPlace(bossID, room)
+        local boss = StageAPI.GetBossData(bossID)
+        if not boss then
+            StageAPI.Log("Trying to set boss with invalid ID: " .. tostring(bossID))
+            return
+        end
+
+        room.PersistentData.BossID = bossID
+        StageAPI.CallCallbacks("POST_BOSS_ROOM_INIT", false, room, boss, bossID)
+    end
+
     function StageAPI.SetCurrentBossRoom(bossID, checkEncountered, bosses, hasHorseman, requireRoomTypeBoss, noPlayBossAnim)
         if not bossID then
             bossID = StageAPI.SelectBoss(bosses, hasHorseman)
@@ -6374,7 +6385,10 @@ do -- Callbacks
         StageAPI.SetCurrentRoom(newRoom)
         newRoom:Load()
 
-        if not boss.IsMiniboss then
+        if noPlayBossAnim == nil then
+            noPlayBossAnim = boss.IsMiniboss
+        end
+        if not noPlayBossAnim then
             StageAPI.PlayBossAnimation(boss)
         else
             StageAPI.PlayTextStreak(players[1]:GetName() .. " VS " .. boss.Name)
@@ -7416,6 +7430,7 @@ do -- BR Compatibility
                 end
 
                 StageAPI.InTestMode = true
+                StageAPI.InTestRoom = function() return BasementRenovator.InTestRoom() end
                 StageAPI.Log("Basement Renovator test mode")
             end,
             TestStage = function(test)
