@@ -7449,7 +7449,7 @@ do -- Mod Compatibility
         if REVEL and REVEL.AddChangelog and not REVEL.AddedStageAPIChangelogs then
             REVEL.AddedStageAPIChangelogs = true
 
-            REVEL.AddChangelog("StageAPI v1.78 - 79", [[-Fixed an issue where "fart damage" was
+            REVEL.AddChangelog("StageAPI v1.78 - 80", [[-Fixed an issue where "fart damage" was
 cancelled even with none in the room,
 which broke Sharp Plug.
 
@@ -7678,7 +7678,7 @@ other than a door
 end
 
 Isaac.DebugString("[StageAPI] Fully Loaded, loading dependent mods.")
-StageAPI.MarkLoaded("StageAPI", "1.79", true, true)
+StageAPI.MarkLoaded("StageAPI", "1.80", true, true)
 
 StageAPI.Loaded = true
 if StageAPI.ToCall then
