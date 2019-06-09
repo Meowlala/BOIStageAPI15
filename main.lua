@@ -1879,6 +1879,7 @@ do -- RoomsList
         EntityType.ENTITY_PICKUP,
         EntityType.ENTITY_SLOT,
         EntityType.ENTITY_MOVABLE_TNT,
+        EntityType.ENTITY_SHOPKEEPER,
         EntityType.ENTITY_FIREPLACE,
     }
     StageAPI.AddPersistenceCheck(function(entData)
