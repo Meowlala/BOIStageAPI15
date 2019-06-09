@@ -1874,8 +1874,20 @@ do -- RoomsList
         StageAPI.PersistenceChecks[#StageAPI.PersistenceChecks + 1] = fn
     end
 
+    StageAPI.DynamicPersistentTypes = {
+        EntityType.ENTITY_BOMBDROP,
+        EntityType.ENTITY_PICKUP,
+        EntityType.ENTITY_SLOT,
+        EntityType.ENTITY_MOVABLE_TNT,
+        EntityType.ENTITY_FIREPLACE,
+    }
     StageAPI.AddPersistenceCheck(function(entData)
-        if entData.Type == EntityType.ENTITY_BOMBDROP or entData.Type == EntityType.ENTITY_PICKUP or entData.Type == EntityType.ENTITY_SLOT or entData.Type == EntityType.ENTITY_FIREPLACE then
+        local isDynamicPersistent = false
+        for _, type in ipairs(StageAPI.DynamicPersistentTypes) do
+            isDynamicPersistent = entData.Type == type
+            if isDynamicPersistent then break end
+        end
+        if isDynamicPersistent then
             return {
                 AutoPersists = true,
                 UpdatePosition = true,
