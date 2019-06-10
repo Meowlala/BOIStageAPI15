@@ -29,4 +29,5 @@
 	<entity Metadata="1" Group="StageAPI Utilities" ID="900" Image="stageapi/bridge_failsafe.png" Kind="Stage" Name="Bridge Failsafe" Subtype="0" Variant="25" />
 	<!--<entity Metadata="1" Group="StageAPI Utilities" ID="900" Image="stageapi/detonate_trigger.png" Kind="Stage" Name="Detonator Trigger" Subtype="0" Variant="26" />!-->
 	<entity Metadata="1" Group="StageAPI Utilities" ID="900" Image="stageapi/door_locker.png" Kind="Stage" Name="Door Locker" Subtype="0" Variant="27" />
+	<entity Metadata="1" Group="StageAPI Utilities" ID="900" Image="stageapi/grid_destroyer.png" Kind="Stage" Name="Grid Destroyer" Subtype="0" Variant="28" />
 </data>

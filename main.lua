@@ -2098,6 +2098,9 @@ do -- RoomsList
             }]]
             [27] = {
                 Name = "DoorLocker"
+            },
+            [28] = {
+                Name = "GridDestroyer"
             }
         }
     }
@@ -7192,6 +7195,19 @@ do
                                     room:GetGridEntity(index):ToPit():MakeBridge()
                                     break
                                 end
+                            end
+                        end
+                    end
+                end
+
+                if metadataSet["GridDestroyer"] then
+                    if currentRoom:WasIndexTriggered(index, 100) then
+                        local grid = room:GetGridEntity(index)
+                        if grid and room:GetGridCollision(index) ~= 0 then
+                            if grid:ToRock() then
+                                grid:Destroy()
+                            elseif grid:ToPit() then
+                                grid:ToPit():MakeBridge()
                             end
                         end
                     end
