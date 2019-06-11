@@ -1779,10 +1779,18 @@ do -- RoomsList
             rtype = rtype or room:GetType()
         end
 
-        local possibleRooms = roomList[shape]
+        local possibleRooms
+        if shape == -1 then
+            possibleRooms = roomList.All
+        else
+            possibleRooms = roomList.ByShape[shape]
+        end
+
         local totalWeight = 0
         if possibleRooms then
             for _, layout in ipairs(possibleRooms) do
+                shape = layout.Shape
+
                 local isValid = true
 
                 local numNonExistingDoors = 0
@@ -1822,10 +1830,12 @@ do -- RoomsList
                     end
                 end
 
-                local originalWeight = weight
-                weight = weight * 2 ^ numNonExistingDoors
-                if shape == RoomShape.ROOMSHAPE_1x1 and numNonExistingDoors > 0 then
-                    weight = weight + math.min(originalWeight * 4, 4)
+                if StageAPI.CurrentlyInitializing and not StageAPI.CurrentlyInitializing.IsExtraRoom then
+                    local originalWeight = weight
+                    weight = weight * 2 ^ numNonExistingDoors
+                    if shape == RoomShape.ROOMSHAPE_1x1 and numNonExistingDoors > 0 then
+                        weight = weight + math.min(originalWeight * 4, 4)
+                    end
                 end
 
                 if isValid then
@@ -2812,6 +2822,7 @@ do -- RoomsList
             self.Data = {}
             self.PersistentData = {}
 
+            self.IsExtraRoom = isExtraRoom
             self.LevelIndex = levelIndex
             self.Doors = doors
             self.Shape = shape
@@ -2839,10 +2850,15 @@ do -- RoomsList
             if not layout then
                 roomsList = StageAPI.CallCallbacks("PRE_ROOMS_LIST_USE", true, self) or roomsList
                 self.RoomsListName = roomsList.Name
-                layout = StageAPI.ChooseRoomLayout(roomsList.ByShape, seed, shape, roomType, requireRoomType, ignoreDoors, self.Doors)
+                layout = StageAPI.ChooseRoomLayout(roomsList, seed, shape, roomType, requireRoomType, ignoreDoors, self.Doors)
             end
 
             self.Layout = layout
+
+            if shape == -1 then
+                self.Shape = self.Layout.Shape
+            end
+
             Isaac.DebugString("[StageAPI] Initialized room " .. self.Layout.Name .. "." .. tostring(self.Layout.Variant) .. " from file " .. tostring(self.Layout.RoomFilename)
                                 .. (roomsList and (' from list ' .. roomsList.Name) or ''))
             self:PostGetLayout(seed)
@@ -3306,7 +3322,7 @@ do -- RoomsList
                 if retLayout then
                     layout = retLayout
                 else
-                    layout = StageAPI.ChooseRoomLayout(roomsList.ByShape, self.Seed, self.Shape, self.RoomType, self.RequireRoomType, false, self.Doors)
+                    layout = StageAPI.ChooseRoomLayout(roomsList, self.Seed, self.Shape, self.RoomType, self.RequireRoomType, false, self.Doors)
                 end
             end
         end
@@ -3635,11 +3651,13 @@ do -- Extra Rooms
     StageAPI.TransitioningFromTo = nil
     StageAPI.TransitionExitSlot = nil
     StageAPI.TransitionToExtra = nil
-    function StageAPI.TransitionToExtraRoom(name, exitSlot)
+    StageAPI.SkipExtraRoomTransition = nil
+    function StageAPI.TransitionToExtraRoom(name, exitSlot, skipTransition)
         StageAPI.TransitionTimer = 0
         StageAPI.TransitioningTo = name
         StageAPI.TransitionExitSlot = exitSlot
         StageAPI.TransitionToExtra = true
+        StageAPI.SkipExtraRoomTransition = skipTransition
     end
 
     function StageAPI.TransitionFromExtraRoom(toIndex, exitSlot)
@@ -3676,7 +3694,7 @@ do -- Extra Rooms
             StageAPI.StoredExtraRoomThisPause = false
             if StageAPI.TransitioningTo or StageAPI.TransitioningFromTo then
                 StageAPI.TransitionTimer = StageAPI.TransitionTimer + 1
-                if StageAPI.TransitionTimer == StageAPI.TransitionFadeTime then
+                if StageAPI.TransitionTimer == StageAPI.TransitionFadeTime or StageAPI.SkipExtraRoomTransition then
                     if StageAPI.CurrentExtraRoom then
                         StageAPI.CurrentExtraRoom:SaveGridInformation()
                         StageAPI.CurrentExtraRoom:SavePersistentEntities()
@@ -3706,9 +3724,10 @@ do -- Extra Rooms
                 end
             elseif StageAPI.TransitionTimer then
                 StageAPI.TransitionTimer = StageAPI.TransitionTimer - 1
-                if StageAPI.TransitionTimer <= 0 then
+                if StageAPI.TransitionTimer <= 0 or StageAPI.SkipExtraRoomTransition then
                     StageAPI.TransitionTimer = nil
                     StageAPI.TransitionToExtra = nil
+                    StageAPI.SkipExtraRoomTransition = nil
                 end
             end
         elseif StageAPI.LoadedExtraRoom and not StageAPI.StoredExtraRoomThisPause then
@@ -5342,7 +5361,8 @@ do -- Bosses
 
     StageAPI.BossSprite = Sprite()
     StageAPI.BossSprite:Load("gfx/ui/boss/versusscreen.anm2", false)
-    function StageAPI.PlayBossAnimationManual(portrait, name, spot, playerPortrait, playerName, playerSpot, portraitTwo)
+    StageAPI.UnskippableBossAnim = nil
+    function StageAPI.PlayBossAnimationManual(portrait, name, spot, playerPortrait, playerName, playerSpot, portraitTwo, unskippable)
         spot = spot or "gfx/ui/boss/bossspot.png"
         name = name or "gfx/ui/boss/bossname_20.0_monstro.png"
         portrait = portrait or "gfx/ui/boss/portrait_20.0_monstro.png"
@@ -5365,6 +5385,7 @@ do -- Bosses
         end
 
         StageAPI.BossSprite:LoadGraphics()
+        StageAPI.UnskippableBossAnim = unskippable
     end
 
     StageAPI.IsOddRenderFrame = nil
@@ -5373,7 +5394,7 @@ do -- Bosses
         StageAPI.IsOddRenderFrame = not StageAPI.IsOddRenderFrame
         local isPlaying = StageAPI.BossSprite:IsPlaying("Scene") or StageAPI.BossSprite:IsPlaying("DoubleTrouble")
 
-        if game:IsPaused() and isPlaying and not menuConfirmTriggered then
+        if isPlaying and ((game:IsPaused() and not menuConfirmTriggered) or StageAPI.UnskippableBossAnim) then
             if StageAPI.IsOddRenderFrame then
                 StageAPI.BossSprite:Update()
             end
@@ -5381,6 +5402,10 @@ do -- Bosses
             StageAPI.BossSprite:Render(StageAPI.GetScreenCenterPosition(), zeroVector, zeroVector)
         elseif isPlaying then
             StageAPI.BossSprite:Stop()
+        end
+
+        if not isPlaying then
+            StageAPI.UnskippableBossAnim = nil
         end
 
         menuConfirmTriggered = nil
@@ -5403,10 +5428,10 @@ do -- Bosses
     end
 
     StageAPI.DummyBoss = {}
-    function StageAPI.PlayBossAnimation(boss)
+    function StageAPI.PlayBossAnimation(boss, unskippable)
         local bSpot, pSpot = StageAPI.GetStageSpot()
         local playerPortrait, playerName = StageAPI.TryGetPlayerGraphicsInfo(StageAPI.Players[1])
-        StageAPI.PlayBossAnimationManual(boss.Portrait, boss.Bossname, boss.Spot or bSpot, playerPortrait, playerName, pSpot, boss.PortraitTwo)
+        StageAPI.PlayBossAnimationManual(boss.Portrait, boss.Bossname, boss.Spot or bSpot, playerPortrait, playerName, pSpot, boss.PortraitTwo, unskippable)
     end
 
     local horsemanTypes = {
@@ -6374,7 +6399,7 @@ do -- Callbacks
         StageAPI.CallCallbacks("POST_BOSS_ROOM_INIT", false, room, boss, bossID)
     end
 
-    function StageAPI.SetCurrentBossRoom(bossID, checkEncountered, bosses, hasHorseman, requireRoomTypeBoss, noPlayBossAnim)
+    function StageAPI.GenerateBossRoom(bossID, checkEncountered, bosses, hasHorseman, requireRoomTypeBoss, noPlayBossAnim, unskippableBossAnim, isExtraRoom, shape)
         if not bossID then
             bossID = StageAPI.SelectBoss(bosses, hasHorseman)
         elseif checkEncountered then
@@ -6395,20 +6420,27 @@ do -- Callbacks
         end
 
         local levelIndex = StageAPI.GetCurrentRoomID()
-        local newRoom = StageAPI.LevelRoom(nil, boss.Rooms, nil, nil, nil, nil, nil, requireRoomTypeBoss, nil, nil, levelIndex)
+        local newRoom = StageAPI.LevelRoom(nil, boss.Rooms, nil, shape, nil, isExtraRoom, nil, requireRoomTypeBoss, nil, nil, levelIndex)
         newRoom.PersistentData.BossID = bossID
         StageAPI.CallCallbacks("POST_BOSS_ROOM_INIT", false, newRoom, boss, bossID)
-        StageAPI.SetCurrentRoom(newRoom)
-        newRoom:Load()
 
         if noPlayBossAnim == nil then
             noPlayBossAnim = boss.IsMiniboss
         end
+
         if not noPlayBossAnim then
-            StageAPI.PlayBossAnimation(boss)
+            StageAPI.PlayBossAnimation(boss, unskippableBossAnim)
         else
             StageAPI.PlayTextStreak(players[1]:GetName() .. " VS " .. boss.Name)
         end
+
+        return newRoom, boss
+    end
+
+    function StageAPI.SetCurrentBossRoom(bossID, checkEncountered, bosses, hasHorseman, requireRoomTypeBoss, noPlayBossAnim)
+        local newRoom, boss = StageAPI.GenerateBossRoom(bossID, checkEncountered, bosses, hasHorseman, requireRoomTypeBoss, noPlayBossAnim)
+        StageAPI.SetCurrentRoom(newRoom)
+        newRoom:Load()
 
         return newRoom, boss
     end
@@ -7411,7 +7443,7 @@ do -- Challenge Rooms
                     useWaves = StageAPI.CurrentStage.ChallengeWaves.Boss
                 end
 
-                local wave = StageAPI.ChooseRoomLayout(useWaves.ByShape, seed, room:GetRoomShape(), room:GetType(), false, false, nil, challengeWaveIDs)
+                local wave = StageAPI.ChooseRoomLayout(useWaves, seed, room:GetRoomShape(), room:GetType(), false, false, nil, challengeWaveIDs)
                 if currentRoom then
                     table.insert(currentRoom.Data.ChallengeWaveIDs, wave.StageAPIID)
 
