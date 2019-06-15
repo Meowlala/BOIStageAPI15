@@ -5076,6 +5076,10 @@ do -- Custom Stage
 
     end
 
+    function StageAPI.CustomStage:GetDisplayName()
+        return self.DisplayName or self.Name
+    end
+
     function StageAPI.CustomStage:SetDisplayName(name)
         self.DisplayName = name or self.DisplayName or self.Name
     end
@@ -5271,17 +5275,18 @@ do -- Custom Stage
         self.TransitionIcon = icon
     end
 
+    function StageAPI.IsSameStage(base, comp, noAlias)
+        if not base then return false end
+
+        return base.Name == comp.Name or (not noAlias and base.Alias == comp.Alias)
+    end
+
     function StageAPI.CustomStage:IsStage(noAlias)
-        if StageAPI.CurrentStage then
-            local matches = StageAPI.CurrentStage.Name == self.Name
-            if not matches and not noAlias then
-                matches = StageAPI.CurrentStage.Alias == self.Alias
-            end
+        return StageAPI.IsSameStage(StageAPI.CurrentStage, self, noAlias)
+    end
 
-            return matches
-        end
-
-        return false
+    function StageAPI.CustomStage:IsNextStage(noAlias)
+        return StageAPI.IsSameStage(StageAPI.NextStage, self, noAlias)
     end
 
     function StageAPI.CustomStage:SetRequireRoomTypeMatching()
@@ -5512,9 +5517,13 @@ do -- Definitions
         return StageAPI.CurrentStage
     end
 
+    function StageAPI.GetNextStage()
+        return StageAPI.NextStage
+    end
+
     function StageAPI.GetCurrentStageDisplayName()
         if StageAPI.CurrentStage then
-            return StageAPI.CurrentStage.DisplayName or StageAPI.CurrentStage.Name
+            return StageAPI.CurrentStage:GetDisplayName()
         end
     end
 
@@ -5881,7 +5890,7 @@ do -- Transition
         elseif StageAPI.TransitionIsPlaying then -- Finished transition
             StageAPI.TransitionIsPlaying = false
             if StageAPI.CurrentStage then
-                local name = StageAPI.CurrentStage.DisplayName or StageAPI.CurrentStage.Name
+                local name = StageAPI.CurrentStage:GetDisplayName()
                 StageAPI.PlayTextStreak(name)
             end
         end
