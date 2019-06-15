@@ -3684,6 +3684,7 @@ do -- Extra Rooms
     StageAPI.RoomShapeToGotoID = {
         [RoomShape.ROOMSHAPE_1x1] = {
             Barren = "4550",
+            Boss = "1010",
             Stage = {
                 {
                     Stages = {LevelStage.STAGE1_1, LevelStage.STAGE1_2, LevelStage.STAGE2_1, LevelStage.STAGE2_2, LevelStage.STAGE3_1, LevelStage.STAGE3_2, LevelStage.STAGE4_1, LevelStage.STAGE4_2, LevelStage.STAGE5, LevelStage.STAGE6, LevelStage.STAGE7},
@@ -3694,6 +3695,7 @@ do -- Extra Rooms
         },
         [RoomShape.ROOMSHAPE_IH] = {
             Barren = "4551",
+            Boss = "1077",
             Stage = {
                 {
                     Stages = {LevelStage.STAGE1_1, LevelStage.STAGE1_2, LevelStage.STAGE7},
@@ -3714,6 +3716,7 @@ do -- Extra Rooms
         },
         [RoomShape.ROOMSHAPE_IV] = {
             Barren = "4552",
+            Boss = "1078",
             Stage = {
                 {
                     Stages = {LevelStage.STAGE1_1, LevelStage.STAGE1_2, LevelStage.STAGE7},
@@ -3734,6 +3737,7 @@ do -- Extra Rooms
         },
         [RoomShape.ROOMSHAPE_1x2] = {
             Barren = "4553",
+            Boss = "3702",
             Stage = {
                 {
                     Stages = {LevelStage.STAGE1_1, LevelStage.STAGE1_2, LevelStage.STAGE7},
@@ -3769,6 +3773,7 @@ do -- Extra Rooms
         },
         [RoomShape.ROOMSHAPE_IIV] = {
             Barren = "4554",
+            Boss = "4554",
             Stage = {
                 {
                     Stages = {LevelStage.STAGE1_1, LevelStage.STAGE1_2, LevelStage.STAGE7},
@@ -3789,6 +3794,7 @@ do -- Extra Rooms
         },
         [RoomShape.ROOMSHAPE_2x1] = {
             Barren = "4555",
+            Boss = "3700",
             Stage = {
                 {
                     Stages = {LevelStage.STAGE1_1, LevelStage.STAGE1_2, LevelStage.STAGE7},
@@ -3824,6 +3830,7 @@ do -- Extra Rooms
         },
         [RoomShape.ROOMSHAPE_IIH] = {
             Barren = "4556",
+            Boss = "4556",
             Stage = {
                 {
                     Stages = {LevelStage.STAGE1_1, LevelStage.STAGE1_2, LevelStage.STAGE7},
@@ -3844,6 +3851,7 @@ do -- Extra Rooms
         },
         [RoomShape.ROOMSHAPE_2x2] = {
             Barren = "4557",
+            Boss = "3414",
             Stage = {
                 {
                     Stages = {LevelStage.STAGE1_1, LevelStage.STAGE1_2, LevelStage.STAGE7},
@@ -3874,6 +3882,7 @@ do -- Extra Rooms
         },
         [RoomShape.ROOMSHAPE_LTL] = {
             Barren = "4558",
+            Boss = "4558",
             Stage = {
                 {
                     Stages = {LevelStage.STAGE1_1, LevelStage.STAGE1_2, LevelStage.STAGE7},
@@ -3899,6 +3908,7 @@ do -- Extra Rooms
         },
         [RoomShape.ROOMSHAPE_LTR] = {
             Barren = "4559",
+            Boss = "4559",
             Stage = {
                 {
                     Stages = {LevelStage.STAGE1_1, LevelStage.STAGE1_2, LevelStage.STAGE7},
@@ -3924,6 +3934,7 @@ do -- Extra Rooms
         },
         [RoomShape.ROOMSHAPE_LBL] = {
             Barren = "4560",
+            Boss = "4560",
             Stage = {
                 {
                     Stages = {LevelStage.STAGE1_1, LevelStage.STAGE1_2, LevelStage.STAGE7},
@@ -3944,6 +3955,7 @@ do -- Extra Rooms
         },
         [RoomShape.ROOMSHAPE_LBR] = {
             Barren = "4561",
+            Boss = "4561",
             Stage = {
                 {
                     Stages = {LevelStage.STAGE1_1, LevelStage.STAGE1_2, LevelStage.STAGE7},
@@ -4020,6 +4032,9 @@ do -- Extra Rooms
                         elseif StageAPI.ExtraRoomBaseType == "Stage" then
                             local id = StageAPI.GetGotoIDForStage(extraRoom.Shape, level:GetStage(), level:GetStageType())
                             Isaac.ExecuteCommand("goto d." .. id)
+                        elseif StageAPI.ExtraRoomBaseType == "Boss" then
+                            local id = StageAPI.RoomShapeToGotoID[extraRoom.Shape].Boss
+                            Isaac.ExecuteCommand("goto s.boss." .. id)
                         end
                     elseif StageAPI.TransitioningFromTo then
                         StageAPI.InExtraRoom = nil
@@ -6748,7 +6763,7 @@ do -- Callbacks
 
         if not noPlayBossAnim then
             StageAPI.PlayBossAnimation(boss, unskippableBossAnim)
-        else
+        elseif noPlayBossAnim ~= 2 then
             StageAPI.PlayTextStreak(players[1]:GetName() .. " VS " .. boss.Name)
         end
 
