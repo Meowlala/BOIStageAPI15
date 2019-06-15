@@ -3664,12 +3664,14 @@ do -- Extra Rooms
     StageAPI.TransitionExitSlot = nil
     StageAPI.TransitionToExtra = nil
     StageAPI.SkipExtraRoomTransition = nil
-    function StageAPI.TransitionToExtraRoom(name, exitSlot, skipTransition)
+    StageAPI.ExtraRoomBaseType = "Barren"
+    function StageAPI.TransitionToExtraRoom(name, exitSlot, skipTransition, extraRoomBaseType)
         StageAPI.TransitionTimer = 0
         StageAPI.TransitioningTo = name
         StageAPI.TransitionExitSlot = exitSlot
         StageAPI.TransitionToExtra = true
         StageAPI.SkipExtraRoomTransition = skipTransition
+        StageAPI.ExtraRoomBaseType = extraRoomBaseType or "Barren"
     end
 
     function StageAPI.TransitionFromExtraRoom(toIndex, exitSlot)
@@ -3680,19 +3682,308 @@ do -- Extra Rooms
     end
 
     StageAPI.RoomShapeToGotoID = {
-        [RoomShape.ROOMSHAPE_1x1] = "4550",
-        [RoomShape.ROOMSHAPE_IH] = "4551",
-        [RoomShape.ROOMSHAPE_IV] = "4552",
-        [RoomShape.ROOMSHAPE_1x2] = "4553",
-        [RoomShape.ROOMSHAPE_IIV] = "4554",
-        [RoomShape.ROOMSHAPE_2x1] = "4555",
-        [RoomShape.ROOMSHAPE_IIH] = "4556",
-        [RoomShape.ROOMSHAPE_2x2] = "4557",
-        [RoomShape.ROOMSHAPE_LTL] = "4558",
-        [RoomShape.ROOMSHAPE_LTR] = "4559",
-        [RoomShape.ROOMSHAPE_LBL] = "4560",
-        [RoomShape.ROOMSHAPE_LBR] = "4561"
+        [RoomShape.ROOMSHAPE_1x1] = {
+            Barren = "4550",
+            Stage = {
+                {
+                    Stages = {LevelStage.STAGE1_1, LevelStage.STAGE1_2, LevelStage.STAGE2_1, LevelStage.STAGE2_2, LevelStage.STAGE3_1, LevelStage.STAGE3_2, LevelStage.STAGE4_1, LevelStage.STAGE4_2, LevelStage.STAGE5, LevelStage.STAGE6, LevelStage.STAGE7},
+                    StageTypes = {StageType.STAGETYPE_ORIGINAL, StageType.STAGETYPE_WOTL, StageType.STAGETYPE_AFTERBIRTH},
+                    ID = "0"
+                }
+            }
+        },
+        [RoomShape.ROOMSHAPE_IH] = {
+            Barren = "4551",
+            Stage = {
+                {
+                    Stages = {LevelStage.STAGE1_1, LevelStage.STAGE1_2, LevelStage.STAGE7},
+                    StageTypes = {StageType.STAGETYPE_ORIGINAL, StageType.STAGETYPE_WOTL, StageType.STAGETYPE_AFTERBIRTH},
+                    ID = "569"
+                },
+                {
+                    Stages = {LevelStage.STAGE2_1, LevelStage.STAGE2_2, LevelStage.STAGE3_1, LevelStage.STAGE3_2, LevelStage.STAGE4_1, LevelStage.STAGE4_2},
+                    StageTypes = {StageType.STAGETYPE_ORIGINAL, StageType.STAGETYPE_WOTL, StageType.STAGETYPE_AFTERBIRTH},
+                    ID = "616"
+                },
+                {
+                    Stages = {LevelStage.STAGE5, LevelStage.STAGE6},
+                    StageTypes = {StageType.STAGETYPE_ORIGINAL, StageType.STAGETYPE_WOTL, StageType.STAGETYPE_AFTERBIRTH},
+                    ID = "254"
+                }
+            }
+        },
+        [RoomShape.ROOMSHAPE_IV] = {
+            Barren = "4552",
+            Stage = {
+                {
+                    Stages = {LevelStage.STAGE1_1, LevelStage.STAGE1_2, LevelStage.STAGE7},
+                    StageTypes = {StageType.STAGETYPE_ORIGINAL, StageType.STAGETYPE_WOTL, StageType.STAGETYPE_AFTERBIRTH},
+                    ID = "578"
+                },
+                {
+                    Stages = {LevelStage.STAGE2_1, LevelStage.STAGE2_2, LevelStage.STAGE3_1, LevelStage.STAGE3_2, LevelStage.STAGE4_1, LevelStage.STAGE4_2},
+                    StageTypes = {StageType.STAGETYPE_ORIGINAL, StageType.STAGETYPE_WOTL, StageType.STAGETYPE_AFTERBIRTH},
+                    ID = "638"
+                },
+                {
+                    Stages = {LevelStage.STAGE5, LevelStage.STAGE6},
+                    StageTypes = {StageType.STAGETYPE_ORIGINAL, StageType.STAGETYPE_WOTL, StageType.STAGETYPE_AFTERBIRTH},
+                    ID = "270"
+                }
+            }
+        },
+        [RoomShape.ROOMSHAPE_1x2] = {
+            Barren = "4553",
+            Stage = {
+                {
+                    Stages = {LevelStage.STAGE1_1, LevelStage.STAGE1_2, LevelStage.STAGE7},
+                    StageTypes = {StageType.STAGETYPE_ORIGINAL, StageType.STAGETYPE_WOTL, StageType.STAGETYPE_AFTERBIRTH},
+                    ID = "780"
+                },
+                {
+                    Stages = {LevelStage.STAGE2_1, LevelStage.STAGE2_2},
+                    StageTypes = {StageType.STAGETYPE_ORIGINAL, StageType.STAGETYPE_WOTL, StageType.STAGETYPE_AFTERBIRTH},
+                    ID = "863"
+                },
+                {
+                    Stages = {LevelStage.STAGE3_1, LevelStage.STAGE3_2},
+                    StageTypes = {StageType.STAGETYPE_ORIGINAL, StageType.STAGETYPE_WOTL, StageType.STAGETYPE_AFTERBIRTH},
+                    ID = "775"
+                },
+                {
+                    Stages = {LevelStage.STAGE4_1, LevelStage.STAGE4_2},
+                    StageTypes = {StageType.STAGETYPE_ORIGINAL, StageType.STAGETYPE_WOTL, StageType.STAGETYPE_AFTERBIRTH},
+                    ID = "797"
+                },
+                {
+                    Stages = {LevelStage.STAGE5},
+                    StageTypes = {StageType.STAGETYPE_ORIGINAL, StageType.STAGETYPE_WOTL, StageType.STAGETYPE_AFTERBIRTH},
+                    ID = "346"
+                },
+                {
+                    Stages = {LevelStage.STAGE6},
+                    StageTypes = {StageType.STAGETYPE_ORIGINAL, StageType.STAGETYPE_WOTL, StageType.STAGETYPE_AFTERBIRTH},
+                    ID = "318"
+                }
+            }
+        },
+        [RoomShape.ROOMSHAPE_IIV] = {
+            Barren = "4554",
+            Stage = {
+                {
+                    Stages = {LevelStage.STAGE1_1, LevelStage.STAGE1_2, LevelStage.STAGE7},
+                    StageTypes = {StageType.STAGETYPE_ORIGINAL, StageType.STAGETYPE_WOTL, StageType.STAGETYPE_AFTERBIRTH},
+                    ID = "700"
+                },
+                {
+                    Stages = {LevelStage.STAGE2_1, LevelStage.STAGE2_2, LevelStage.STAGE3_1, LevelStage.STAGE3_2, LevelStage.STAGE4_1, LevelStage.STAGE4_2},
+                    StageTypes = {StageType.STAGETYPE_ORIGINAL, StageType.STAGETYPE_WOTL, StageType.STAGETYPE_AFTERBIRTH},
+                    ID = "654"
+                },
+                {
+                    Stages = {LevelStage.STAGE5, LevelStage.STAGE6},
+                    StageTypes = {StageType.STAGETYPE_ORIGINAL, StageType.STAGETYPE_WOTL, StageType.STAGETYPE_AFTERBIRTH},
+                    ID = "306"
+                }
+            }
+        },
+        [RoomShape.ROOMSHAPE_2x1] = {
+            Barren = "4555",
+            Stage = {
+                {
+                    Stages = {LevelStage.STAGE1_1, LevelStage.STAGE1_2, LevelStage.STAGE7},
+                    StageTypes = {StageType.STAGETYPE_ORIGINAL, StageType.STAGETYPE_WOTL, StageType.STAGETYPE_AFTERBIRTH},
+                    ID = "785"
+                },
+                {
+                    Stages = {LevelStage.STAGE2_1, LevelStage.STAGE2_2, LevelStage.STAGE3_1, LevelStage.STAGE3_2},
+                    StageTypes = {StageType.STAGETYPE_ORIGINAL, StageType.STAGETYPE_WOTL, StageType.STAGETYPE_AFTERBIRTH},
+                    ID = "729"
+                },
+                {
+                    Stages = {LevelStage.STAGE4_1, LevelStage.STAGE4_2},
+                    StageTypes = {StageType.STAGETYPE_ORIGINAL, StageType.STAGETYPE_WOTL, StageType.STAGETYPE_AFTERBIRTH},
+                    ID = "733"
+                },
+                {
+                    Stages = {LevelStage.STAGE5},
+                    StageTypes = {StageType.STAGETYPE_ORIGINAL},
+                    ID = "180"
+                },
+                {
+                    Stages = {LevelStage.STAGE5},
+                    StageTypes = {StageType.STAGETYPE_WOTL},
+                    ID = "145"
+                },
+                {
+                    Stages = {LevelStage.STAGE6},
+                    StageTypes = {StageType.STAGETYPE_ORIGINAL, StageType.STAGETYPE_WOTL, StageType.STAGETYPE_AFTERBIRTH},
+                    ID = "58"
+                }
+            }
+        },
+        [RoomShape.ROOMSHAPE_IIH] = {
+            Barren = "4556",
+            Stage = {
+                {
+                    Stages = {LevelStage.STAGE1_1, LevelStage.STAGE1_2, LevelStage.STAGE7},
+                    StageTypes = {StageType.STAGETYPE_ORIGINAL, StageType.STAGETYPE_WOTL, StageType.STAGETYPE_AFTERBIRTH},
+                    ID = "712"
+                },
+                {
+                    Stages = {LevelStage.STAGE2_1, LevelStage.STAGE2_2, LevelStage.STAGE3_1, LevelStage.STAGE3_2, LevelStage.STAGE4_1, LevelStage.STAGE4_2},
+                    StageTypes = {StageType.STAGETYPE_ORIGINAL, StageType.STAGETYPE_WOTL, StageType.STAGETYPE_AFTERBIRTH},
+                    ID = "669"
+                },
+                {
+                    Stages = {LevelStage.STAGE5, LevelStage.STAGE6},
+                    StageTypes = {StageType.STAGETYPE_ORIGINAL, StageType.STAGETYPE_WOTL, StageType.STAGETYPE_AFTERBIRTH},
+                    ID = "310"
+                }
+            }
+        },
+        [RoomShape.ROOMSHAPE_2x2] = {
+            Barren = "4557",
+            Stage = {
+                {
+                    Stages = {LevelStage.STAGE1_1, LevelStage.STAGE1_2, LevelStage.STAGE7},
+                    StageTypes = {StageType.STAGETYPE_ORIGINAL, StageType.STAGETYPE_WOTL, StageType.STAGETYPE_AFTERBIRTH},
+                    ID = "774"
+                },
+                {
+                    Stages = {LevelStage.STAGE2_1, LevelStage.STAGE2_2, LevelStage.STAGE3_1, LevelStage.STAGE3_2, LevelStage.STAGE4_1, LevelStage.STAGE4_2},
+                    StageTypes = {StageType.STAGETYPE_ORIGINAL, StageType.STAGETYPE_WOTL, StageType.STAGETYPE_AFTERBIRTH},
+                    ID = "730"
+                },
+                {
+                    Stages = {LevelStage.STAGE5},
+                    StageTypes = {StageType.STAGETYPE_ORIGINAL},
+                    ID = "223"
+                },
+                {
+                    Stages = {LevelStage.STAGE5},
+                    StageTypes = {StageType.STAGETYPE_WOTL},
+                    ID = "172"
+                },
+                {
+                    Stages = {LevelStage.STAGE6},
+                    StageTypes = {StageType.STAGETYPE_ORIGINAL, StageType.STAGETYPE_WOTL, StageType.STAGETYPE_AFTERBIRTH},
+                    ID = "77"
+                }
+            }
+        },
+        [RoomShape.ROOMSHAPE_LTL] = {
+            Barren = "4558",
+            Stage = {
+                {
+                    Stages = {LevelStage.STAGE1_1, LevelStage.STAGE1_2, LevelStage.STAGE7},
+                    StageTypes = {StageType.STAGETYPE_ORIGINAL, StageType.STAGETYPE_WOTL, StageType.STAGETYPE_AFTERBIRTH},
+                    ID = "814"
+                },
+                {
+                    Stages = {LevelStage.STAGE2_1, LevelStage.STAGE2_2, LevelStage.STAGE3_1, LevelStage.STAGE3_2, LevelStage.STAGE4_1, LevelStage.STAGE4_2},
+                    StageTypes = {StageType.STAGETYPE_ORIGINAL, StageType.STAGETYPE_WOTL, StageType.STAGETYPE_AFTERBIRTH},
+                    ID = "751"
+                },
+                {
+                    Stages = {LevelStage.STAGE5, LevelStage.STAGE6},
+                    StageTypes = {StageType.STAGETYPE_ORIGINAL},
+                    ID = "295"
+                },
+                {
+                    Stages = {LevelStage.STAGE5, LevelStage.STAGE6},
+                    StageTypes = {StageType.STAGETYPE_WOTL},
+                    ID = "296"
+                }
+            }
+        },
+        [RoomShape.ROOMSHAPE_LTR] = {
+            Barren = "4559",
+            Stage = {
+                {
+                    Stages = {LevelStage.STAGE1_1, LevelStage.STAGE1_2, LevelStage.STAGE7},
+                    StageTypes = {StageType.STAGETYPE_ORIGINAL, StageType.STAGETYPE_WOTL, StageType.STAGETYPE_AFTERBIRTH},
+                    ID = "820"
+                },
+                {
+                    Stages = {LevelStage.STAGE2_1, LevelStage.STAGE2_2, LevelStage.STAGE3_1, LevelStage.STAGE3_2, LevelStage.STAGE4_1, LevelStage.STAGE4_2},
+                    StageTypes = {StageType.STAGETYPE_ORIGINAL, StageType.STAGETYPE_WOTL, StageType.STAGETYPE_AFTERBIRTH},
+                    ID = "757"
+                },
+                {
+                    Stages = {LevelStage.STAGE5, LevelStage.STAGE6},
+                    StageTypes = {StageType.STAGETYPE_ORIGINAL},
+                    ID = "299"
+                },
+                {
+                    Stages = {LevelStage.STAGE5, LevelStage.STAGE6},
+                    StageTypes = {StageType.STAGETYPE_WOTL},
+                    ID = "297"
+                }
+            }
+        },
+        [RoomShape.ROOMSHAPE_LBL] = {
+            Barren = "4560",
+            Stage = {
+                {
+                    Stages = {LevelStage.STAGE1_1, LevelStage.STAGE1_2, LevelStage.STAGE7},
+                    StageTypes = {StageType.STAGETYPE_ORIGINAL, StageType.STAGETYPE_WOTL, StageType.STAGETYPE_AFTERBIRTH},
+                    ID = "828"
+                },
+                {
+                    Stages = {LevelStage.STAGE2_1, LevelStage.STAGE2_2, LevelStage.STAGE3_1, LevelStage.STAGE3_2, LevelStage.STAGE4_1, LevelStage.STAGE4_2},
+                    StageTypes = {StageType.STAGETYPE_ORIGINAL, StageType.STAGETYPE_WOTL, StageType.STAGETYPE_AFTERBIRTH},
+                    ID = "763"
+                },
+                {
+                    Stages = {LevelStage.STAGE5, LevelStage.STAGE6},
+                    StageTypes = {StageType.STAGETYPE_ORIGINAL, StageType.STAGETYPE_WOTL, StageType.STAGETYPE_AFTERBIRTH},
+                    ID = "300"
+                }
+            }
+        },
+        [RoomShape.ROOMSHAPE_LBR] = {
+            Barren = "4561",
+            Stage = {
+                {
+                    Stages = {LevelStage.STAGE1_1, LevelStage.STAGE1_2, LevelStage.STAGE7},
+                    StageTypes = {StageType.STAGETYPE_ORIGINAL, StageType.STAGETYPE_WOTL, StageType.STAGETYPE_AFTERBIRTH},
+                    ID = "830"
+                },
+                {
+                    Stages = {LevelStage.STAGE2_1, LevelStage.STAGE2_2, LevelStage.STAGE3_1, LevelStage.STAGE3_2, LevelStage.STAGE4_1, LevelStage.STAGE4_2},
+                    StageTypes = {StageType.STAGETYPE_ORIGINAL, StageType.STAGETYPE_WOTL, StageType.STAGETYPE_AFTERBIRTH},
+                    ID = "769"
+                },
+                {
+                    Stages = {LevelStage.STAGE5, LevelStage.STAGE6},
+                    StageTypes = {StageType.STAGETYPE_ORIGINAL, StageType.STAGETYPE_WOTL, StageType.STAGETYPE_AFTERBIRTH},
+                    ID = "303"
+                }
+            }
+        }
     }
+
+    function StageAPI.GetGotoIDForStage(shape, stage, stagetype)
+        local stagesets = StageAPI.RoomShapeToGotoID[shape].Stage
+        for _, stageset in ipairs(stagesets) do
+            local isIn
+            for _, lvlstage in ipairs(stageset.Stages) do
+                if stage == lvlstage then
+                    isIn = true
+                    break
+                end
+            end
+
+            if isIn then
+                for _, stgtype in ipairs(stageset.StageTypes) do
+                    if stagetype == stgtype then
+                        return stageset.ID
+                    end
+                end
+            end
+        end
+    end
 
     local shadowSprite = Sprite()
     shadowSprite:Load("stageapi/stage_shadow.anm2", false)
@@ -3718,12 +4009,18 @@ do -- Extra Rooms
                         end
 
                         local extraRoom = StageAPI.GetExtraRoom(StageAPI.TransitioningTo)
-                        local id = StageAPI.RoomShapeToGotoID[extraRoom.Shape]
                         StageAPI.InExtraRoom = true
                         StageAPI.CurrentExtraRoom = extraRoom
                         StageAPI.CurrentExtraRoomName = StageAPI.TransitioningTo
                         StageAPI.TransitioningTo = nil
-                        Isaac.ExecuteCommand("goto s.barren." .. id)
+
+                        if StageAPI.ExtraRoomBaseType == "Barren" then
+                            local id = StageAPI.RoomShapeToGotoID[extraRoom.Shape].Barren
+                            Isaac.ExecuteCommand("goto s.barren." .. id)
+                        elseif StageAPI.ExtraRoomBaseType == "Stage" then
+                            local id = StageAPI.GetGotoIDForStage(extraRoom.Shape, level:GetStage(), level:GetStageType())
+                            Isaac.ExecuteCommand("goto d." .. id)
+                        end
                     elseif StageAPI.TransitioningFromTo then
                         StageAPI.InExtraRoom = nil
                         StageAPI.CurrentExtraRoom = nil
@@ -6490,7 +6787,7 @@ do -- Callbacks
         end
 
         local enteringExtraRoomFromOffGridRoom
-        if StageAPI.PreviousExtraRoom and room:GetType() == RoomType.ROOM_BARREN and level:GetCurrentRoomIndex() == -3 then
+        if StageAPI.PreviousExtraRoom and level:GetCurrentRoomIndex() == -3 then
             StageAPI.CurrentExtraRoom = StageAPI.PreviousExtraRoom
             StageAPI.CurrentExtraRoomName = StageAPI.PreviousExtraRoomName
             StageAPI.InExtraRoom = true
@@ -6837,6 +7134,13 @@ do -- Callbacks
             StageAPI.ClearRoomLayout(false, true, true, true, nil, true, true)
         elseif cmd == "crashit" then
             game:ShowHallucination(0, 0)
+        elseif cmd == "testgotorooms" then
+            StageAPI.TestGotoRoomShapes = {}
+            for _, shape in pairs(RoomShape) do
+                if StageAPI.RoomShapeToGotoID[shape] then
+                    StageAPI.TestGotoRoomShapes[#StageAPI.TestGotoRoomShapes + 1] = shape
+                end
+            end
         end
     end)
 
@@ -6915,6 +7219,25 @@ do -- Callbacks
 
                     Isaac.RenderScaledText(text, renderX, renderY, 0.5, 0.5, 1, 1, 1, (versionPrintTimer / 60) * 0.5)
                     renderX = renderX + Isaac.GetTextWidth(text) * 0.5
+                end
+            end
+        end
+
+        if StageAPI.TestGotoRoomShapes then
+            if Input.IsButtonTriggered(Keyboard.KEY_N, players[1].ControllerIndex) then
+                local shape = StageAPI.TestGotoRoomShapes[#StageAPI.TestGotoRoomShapes]
+                local layout = StageAPI.CreateEmptyRoomLayout(shape)
+                StageAPI.RegisterLayout("StageAPITest", layout)
+
+                local testRoom = StageAPI.LevelRoom("StageAPITest", nil, REVEL.room:GetSpawnSeed(), shape, RoomType.ROOM_DEFAULT)
+                StageAPI.SetExtraRoom("StageAPITest", testRoom)
+
+                StageAPI.TransitionToExtraRoom("StageAPITest", layout.Doors[StageAPI.Random(1, #layout.Doors)].Slot, true, "Stage")
+
+                StageAPI.TestGotoRoomShapes[#StageAPI.TestGotoRoomShapes] = nil
+
+                if #StageAPI.TestGotoRoomShapes == 0 then
+                    StageAPI.TestGotoRoomShapes = nil
                 end
             end
         end
