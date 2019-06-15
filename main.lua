@@ -1008,59 +1008,71 @@ do -- RoomsList
     StageAPI.RoomShapeToWidthHeight = {
         [RoomShape.ROOMSHAPE_1x1] = {
             Width = 15,
-            Height = 9
+            Height = 9,
+            Slots = {DoorSlot.UP0, DoorSlot.LEFT0, DoorSlot.RIGHT0, DoorSlot.DOWN0}
         },
         [RoomShape.ROOMSHAPE_IV] = {
             Width = 15,
-            Height = 9
+            Height = 9,
+            Slots = {DoorSlot.UP0, DoorSlot.DOWN0}
         },
         [RoomShape.ROOMSHAPE_IH] = {
             Width = 15,
-            Height = 9
+            Height = 9,
+            Slots = {DoorSlot.LEFT0, DoorSlot.RIGHT0}
         },
         [RoomShape.ROOMSHAPE_2x2] = {
             Width = 28,
-            Height = 16
+            Height = 16,
+            Slots = {DoorSlot.UP0, DoorSlot.UP1, DoorSlot.LEFT0, DoorSlot.LEFT1, DoorSlot.RIGHT0, DoorSlot.RIGHT1, DoorSlot.DOWN0, DoorSlot.DOWN1}
         },
         [RoomShape.ROOMSHAPE_2x1] = {
             Width = 28,
-            Height = 9
+            Height = 9,
+            Slots = {DoorSlot.UP0, DoorSlot.UP1, DoorSlot.LEFT0, DoorSlot.RIGHT0, DoorSlot.DOWN0, DoorSlot.DOWN1}
         },
         [RoomShape.ROOMSHAPE_1x2] = {
             Width = 15,
-            Height = 16
+            Height = 16,
+            Slots = {DoorSlot.UP0, DoorSlot.LEFT0, DoorSlot.LEFT1, DoorSlot.RIGHT0, DoorSlot.RIGHT1, DoorSlot.DOWN0}
         },
         [RoomShape.ROOMSHAPE_IIV] = {
             Width = 15,
-            Height = 16
+            Height = 16,
+            Slots = {DoorSlot.UP0, DoorSlot.DOWN0}
         },
         [RoomShape.ROOMSHAPE_LTL] = {
             Width = 28,
             Height = 16,
             LWidthEnd = 14,
-            LHeightEnd = 8
+            LHeightEnd = 8,
+            Slots = {DoorSlot.UP0, DoorSlot.UP1, DoorSlot.LEFT0, DoorSlot.LEFT1, DoorSlot.RIGHT0, DoorSlot.RIGHT1, DoorSlot.DOWN0, DoorSlot.DOWN1}
         },
         [RoomShape.ROOMSHAPE_LBL] = {
             Width = 28,
             Height = 16,
             LWidthEnd = 14,
-            LHeightStart = 8
+            LHeightStart = 8,
+            Slots = {DoorSlot.UP0, DoorSlot.UP1, DoorSlot.LEFT0, DoorSlot.LEFT1, DoorSlot.RIGHT0, DoorSlot.RIGHT1, DoorSlot.DOWN0, DoorSlot.DOWN1}
         },
         [RoomShape.ROOMSHAPE_LBR] = {
             Width = 28,
             Height = 16,
             LWidthStart = 14,
-            LHeightStart = 8
+            LHeightStart = 8,
+            Slots = {DoorSlot.UP0, DoorSlot.UP1, DoorSlot.LEFT0, DoorSlot.LEFT1, DoorSlot.RIGHT0, DoorSlot.RIGHT1, DoorSlot.DOWN0, DoorSlot.DOWN1}
         },
         [RoomShape.ROOMSHAPE_LTR] = {
             Width = 28,
             Height = 16,
             LWidthStart = 14,
-            LHeightEnd = 8
+            LHeightEnd = 8,
+            Slots = {DoorSlot.UP0, DoorSlot.UP1, DoorSlot.LEFT0, DoorSlot.LEFT1, DoorSlot.RIGHT0, DoorSlot.RIGHT1, DoorSlot.DOWN0, DoorSlot.DOWN1}
         },
         [RoomShape.ROOMSHAPE_IIH] = {
             Width = 28,
-            Height = 9
+            Height = 9,
+            Slots = {DoorSlot.LEFT0, DoorSlot.RIGHT0}
         }
     }
 
@@ -1189,11 +1201,11 @@ do -- RoomsList
     function StageAPI.CreateEmptyRoomLayout(shape)
         shape = shape or RoomShape.ROOMSHAPE_1x1
         local widthHeight = StageAPI.RoomShapeToWidthHeight[shape]
-        local width, height, lWidthStart, lWidthEnd, lHeightStart, lHeightEnd
+        local width, height, lWidthStart, lWidthEnd, lHeightStart, lHeightEnd, slots
         if not widthHeight then
-            width, height = StageAPI.RoomShapeToWidthHeight[RoomShape.ROOMSHAPE_1x1].Width, StageAPI.RoomShapeToWidthHeight[RoomShape.ROOMSHAPE_1x1].Height
+            width, height, slots = StageAPI.RoomShapeToWidthHeight[RoomShape.ROOMSHAPE_1x1].Width, StageAPI.RoomShapeToWidthHeight[RoomShape.ROOMSHAPE_1x1].Height, StageAPI.RoomShapeToWidthHeight[RoomShape.ROOMSHAPE_1x1].Slots
         else
-            width, height, lWidthStart, lWidthEnd, lHeightStart, lHeightEnd = widthHeight.Width, widthHeight.Height, widthHeight.LWidthStart, widthHeight.LWidthEnd, widthHeight.LHeightStart, widthHeight.LHeightEnd
+            width, height, lWidthStart, lWidthEnd, lHeightStart, lHeightEnd, slots = widthHeight.Width, widthHeight.Height, widthHeight.LWidthStart, widthHeight.LWidthEnd, widthHeight.LHeightStart, widthHeight.LHeightEnd, widthHeight.Slots
         end
         local newRoom = {
             Name = "Empty",
@@ -1221,9 +1233,9 @@ do -- RoomsList
 
         StageAPI.LastRoomID = newRoom.StageAPIID
 
-        for i = 0, 7 do
+        for _, slot in ipairs(slots) do
             newRoom.Doors[#newRoom.Doors + 1] = {
-                Slot = i,
+                Slot = slot,
                 Exists = true
             }
         end
