@@ -5820,6 +5820,10 @@ do -- Bosses
                     end
 
                     local weight = potentialBoss.Weight or 1
+                    if forceHorseman and potentialBoss.Horseman then
+                        weight = weight + 100
+                    end
+
                     if not encountered then
                         totalUnencounteredWeight = totalUnencounteredWeight + weight
                         unencounteredBosses[#unencounteredBosses + 1] = {potentialBossID, weight}
