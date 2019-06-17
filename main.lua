@@ -4828,88 +4828,106 @@ do -- Backdrop & RoomGfx
        [RoomShape.ROOMSHAPE_IIV] = "IIV"
     }
 
-    function StageAPI.ChangeBackdrop(backdrop)
-        StageAPI.BackdropRNG:SetSeed(room:GetDecorationSeed(), 1)
+    function StageAPI.LoadBackdropSprite(sprite, backdrop, mode) -- modes are 1 (walls A), 2 (floors), 3 (walls B)
+        sprite = sprite or Sprite()
+
         local needsExtra
+        local roomShape = room:GetRoomShape()
+        local shapeName = StageAPI.ShapeToName[roomShape]
+        if StageAPI.ShapeToWallAnm2Layers[shapeName .. "X"] then
+            needsExtra = true
+        end
+
+        if mode == 3 then
+            shapeName = shapeName .. "X"
+        end
+
+        if mode == 1 or mode == 3 then
+            sprite:Load("stageapi/WallBackdrop.anm2", false)
+
+            if backdrop.Walls then
+                for num = 1, StageAPI.ShapeToWallAnm2Layers[shapeName] do
+                    local wall_to_use = backdrop.Walls[StageAPI.Random(1, #backdrop.Walls, backdropRNG)]
+                    sprite:ReplaceSpritesheet(num, wall_to_use)
+                end
+            end
+            if backdrop.Corners and string.sub(shapeName, 1, 1) == "L" then
+                local corner_to_use = backdrop.Corners[StageAPI.Random(1, #backdrop.Corners, backdropRNG)]
+                sprite:ReplaceSpritesheet(0, corner_to_use)
+            end
+        else
+            sprite:Load("stageapi/FloorBackdrop.anm2", false)
+
+            local floors
+            if backdrop.FloorVariants then
+                floors = backdrop.FloorVariants[StageAPI.Random(1, #backdrop.FloorVariants, backdropRNG)]
+            else
+                floors = backdrop.Floors or backdrop.Walls
+            end
+
+            if floors then
+                local numWalls
+                if roomShape == RoomShape.ROOMSHAPE_1x1 then
+                    numWalls = 4
+                elseif roomShape == RoomShape.ROOMSHAPE_1x2 or roomShape == RoomShape.ROOMSHAPE_2x1 then
+                    numWalls = 8
+                elseif roomShape == RoomShape.ROOMSHAPE_2x2 then
+                    numWalls = 16
+                end
+
+                if numWalls then
+                    for i = 0, numWalls - 1 do
+                        sprite:ReplaceSpritesheet(i, floors[StageAPI.Random(1, #floors, backdropRNG)])
+                    end
+                end
+            end
+
+            if backdrop.NFloors and string.sub(shapeName, 1, 1) == "I" then
+                for num = 18, 19 do
+                    sprite:ReplaceSpritesheet(num, backdrop.NFloors[StageAPI.Random(1, #backdrop.NFloors, backdropRNG)])
+                end
+            end
+
+            if backdrop.LFloors and string.sub(shapeName, 1, 1) == "L" then
+                for num = 16, 17 do
+                    sprite:ReplaceSpritesheet(num, backdrop.LFloors[StageAPI.Random(1, #backdrop.LFloors, backdropRNG)])
+                end
+            end
+        end
+
+        sprite:LoadGraphics()
+
+        local renderPos = room:GetTopLeftPos()
+        if mode ~= 2 then
+            renderPos = renderPos - Vector(80, 80)
+        end
+
+        sprite:Play(shapeName, true)
+
+        return renderPos, needsExtra
+    end
+
+    function StageAPI.ChangeBackdrop(backdrop, justWalls, storeBackdropEnts)
+        StageAPI.BackdropRNG:SetSeed(room:GetDecorationSeed(), 1)
+        local needsExtra, backdropEnts
+        if storeBackdropEnts then
+            backdropEnts = {}
+        end
+
         for i = 1, 3 do
+            if justWalls and i == 2 then
+                i = 3
+            end
+
             if i == 3 and not needsExtra then
                 break
-            end
-
-            local roomShape = room:GetRoomShape()
-            local shapeName = StageAPI.ShapeToName[roomShape]
-            if StageAPI.ShapeToWallAnm2Layers[shapeName .. "X"] then
-                needsExtra = true
-            end
-
-            if i == 3 then
-                shapeName = shapeName .. "X"
             end
 
             local backdropEntity = Isaac.Spawn(StageAPI.E.Backdrop.T, StageAPI.E.Backdrop.V, 0, zeroVector, zeroVector, nil)
             local sprite = backdropEntity:GetSprite()
 
-            if i == 1 or i == 3 then
-                sprite:Load("stageapi/WallBackdrop.anm2", false)
-
-                if backdrop.Walls then
-                    for num = 1, StageAPI.ShapeToWallAnm2Layers[shapeName] do
-                        local wall_to_use = backdrop.Walls[StageAPI.Random(1, #backdrop.Walls, backdropRNG)]
-                        sprite:ReplaceSpritesheet(num, wall_to_use)
-                    end
-                end
-                if backdrop.Corners and string.sub(shapeName, 1, 1) == "L" then
-                    local corner_to_use = backdrop.Corners[StageAPI.Random(1, #backdrop.Corners, backdropRNG)]
-                    sprite:ReplaceSpritesheet(0, corner_to_use)
-                end
-            else
-                sprite:Load("stageapi/FloorBackdrop.anm2", false)
-
-                local floors
-                if backdrop.FloorVariants then
-                    floors = backdrop.FloorVariants[StageAPI.Random(1, #backdrop.FloorVariants, backdropRNG)]
-                else
-                    floors = backdrop.Floors or backdrop.Walls
-                end
-
-                if floors then
-                    local numWalls
-                    if roomShape == RoomShape.ROOMSHAPE_1x1 then
-                        numWalls = 4
-                    elseif roomShape == RoomShape.ROOMSHAPE_1x2 or roomShape == RoomShape.ROOMSHAPE_2x1 then
-                        numWalls = 8
-                    elseif roomShape == RoomShape.ROOMSHAPE_2x2 then
-                        numWalls = 16
-                    end
-
-                    if numWalls then
-                        for i = 0, numWalls - 1 do
-                            sprite:ReplaceSpritesheet(i, floors[StageAPI.Random(1, #floors, backdropRNG)])
-                        end
-                    end
-                end
-
-                if backdrop.NFloors and string.sub(shapeName, 1, 1) == "I" then
-                    for num = 18, 19 do
-                        sprite:ReplaceSpritesheet(num, backdrop.NFloors[StageAPI.Random(1, #backdrop.NFloors, backdropRNG)])
-                    end
-                end
-
-                if backdrop.LFloors and string.sub(shapeName, 1, 1) == "L" then
-                    for num = 16, 17 do
-                        sprite:ReplaceSpritesheet(num, backdrop.LFloors[StageAPI.Random(1, #backdrop.LFloors, backdropRNG)])
-                    end
-                end
-            end
-
-            sprite:LoadGraphics()
-
-            local renderPos = room:GetTopLeftPos()
-            if i ~= 2 then
-                renderPos = renderPos - Vector(80, 80)
-            end
-
-            sprite:Play(shapeName, true)
+            local renderPos
+            renderPos, needsExtra = StageAPI.LoadBackdropSprite(sprite, backdrop, i)
 
             backdropEntity.Position = renderPos
             if i == 1 or i == 3 then
@@ -4917,7 +4935,13 @@ do -- Backdrop & RoomGfx
             else
                 backdropEntity:AddEntityFlags(EntityFlag.FLAG_RENDER_FLOOR)
             end
+
+            if storeBackdropEnts then
+                backdropEnts[#backdropEnts + 1] = backdropEntity
+            end
         end
+
+        return backdropEnts
     end
 
     StageAPI.StageShadowRNG = RNG()
