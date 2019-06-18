@@ -356,7 +356,29 @@ ChangeBackdrop(Backdrop)
 ChangeShading(name, prefix)
 ChangeRoomGfx(RoomGfx)
 
-PlayTextStreak(text, extratext, extratextOffset, extratextScaleMulti) -- extra text usually used for item descriptions, not used in stageapi by default.
+PlayTextStreak(params)
+-- returns params, use as a reference to update Hold, etc
+-- text values cannot be changed after init
+params = {
+    Text = Main text, supports newlines (\n)
+    TextOffset = positional offset for main text
+    BaseFontScale = scale for main text, vector
+    Font = Font used for main text, defaults to upheaval
+    LineSpacing = spacing between newlines, defaults to 1
+
+    ExtraText = additional text usually used for item descriptions, unused by stageapi
+    ExtraOffset = positional offset for extra text
+    ExtraFontScale = scale for extra text, vector
+    SmallFont = Font used for extra text, defaults to pftempestasevencondensed (item description font)
+
+    Spritesheet = sprite for the streak bg, defaults to vanilla item streak
+    SpriteOffset = positional offset for the streak bg
+
+    Color = text color, used for all text
+    RenderPos = Position the streak will be rendered at, defaults to item/new floor streak position
+    Hold = set to true to hold streak indefinitely once it reaches default position, set to false when ready to continue
+    HoldFrames = number of frames to hold the streak, defaults to 52
+}
 
 IsIn(table, value, iterator) -- iterator defaults to ipairs
 GetPlayingAnimation(sprite, animationList)
@@ -735,27 +757,29 @@ do -- Core Functions
     end
 
     local TextStreakScales = {
-        [0] = Vector(3,0.2),	[1] = Vector(2.6,0.36),
-        [2] = Vector(2.2,0.52),	[3] = Vector(1.8,0.68),
-        [4] = Vector(1.4,0.84),	[5] = Vector(0.95,1.05),
-        [6] = Vector(0.97,1.03),	[7] = Vector(0.98,1.02),
-        [61] = Vector(0.99,1.03),	[62] = Vector(0.98,1.05),
-        [63] = Vector(0.96,1.08),	[64] = Vector(0.95,1.1),
-        [65] = Vector(1.36,0.92),	[66] = Vector(1.77,0.74),
-        [67] = Vector(2.18,0.56),	[68] = Vector(2.59,0.38),
-        [69] = Vector(3,0.2)
+        [0] = Vector(3,0.2),     [1] = Vector(2.6,0.36),
+        [2] = Vector(2.2,0.52),  [3] = Vector(1.8,0.68),
+        [4] = Vector(1.4,0.84),  [5] = Vector(0.95,1.05),
+        [6] = Vector(0.97,1.03), [7] = Vector(0.98,1.02),
+-- frame 8 is the hold frame
+        [9] = Vector(0.99,1.03), [10] = Vector(0.98,1.05),
+        [11] = Vector(0.96,1.08), [12] = Vector(0.95,1.1),
+        [13] = Vector(1.36,0.92), [14] = Vector(1.77,0.74),
+        [15] = Vector(2.18,0.56), [16] = Vector(2.59,0.38),
+        [17] = Vector(3,0.2)
     }
 
     local TextStreakPositions = {
-        [0] = -800,	[1] = -639,
-        [2] = -450,	[3] = -250,
-        [4] = -70,	[5] = 10,
-        [6] = 6,	[7] = 3,
-        [61] = -5,	[62] = -10,
-        [63] = -15,	[64] = -20,
-        [65] = 144,	[66] = 308,
-        [67] = 472,	[68] = 636,
-        [69] =800
+        [0] = -800, [1] = -639,
+        [2] = -450, [3] = -250,
+        [4] = -70,  [5] = 10,
+        [6] = 6,    [7] = 3,
+
+        [9] = -5,  [10] = -10,
+        [11] = -15, [12] = -20,
+        [13] = 144, [14] = 308,
+        [15] = 472, [16] = 636,
+        [17] =800
     }
 
     local StreakSprites = {}
@@ -767,76 +791,136 @@ do -- Core Functions
     local streakSmallFont = Font()
     streakSmallFont:Load("font/pftempestasevencondensed.fnt")
 
+    local streakDefaultHoldFrames = 52
+    local streakDefaultSpritesheet = "stageapi/streak.png"
     local streakDefaultColor = KColor(1,1,1,1,0,0,0)
     local streakDefaultPos = Vector(240, 48)
+
     local oneVector = Vector(1, 1)
     function StageAPI.PlayTextStreak(text, extratext, extratextOffset, extratextScaleMulti, replaceSpritesheet, spriteOffset, font, smallFont, color)
-        local streak = {}
+        local streak
         if type(text) == "table" then
             streak = text
         else
-            streak.Text = text
-            streak.ExtraText = extratext
+            streak = {
+                Text = text,
+                ExtraText = extratext,
+                Color = color,
+                Font = font,
+                SpriteOffset = spriteOffset,
+                SmallFont = smallFont,
+                ExtraFontScale = extratextScaleMulti,
+                ExtraOffset = extratextOffset,
+                Spritesheet = replaceSpritesheet
+            }
         end
 
+        local splitLines = {}
+        streak.Text:gsub("([^\n]+)", function(c) table.insert(splitLines, { Text = c }) end)
+        streak.Text = splitLines
+
+        streak.Color          = streak.Color          or streakDefaultColor
+        streak.Font           = streak.Font           or streakFont
+        streak.SmallFont      = streak.SmallFont      or streakSmallFont
+        streak.RenderPos      = streak.RenderPos      or streakDefaultPos
+        --streak.BaseFontScale  = streak.BaseFontScale  or oneVector
+        streak.ExtraFontScale = streak.ExtraFontScale or oneVector
+        streak.SpriteOffset   = streak.SpriteOffset   or zeroVector
+        streak.TextOffset     = streak.TextOffset     or zeroVector
+        streak.ExtraOffset    = streak.ExtraOffset    or zeroVector
+        streak.Spritesheet    = streak.Spritesheet    or streakDefaultSpritesheet
+        streak.LineSpacing    = streak.LineSpacing    or 1
+        streak.Hold           = streak.Hold           or false
+        streak.HoldFrames     = streak.HoldFrames     or streakDefaultHoldFrames
+
         streak.Frame = 0
-        streak.Color = streak.Color or color or streakDefaultColor
-        streak.Font = streak.Font or font or streakFont
-        streak.SmallFont = streak.SmallFont or smallFont or streakSmallFont
-        streak.Width = streak.Font:GetStringWidth(streak.Text) / 2
+
+        for _, line in pairs(streak.Text) do
+            line.Width = streak.Font:GetStringWidth(line.Text) / 2
+        end
+
         streak.ExtraWidth = streak.SmallFont:GetStringWidth(streak.ExtraText or "") / 2
-        streak.RenderPos = streak.RenderPos or streakDefaultPos
-        streak.FontScale = streak.FontScale or oneVector
-        streak.ExtraFontScale = streak.ExtraFontScale or extratextScaleMulti
-        streak.ExtraOffset = streak.ExtraOffset or extratextOffset
-        streak.SpriteOffset = streak.SpriteOffset or spriteOffset or zeroVector
-        streak.Spritesheet = streak.Spritesheet or replaceSpritesheet or "stageapi/streak.png"
 
         local index = #Streaks + 1
         streak.SpriteIndex = index
 
-        if not StreakSprites[index] then -- this system loads as many sprites as it has to play at once
-            StreakSprites[index] = Sprite()
-            StreakSprites[index]:Load("stageapi/streak.anm2", true)
+        local streakSprite = StreakSprites[index]
+        if not streakSprite then -- this system loads as many sprites as it has to play at once
+            StreakSprites[index] = {}
+            streakSprite = StreakSprites[index]
+            streakSprite.Sprite = Sprite()
+            streakSprite.Sprite:Load("stageapi/streak.anm2", true)
+            streakSprite.Spritesheet = streakDefaultSpritesheet
         end
 
-        if streak.Spritesheet then
-            StreakSprites[index]:ReplaceSpritesheet(0, streak.Spritesheet)
-            StreakSprites[index]:LoadGraphics()
+        if streak.Spritesheet ~= streakSprite.Spritesheet then
+            streakSprite.Spritesheet = streak.Spritesheet
+            streakSprite.Sprite:ReplaceSpritesheet(0, streak.Spritesheet)
+            streakSprite.Sprite:LoadGraphics()
         end
 
-        StreakSprites[index].Offset = streak.SpriteOffset
-        StreakSprites[index]:Play("Text", true)
+        streakSprite.Sprite.Offset = streak.SpriteOffset
+        streakSprite.Sprite:Play("Text", true)
 
         Streaks[index] = streak
+
+        return streak
     end
 
     function StageAPI.UpdateTextStreak()
         for index, streakPlaying in StageAPI.ReverseIterate(Streaks) do
-            local sprite = StreakSprites[streakPlaying.SpriteIndex]
+            local sprite = StreakSprites[streakPlaying.SpriteIndex].Sprite
+
+            if streakPlaying.Frame == 8 then
+                if streakPlaying.Hold then
+                    sprite.PlaybackSpeed = 0
+                elseif streakPlaying.HoldFrames > 0 then
+                    sprite.PlaybackSpeed = 0
+                    streakPlaying.HoldFrames = streakPlaying.HoldFrames - 1
+                else
+                    sprite.PlaybackSpeed = 1
+                end
+            end
 
             sprite:Update()
 
             streakPlaying.Frame = sprite:GetFrame()
-            if streakPlaying.Frame >= 69 then
+            if streakPlaying.Frame >= 17 then
                 sprite:Stop()
                 table.remove(Streaks, index)
+                streakPlaying.Finished = true
             end
 
             streakPlaying.FontScale = (TextStreakScales[streakPlaying.Frame] or oneVector)
+            if streakPlaying.BaseFontScale then
+                streakPlaying.FontScale = Vector(streakPlaying.FontScale.X * streakPlaying.BaseFontScale.X, streakPlaying.FontScale.X * streakPlaying.BaseFontScale.Y)
+            end
+
             local screenX = StageAPI.GetScreenCenterPosition().X
             streakPlaying.RenderPos.X = screenX
-            streakPlaying.PositionX = (TextStreakPositions[streakPlaying.Frame] or 0) - streakPlaying.Width * streakPlaying.FontScale.X + screenX + 0.25
+            for _, line in ipairs(streakPlaying.Text) do
+                line.PositionX = (TextStreakPositions[streakPlaying.Frame] or 0) - line.Width * streakPlaying.FontScale.X + screenX + 0.25
+            end
             streakPlaying.ExtraPositionX = (TextStreakPositions[streakPlaying.Frame] or 0) - (streakPlaying.ExtraWidth / 2) * streakPlaying.FontScale.X + screenX + 0.25
+
+            streakPlaying.Updated = true
         end
     end
 
     function StageAPI.RenderTextStreak()
         for index, streakPlaying in StageAPI.ReverseIterate(Streaks) do
-            if streakPlaying.PositionX then
-                local sprite = StreakSprites[streakPlaying.SpriteIndex]
+            if streakPlaying.Updated then
+                local sprite = StreakSprites[streakPlaying.SpriteIndex].Sprite
                 sprite:Render(streakPlaying.RenderPos, zeroVector, zeroVector)
-                streakPlaying.Font:DrawStringScaled(streakPlaying.Text, streakPlaying.PositionX, streakPlaying.RenderPos.Y - 9, streakPlaying.FontScale.X, 1, streakPlaying.Color, 0, true)
+
+                local height = streakPlaying.Font:GetLineHeight() * streakPlaying.LineSpacing * streakPlaying.FontScale.Y
+                for i, line in ipairs(streakPlaying.Text) do
+                    streakPlaying.Font:DrawStringScaled(line.Text,
+                                                        line.PositionX + streakPlaying.TextOffset.X,
+                                                        streakPlaying.RenderPos.Y - 9 + (i - 1) * height  + streakPlaying.TextOffset.Y,
+                                                        streakPlaying.FontScale.X, streakPlaying.FontScale.Y,
+                                                        streakPlaying.Color, 0, true)
+                end
                 if streakPlaying.ExtraText then
                     streakPlaying.SmallFont:DrawStringScaled(streakPlaying.ExtraText, streakPlaying.ExtraPositionX + streakPlaying.ExtraOffset.X, (streakPlaying.RenderPos.Y - 9) + streakPlaying.ExtraOffset.Y, streakPlaying.FontScale.X * streakPlaying.ExtraFontScale.X, 1 * streakPlaying.ExtraFontScale.Y, streakPlaying.Color, 0, true)
                 end
