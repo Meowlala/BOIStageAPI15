@@ -2950,13 +2950,6 @@ do -- RoomsList
             end
 
             self.Layout = layout
-
-            if shape == -1 then
-                self.Shape = self.Layout.Shape
-            end
-
-            Isaac.DebugString("[StageAPI] Initialized room " .. self.Layout.Name .. "." .. tostring(self.Layout.Variant) .. " from file " .. tostring(self.Layout.RoomFilename)
-                                .. (roomsList and (' from list ' .. roomsList.Name) or ''))
             self:PostGetLayout(seed)
         end
 
@@ -2966,8 +2959,19 @@ do -- RoomsList
 
     function StageAPI.LevelRoom:PostGetLayout(seed)
         if not self.Layout then
+            if self.Shape == -1 then
+                self.Shape = RoomShape.ROOMSHAPE_1x1
+            end
+
             self.Layout = StageAPI.CreateEmptyRoomLayout(self.Shape)
             StageAPI.Log("No layout!")
+        end
+
+        Isaac.DebugString("[StageAPI] Initialized room " .. self.Layout.Name .. "." .. tostring(self.Layout.Variant) .. " from file " .. tostring(self.Layout.RoomFilename)
+                            .. (roomsList and (' from list ' .. roomsList.Name) or ''))
+
+        if self.Shape == -1 then
+            self.Shape = self.Layout.Shape
         end
 
         self.SpawnEntities, self.SpawnGrids, self.EntityTakenIndices, self.GridTakenIndices, self.LastPersistentIndex, self.EntityMetadata = StageAPI.ObtainSpawnObjects(self.Layout, seed)
@@ -6844,7 +6848,7 @@ do -- Callbacks
         StageAPI.CallCallbacks("POST_BOSS_ROOM_INIT", false, room, boss, bossID)
     end
 
-    function StageAPI.GenerateBossRoom(bossID, checkEncountered, bosses, hasHorseman, requireRoomTypeBoss, noPlayBossAnim, unskippableBossAnim, isExtraRoom, shape)
+    function StageAPI.GenerateBossRoom(bossID, checkEncountered, bosses, hasHorseman, requireRoomTypeBoss, noPlayBossAnim, unskippableBossAnim, isExtraRoom, shape, ignoreDoors)
         if not bossID then
             bossID = StageAPI.SelectBoss(bosses, hasHorseman)
         elseif checkEncountered then
@@ -6865,7 +6869,7 @@ do -- Callbacks
         end
 
         local levelIndex = StageAPI.GetCurrentRoomID()
-        local newRoom = StageAPI.LevelRoom(nil, boss.Rooms, nil, shape, nil, isExtraRoom, nil, requireRoomTypeBoss, nil, nil, levelIndex)
+        local newRoom = StageAPI.LevelRoom(nil, boss.Rooms, nil, shape, nil, isExtraRoom, nil, requireRoomTypeBoss, ignoreDoors, nil, levelIndex)
         newRoom.PersistentData.BossID = bossID
         StageAPI.CallCallbacks("POST_BOSS_ROOM_INIT", false, newRoom, boss, bossID)
 
