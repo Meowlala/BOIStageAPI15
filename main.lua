@@ -5304,16 +5304,6 @@ do -- Custom Stage
     function StageAPI.CustomStage:SetBosses(bosses)
         for _, bossID in ipairs(bosses) do
             local boss = StageAPI.GetBossData(bossID)
-            if not boss.Shapes then
-                boss.Shapes = {}
-                for shape, rooms in pairs(boss.Rooms.ByShape) do
-                    boss.Shapes[#boss.Shapes + 1] = shape
-                end
-            end
-
-            if not boss.Weight then
-                boss.Weight = 1
-            end
 
             if boss.Horseman then
                 bosses.HasHorseman = true
@@ -5865,6 +5855,18 @@ do -- Bosses
     StageAPI.Bosses = {}
     function StageAPI.AddBossData(id, bossData)
         StageAPI.Bosses[id] = bossData
+
+        if not bossData.Shapes then
+            bossData.Shapes = {}
+            for shape, rooms in pairs(bossData.Rooms.ByShape) do
+                bossData.Shapes[#bossData.Shapes + 1] = shape
+            end
+        end
+
+        if not bossData.Weight then
+            bossData.Weight = 1
+        end
+
         return id
     end
 
