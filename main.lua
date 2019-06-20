@@ -4172,7 +4172,7 @@ do -- Extra Rooms
                     shadowSprite:Play(shadowAnim, true)
                 end
 
-                shadowSprite:Render(Isaac.WorldToScreen(shadow.Position), zeroVector, zeroVector)
+                shadowSprite:Render(Isaac.WorldToRenderPosition(shadow.Position), zeroVector, zeroVector)
             end
         end
 
@@ -4304,7 +4304,7 @@ do -- Extra Rooms
 
     StageAPI.AddCallback("StageAPI", "PRE_SHADING_RENDER", 0, function(shading)
         for _, door in ipairs(Isaac.FindByType(StageAPI.E.Door.T, StageAPI.E.Door.V, -1, false, false)) do
-            door:GetSprite():Render(Isaac.WorldToScreen(door.Position), zeroVector, zeroVector)
+            door:GetSprite():Render(Isaac.WorldToRenderPosition(door.Position), zeroVector, zeroVector)
         end
     end)
 
@@ -5127,7 +5127,7 @@ do -- Backdrop & RoomGfx
             lastUsedShadingSpritesheet = sheet
         end
 
-        shadingSprite:Render(Isaac.WorldToScreen(eff.Position), zeroVector, zeroVector)
+        shadingSprite:Render(Isaac.WorldToRenderPosition(eff.Position), zeroVector, zeroVector)
         StageAPI.CallCallbacks("POST_SHADING_RENDER", false, eff)
     end, StageAPI.E.Shading.V)
 
