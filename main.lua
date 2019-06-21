@@ -1986,6 +1986,7 @@ do -- RoomsList
         EntityType.ENTITY_SLOT,
         EntityType.ENTITY_MOVABLE_TNT,
         EntityType.ENTITY_SHOPKEEPER,
+        EntityType.ENTITY_PITFALL,
         EntityType.ENTITY_FIREPLACE,
     }
     StageAPI.AddPersistenceCheck(function(entData)
@@ -7989,7 +7990,7 @@ do -- BR Compatibility
         StageAPI.AddCallback("StageAPI", "PRE_STAGEAPI_NEW_ROOM_GENERATION", 0, function()
             if StageAPI.BadTestFile or not BasementRenovator.TestRoomData then return end
 
-            if BasementRenovator.InTestStage() and BasementRenovator.InTestRoom() then
+            if BasementRenovator.InTestStage() and BasementRenovator.InTestRoom() and room:IsFirstVisit() then
                 local testRoom = StageAPI.LevelRoom("BRTest", nil, room:GetSpawnSeed(), testLayout.Shape, testLayout.Type, nil, nil, nil, nil, nil, StageAPI.GetCurrentRoomID())
                 return testRoom
             end
