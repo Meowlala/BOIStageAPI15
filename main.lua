@@ -8002,7 +8002,46 @@ do -- Mod Compatibility
         if REVEL and REVEL.AddChangelog and not REVEL.AddedStageAPIChangelogs then
             REVEL.AddedStageAPIChangelogs = true
 
-            REVEL.AddChangelog("StageAPI v1.78 - 80", [[-Fixed an issue where "fart damage" was
+            REVEL.AddChangelog("StageAPI v1.80", [[- Extra rooms can now use
+default or boss room types
+as a base for their backdrop
+and music
+
+- Upgraded streak system to allow
+larger base sprites, and holding
+in place for as long as needed
+
+- Boss rooms can be set in place
+for boss testing with
+basement renovator
+
+- Movable TNT and shopkeepers are
+now properly persistent
+
+- Added a triggerable grid destroyer
+metadata entity that can create
+bridges and destroy rocks
+
+- Fixed bosses marked as horsemen
+not taking the place of
+horsemen in their floors
+
+- Various changes to room layout
+picking including a setting to pick
+from all shapes, doors now more
+easily associated with empty room
+layouts, and boss room initialization
+without loading
+
+- Added GetDisplayName, IsNextStage,
+and IsSameStage functions
+
+- Fixed custom doors and
+shading moving incorrectly
+during screenshake
+]])
+
+            REVEL.AddChangelog("StageAPI v1.78 - 79", [[-Fixed an issue where "fart damage" was
 cancelled even with none in the room,
 which broke Sharp Plug.
 
