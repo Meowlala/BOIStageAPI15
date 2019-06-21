@@ -8004,6 +8004,7 @@ do -- Mod Compatibility
 
             REVEL.AddChangelog("StageAPI v1.80", [[- Extra rooms can now use
 default or boss room types
+from the current floor
 as a base for their backdrop
 and music
 
@@ -8270,7 +8271,7 @@ other than a door
 end
 
 Isaac.DebugString("[StageAPI] Fully Loaded, loading dependent mods.")
-StageAPI.MarkLoaded("StageAPI", "1.80", true, true)
+StageAPI.MarkLoaded("StageAPI", "1.81", true, true)
 
 StageAPI.Loaded = true
 if StageAPI.ToCall then
