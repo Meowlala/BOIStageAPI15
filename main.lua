@@ -8014,7 +8014,7 @@ do -- Mod Compatibility
         if REVEL and REVEL.AddChangelog and not REVEL.AddedStageAPIChangelogs then
             REVEL.AddedStageAPIChangelogs = true
 
-            REVEL.AddChangelog("StageAPI v1.80", [[- Extra rooms can now use
+            REVEL.AddChangelog("StageAPI v1.80 - 81", [[- Extra rooms can now use
 default or boss room types
 from the current floor
 as a base for their backdrop
@@ -8052,6 +8052,18 @@ and IsSameStage functions
 - Fixed custom doors and
 shading moving incorrectly
 during screenshake
+
+**v1.81
+
+- Pitfalls are now persistent
+
+- Separated room type requiring
+for sin rooms and special rooms,
+so that you do not need
+secret / shop sin rooms
+
+- Added DoLayoutDoorsMatch for
+convenience
 ]])
 
             REVEL.AddChangelog("StageAPI v1.78 - 79", [[-Fixed an issue where "fart damage" was
