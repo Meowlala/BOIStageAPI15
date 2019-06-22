@@ -1864,6 +1864,21 @@ do -- RoomsList
         StageAPI.CalledRoomUpdate = false
     end
 
+    function StageAPI.DoLayoutDoorsMatch(layout, doors)
+        local numNonExistingDoors = 0
+        for _, door in ipairs(layout.Doors) do
+            if door.Slot then
+                if not door.Exists and ((not doors and room:GetDoor(door.Slot)) or (doors and doors[door.Slot])) then
+                    return false
+                elseif not door.Exists then
+                    numNonExistingDoors = numNonExistingDoors + 1
+                end
+            end
+        end
+
+        return true
+    end
+
     StageAPI.RoomChooseRNG = RNG()
     function StageAPI.ChooseRoomLayout(roomList, seed, shape, rtype, requireRoomType, ignoreDoors, doors, disallowIDs)
         local callbacks = StageAPI.GetCallbacks("POST_CHECK_VALID_ROOM")
@@ -1893,15 +1908,7 @@ do -- RoomsList
                 if requireRoomType and layout.Type ~= rtype then
                     isValid = false
                 elseif not ignoreDoors then
-                    for _, door in ipairs(layout.Doors) do
-                        if door.Slot then
-                            if not door.Exists and ((not doors and room:GetDoor(door.Slot)) or (doors and doors[door.Slot])) then
-                                isValid = false
-                            elseif not door.Exists then
-                                numNonExistingDoors = numNonExistingDoors + 1
-                            end
-                        end
-                    end
+                    isValid = StageAPI.DoLayoutDoorsMatch(layout, doors)
                 end
 
                 if isValid and disallowIDs then
@@ -1926,15 +1933,15 @@ do -- RoomsList
                     end
                 end
 
-                if StageAPI.CurrentlyInitializing and not StageAPI.CurrentlyInitializing.IsExtraRoom then
-                    local originalWeight = weight
-                    weight = weight * 2 ^ numNonExistingDoors
-                    if shape == RoomShape.ROOMSHAPE_1x1 and numNonExistingDoors > 0 then
-                        weight = weight + math.min(originalWeight * 4, 4)
-                    end
-                end
-
                 if isValid then
+                    if StageAPI.CurrentlyInitializing and not StageAPI.CurrentlyInitializing.IsExtraRoom and rtype == RoomType.ROOM_DEFAULT then
+                        local originalWeight = weight
+                        weight = weight * 2 ^ numNonExistingDoors
+                        if shape == RoomShape.ROOMSHAPE_1x1 and numNonExistingDoors > 0 then
+                            weight = weight + math.min(originalWeight * 4, 4)
+                        end
+                    end
+
                     validRooms[#validRooms + 1] = {layout, weight}
                     totalWeight = totalWeight + weight
                 end
