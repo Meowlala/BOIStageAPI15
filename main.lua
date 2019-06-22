@@ -5415,6 +5415,10 @@ do -- Custom Stage
         self.RequireRoomTypeBoss = true
     end
 
+    function StageAPI.CustomStage:SetRequireRoomTypeSin()
+        self.RequireRoomTypeSin = true
+    end
+
     function StageAPI.ShouldPlayStageMusic()
         return room:GetType() == RoomType.ROOM_DEFAULT or room:GetType() == RoomType.ROOM_TREASURE, not room:IsClear()
     end
@@ -7024,7 +7028,7 @@ do -- Callbacks
                     local shape = room:GetRoomShape()
                     if #usingRoomsList.ByShape[shape] > 0 then
                         local levelIndex = StageAPI.GetCurrentRoomID()
-                        local newRoom = StageAPI.LevelRoom(nil, usingRoomsList, nil, nil, nil, nil, nil, StageAPI.CurrentStage.RequireRoomTypeMatching, nil, nil, levelIndex)
+                        local newRoom = StageAPI.LevelRoom(nil, usingRoomsList, nil, nil, nil, nil, nil, StageAPI.CurrentStage.RequireRoomTypeSin, nil, nil, levelIndex)
                         StageAPI.SetCurrentRoom(newRoom)
                         newRoom:Load()
                         currentRoom = newRoom
