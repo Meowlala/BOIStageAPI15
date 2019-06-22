@@ -1995,6 +1995,7 @@ do -- RoomsList
         EntityType.ENTITY_SHOPKEEPER,
         EntityType.ENTITY_PITFALL,
         EntityType.ENTITY_FIREPLACE,
+        EntityType.ENTITY_ETERNALFLY,
     }
     StageAPI.AddPersistenceCheck(function(entData)
         local isDynamicPersistent = false
@@ -8014,7 +8015,7 @@ do -- Mod Compatibility
         if REVEL and REVEL.AddChangelog and not REVEL.AddedStageAPIChangelogs then
             REVEL.AddedStageAPIChangelogs = true
 
-            REVEL.AddChangelog("StageAPI v1.80 - 81", [[- Extra rooms can now use
+            REVEL.AddChangelog("StageAPI v1.80 - 82", [[- Extra rooms can now use
 default or boss room types
 from the current floor
 as a base for their backdrop
@@ -8055,7 +8056,7 @@ during screenshake
 
 **v1.81
 
-- Pitfalls are now persistent
+- Pitfalls and eternal flies are now persistent
 
 - Separated room type requiring
 for sin rooms and special rooms,
@@ -8295,7 +8296,7 @@ other than a door
 end
 
 Isaac.DebugString("[StageAPI] Fully Loaded, loading dependent mods.")
-StageAPI.MarkLoaded("StageAPI", "1.81", true, true)
+StageAPI.MarkLoaded("StageAPI", "1.82", true, true)
 
 StageAPI.Loaded = true
 if StageAPI.ToCall then
