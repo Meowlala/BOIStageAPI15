@@ -1,15 +1,15 @@
 <data>
-	<entity Metadata="1" Group="StageAPI Groups" ID="900" Image="stageapi/group_0.png" Kind="Stage" Name="Group 0" Subtype="0" Variant="0" />
-	<entity Metadata="1" Group="StageAPI Groups" ID="900" Image="stageapi/group_1.png" Kind="Stage" Name="Group 1" Subtype="0" Variant="1" />
-	<entity Metadata="1" Group="StageAPI Groups" ID="900" Image="stageapi/group_2.png" Kind="Stage" Name="Group 2" Subtype="0" Variant="2" />
-	<entity Metadata="1" Group="StageAPI Groups" ID="900" Image="stageapi/group_3.png" Kind="Stage" Name="Group 3" Subtype="0" Variant="3" />
-	<entity Metadata="1" Group="StageAPI Groups" ID="900" Image="stageapi/group_4.png" Kind="Stage" Name="Group 4" Subtype="0" Variant="4" />
-	<entity Metadata="1" Group="StageAPI Groups" ID="900" Image="stageapi/group_5.png" Kind="Stage" Name="Group 5" Subtype="0" Variant="5" />
-	<entity Metadata="1" Group="StageAPI Groups" ID="900" Image="stageapi/group_6.png" Kind="Stage" Name="Group 6" Subtype="0" Variant="6" />
-	<entity Metadata="1" Group="StageAPI Groups" ID="900" Image="stageapi/group_7.png" Kind="Stage" Name="Group 7" Subtype="0" Variant="7" />
-	<entity Metadata="1" Group="StageAPI Groups" ID="900" Image="stageapi/group_8.png" Kind="Stage" Name="Group 8" Subtype="0" Variant="8" />
-	<entity Metadata="1" Group="StageAPI Groups" ID="900" Image="stageapi/group_9.png" Kind="Stage" Name="Group 9" Subtype="0" Variant="9" />
-	<entity Metadata="1" Group="StageAPI Groups" ID="900" Image="stageapi/group_randomizer.png" Kind="Stage" Name="Group Randomizer" Subtype="0" Variant="10" />
+	<entity Metadata="1" Group="StageAPI Groups" ID="900" Image="stageapi/numbers/groups/group_0.png" Kind="Stage" Name="Group 0" Subtype="0" Variant="0" />
+	<entity Metadata="1" Group="StageAPI Groups" ID="900" Image="stageapi/numbers/groups/group_1.png" Kind="Stage" Name="Group 1" Subtype="0" Variant="1" />
+	<entity Metadata="1" Group="StageAPI Groups" ID="900" Image="stageapi/numbers/groups/group_2.png" Kind="Stage" Name="Group 2" Subtype="0" Variant="2" />
+	<entity Metadata="1" Group="StageAPI Groups" ID="900" Image="stageapi/numbers/groups/group_3.png" Kind="Stage" Name="Group 3" Subtype="0" Variant="3" />
+	<entity Metadata="1" Group="StageAPI Groups" ID="900" Image="stageapi/numbers/groups/group_4.png" Kind="Stage" Name="Group 4" Subtype="0" Variant="4" />
+	<entity Metadata="1" Group="StageAPI Groups" ID="900" Image="stageapi/numbers/groups/group_5.png" Kind="Stage" Name="Group 5" Subtype="0" Variant="5" />
+	<entity Metadata="1" Group="StageAPI Groups" ID="900" Image="stageapi/numbers/groups/group_6.png" Kind="Stage" Name="Group 6" Subtype="0" Variant="6" />
+	<entity Metadata="1" Group="StageAPI Groups" ID="900" Image="stageapi/numbers/groups/group_7.png" Kind="Stage" Name="Group 7" Subtype="0" Variant="7" />
+	<entity Metadata="1" Group="StageAPI Groups" ID="900" Image="stageapi/numbers/groups/group_8.png" Kind="Stage" Name="Group 8" Subtype="0" Variant="8" />
+	<entity Metadata="1" Group="StageAPI Groups" ID="900" Image="stageapi/numbers/groups/group_9.png" Kind="Stage" Name="Group 9" Subtype="0" Variant="9" />
+	<entity Metadata="1" Group="StageAPI Groups" ID="900" Image="stageapi/numbers/groups/group_randomizer.png" Kind="Stage" Name="Group Randomizer" Subtype="0" Variant="10" />
 
 	<entity Metadata="1" Group="StageAPI Directions" ID="900" Image="stageapi/left.png" Kind="Stage" Name="Left" Subtype="0" Variant="11" />
 	<entity Metadata="1" Group="StageAPI Directions" ID="900" Image="stageapi/right.png" Kind="Stage" Name="Right" Subtype="0" Variant="12" />
@@ -30,4 +30,38 @@
 	<entity Metadata="1" Group="StageAPI Utilities" ID="900" Image="stageapi/detonated_trigger.png" Kind="Stage" Name="Detonated Trigger" Subtype="0" Variant="26" />
 	<entity Metadata="1" Group="StageAPI Utilities" ID="900" Image="stageapi/door_locker.png" Kind="Stage" Name="Door Locker" Subtype="0" Variant="27" />
 	<entity Metadata="1" Group="StageAPI Utilities" ID="900" Image="stageapi/grid_destroyer.png" Kind="Stage" Name="Grid Destroyer" Subtype="0" Variant="28" />
+	
+	<!-- Digits (Red = Hundreds, Green = Tens, Blue = Ones) -->
+	<entity Metadata="1" Group="StageAPI Digits" ID="900" Image="stageapi/numbers/red/digit_0.png" Kind="Stage" Name="Red 0" Subtype="0" Variant="30" />
+	<entity Metadata="1" Group="StageAPI Digits" ID="900" Image="stageapi/numbers/red/digit_1.png" Kind="Stage" Name="Red 1" Subtype="0" Variant="31" />
+	<entity Metadata="1" Group="StageAPI Digits" ID="900" Image="stageapi/numbers/red/digit_2.png" Kind="Stage" Name="Red 2" Subtype="0" Variant="32" />
+	<entity Metadata="1" Group="StageAPI Digits" ID="900" Image="stageapi/numbers/red/digit_3.png" Kind="Stage" Name="Red 3" Subtype="0" Variant="33" />
+	<entity Metadata="1" Group="StageAPI Digits" ID="900" Image="stageapi/numbers/red/digit_4.png" Kind="Stage" Name="Red 4" Subtype="0" Variant="34" />
+	<entity Metadata="1" Group="StageAPI Digits" ID="900" Image="stageapi/numbers/red/digit_5.png" Kind="Stage" Name="Red 5" Subtype="0" Variant="35" />
+	<entity Metadata="1" Group="StageAPI Digits" ID="900" Image="stageapi/numbers/red/digit_6.png" Kind="Stage" Name="Red 6" Subtype="0" Variant="36" />
+	<entity Metadata="1" Group="StageAPI Digits" ID="900" Image="stageapi/numbers/red/digit_7.png" Kind="Stage" Name="Red 7" Subtype="0" Variant="37" />
+	<entity Metadata="1" Group="StageAPI Digits" ID="900" Image="stageapi/numbers/red/digit_8.png" Kind="Stage" Name="Red 8" Subtype="0" Variant="38" />
+	<entity Metadata="1" Group="StageAPI Digits" ID="900" Image="stageapi/numbers/red/digit_9.png" Kind="Stage" Name="Red 9" Subtype="0" Variant="39" />
+	
+	<entity Metadata="1" Group="StageAPI Digits" ID="900" Image="stageapi/numbers/green/digit_0.png" Kind="Stage" Name="Green 0" Subtype="0" Variant="40" />
+	<entity Metadata="1" Group="StageAPI Digits" ID="900" Image="stageapi/numbers/green/digit_1.png" Kind="Stage" Name="Green 1" Subtype="0" Variant="41" />
+	<entity Metadata="1" Group="StageAPI Digits" ID="900" Image="stageapi/numbers/green/digit_2.png" Kind="Stage" Name="Green 2" Subtype="0" Variant="42" />
+	<entity Metadata="1" Group="StageAPI Digits" ID="900" Image="stageapi/numbers/green/digit_3.png" Kind="Stage" Name="Green 3" Subtype="0" Variant="43" />
+	<entity Metadata="1" Group="StageAPI Digits" ID="900" Image="stageapi/numbers/green/digit_4.png" Kind="Stage" Name="Green 4" Subtype="0" Variant="44" />
+	<entity Metadata="1" Group="StageAPI Digits" ID="900" Image="stageapi/numbers/green/digit_5.png" Kind="Stage" Name="Green 5" Subtype="0" Variant="45" />
+	<entity Metadata="1" Group="StageAPI Digits" ID="900" Image="stageapi/numbers/green/digit_6.png" Kind="Stage" Name="Green 6" Subtype="0" Variant="46" />
+	<entity Metadata="1" Group="StageAPI Digits" ID="900" Image="stageapi/numbers/green/digit_7.png" Kind="Stage" Name="Green 7" Subtype="0" Variant="47" />
+	<entity Metadata="1" Group="StageAPI Digits" ID="900" Image="stageapi/numbers/green/digit_8.png" Kind="Stage" Name="Green 8" Subtype="0" Variant="48" />
+	<entity Metadata="1" Group="StageAPI Digits" ID="900" Image="stageapi/numbers/green/digit_9.png" Kind="Stage" Name="Green 9" Subtype="0" Variant="49" />
+	
+	<entity Metadata="1" Group="StageAPI Digits" ID="900" Image="stageapi/numbers/blue/digit_0.png" Kind="Stage" Name="Blue 0" Subtype="0" Variant="50" />
+	<entity Metadata="1" Group="StageAPI Digits" ID="900" Image="stageapi/numbers/blue/digit_1.png" Kind="Stage" Name="Blue 1" Subtype="0" Variant="51" />
+	<entity Metadata="1" Group="StageAPI Digits" ID="900" Image="stageapi/numbers/blue/digit_2.png" Kind="Stage" Name="Blue 2" Subtype="0" Variant="52" />
+	<entity Metadata="1" Group="StageAPI Digits" ID="900" Image="stageapi/numbers/blue/digit_3.png" Kind="Stage" Name="Blue 3" Subtype="0" Variant="53" />
+	<entity Metadata="1" Group="StageAPI Digits" ID="900" Image="stageapi/numbers/blue/digit_4.png" Kind="Stage" Name="Blue 4" Subtype="0" Variant="54" />
+	<entity Metadata="1" Group="StageAPI Digits" ID="900" Image="stageapi/numbers/blue/digit_5.png" Kind="Stage" Name="Blue 5" Subtype="0" Variant="55" />
+	<entity Metadata="1" Group="StageAPI Digits" ID="900" Image="stageapi/numbers/blue/digit_6.png" Kind="Stage" Name="Blue 6" Subtype="0" Variant="56" />
+	<entity Metadata="1" Group="StageAPI Digits" ID="900" Image="stageapi/numbers/blue/digit_7.png" Kind="Stage" Name="Blue 7" Subtype="0" Variant="57" />
+	<entity Metadata="1" Group="StageAPI Digits" ID="900" Image="stageapi/numbers/blue/digit_8.png" Kind="Stage" Name="Blue 8" Subtype="0" Variant="58" />
+	<entity Metadata="1" Group="StageAPI Digits" ID="900" Image="stageapi/numbers/blue/digit_9.png" Kind="Stage" Name="Blue 9" Subtype="0" Variant="59" />
 </data>

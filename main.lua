@@ -2285,6 +2285,20 @@ do -- RoomsList
         }
     }
 
+    for i = 30, 59 do
+        local color = "Blue"
+        if i < 40 then
+            color = "Red"
+        elseif i < 50 then
+            color = "Green"
+        end
+
+        StageAPI.MetadataEntities[900][i] = {
+            Name = color .. " " .. tostring(i),
+            Group = color .. " Digit"
+        }
+    end
+
     StageAPI.MetadataEntitiesByName = {}
 
     StageAPI.UnblockableEntities = {}
