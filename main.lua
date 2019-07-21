@@ -2126,76 +2126,98 @@ do -- RoomsList
 
     StageAPI.RoomLoadRNG = RNG()
 
+    --[[
+
+    METADATA & GROUPS
+
+    Metadata entities can be placed in rooms over other entities and grids to change how they behave.
+    Especially useful is grouping, which allows associating several entities with eachother and easily obtaining that information in game.
+
+    A metadata entity definition can have the following variables:
+    {
+        Name = "string", -- Metadata entities in rooms can be looked up or checked for by their unique name
+        MetaType = "string", -- Multiple metadata entities can have the same MetaType, allowing you to create several that behave similarly and can be looked up as one
+        Conflicts = boolean, -- If Conflicts is set to true, when multiple metadata entities of the same Type as this entity that also have Conflicts set to true exist on the same space, only one will be loaded at random
+        OnlyConflictWith = "string", -- Only works if Conflicts is set to true. If a metadata entity with the name OnlyConflictWith is set to does not exist on the same space, it will be treated as though Conflicts is set to false.
+
+        -- They can also have a few special attributes for more common behavior:
+        IsGroup = boolean, -- If IsGroup is set to true, this metadata entity can be used to associate indices around the room together under its name
+        BlockEntities = boolean, -- If BlockEntities is set to true, rather than entities on the same space spawning they will be stored to a table.
+        Value = number -- Each index can have a Value that is the sum of all metadata entities on its' Value. Useful for larger-scale identification.
+    }
+
+    ]]
+
     StageAPI.MetadataEntities = {
         [900] = {
             [0] = {
                 Name = "Group 0",
-                Group = "Groups",
+                MetaType = "Groups",
                 Conflicts = true,
-                StoreAsGroup = true,
+                IsGroup = true,
                 OnlyConflictWith = "RandomizeGroup"
             },
             [1] = {
                 Name = "Group 1",
-                Group = "Groups",
+                MetaType = "Groups",
                 Conflicts = true,
-                StoreAsGroup = true,
+                IsGroup = true,
                 OnlyConflictWith = "RandomizeGroup"
             },
             [2] = {
                 Name = "Group 2",
-                Group = "Groups",
+                MetaType = "Groups",
                 Conflicts = true,
-                StoreAsGroup = true,
+                IsGroup = true,
                 OnlyConflictWith = "RandomizeGroup"
             },
             [3] = {
                 Name = "Group 3",
-                Group = "Groups",
+                MetaType = "Groups",
                 Conflicts = true,
-                StoreAsGroup = true,
+                IsGroup = true,
                 OnlyConflictWith = "RandomizeGroup"
             },
             [4] = {
                 Name = "Group 4",
-                Group = "Groups",
+                MetaType = "Groups",
                 Conflicts = true,
-                StoreAsGroup = true,
+                IsGroup = true,
                 OnlyConflictWith = "RandomizeGroup"
             },
             [5] = {
                 Name = "Group 5",
-                Group = "Groups",
+                MetaType = "Groups",
                 Conflicts = true,
-                StoreAsGroup = true,
+                IsGroup = true,
                 OnlyConflictWith = "RandomizeGroup"
             },
             [6] = {
                 Name = "Group 6",
-                Group = "Groups",
+                MetaType = "Groups",
                 Conflicts = true,
-                StoreAsGroup = true,
+                IsGroup = true,
                 OnlyConflictWith = "RandomizeGroup"
             },
             [7] = {
                 Name = "Group 7",
-                Group = "Groups",
+                MetaType = "Groups",
                 Conflicts = true,
-                StoreAsGroup = true,
+                IsGroup = true,
                 OnlyConflictWith = "RandomizeGroup"
             },
             [8] = {
                 Name = "Group 8",
-                Group = "Groups",
+                MetaType = "Groups",
                 Conflicts = true,
-                StoreAsGroup = true,
+                IsGroup = true,
                 OnlyConflictWith = "RandomizeGroup"
             },
             [9] = {
                 Name = "Group 9",
-                Group = "Groups",
+                MetaType = "Groups",
                 Conflicts = true,
-                StoreAsGroup = true,
+                IsGroup = true,
                 OnlyConflictWith = "RandomizeGroup"
             },
             [10] = {
@@ -2203,49 +2225,49 @@ do -- RoomsList
             },
             [11] = {
                 Name = "Left",
-                Group = "Direction",
+                MetaType = "Direction",
                 Conflicts = true,
                 PreventConflictWith = "PreventDirectionConflict"
             },
             [12] = {
                 Name = "Right",
-                Group = "Direction",
+                MetaType = "Direction",
                 Conflicts = true,
                 PreventConflictWith = "PreventDirectionConflict"
             },
             [13] = {
                 Name = "Up",
-                Group = "Direction",
+                MetaType = "Direction",
                 Conflicts = true,
                 PreventConflictWith = "PreventDirectionConflict"
             },
             [14] = {
                 Name = "Down",
-                Group = "Direction",
+                MetaType = "Direction",
                 Conflicts = true,
                 PreventConflictWith = "PreventDirectionConflict"
             },
             [15] = {
                 Name = "UpLeft",
-                Group = "Direction",
+                MetaType = "Direction",
                 Conflicts = true,
                 PreventConflictWith = "PreventDirectionConflict"
             },
             [16] = {
                 Name = "UpRight",
-                Group = "Direction",
+                MetaType = "Direction",
                 Conflicts = true,
                 PreventConflictWith = "PreventDirectionConflict"
             },
             [17] = {
                 Name = "DownLeft",
-                Group = "Direction",
+                MetaType = "Direction",
                 Conflicts = true,
                 PreventConflictWith = "PreventDirectionConflict"
             },
             [18] = {
                 Name = "DownRight",
-                Group = "Direction",
+                MetaType = "Direction",
                 Conflicts = true,
                 PreventConflictWith = "PreventDirectionConflict"
             },
@@ -2287,15 +2309,19 @@ do -- RoomsList
 
     for i = 30, 59 do
         local color = "Blue"
+        local value = i % 10
         if i < 40 then
             color = "Red"
+            value = value * 100
         elseif i < 50 then
             color = "Green"
+            value = value * 10
         end
 
         StageAPI.MetadataEntities[900][i] = {
             Name = color .. " " .. tostring(i),
-            Group = color .. " Digit"
+            MetaType = color .. " Digit",
+            Value = value
         }
     end
 
@@ -2311,34 +2337,43 @@ do -- RoomsList
         end
     end
 
-    function StageAPI.AddMetadataEntities(tbl)
-        if type(next(tbl)) == "table" and next(tbl).Name then
+    function StageAPI.AddMetadataEntities(tbl, id)
+        local nk, nv = next(tbl)
+        if type(nv) == "table" and nv.Name then
+            id = id or 900
+            if not StageAPI.MetadataEntities[id] then
+                StageAPI.MetadataEntities[id] = {}
+            end
+
             for variant, data in pairs(tbl) do
-                data.Type = 900
+                if data.Group then
+                    data.MetaType = data.Group
+                end
+
+                data.Type = id
                 data.Variant = variant
-                StageAPI.MetadataEntities[900][variant] = data
+                StageAPI.MetadataEntities[id][variant] = data
                 StageAPI.MetadataEntitiesByName[data.Name] = data
             end
         else
             for id, variantTable in pairs(tbl) do
-                if StageAPI.MetadataEntities[id] then
-                    for variant, data in pairs(variantTable) do
-                        data.Variant = variant
-                        data.Type = id
-                        StageAPI.MetadataEntities[id][variant] = data
-                        StageAPI.MetadataEntitiesByName[data.Name] = data
-                    end
-                else
-                    StageAPI.MetadataEntities[id] = {}
-                    for variant, data in pairs(variantTable) do
-                        data.Variant = variant
-                        data.Type = id
-                        StageAPI.MetadataEntities[id][variant] = data
-                        StageAPI.MetadataEntitiesByName[data.Name] = data
-                    end
-                end
+                StageAPI.AddMetadataEntities(variantTable, id)
             end
         end
+    end
+
+    function StageAPI.IsEntityMetadata(entity)
+        if type(entity) == "string" then
+            return not not StageAPI.MetadataEntitiesByName[entity]
+        elseif StageAPI.MetadataEntities[entity.Type] and entity.Variant and StageAPI.MetadataEntities[entity.Type][entity.Variant] and (not entity.SubType or entity.SubType == 0) then
+            return StageAPI.MetadataEntities[entity.Type][entity.Variant]
+        else
+            return false
+        end
+    end
+
+    function StageAPI.GetMetadataEntity(name)
+        return StageAPI.MetadataEntitiesByName[name]
     end
 
     function StageAPI.AddUnblockableEntities(etype, variant, subtype) -- an entity that will not be blocked by the Spawner or other BlockEntities triggers
@@ -2347,19 +2382,245 @@ do -- RoomsList
                 StageAPI.AddUnblockableEntities(ent[1], ent[2], ent[3])
             end
         else
-            if not StageAPI.UnblockableEntities[etype] then
-                if variant then
+            if variant then
+                if not StageAPI.UnblockableEntities[etype] then
                     StageAPI.UnblockableEntities[etype] = {}
-                    if subtype then
+                end
+
+                if subtype then
+                    if not StageAPI.UnblockableEntities[etype][variant] then
                         StageAPI.UnblockableEntities[etype][variant] = {}
-                        StageAPI.UnblockableEntities[etype][variant][subtype] = true
-                    else
-                        StageAPI.UnblockableEntities[etype][variant] = true
                     end
+
+                    StageAPI.UnblockableEntities[etype][variant][subtype] = true
                 else
-                    StageAPI.UnblockableEntities[etype] = true
+                    StageAPI.UnblockableEntities[etype][variant] = true
+                end
+            else
+                StageAPI.UnblockableEntities[etype] = true
+            end
+        end
+    end
+
+    function StageAPI.IsEntityUnblockable(entity)
+        return (StageAPI.UnblockableEntities[entity.Type] and (StageAPI.UnblockableEntities[entity.Type] == true
+        or (StageAPI.UnblockableEntities[entity.Type][entity.Variant] and (StageAPI.UnblockableEntities[entity.Type][entity.Variant] == true
+        or StageAPI.UnblockableEntities[entity.Type][entity.Variant][entity.SubType] == true))))
+    end
+
+    function StageAPI.IsMetadataSetInGroup(set, groups, anyGroup)
+        if type(groups) ~= "table" then
+            if set[groups] then
+                return true
+            end
+        else
+            for _, group in ipairs(groups) do
+                if set[group] and anyGroup then
+                    return true
+                elseif not set[group] and not anyGroup then
+                    return false
                 end
             end
+
+            if not anyGroup then
+                return true
+            end
+        end
+
+        return false
+    end
+
+    function StageAPI.GetMetadataOfType(set, metatype, asPairs)
+        local has
+        local metadataOfType = {}
+        for metaname, count in pairs(set) do
+            if metaname ~= "Groups" then
+                local metadata = StageAPI.GetMetadataEntity(metaname)
+                if metadata and metadata.MetaType == metatype then
+                    has = true
+                    if asPairs then
+                        metadataOfType[metaname] = count
+                    else
+                        metadataOfType[#metadataOfType + 1] = metaname
+                    end
+                end
+            end
+        end
+
+        if has then
+            return metadataOfType
+        else
+            return
+        end
+    end
+
+    function StageAPI.GetMetadataWithFlag(set, flag, asPairs)
+        local has
+        local metadataWithFlag = {}
+        for metaname, count in pairs(set) do
+            if metaname ~= "Groups" then
+                local metadata = StageAPI.GetMetadataEntity(metaname)
+                if metadata and metadata[flag] then
+                    has = true
+                    if asPairs then
+                        metadataWithFlag[metaname] = count
+                    else
+                        metadataWithFlag[#metadataWithFlag + 1] = metaname
+                    end
+                end
+            end
+        end
+
+        if has then
+            return metadataWithFlag
+        else
+            return
+        end
+    end
+
+    function StageAPI.GetMetadataValue(set)
+        local value
+        for metaname, count in pairs(set) do
+            if metaname ~= "Groups" then
+                local metadata = StageAPI.GetMetadataEntity(metaname)
+                if metadata and metadata.Value then
+                    value = (value or 0) + metadata.Value
+                end
+            end
+        end
+
+        return value
+    end
+
+    --[[
+
+    MetadataSearchParams
+
+    {
+        Name = "string", -- Returns the count of a specific metadata entity
+
+        IndexList = boolean, if true, when searching through all metadata will return a list of indices that match rather than index metadata pairs.
+
+        AsPairs = boolean, -- if true, MetaType and Flag will return an name + count pairs rather than an ordered list of names.
+        MetaType = "string", -- Returns a list of metadata entities that match the given MetaType
+        Flag = "string", -- Returns a list of metadata entities that have the given Flag
+
+        AnyGroup = boolean, -- if true, Group only requires one matching group rather than all
+        Group = "string" or {table}, -- If the given metadata set does not have all required groups, nothing is returned
+
+        Value = number -- If the sum of the given metadata set's metadata entities' Value does not match, nothing is returned
+    }
+
+    ]]
+
+    function StageAPI.SearchMetadata(set, searchAll, searchParams) -- if anyGroup isn't set to true, it will require all groups be included.
+        if searchAll == true then
+            local has
+            local metadataByIndex = {}
+            for index, metadataSet in pairs(set) do
+                if index ~= "BlockedEntities" and index ~= "Triggers" and index ~= "RecentTriggers" then
+                    local result = StageAPI.SearchMetadata(metadataSet, false, searchParams)
+                    if result then
+                        has = true
+                        if searchParams.IndexList then
+                            metadataByIndex[#metadataByIndex + 1] = index
+                        else
+                            metadataByIndex[index] = result
+                        end
+                    end
+                end
+            end
+
+            if has then
+                return metadataByIndex
+            else
+                return
+            end
+        elseif set then
+            if type(searchAll) == "number" then
+                if not set[searchAll] then
+                    return
+                else
+                    set = set[searchAll]
+                end
+            end
+
+            if searchParams.Group and not StageAPI.IsMetadataSetInGroup(set, searchParams.Group, searchParams.AnyGroup) then
+                return
+            end
+
+            if searchParams.Value and StageAPI.GetMetadataValue(set) ~= searchParams.Value then
+                return
+            end
+
+            if searchParams.Name and set[searchParams.Name] then
+                return set[searchParams.Name]
+            elseif searchParams.MetaType or searchParams.Flag then
+                local checkSet = set
+                if searchParams.MetaType then
+                    local ret = StageAPI.GetMetadataOfType(set, searchParams.MetaType, searchParams.AsPairs and not searchParams.Flag)
+
+                    if searchParams.Flag then
+                        checkSet = ret
+                    else
+                        return ret
+                    end
+                end
+
+                return StageAPI.GetMetadataWithFlag(checkSet, searchParams.Flag, searchParams.AsPairs)
+            elseif not searchParams.Name then
+                return set
+            else
+                return
+            end
+        end
+    end
+
+    function StageAPI.SetMetadata(set, index, name, count)
+        if not set[index] then
+            set[index] = {}
+        end
+
+        if count then
+            set[index][name] = count
+        else
+            if not set[index][name] then
+                set[index][name] = 0
+            end
+
+            set[index][name] = set[index][name] + 1
+        end
+    end
+
+    function StageAPI.HasMetadata(set, searchAll, searchParams)
+        return not not StageAPI.SearchMetadata(set, searchAll, searchParams)
+    end
+
+    function StageAPI.GetMetadata(metadataSets, index)
+        if not index then
+            return metadataSets
+        else
+            return metadataSets[index]
+        end
+    end
+
+    function StageAPI.GetMetadataGroups(metadataSets, index, byIndex)
+        local groups = StageAPI.SearchMetadata(metadataSets, index, {Flag = "IsGroup"})
+        if index ~= true or byIndex or not groups then
+            return groups
+        else
+            local foundGroups = {}
+            local differentGroups = {}
+            for ind, groupList in pairs(groups) do
+                for _, group in ipairs(groupList) do
+                    if not foundGroups[group] then
+                        foundGroups[group] = true
+                        differentGroups[#differentGroups + 1] = group
+                    end
+                end
+            end
+
+            return differentGroups
         end
     end
 
@@ -2369,8 +2630,8 @@ do -- RoomsList
         for index, entityList in pairs(entities) do
             local outList = {}
             for _, entity in ipairs(entityList) do
-                if StageAPI.MetadataEntities[entity.Type] and entity.Variant and StageAPI.MetadataEntities[entity.Type][entity.Variant] and (not entity.SubType or entity.SubType == 0) then
-                    local metadata = StageAPI.MetadataEntities[entity.Type][entity.Variant]
+                local metadata = StageAPI.IsEntityMetadata(entity)
+                if metadata then
                     if not entityMeta[index] then
                         entityMeta[index] = {}
                     end
@@ -2388,20 +2649,21 @@ do -- RoomsList
             outEntities[index] = outList
         end
 
-        local swapIndexToGroups = {}
-        local swapGroupToIndices = {}
+        local swappingIndices = {
+            GroupCanSwapToIndices = {}, -- maps every group to every index it can swap to
+            IndexCanSwapToGroups = {} -- maps every index to every group it can swap to
+        }
         local blockedEntities = {}
 
         for index, metadataSet in pairs(entityMeta) do
-            local setsOfConflicting = {}
+            local outMetaSet = {}
+            local conflictingMetadata = {}
             for name, count in pairs(metadataSet) do
                 local metadata = StageAPI.MetadataEntitiesByName[name]
                 if metadata.BlockEntities and outEntities[index] then
                     blockedEntities[index] = {}
                     for i, entity in StageAPI.ReverseIterate(outEntities[index]) do
-                        if not (StageAPI.UnblockableEntities[entity.Type] and (StageAPI.UnblockableEntities[entity.Type] == true
-                        or (StageAPI.UnblockableEntities[entity.Type][entity.Variant] and (StageAPI.UnblockableEntities[entity.Type][entity.Variant] == true
-                        or StageAPI.UnblockableEntities[entity.Type][entity.Variant][entity.SubType] == true)))) then
+                        if not StageAPI.IsEntityUnblockable(entity) then
                             blockedEntities[index][#blockedEntities[index] + 1] = entity
                             table.remove(outEntities[index], i)
                         end
@@ -2416,103 +2678,78 @@ do -- RoomsList
                     end
                 end
 
-                if metadata.Group then
-                    if metadata.Conflicts and not setsOfConflicting[metadata.Group] then
-                        local shouldConflict = true
-                        if metadata.PreventConflictWith or metadata.OnlyConflictWith then
-                            if metadata.PreventConflictWith then
-                                local noConflictWith = metadata.PreventConflictWith
-                                if type(noConflictWith) ~= "table" then
-                                    noConflictWith = {noConflictWith}
-                                end
+                local conflicts
+                if metadata.MetaType and metadata.Conflicts then
+                    local shouldConflict = true
+                    if metadata.PreventConflictWith or metadata.OnlyConflictWith then
+                        if metadata.PreventConflictWith then
+                            local noConflictWith = metadata.PreventConflictWith
+                            if type(noConflictWith) ~= "table" then
+                                noConflictWith = {noConflictWith}
+                            end
 
-                                for _, preventName in ipairs(noConflictWith) do
-                                    if metadataSet[preventName] then
-                                        shouldConflict = false
-                                    end
-                                end
-                            elseif metadata.OnlyConflictWith then
-                                shouldConflict = false
-                                local needsToConflict = metadata.OnlyConflictWith
-                                if type(needsToConflict) ~= "table" then
-                                    needsToConflict = {needsToConflict}
-                                end
-
-                                for _, needsName in ipairs(needsToConflict) do
-                                    if metadataSet[needsName] then
-                                        shouldConflict = true
-                                    end
+                            for _, preventName in ipairs(noConflictWith) do
+                                if metadataSet[preventName] then
+                                    shouldConflict = false
                                 end
                             end
-                        end
+                        elseif metadata.OnlyConflictWith then
+                            shouldConflict = false
+                            local needsToConflict = metadata.OnlyConflictWith
+                            if type(needsToConflict) ~= "table" then
+                                needsToConflict = {needsToConflict}
+                            end
 
-                        if shouldConflict then
-                            setsOfConflicting[metadata.Group] = {}
-
-                            for name2, count2 in pairs(metadataSet) do
-                                local metadata2 = StageAPI.MetadataEntitiesByName[name2]
-                                if metadata2.Conflicts and metadata2.Group == metadata.Group then
-                                    setsOfConflicting[metadata.Group][#setsOfConflicting[metadata.Group] + 1] = name2
+                            for _, needsName in ipairs(needsToConflict) do
+                                if metadataSet[needsName] then
+                                    shouldConflict = true
                                 end
                             end
                         end
                     end
+
+                    if shouldConflict then
+                        if not conflictingMetadata[metadata.MetaType] then
+                            conflictingMetadata[metadata.MetaType] = {}
+                        end
+
+                        conflictingMetadata[metadata.MetaType][#conflictingMetadata[metadata.MetaType] + 1] = {name, count}
+                        conflicts = true
+                    end
+                end
+
+                if not conflicts then
+                    outMetaSet[name] = count
                 end
             end
 
-            for group, conflicts in pairs(setsOfConflicting) do
+            for metatype, conflicts in pairs(conflictingMetadata) do
                 local use = conflicts[StageAPI.Random(1, #conflicts, StageAPI.RoomLoadRNG)]
-                for _, conflictName in ipairs(conflicts) do
-                    if conflictName ~= use then
-                        metadataSet[conflictName] = nil
-                    end
-                end
+                outMetaSet[use[1]] = use[2]
             end
 
-            for name, count in pairs(metadataSet) do
-                local metadata = StageAPI.MetadataEntitiesByName[name]
-                if metadata and metadata.Group then
-                    if metadata.StoreAsGroup then
-                        if not metadataSet[metadata.Group] then
-                            metadataSet[metadata.Group] = {}
-                        end
-
-                        if not metadataSet[metadata.Group][name] then
-                            metadataSet[metadata.Group][name] = 0
-                        end
-
-                        metadataSet[metadata.Group][name] = metadataSet[metadata.Group][name] + 1
-                    elseif type(metadataSet[metadata.Group]) ~= "table" then
-                        if not metadataSet[metadata.Group] then
-                            metadataSet[metadata.Group] = 0
-                        end
-
-                        metadataSet[metadata.Group] = metadataSet[metadata.Group] + 1
-                    end
-                end
+            local groups = StageAPI.GetMetadataGroups(outMetaSet)
+            if groups and #groups ~= 0 then -- TODO: Remove special Groups metadata and references to it once Revelations has been updated
+                outMetaSet["Groups"] = groups
             end
 
             if metadataSet["Swapper"] then
-                if metadataSet["Groups"] then
-                    local groupList = {}
-                    for group, count in pairs(metadataSet["Groups"]) do
-                        groupList[#groupList + 1] = group
-                        if not swapGroupToIndices[group] then
-                            swapGroupToIndices[group] = {}
-                        end
-                        swapGroupToIndices[group][#swapGroupToIndices[group] + 1] = index
-                    end
-
-                    swapIndexToGroups[index] = groupList
-                else
-                    if not swapGroupToIndices["None"] then
-                        swapGroupToIndices["None"] = {}
-                    end
-
-                    swapGroupToIndices["None"][#swapGroupToIndices["None"] + 1] = index
-                    swapIndexToGroups[index] = {"None"}
+                if not groups or #groups == 0 then
+                    groups = {"None"}
                 end
+
+                for _, group in ipairs(groups) do
+                    if not swappingIndices.GroupCanSwapToIndices[group] then
+                        swappingIndices.GroupCanSwapToIndices[group] = {}
+                    end
+
+                    swappingIndices.GroupCanSwapToIndices[group][#swappingIndices.GroupCanSwapToIndices[group] + 1] = index
+                end
+
+                swappingIndices.IndexCanSwapToGroups[index] = groups
             end
+
+            entityMeta[index] = outMetaSet
         end
 
         local outGrids = {}
@@ -2520,11 +2757,11 @@ do -- RoomsList
             outGrids[index] = gridList
         end
 
-        for index, groups in pairs(swapIndexToGroups) do
+        for index, groups in pairs(swappingIndices.IndexCanSwapToGroups) do
             local canSwapWith = {}
             for _, group in ipairs(groups) do
-                local indices = swapGroupToIndices[group]
-                for _, index2 in ipairs(indices) do
+                local canSwapToIndices = swappingIndices.GroupCanSwapToIndices[group]
+                for _, index2 in ipairs(canSwapToIndices) do
                     canSwapWith[#canSwapWith + 1] = index2
                 end
             end
@@ -2543,6 +2780,7 @@ do -- RoomsList
             end
         end
 
+        -- TODO: Split Triggers, RecentTriggers, and BlockedEntities off from entityMeta once Revelations has been updated.
         entityMeta.BlockedEntities = blockedEntities
         entityMeta.Triggers = {}
         entityMeta.RecentTriggers = {}
@@ -3085,205 +3323,6 @@ do -- RoomsList
         end]]
     end
 
-    function StageAPI.LevelRoom:SetEntityMetadata(index, name, value)
-        if not self.EntityMetadata[index] then
-            self.EntityMetadata[index] = {}
-        end
-
-        if not value and not self.EntityMetadata[index][name] then
-            self.EntityMetadata[index][name] = 0
-        end
-
-        if not value then
-            self.EntityMetadata[index][name] = self.EntityMetadata[index][name] + 1
-        else
-            self.EntityMetadata[index][name] = value
-        end
-    end
-
-    function StageAPI.LevelRoom:HasEntityMetadata(index, name)
-        return self.EntityMetadata[index] and (not name or self.EntityMetadata[index][name])
-    end
-
-    function StageAPI.LevelRoom:GetEntityMetadata(index, name)
-        if not name then
-            return self.EntityMetadata[index]
-        elseif not index then
-            local indicesWithMetadata = {}
-            for index, metadataSet in pairs(self.EntityMetadata) do
-                if metadataSet[name] then
-                    indicesWithMetadata[index] = metadataSet[name]
-                end
-            end
-
-            return indicesWithMetadata
-        elseif self.EntityMetadata[index] and self.EntityMetadata[index][name] then
-            return self.EntityMetadata[index][name]
-        end
-    end
-
-    function StageAPI.LevelRoom:GetEntityMetadataOfType(metatype, index)
-        if index then
-            local includedMetadata = {}
-            if self.EntityMetadata[index] then
-                for name, val in pairs(self.EntityMetadata[index]) do
-                    if type(val) == "table" and name == metatype then
-                        for _, v in ipairs(val) do
-                            includedMetadata[#includedMetadata + 1] = v
-                        end
-                    elseif type(val) ~= "table" then
-                        if StageAPI.MetadataEntitiesByName[name] and StageAPI.MetadataEntitiesByName[name].Group == metatype then
-                            includedMetadata[#includedMetadata + 1] = name
-                        end
-                    end
-                end
-
-            end
-            return includedMetadata
-        else
-            local includedMetadataByIndex = {}
-            for index, metadataSet in pairs(self.EntityMetadata) do
-                local includedMetadata = self:GetEntityMetadataOfType(metatype, index)
-                if #includedMetadata > 0 then
-                    includedMetadataByIndex[index] = includedMetadata
-                end
-            end
-
-            return includedMetadataByIndex
-        end
-    end
-
-    function StageAPI.LevelRoom:GetEntityMetadataGroups(index)
-        local groups = {}
-
-        if index then
-            local groupTbl = self:GetEntityMetadata(index, "Groups")
-            if groupTbl then
-                for group, count in pairs(groupTbl) do
-                    groups[#groups + 1] = group
-                end
-            end
-        else
-            for index, metadataSet in pairs(self.EntityMetadata) do
-                if metadataSet["Groups"] then
-                    for group, count in pairs(metadataSet["Groups"]) do
-                        if not StageAPI.IsIn(groups, group) then
-                            groups[#groups + 1] = group
-                        end
-                    end
-                end
-            end
-        end
-
-        return groups
-    end
-
-    function StageAPI.LevelRoom:IndicesShareGroup(index, index2, specificGroup)
-        if specificGroup then
-            return self:HasEntityMetadata(index, specificGroup) and self:HasEntityMetadata(index2, specificGroup)
-        else
-            local groups = self:GetEntityMetadataGroups(index)
-            for _, group in ipairs(groups) do
-                if self:HasEntityMetadata(index2, group) then
-                    return true
-                end
-            end
-        end
-
-        return false
-    end
-
-    function StageAPI.LevelRoom:GetIndicesInGroup(group)
-        local indices = {}
-        for index, metadataSet in pairs(self.EntityMetadata) do
-            if metadataSet[group] then
-                indices[#indices + 1] = index
-            end
-        end
-
-        return indices
-    end
-
-    function StageAPI.LevelRoom:GroupHasMetadata(group, name)
-        for index, metadataSet in pairs(self.EntityMetadata) do
-            if metadataSet[group] and metadataSet[name] then
-                return true
-            end
-        end
-
-        return false
-    end
-
-    function StageAPI.LevelRoom:IndexSharesGroupWithMetadata(index, name)
-        local groups = self:GetEntityMetadataGroups(index)
-        for _, group in ipairs(groups) do
-            if self:GroupHasMetadata(group, name) then
-                return true
-            end
-        end
-
-        return false
-    end
-
-    function StageAPI.LevelRoom:IndexIsAssociatedWithMetadata(index, name)
-        return self:HasEntityMetadata(index, name) or self:IndexSharesGroupWithMetadata(index, name)
-    end
-
-    function StageAPI.LevelRoom:SetMetadataTrigger(name, index, groups, value)
-        if not groups then
-            groups = {index}
-        elseif index then
-            groups[#groups + 1] = index
-        end
-
-        for _, group in ipairs(groups) do
-            if not self.EntityMetadata.Triggers[group] then
-                self.EntityMetadata.Triggers[group] = {}
-                self.EntityMetadata.RecentTriggers[group] = {}
-            end
-
-            if value then
-                self.EntityMetadata.Triggers[group][name] = value
-                self.EntityMetadata.RecentTriggers[group][name] = 0
-            else
-                self.EntityMetadata.Triggers[group][name] = nil
-                self.EntityMetadata.RecentTriggers[group][name] = nil
-            end
-        end
-    end
-
-    function StageAPI.LevelRoom:WasMetadataTriggered(name, frames, index, groups, exactFrame)
-        frames = frames or 0
-        if not groups then
-            groups = {index}
-        elseif index then
-            groups[#groups + 1] = index
-        end
-
-        for group, names in pairs(self.EntityMetadata.RecentTriggers) do
-            if not groups or StageAPI.IsIn(groups, group) then
-                for name2, timeSince in pairs(names) do
-                    if (not name or name2 == name) and (timeSince == exactFrame or timeSince <= frames) then
-                        return true
-                    end
-                end
-            end
-        end
-    end
-
-    function StageAPI.LevelRoom:TriggerIndexMetadata(index, name, value)
-        if value == nil then
-            value = true
-        end
-
-        local groups = self:GetEntityMetadataGroups(index)
-        self:SetMetadataTrigger(name, index, groups, value)
-    end
-
-    function StageAPI.LevelRoom:WasIndexTriggered(index, frames, exactFrame)
-        return self:WasMetadataTriggered(nil, frames, index, self:GetEntityMetadataGroups(index), exactFrame)
-    end
-
     function StageAPI.LevelRoom:IsGridIndexFree(index, ignoreEntities, ignoreGrids)
         return (ignoreEntities or not self.EntityTakenIndices[index]) and (ignoreGrids or not self.GridTakenIndices[index])
     end
@@ -3613,6 +3652,160 @@ do -- RoomsList
         end
 
         return newRoom
+    end
+
+    -- LevelRoom metadata management
+    function StageAPI.LevelRoom:SearchMetadata(searchAll, searchParams)
+        return StageAPI.SearchMetadata(self.EntityMetadata, searchAll, searchParams)
+    end
+
+    function StageAPI.LevelRoom:SetMetadata(index, name, count)
+        return StageAPI.SetMetadata(self.EntityMetadata, index, name, count)
+    end
+
+    function StageAPI.LevelRoom:HasMetadata(searchAll, searchParams)
+        return StageAPI.HasMetadata(self.EntityMetadata, searchAll, searchParams)
+    end
+
+    function StageAPI.LevelRoom:GetMetadata(index)
+        return StageAPI.GetMetadata(self.EntityMetadata, index)
+    end
+
+    function StageAPI.LevelRoom:GetMetadataGroups(index, byIndex)
+        return StageAPI.GetMetadataGroups(self.EntityMetadata, index or true, byIndex)
+    end
+
+    function StageAPI.LevelRoom:GetMetadataValue(index)
+        return StageAPI.GetMetadataValue(self.EntityMetadata[index])
+    end
+
+    function StageAPI.LevelRoom:GetBlockedEntities()
+        return self.EntityMetadata.BlockedEntities
+    end
+
+    -- TODO: Remove LEGACY LevelRoom metadata management, once Revelations has been moved off of it
+    function StageAPI.LevelRoom:SetEntityMetadata(index, name, value)
+        self:SetMetadata(index, name, value)
+    end
+
+    function StageAPI.LevelRoom:HasEntityMetadata(index, name)
+        return self:HasMetadata(index, {
+            Name = name
+        })
+    end
+
+    function StageAPI.LevelRoom:GetEntityMetadata(index, name)
+        return self:SearchMetadata(index or true, {
+            Name = name
+        })
+    end
+
+    function StageAPI.LevelRoom:GetEntityMetadataOfType(metatype, index)
+        local result = self:SearchMetadata(index or true, {
+            MetaType = metatype
+        })
+
+        if index and not result then -- the original version of this function would return empty tables rather than nil values
+            return {}
+        else
+            return result
+        end
+    end
+
+    function StageAPI.LevelRoom:GetEntityMetadataGroups(index)
+        return self:GetMetadataGroups(index or true)
+    end
+
+    function StageAPI.LevelRoom:IndicesShareGroup(index, index2, specificGroup)
+        if specificGroup then
+            return self:HasMetadata(index, {Group = specificGroup}) and self:HasMetadata(index2, {Group = specificGroup})
+        else
+            return self:HasMetadata(index2, {
+                Group = self:SearchMetadata(index, {Flag = "IsGroup"}),
+                AnyGroup = true
+            })
+        end
+    end
+
+    function StageAPI.LevelRoom:GetIndicesInGroup(group)
+        return self:SearchMetadata(true, {
+            Group = group,
+            IndexList = true
+        })
+    end
+
+    function StageAPI.LevelRoom:GroupHasMetadata(group, name)
+        return self:HasMetadata(true, {
+            Name = name,
+            Group = group
+        })
+    end
+
+    function StageAPI.LevelRoom:IndexSharesGroupWithMetadata(index, name)
+        return self:HasMetadata(true, {
+            Name = name,
+            Group = self:SearchMetadata(index, {Flag = "IsGroup"}),
+            AnyGroup = true
+        })
+    end
+
+    function StageAPI.LevelRoom:IndexIsAssociatedWithMetadata(index, name)
+        return self:HasMetadata(index, {Name = name}) or self:IndexSharesGroupWithMetadata(index, name)
+    end
+
+    function StageAPI.LevelRoom:SetMetadataTrigger(name, index, groups, value)
+        if not groups then
+            groups = {index}
+        elseif index then
+            groups[#groups + 1] = index
+        end
+
+        for _, group in ipairs(groups) do
+            if not self.EntityMetadata.Triggers[group] then
+                self.EntityMetadata.Triggers[group] = {}
+                self.EntityMetadata.RecentTriggers[group] = {}
+            end
+
+            if value then
+                self.EntityMetadata.Triggers[group][name] = value
+                self.EntityMetadata.RecentTriggers[group][name] = 0
+            else
+                self.EntityMetadata.Triggers[group][name] = nil
+                self.EntityMetadata.RecentTriggers[group][name] = nil
+            end
+        end
+    end
+
+    function StageAPI.LevelRoom:WasMetadataTriggered(name, frames, index, groups, exactFrame)
+        frames = frames or 0
+        if not groups then
+            groups = {index}
+        elseif index then
+            groups[#groups + 1] = index
+        end
+
+        for group, names in pairs(self.EntityMetadata.RecentTriggers) do
+            if not groups or StageAPI.IsIn(groups, group) then
+                for name2, timeSince in pairs(names) do
+                    if (not name or name2 == name) and (timeSince == exactFrame or timeSince <= frames) then
+                        return true
+                    end
+                end
+            end
+        end
+    end
+
+    function StageAPI.LevelRoom:TriggerIndexMetadata(index, name, value)
+        if value == nil then
+            value = true
+        end
+
+        local groups = self:GetEntityMetadataGroups(index)
+        self:SetMetadataTrigger(name, index, groups, value)
+    end
+
+    function StageAPI.LevelRoom:WasIndexTriggered(index, frames, exactFrame)
+        return self:WasMetadataTriggered(nil, frames, index, self:GetEntityMetadataGroups(index), exactFrame)
     end
 end
 
