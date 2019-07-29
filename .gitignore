@@ -1,4 +1,9 @@
 *.it
 *.dat
 
+basementrenovator/roomTest.xml
+
 basementrenovator/Executables
+basementrenovator/*.bat
+!basementrenovator/setup.bat
+basementrenovator/*.py

@@ -1,0 +1,1 @@
+powershell Expand-Archive scripts.zip -DestinationPath ./ -Force

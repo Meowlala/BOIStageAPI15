@@ -16,7 +16,7 @@ def run(filename):
     fContent = open(filename).read()
 
     try:
-        fContent = replace(fContent, "return {", "<stage>")
+        fContent = replaceRegex(fContent, "return {\\s*([^(^\\s*{)]*,)?", r"<rooms \1>\n")
         fContent = replaceRegex(fContent, "{ISDOOR=true, (.*)},", r"<door \1 />")
         fContent = replaceRegex(fContent, "(SLOT=\\d+(, )?)", "")
         fContent = replaceRegex(fContent, "{([^(ISDOOR)].*)},", r"<entity \1 />")
@@ -24,7 +24,7 @@ def run(filename):
         fContent = replaceRegex(fContent, "{ISDOOR=false, ([^\\n]*),", r"<spawn \1>")
         fContent = replaceRegex(fContent, "},(\\s*)},", r"</spawn>\1</room>")
         fContent = replace(fContent, "},", "</spawn>")
-        fContent = replace(fContent, "}", "</stage>")
+        fContent = replace(fContent, "}", "</rooms>")
 
         fContent = replace(fContent, "TYPE", "type")
         fContent = replace(fContent, "VARIANT", "variant")
@@ -35,6 +35,8 @@ def run(filename):
         fContent = replace(fContent, "WIDTH", "width")
         fContent = replace(fContent, "HEIGHT", "height")
         fContent = replace(fContent, "SHAPE", "shape")
+        fContent = replace(fContent, "METADATA=nil", "")
+        fContent = replace(fContent, "METADATA", "metadata")
         fContent = replace(fContent, " GRIDX=", " x=")
         fContent = replace(fContent, " GRIDY=", " y=")
         fContent = replace(fContent, "EXISTS", "exists")
