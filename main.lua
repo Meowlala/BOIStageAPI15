@@ -3308,6 +3308,8 @@ do -- RoomsList
         end
 
         room:SetClear(true)
+
+        local wasFirstLoad = self.FirstLoad
         StageAPI.ClearRoomLayout(false, self.FirstLoad or isExtraRoom, true, self.FirstLoad or isExtraRoom, self.GridTakenIndices)
         if self.FirstLoad then
             StageAPI.LoadRoomLayout(self.SpawnGrids, {self.SpawnEntities, self.ExtraSpawn}, true, true, false, true, self.GridInformation, self.AvoidSpawning, self.PersistentPositions)
@@ -3327,7 +3329,7 @@ do -- RoomsList
             StageAPI.CloseDoors()
         end
 
-        StageAPI.CallCallbacks("POST_ROOM_LOAD", false, self, self.FirstLoad, isExtraRoom)
+        StageAPI.CallCallbacks("POST_ROOM_LOAD", false, self, wasFirstLoad, isExtraRoom)
         StageAPI.StoreRoomGrids()
     end
 
