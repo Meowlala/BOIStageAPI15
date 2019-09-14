@@ -5811,30 +5811,54 @@ do -- Bosses
 
     StageAPI.BossSprite = Sprite()
     StageAPI.BossSprite:Load("gfx/ui/boss/versusscreen.anm2", false)
+    StageAPI.PlayingBossSprite = nil
     StageAPI.UnskippableBossAnim = nil
+    StageAPI.BossOffset = nil
     function StageAPI.PlayBossAnimationManual(portrait, name, spot, playerPortrait, playerName, playerSpot, portraitTwo, unskippable)
-        spot = spot or "gfx/ui/boss/bossspot.png"
-        name = name or "gfx/ui/boss/bossname_20.0_monstro.png"
-        portrait = portrait or "gfx/ui/boss/portrait_20.0_monstro.png"
-        playerSpot = playerSpot or "gfx/ui/boss/bossspot.png"
-        playerName = playerName or "gfx/ui/boss/bossname_20.0_monstro.png"
-        playerPortrait = playerPortrait or "gfx/ui/boss/portrait_20.0_monstro.png"
-
-        StageAPI.BossSprite:ReplaceSpritesheet(2, spot)
-        StageAPI.BossSprite:ReplaceSpritesheet(3, playerSpot)
-        StageAPI.BossSprite:ReplaceSpritesheet(4, portrait)
-        StageAPI.BossSprite:ReplaceSpritesheet(5, playerPortrait)
-        StageAPI.BossSprite:ReplaceSpritesheet(6, playerName)
-        StageAPI.BossSprite:ReplaceSpritesheet(7, name)
-
-        if portraitTwo then
-            StageAPI.BossSprite:ReplaceSpritesheet(9, portraitTwo)
-            StageAPI.BossSprite:Play("DoubleTrouble", true)
-        else
-            StageAPI.BossSprite:Play("Scene", true)
+        local paramTable = portrait
+        if type(paramTable) ~= "table" then
+            paramTable = {
+                BossPortrait = portrait,
+                BossPortraitTwo = portraitTwo,
+                BossName = name,
+                BossSpot = spot,
+                PlayerPortrait = playerPortrait,
+                PlayerName = playerName,
+                PlayerSpot = playerSpot,
+                Unskippable = unskippable
+            }
         end
 
-        StageAPI.BossSprite:LoadGraphics()
+        if paramTable.Sprite then -- if you need to use a different sprite (ex for a special boss animation) this could help
+            StageAPI.PlayingBossSprite = paramTable.Sprite
+        else
+            StageAPI.PlayingBossSprite = StageAPI.BossSprite
+        end
+
+        if not paramTable.NoLoadGraphics then
+            StageAPI.PlayingBossSprite:ReplaceSpritesheet(2, paramTable.BossSpot or "gfx/ui/boss/bossspot.png")
+            StageAPI.PlayingBossSprite:ReplaceSpritesheet(3, paramTable.PlayerSpot or "gfx/ui/boss/bossspot.png")
+            StageAPI.PlayingBossSprite:ReplaceSpritesheet(4, paramTable.BossPortrait or "gfx/ui/boss/portrait_20.0_monstro.png")
+            StageAPI.PlayingBossSprite:ReplaceSpritesheet(5, paramTable.PlayerPortrait or "gfx/ui/boss/portrait_20.0_monstro.png")
+            StageAPI.PlayingBossSprite:ReplaceSpritesheet(6, paramTable.PlayerName or "gfx/ui/boss/bossname_20.0_monstro.png")
+            StageAPI.PlayingBossSprite:ReplaceSpritesheet(7, paramTable.BossName or "gfx/ui/boss/bossname_20.0_monstro.png")
+
+            if paramTable.BossPortraitTwo then
+                StageAPI.PlayingBossSprite:ReplaceSpritesheet(9, paramTable.BossPortraitTwo)
+                paramTable.Animation = paramTable.Animation or "DoubleTrouble"
+            end
+
+            StageAPI.PlayingBossSprite:Play(paramTable.Animation or "Scene", true)
+
+            StageAPI.PlayingBossSprite:LoadGraphics()
+        end
+
+        if paramTable.BossOffset then
+            StageAPI.BossOffset = paramTable.BossOffset
+        else
+            StageAPI.BossOffset = nil
+        end
+
         StageAPI.UnskippableBossAnim = unskippable
     end
 
@@ -5842,20 +5866,38 @@ do -- Bosses
     local menuConfirmTriggered
     mod:AddCallback(ModCallbacks.MC_POST_RENDER, function()
         StageAPI.IsOddRenderFrame = not StageAPI.IsOddRenderFrame
-        local isPlaying = StageAPI.BossSprite:IsPlaying("Scene") or StageAPI.BossSprite:IsPlaying("DoubleTrouble")
+        local isPlaying = StageAPI.PlayingBossSprite
 
         if isPlaying and ((game:IsPaused() and not menuConfirmTriggered) or StageAPI.UnskippableBossAnim) then
             if StageAPI.IsOddRenderFrame then
-                StageAPI.BossSprite:Update()
+                StageAPI.PlayingBossSprite:Update()
             end
 
-            StageAPI.BossSprite:Render(StageAPI.GetScreenCenterPosition(), zeroVector, zeroVector)
+            local centerPos = StageAPI.GetScreenCenterPosition()
+            if StageAPI.BossOffset then
+                for i = 0, 10 do
+                    if i ~= 4 and i ~= 9 then
+                        StageAPI.PlayingBossSprite:RenderLayer(i, centerPos)
+                    end
+                end
+
+                if StageAPI.BossOffset.One or StageAPI.BossOffset.Two then -- Double trouble, table {One = Vector, Two = Vector}
+                    StageAPI.PlayingBossSprite:RenderLayer(4, centerPos + (StageAPI.BossOffset.One or zeroVector))
+                    StageAPI.PlayingBossSprite:RenderLayer(9, centerPos + (StageAPI.BossOffset.Two or zeroVector))
+                else -- Standard, Vector
+                    StageAPI.PlayingBossSprite:RenderLayer(4, centerPos + StageAPI.BossOffset)
+                end
+            else
+                StageAPI.PlayingBossSprite:Render(centerPos, zeroVector, zeroVector)
+            end
         elseif isPlaying then
-            StageAPI.BossSprite:Stop()
+             StageAPI.PlayingBossSprite:Stop()
+             StageAPI.PlayingBossSprite = nil
         end
 
         if not isPlaying then
             StageAPI.UnskippableBossAnim = nil
+            StageAPI.BossOffset = nil
         end
 
         menuConfirmTriggered = nil
@@ -5893,7 +5935,17 @@ do -- Bosses
     function StageAPI.PlayBossAnimation(boss, unskippable)
         local bSpot, pSpot = StageAPI.GetStageSpot()
         local playerPortrait, playerName = StageAPI.TryGetPlayerGraphicsInfo(StageAPI.Players[1])
-        StageAPI.PlayBossAnimationManual(boss.Portrait, boss.Bossname, boss.Spot or bSpot, playerPortrait, playerName, pSpot, boss.PortraitTwo, unskippable)
+        StageAPI.PlayBossAnimationManual({
+            BossPortrait = boss.Portrait,
+            BossPortraitTwo = boss.PortraitTwo,
+            BossName = boss.BossName or boss.Bossname,
+            BossSpot = boss.Spot or bSpot,
+            PlayerPortrait = playerPortrait,
+            PlayerName = playerName,
+            PlayerSpot = pSpot,
+            Unskippable = unskippable,
+            BossOffset = boss.Offset
+        })
     end
 
     local horsemanTypes = {
