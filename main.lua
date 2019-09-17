@@ -8110,7 +8110,8 @@ during screenshake
 
 **v1.81
 
-- Pitfalls and eternal flies are now persistent
+- Pitfalls and eternal flies are now
+persistent
 
 - Separated room type requiring
 for sin rooms and special rooms,
@@ -8119,6 +8120,21 @@ secret / shop sin rooms
 
 - Added DoLayoutDoorsMatch for
 convenience
+
+**v1.82
+
+- Update BR scripts for Basement
+Renovator xml format and add setup
+script
+
+- Improve accuracy of floor anm2 to
+match with the base game
+
+- Add hook for custom boss portrait
+sprite and portrait offset
+
+- Fixed animation for trapdoors
+overridden with PRE_SELECT_NEXT_STAGE
 ]])
 
             REVEL.AddChangelog("StageAPI v1.78 - 79", [[-Fixed an issue where "fart damage" was

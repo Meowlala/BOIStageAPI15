@@ -19,4 +19,5 @@ Before following the steps below, double-click `setup.bat` in the `basementrenov
     - If using an older BR version missing File > Export to STB, add `basementrenovator/convertstb.bat` instead
   - Add `basementrenovator/testhook.bat` to your test hook list
     - When you test a room, StageAPI will automatically kick in to set up custom grid and meta entities
-    - Custom Stage support is not ready yet
+    - If you've configured your mod with a `basementrenovator/StageMod.xml` (see Basement Renovator readme) and your rooms are
+    configured to load the stage, it will launch the rooms in that stage
