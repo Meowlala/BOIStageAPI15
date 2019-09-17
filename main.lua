@@ -6727,7 +6727,7 @@ do -- Callbacks
         local currStage = StageAPI.CurrentStage or {}
         local nextStage = StageAPI.CallCallbacks("PRE_SELECT_NEXT_STAGE", true, StageAPI.CurrentStage) or currStage.NextStage
         if nextStage and not currStage.OverridingTrapdoors then
-            StageAPI.SpawnCustomTrapdoor(room:GetGridPosition(index), nextStage, nil, 32, true)
+            StageAPI.SpawnCustomTrapdoor(room:GetGridPosition(index), nextStage, grid.Sprite:GetFilename(), 32, true)
             room:RemoveGridEntity(index, 0, false)
         end
     end
