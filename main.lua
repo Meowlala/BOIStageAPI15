@@ -5234,6 +5234,14 @@ do -- Custom Stage
         self.XLStage = stage
     end
 
+    function StageAPI.CustomStage:SetStageNumber(num)
+        self.StageNumber = num
+    end
+
+    function StageAPI.CustomStage:SetIsSecondStage(isSecondStage)
+        self.IsSecondStage = isSecondStage
+    end
+
     function StageAPI.CustomStage:SetRoomGfx(gfx, rtype)
         if not self.RoomGfx then
             self.RoomGfx = {}
