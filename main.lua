@@ -7178,7 +7178,7 @@ do -- Callbacks
 
             if invalidEntrance and #validDoors > 0 and not currentRoom.Data.PreventDoorFix then
                 local changeEntrance = validDoors[StageAPI.Random(1, #validDoors)]
-                for _, player in ipairs(REVEL.players) do
+                for _, player in ipairs(players) do
                     player.Position = room:GetDoorSlotPosition(changeEntrance)
                 end
             end
@@ -7446,7 +7446,7 @@ do -- Callbacks
                 local layout = StageAPI.CreateEmptyRoomLayout(shape)
                 StageAPI.RegisterLayout("StageAPITest", layout)
 
-                local testRoom = StageAPI.LevelRoom("StageAPITest", nil, REVEL.room:GetSpawnSeed(), shape, RoomType.ROOM_DEFAULT)
+                local testRoom = StageAPI.LevelRoom("StageAPITest", nil, room:GetSpawnSeed(), shape, RoomType.ROOM_DEFAULT)
                 StageAPI.SetExtraRoom("StageAPITest", testRoom)
 
                 StageAPI.TransitionToExtraRoom("StageAPITest", layout.Doors[StageAPI.Random(1, #layout.Doors)].Slot, true, "Stage")
