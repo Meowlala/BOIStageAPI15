@@ -8143,6 +8143,9 @@ sprite and portrait offset
 
 - Fixed animation for trapdoors
 overridden with PRE_SELECT_NEXT_STAGE
+
+- Add setter functions for
+IsSecondStage and StageNumber
 ]])
 
             REVEL.AddChangelog("StageAPI v1.78 - 79", [[-Fixed an issue where "fart damage" was
@@ -8374,7 +8377,7 @@ other than a door
 end
 
 Isaac.DebugString("[StageAPI] Fully Loaded, loading dependent mods.")
-StageAPI.MarkLoaded("StageAPI", "1.82", true, true)
+StageAPI.MarkLoaded("StageAPI", "1.83", true, true)
 
 StageAPI.Loaded = true
 if StageAPI.ToCall then
