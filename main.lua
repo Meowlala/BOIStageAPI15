@@ -716,6 +716,14 @@ do -- Core Functions
         end
     end
 
+    function StageAPI.Copy(tbl)
+        local t = {}
+        for k, v in pairs(tbl) do
+            t[k] = v
+        end
+        return t
+    end
+
     function StageAPI.GetPlayingAnimation(sprite, animations)
         for _, anim in ipairs(animations) do
             if sprite:IsPlaying(anim) then
@@ -2483,6 +2491,8 @@ do -- RoomsList
         if index and (tbl[index] and type(tbl[index]) == "table") then
             tbl = tbl[index]
         end
+
+        entData = StageAPI.Copy(entData)
 
         entData.Type = entData.Type or 10
         entData.Variant = entData.Variant or 0
@@ -8076,6 +8086,12 @@ do -- Mod Compatibility
     mod:AddCallback(ModCallbacks.MC_POST_GAME_STARTED, function()
         if REVEL and REVEL.AddChangelog and not REVEL.AddedStageAPIChangelogs then
             REVEL.AddedStageAPIChangelogs = true
+
+            REVEL.AddChangelog("StageAPI v1.83", [[- Fix a bug with
+PRE_SPAWN_ENTITY that caused
+replacements to persist
+between runs
+            ]])
 
             REVEL.AddChangelog("StageAPI v1.80 - 82", [[- Extra rooms can now use
 default or boss room types
