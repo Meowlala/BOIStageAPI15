@@ -1874,29 +1874,26 @@ do -- RoomsList
 
     function StageAPI.DoLayoutDoorsMatch(layout, doors)
         local numNonExistingDoors = 0
+        local doesLayoutMatch = true
         for _, door in ipairs(layout.Doors) do
-            if door.Slot then
-                if not door.Exists and ((not doors and room:GetDoor(door.Slot)) or (doors and doors[door.Slot])) then
-                    return false
-                elseif not door.Exists then
-                    numNonExistingDoors = numNonExistingDoors + 1
+            if door.Slot and not door.Exists then
+                if ((not doors and room:GetDoor(door.Slot)) or (doors and doors[door.Slot])) then
+                    doesLayoutMatch = false
                 end
+                numNonExistingDoors = numNonExistingDoors + 1
             end
         end
 
-        return true
+        return doesLayoutMatch, numNonExistingDoors
     end
 
-    StageAPI.RoomChooseRNG = RNG()
-    function StageAPI.ChooseRoomLayout(roomList, seed, shape, rtype, requireRoomType, ignoreDoors, doors, disallowIDs)
+    -- returns list of rooms, error message if no rooms valid
+    function StageAPI.GetValidRoomsForLayout(args)
+        local roomList = args.RoomList
+        local shape = args.Shape or room:GetRoomShape()
+
         local callbacks = StageAPI.GetCallbacks("POST_CHECK_VALID_ROOM")
         local validRooms = {}
-
-        shape = shape or room:GetRoomShape()
-        seed = seed or room:GetSpawnSeed()
-        if requireRoomType then
-            rtype = rtype or room:GetType()
-        end
 
         local possibleRooms
         if shape == -1 then
@@ -1905,57 +1902,95 @@ do -- RoomsList
             possibleRooms = roomList.ByShape[shape]
         end
 
-        local totalWeight = 0
-        if possibleRooms then
-            for _, layout in ipairs(possibleRooms) do
-                shape = layout.Shape
+        if not possibleRooms then
+            return {}, "No rooms for shape!"
+        end
 
-                local isValid = true
+        local requireRoomType = args.RequireRoomType
+        local rtype
+        if requireRoomType then
+            rtype = args.RoomType or room:GetType()
+        end
 
-                local numNonExistingDoors = 0
-                if requireRoomType and layout.Type ~= rtype then
-                    isValid = false
-                elseif not ignoreDoors then
-                    isValid = StageAPI.DoLayoutDoorsMatch(layout, doors)
-                end
+        local ignoreDoors = args.IgnoreDoors
+        local doors = args.Doors
+        if not doors then
+            doors = StageAPI.GetDoorsForRoom()
+        end
 
-                if isValid and disallowIDs then
-                    for _, id in ipairs(disallowIDs) do
-                        if layout.StageAPIID == id then
-                            isValid = false
-                            break
-                        end
+        local seed = args.Seed or room:GetSpawnSeed()
+        local disallowIDs = args.DisallowIDs
+
+        for _, layout in ipairs(possibleRooms) do
+            shape = layout.Shape
+
+            local isValid = true
+
+            local numNonExistingDoors = 0
+            if requireRoomType and layout.Type ~= rtype then
+                isValid = false
+            elseif not ignoreDoors then
+                isValid, numNonExistingDoors = StageAPI.DoLayoutDoorsMatch(layout, doors)
+            end
+
+            if isValid and disallowIDs then
+                for _, id in ipairs(disallowIDs) do
+                    if layout.StageAPIID == id then
+                        isValid = false
+                        break
                     end
-                end
-
-                local weight = layout.Weight
-                if isValid then
-                    for _, callback in ipairs(callbacks) do
-                        local ret = callback.Function(layout, roomList, seed, shape, rtype, requireRoomType)
-                        if ret == false then
-                            isValid = false
-                            break
-                        elseif type(ret) == "number" then
-                            weight = ret
-                        end
-                    end
-                end
-
-                if isValid then
-                    if StageAPI.CurrentlyInitializing and not StageAPI.CurrentlyInitializing.IsExtraRoom and rtype == RoomType.ROOM_DEFAULT then
-                        local originalWeight = weight
-                        weight = weight * 2 ^ numNonExistingDoors
-                        if shape == RoomShape.ROOMSHAPE_1x1 and numNonExistingDoors > 0 then
-                            weight = weight + math.min(originalWeight * 4, 4)
-                        end
-                    end
-
-                    validRooms[#validRooms + 1] = {layout, weight}
-                    totalWeight = totalWeight + weight
                 end
             end
-        else
-            StageAPI.Log("No rooms for shape!")
+
+            local weight = layout.Weight
+            if isValid then
+                for _, callback in ipairs(callbacks) do
+                    local ret = callback.Function(layout, roomList, seed, shape, rtype, requireRoomType)
+                    if ret == false then
+                        isValid = false
+                        break
+                    elseif type(ret) == "number" then
+                        weight = ret
+                    end
+                end
+            end
+
+            if isValid then
+                if StageAPI.CurrentlyInitializing and not StageAPI.CurrentlyInitializing.IsExtraRoom and rtype == RoomType.ROOM_DEFAULT then
+                    local originalWeight = weight
+                    weight = weight * 2 ^ numNonExistingDoors
+                    if shape == RoomShape.ROOMSHAPE_1x1 and numNonExistingDoors > 0 then
+                        weight = weight + math.min(originalWeight * 4, 4)
+                    end
+                end
+            end
+
+            if isValid then
+                validRooms[#validRooms + 1] = {layout, weight}
+            end
+        end
+
+        return validRooms, nil
+    end
+
+    StageAPI.RoomChooseRNG = RNG()
+    function StageAPI.ChooseRoomLayout(roomList, seed, shape, rtype, requireRoomType, ignoreDoors, doors, disallowIDs)
+        local validRooms, err = StageAPI.GetValidRoomsForLayout({
+            RoomList = roomList,
+            Seed = seed,
+            Shape = shape,
+            RoomType = rtype,
+            RequireRoomType = requireRoomType,
+            IgnoreDoors = ignoreDoors,
+            Doors = doors,
+            DisallowIDs = disallowIDs
+        })
+        if err then StageAPI.Log(err) end
+
+        local totalWeight = 0
+        for _, layout in ipairs(validRooms) do
+            local weight = layout[2]
+            totalWeight = totalWeight + weight
         end
 
         if #validRooms > 0 then
@@ -2908,6 +2943,14 @@ do -- RoomsList
         end
     end
 
+    function StageAPI.GetDoorsForRoom()
+        doors = {}
+        for i = 0, 7 do
+            doors[i] = not not room:GetDoor(i)
+        end
+        return doors
+    end
+
     StageAPI.LevelRoom = StageAPI.Class("LevelRoom")
     StageAPI.NextUniqueRoomIdentifier = 0
     function StageAPI.LevelRoom:Init(layoutName, roomsList, seed, shape, roomType, isExtraRoom, fromSaveData, requireRoomType, ignoreDoors, doors, levelIndex, ignoreRoomRules)
@@ -2926,12 +2969,7 @@ do -- RoomsList
             seed = seed or room:GetSpawnSeed()
 
             if not doors then
-                doors = {}
-                for i = 0, 7 do
-                    if room:GetDoor(i) then
-                        doors[i] = true
-                    end
-                end
+                doors = StageAPI.GetDoorsForRoom()
             end
 
             self.Data = {}
@@ -6940,6 +6978,7 @@ do -- Callbacks
             bossID = StageAPI.SelectBoss(bosses, hasHorseman)
         elseif checkEncountered then
             if StageAPI.GetBossEncountered(bossID) then
+                StageAPI.Log("Trying to generate boss room for encountered boss: " .. tostring(bossID))
                 return
             end
         end
@@ -6975,6 +7014,10 @@ do -- Callbacks
 
     function StageAPI.SetCurrentBossRoom(bossID, checkEncountered, bosses, hasHorseman, requireRoomTypeBoss, noPlayBossAnim)
         local newRoom, boss = StageAPI.GenerateBossRoom(bossID, checkEncountered, bosses, hasHorseman, requireRoomTypeBoss, noPlayBossAnim)
+        if not newRoom then
+            StageAPI.Log('Could not generate room for boss: ID: ' .. bossID .. ' List Length: ' .. tostring(bosses and #bosses or 0))
+            return nil, nil
+        end
         StageAPI.SetCurrentRoom(newRoom)
         newRoom:Load()
 
@@ -8103,6 +8146,12 @@ between runs
 - Make compatible with
 multi-room Basement Renovator
 tests
+
+- Add GetValidRoomsForLayout
+and GetDoorsForRoom
+
+- Fix bug where missing door
+weights were unused
             ]])
 
             REVEL.AddChangelog("StageAPI v1.80 - 82", [[- Extra rooms can now use
