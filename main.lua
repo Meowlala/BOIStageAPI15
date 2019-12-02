@@ -8032,21 +8032,26 @@ Isaac.DebugString("[StageAPI] Loading BR Compatibility")
 do -- BR Compatibility
     StageAPI.InTestMode = false
 
-    local status, brTestRoom = pcall(require, 'basementrenovator.roomTest')
+    local status, brTestRooms = pcall(require, 'basementrenovator.roomTest')
     if not status then
         StageAPI.Log('Error loading BR compatibility file: ' .. tostring(brTestRoom))
-    elseif brTestRoom then
-        local testList = StageAPI.RoomsList("BRTest", brTestRoom)
-        local testLayout = testList.All[1]
-        StageAPI.RegisterLayout("BRTest", testLayout)
+    elseif brTestRooms then
+        local testList = StageAPI.RoomsList("BRTest", brTestRooms)
+        for i, testLayout in ipairs(testList.All) do
+            StageAPI.RegisterLayout("BRTest-" .. i, testLayout)
+        end
 
         BasementRenovator = BasementRenovator or { subscribers = {} }
         BasementRenovator.subscribers['StageAPI'] = {
-            PostTestInit = function(test)
-                if test.Type    ~= testLayout.Type
-                or test.Variant ~= testLayout.Variant
-                or test.Subtype ~= testLayout.SubType
-                or test.Name    ~= testLayout.Name then
+            PostTestInit = function(testData)
+                local test = testData.Rooms[1]
+                local testLayout = brTestRooms[1]
+
+                if test.Type    ~= testLayout.TYPE
+                or test.Variant ~= testLayout.VARIANT
+                or test.Subtype ~= testLayout.SUBTYPE
+                or test.Name    ~= testLayout.NAME
+                or #testData.Rooms ~= #brTestRooms then
                     StageAPI.Log("basementrenovator/roomTest.lua did not have values matching the BR test! Make sure your hooks are set up properly")
                     StageAPI.BadTestFile = true
                     return
@@ -8074,9 +8079,12 @@ do -- BR Compatibility
         StageAPI.AddCallback("StageAPI", "PRE_STAGEAPI_NEW_ROOM_GENERATION", 0, function()
             if StageAPI.BadTestFile or not BasementRenovator.TestRoomData then return end
 
-            if BasementRenovator.InTestStage() and BasementRenovator.InTestRoom() and room:IsFirstVisit() then
-                local testRoom = StageAPI.LevelRoom("BRTest", nil, room:GetSpawnSeed(), testLayout.Shape, testLayout.Type, nil, nil, nil, nil, nil, StageAPI.GetCurrentRoomID())
-                return testRoom
+            if BasementRenovator.InTestStage() and room:IsFirstVisit() then
+                local brRoom = BasementRenovator.InTestRoom()
+                if brRoom then
+                    local testRoom = StageAPI.LevelRoom("BRTest-" .. brRoom.Index, nil, room:GetSpawnSeed(), brRoom.Shape, brRoom.Type, nil, nil, nil, nil, nil, StageAPI.GetCurrentRoomID())
+                    return testRoom
+                end
             end
         end)
     end
@@ -8091,6 +8099,10 @@ do -- Mod Compatibility
 PRE_SPAWN_ENTITY that caused
 replacements to persist
 between runs
+
+- Make compatible with
+multi-room Basement Renovator
+tests
             ]])
 
             REVEL.AddChangelog("StageAPI v1.80 - 82", [[- Extra rooms can now use
