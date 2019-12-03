@@ -8138,7 +8138,7 @@ do -- Mod Compatibility
         if REVEL and REVEL.AddChangelog and not REVEL.AddedStageAPIChangelogs then
             REVEL.AddedStageAPIChangelogs = true
 
-            REVEL.AddChangelog("StageAPI v1.83", [[- Fix a bug with
+            REVEL.AddChangelog("StageAPI v1.83 - 84", [[- Fix a bug with
 PRE_SPAWN_ENTITY that caused
 replacements to persist
 between runs
@@ -8454,7 +8454,7 @@ other than a door
 end
 
 Isaac.DebugString("[StageAPI] Fully Loaded, loading dependent mods.")
-StageAPI.MarkLoaded("StageAPI", "1.83", true, true)
+StageAPI.MarkLoaded("StageAPI", "1.84", true, true)
 
 StageAPI.Loaded = true
 if StageAPI.ToCall then
