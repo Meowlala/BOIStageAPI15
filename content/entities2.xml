@@ -29,7 +29,7 @@
     <entity anm2path="stageapi/none.anm2" id="1000" name="StageAPIDeleteMeEffect" variant="12540" collisionRadius="0" numGridCollisionPoints="0">
         <gibs amount="0" blood="0" bone="0" eye="0" gut="0" large="0" />
     </entity>
-    <entity anm2path="stageapi/none.anm2" id="865" name="StageAPIDeleteMeNPC" variant="12541" collisionRadius="1" numGridCollisionPoints="1">
+    <entity anm2path="stageapi/none.anm2" id="865" name="StageAPIDeleteMeNPC" variant="12541" collisionRadius="1" numGridCollisionPoints="1" shutdoors="false">
         <gibs amount="0" blood="0" bone="0" eye="0" gut="0" large="0" />
     </entity>
     <entity anm2path="stageapi/none.anm2" id="9" name="StageAPIDeleteMeProjectile" variant="12542" collisionRadius="1" numGridCollisionPoints="1">
