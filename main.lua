@@ -8083,7 +8083,7 @@ end
 Isaac.DebugString("[StageAPI] Loading BR Compatibility")
 do -- BR Compatibility
     StageAPI.InTestMode = false
-    StageAPI.OverrideTestRoom = true -- toggle this value in console to disable stageapi override
+    StageAPI.OverrideTestRoom = false -- toggle this value in console to force enable stageapi override
 
     local status, brTestRooms = pcall(require, 'basementrenovator.roomTest')
     if not status then
@@ -8175,10 +8175,13 @@ that was causing startup crashes
 - Add POST_CUSTOM_GRID_REMOVE
 callback
 
+- StageAPI is now off by default
+when testing rooms outside custom
+floors
+
 - Add StageAPI.OverrideTestRoom
-switch to allow turning off
-StageAPI for test rooms while
-leaving the mod on
+switch as an explicit override
+for that
             ]])
 
             REVEL.AddChangelog("StageAPI v1.80 - 82", [[- Extra rooms can now use
