@@ -88,6 +88,9 @@ Callback List:
 - POST_CUSTOM_GRID_UPDATE(grid, spawnIndex, persistData, CustomGrid, customGridTypeName)
 -- Takes CustomGridTypeName as first callback parameter, and will only run if parameter not supplied or matches current grid.
 
+- POST_CUSTOM_GRID_REMOVE(spawnIndex, persistData, CustomGrid, customGridTypeName)
+-- Takes CustomGridTypeName as first callback parameter, and will only run if parameter not supplied or matches current grid.
+
 - PRE_TRANSITION_RENDER()
 -- Called before the custom room transition would render, for effects that should render before it.
 
@@ -3748,6 +3751,12 @@ do -- Custom Grid Entities
                     local grid = room:GetGridEntity(grindex)
                     if not grid and customGridType.BaseType then
                         grindices[grindex] = nil
+                        local callbacks = StageAPI.GetCallbacks("POST_CUSTOM_GRID_REMOVE")
+                        for _, callback in ipairs(callbacks) do
+                            if not callback.Params[1] or callback.Params[1] == name then
+                                callback.Function(grindex, persistData, StageAPI.CustomGridTypes[name], name)
+                            end
+                        end
                     else
                         local callbacks = StageAPI.GetCallbacks("POST_CUSTOM_GRID_UPDATE")
                         for _, callback in ipairs(callbacks) do
@@ -8074,6 +8083,7 @@ end
 Isaac.DebugString("[StageAPI] Loading BR Compatibility")
 do -- BR Compatibility
     StageAPI.InTestMode = false
+    StageAPI.OverrideTestRoom = true -- toggle this value in console to disable stageapi override
 
     local status, brTestRooms = pcall(require, 'basementrenovator.roomTest')
     if not status then
@@ -8110,10 +8120,14 @@ do -- BR Compatibility
                 -- before StageAPI's normal stage handling code
                 if test.IsModStage then
                     StageAPI.NextStage = StageAPI.CustomStages[test.StageName]
+                    StageAPI.OverrideTestRoom = true -- must be turned on for custom stages
                 end
             end,
             TestRoomEntitySpawn = function()
                 if StageAPI.BadTestFile then return end
+
+                if not StageAPI.OverrideTestRoom then return end
+
                 -- makes sure placeholder/meta entities can't spawn
                 return { 999, StageAPI.E.DeleteMeEffect.V, 0 }
             end
@@ -8121,6 +8135,8 @@ do -- BR Compatibility
 
         StageAPI.AddCallback("StageAPI", "PRE_STAGEAPI_NEW_ROOM_GENERATION", 0, function()
             if StageAPI.BadTestFile or not BasementRenovator.TestRoomData then return end
+
+            if not StageAPI.OverrideTestRoom then return end
 
             if BasementRenovator.InTestStage() and room:IsFirstVisit() then
                 local brRoom = BasementRenovator.InTestRoom()
@@ -8152,6 +8168,17 @@ and GetDoorsForRoom
 
 - Fix bug where missing door
 weights were unused
+
+- Fix issue with room test file
+that was causing startup crashes
+
+- Add POST_CUSTOM_GRID_REMOVE
+callback
+
+- Add StageAPI.OverrideTestRoom
+switch to allow turning off
+StageAPI for test rooms while
+leaving the mod on
             ]])
 
             REVEL.AddChangelog("StageAPI v1.80 - 82", [[- Extra rooms can now use
