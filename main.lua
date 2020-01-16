@@ -2759,7 +2759,7 @@ do -- RoomsList
                                         if ret.Data then
                                             entityInfo = ret
                                         else
-                                            entityInfo.Data.Type = ret[1]
+                                            entityInfo.Data.Type = ret[1] == 999 and 1000 or ret[1]
                                             entityInfo.Data.Variant = ret[2]
                                             entityInfo.Data.SubType = ret[3]
                                         end
@@ -8182,6 +8182,11 @@ floors
 - Add StageAPI.OverrideTestRoom
 switch as an explicit override
 for that
+
+- Enhance PRE_SPAWN_ENTITY compat
+with PRE_ROOM_ENTITY_SPAWN so
+effects are automatically
+converted to type 1000
             ]])
 
             REVEL.AddChangelog("StageAPI v1.80 - 82", [[- Extra rooms can now use
