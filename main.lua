@@ -1863,7 +1863,9 @@ do -- RoomsList
                 local grid = room:GetGridEntity(i)
                 if grid then
                     local gtype = grid.Desc.Type
-                    if (doWalls or gtype ~= GridEntityType.GRID_WALL) and (doDoors or gtype ~= GridEntityType.GRID_DOOR) and (not onlyRemoveTheseDecorations or gtype ~= GridEntityType.GRID_DECORATION or onlyRemoveTheseDecorations[i]) then
+                    if (doWalls or gtype ~= GridEntityType.GRID_WALL or room:IsPositionInRoom(grid.Position, 0)) -- this allows custom wall grids to exist
+                    and (doDoors or gtype ~= GridEntityType.GRID_DOOR)
+                    and (not onlyRemoveTheseDecorations or gtype ~= GridEntityType.GRID_DECORATION or onlyRemoveTheseDecorations[i]) then
                         StageAPI.Room:RemoveGridEntity(i, 0, keepDecoration)
                     end
                 end
@@ -8187,6 +8189,10 @@ for that
 with PRE_ROOM_ENTITY_SPAWN so
 effects are automatically
 converted to type 1000
+
+- Only prevent clearing wall grids
+"outside" the room; this allows
+custom grids based on GRID_WALL
             ]])
 
             REVEL.AddChangelog("StageAPI v1.80 - 82", [[- Extra rooms can now use
