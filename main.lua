@@ -4429,7 +4429,7 @@ do -- Extra Rooms
 
     StageAPI.DoorTypes = {}
     StageAPI.CustomDoor = StageAPI.Class("CustomDoor")
-    function StageAPI.CustomDoor:Init(name, anm2, openAnim, closeAnim, openedAnim, closedAnim, noAutoHandling, alwaysOpen)
+    function StageAPI.CustomDoor:Init(name, anm2, openAnim, closeAnim, openedAnim, closedAnim, noAutoHandling, alwaysOpen, exitFunction)
         self.NoAutoHandling = noAutoHandling
         self.AlwaysOpen = alwaysOpen
         self.Anm2 = anm2 or "gfx/grid/door_01_normaldoor.anm2"
@@ -4437,6 +4437,7 @@ do -- Extra Rooms
         self.CloseAnim = closeAnim or "Close"
         self.OpenedAnim = openedAnim or "Opened"
         self.ClosedAnim = closedAnim or "Closed"
+        self.ExitFunction = exitFunction
         self.Name = name
         StageAPI.DoorTypes[name] = self
     end
@@ -4571,6 +4572,10 @@ do -- Extra Rooms
         for _, player in ipairs(players) do
             local size = 32 + player.Size
             if not room:IsPositionInRoom(player.Position, -16) and player.Position:DistanceSquared(door.Position) < size * size then
+                if doorData.ExitFunction then
+                    doorData.ExitFunction(door, data, sprite, doorData, data.DoorGridData)
+                end
+
                 if data.DoorGridData.LeadsToExtra then
                     transitionStarted = true
                     StageAPI.TransitionToExtraRoom(data.DoorGridData.LeadsToExtra, data.DoorGridData.ExitSlot)
@@ -8379,6 +8384,462 @@ do -- Challenge Rooms
             StageAPI.CallCallbacks("CHALLENGE_WAVE_CHANGED")
 
             StageAPI.Challenge.WaveChanged = false
+        end
+    end)
+end
+
+do -- Custom Floor Generation
+    StageAPI.CurrentLevelMap = {}
+    StageAPI.CurrentLevelMap2D = {}
+    function StageAPI.UpdateLevelMap(newLevelMap)
+        StageAPI.CurrentLevelMap = newLevelMap
+        StageAPI.UpdateLevelMap2D()
+
+        -- Calculate and set the doors for each room
+        local checkedRooms = {}
+        for x = StageAPI.CurrentLevelMap2D.LowX, StageAPI.CurrentLevelMap2D.HighX do
+            if StageAPI.CurrentLevelMap2D[x] then
+                for y = StageAPI.CurrentLevelMap2D.LowY, StageAPI.CurrentLevelMap2D.HighY do
+                    local room1 = StageAPI.CurrentLevelMap2D[x][y]
+                    if room1 and not checkedRooms[room1] then
+                        local roomData = StageAPI.CurrentLevelMap[room1]
+                        if not roomData.Doors then
+                            roomData.Doors = {}
+                        end
+
+                        for x2 = x - 2, x + 2 do -- no need to consider rooms more than two segments away, since 2x2 is the largest shape.
+                            if StageAPI.CurrentLevelMap2D[x2] then
+                                for y2 = y - 2, y + 2 do
+                                    local room2 = StageAPI.CurrentLevelMap2D[x2][y2]
+                                    if room2 and room2 ~= room1 then
+                                        local adjacent, doors = StageAPI.CheckRoomAdjacency(StageAPI.CurrentLevelMap[room1], StageAPI.CurrentLevelMap[room2], true)
+                                        if adjacent then
+                                            for exitSlot, doorData in pairs(doors) do
+                                                roomData.Doors[exitSlot] = {room2, doorData[1], doorData[2], doorData[3]}
+                                            end
+                                        end
+                                    end
+                                end
+                            end
+                        end
+
+                        checkedRooms[room1] = true
+                    end
+                end
+            end
+        end
+    end
+
+    StageAPI.RoomShapeToSegments = {
+        [RoomShape.ROOMSHAPE_1x1] = {
+            {0, 0, Doors = {UP = DoorSlot.UP0, DOWN = DoorSlot.DOWN0, LEFT = DoorSlot.LEFT0, RIGHT = DoorSlot.RIGHT0}}
+        },
+        [RoomShape.ROOMSHAPE_IH] = {
+            {0, 0, Doors = {LEFT = DoorSlot.LEFT0, RIGHT = DoorSlot.RIGHT0}}
+        },
+        [RoomShape.ROOMSHAPE_IV] = {
+            {0, 0, Doors = {UP = DoorSlot.UP0, DOWN = DoorSlot.DOWN0}}
+        },
+        [RoomShape.ROOMSHAPE_2x1] = {
+            {0, 0, Doors = {UP = DoorSlot.UP0, DOWN = DoorSlot.DOWN0, LEFT = DoorSlot.LEFT0}},
+            {1, 0, Doors = {UP = DoorSlot.UP1, DOWN = DoorSlot.DOWN1, RIGHT = DoorSlot.RIGHT0}}
+        },
+        [RoomShape.ROOMSHAPE_1x2] = {
+            {0, 0, Doors = {UP = DoorSlot.UP0, LEFT = DoorSlot.LEFT0, RIGHT = DoorSlot.RIGHT0}},
+            {0, 1, Doors = {DOWN = DoorSlot.DOWN0, LEFT = DoorSlot.LEFT1, RIGHT = DoorSlot.RIGHT1}}
+        },
+        [RoomShape.ROOMSHAPE_IIH] = {
+            {0, 0, Doors = {LEFT = DoorSlot.LEFT0}},
+            {1, 0, Doors = {RIGHT = DoorSlot.RIGHT0}}
+        },
+        [RoomShape.ROOMSHAPE_IIV] = {
+            {0, 0, Doors = {UP = DoorSlot.UP0}},
+            {0, 1, Doors = {DOWN = DoorSlot.DOWN0}}
+        },
+        [RoomShape.ROOMSHAPE_2x2] = {
+            {0, 0, Doors = {UP = DoorSlot.UP0, LEFT = DoorSlot.LEFT0}},
+            {1, 0, Doors = {UP = DoorSlot.UP1, RIGHT = DoorSlot.RIGHT1}},
+            {0, 1, Doors = {DOWN = DoorSlot.DOWN0, LEFT = DoorSlot.LEFT1}},
+            {1, 1, Doors = {DOWN = DoorSlot.DOWN1, RIGHT = DoorSlot.RIGHT1}}
+        },
+        [RoomShape.ROOMSHAPE_LBL] = {
+            {0, 0, Doors = {UP = DoorSlot.UP0, DOWN = DoorSlot.DOWN0, LEFT = DoorSlot.LEFT0}},
+            {1, 0, Doors = {UP = DoorSlot.UP1, RIGHT = DoorSlot.RIGHT0}},
+            {1, 1, Doors = {DOWN = DoorSlot.DOWN1, LEFT = DoorSlot.LEFT1, RIGHT = DoorSlot.RIGHT1}}
+        },
+        [RoomShape.ROOMSHAPE_LBR] = {
+            {0, 0, Doors = {UP = DoorSlot.UP0, LEFT = DoorSlot.LEFT0}},
+            {1, 0, Doors = {UP = DoorSlot.UP1, DOWN = DoorSlot.DOWN1, RIGHT = DoorSlot.RIGHT0}},
+            {0, 1, Doors = {DOWN = DoorSlot.DOWN0, LEFT = DoorSlot.LEFT1, RIGHT = DoorSlot.RIGHT1}}
+        },
+        [RoomShape.ROOMSHAPE_LTL] = {
+            {1, 0, Doors = {UP = DoorSlot.UP1, LEFT = DoorSlot.LEFT0, RIGHT = DoorSlot.RIGHT0}},
+            {0, 1, Doors = {UP = DoorSlot.UP0, DOWN = DoorSlot.DOWN0, LEFT = DoorSlot.LEFT1}},
+            {1, 1, Doors = {DOWN = DoorSlot.DOWN1, RIGHT = DoorSlot.RIGHT1}}
+        },
+        [RoomShape.ROOMSHAPE_LTR] = {
+            {0, 0, Doors = {UP = DoorSlot.UP0, LEFT = DoorSlot.LEFT0, RIGHT = DoorSlot.RIGHT0}},
+            {0, 1, Doors = {DOWN = DoorSlot.DOWN0, LEFT = DoorSlot.LEFT1}},
+            {1, 1, Doors = {UP = DoorSlot.UP1, DOWN = DoorSlot.DOWN1, RIGHT = DoorSlot.RIGHT1}}
+        }
+    }
+
+    function StageAPI.GetRoomMapSegments(roomX, roomY, shape)
+        local onMap = {}
+        local segments = StageAPI.RoomShapeToSegments[shape]
+        for i, seg in ipairs(segments) do
+            local x, y = roomX + seg[1], roomY + seg[2]
+            onMap[#onMap + 1] = {X = x, Y = y, Doors = seg.Doors, Segment = i}
+        end
+
+        return onMap
+    end
+
+    function StageAPI.UpdateLevelMap2D()
+        local lowX, lowY, highX, highY
+        StageAPI.CurrentLevelMap2D = {}
+        for i, room in ipairs(StageAPI.CurrentLevelMap) do
+            if not room.X or not room.Y then
+                room.X, room.Y = StageAPI.GridToVector(room.GridIndex, 13)
+            end
+
+            room.MapSegments = StageAPI.GetRoomMapSegments(room.X, room.Y, room.Shape)
+
+            for _, seg in ipairs(room.MapSegments) do
+                if not StageAPI.CurrentLevelMap2D[seg.X] then
+                    StageAPI.CurrentLevelMap2D[seg.X] = {}
+                end
+
+                if StageAPI.CurrentLevelMap2D[seg.X][seg.Y] then
+                    Isaac.DebugString("Overriding room! Something went wrong!")
+                end
+
+                StageAPI.CurrentLevelMap2D[seg.X][seg.Y] = i
+
+                if not lowX or seg.X < lowX then lowX = seg.X end
+                if not highX or seg.X > highX then highX = seg.X end
+                if not lowY or seg.Y < lowY then lowY = seg.Y end
+                if not highY or seg.Y > highY then highY = seg.Y end
+            end
+        end
+
+        StageAPI.CurrentLevelMap2D.LowX = lowX
+        StageAPI.CurrentLevelMap2D.HighX = highX
+        StageAPI.CurrentLevelMap2D.LowY = lowY
+        StageAPI.CurrentLevelMap2D.HighY = highY
+    end
+
+    function StageAPI.CopyCurrentLevelMap()
+        local newLevelMap = {}
+
+        Isaac.ConsoleOutput("Copy\n")
+
+        local roomsList = level:GetRooms()
+        for i = 0, roomsList.Size do
+            local roomDesc = roomsList:Get(i)
+            if roomDesc then
+                if level:GetStartingRoomIndex() == roomDesc.SafeGridIndex then
+                    Isaac.ConsoleOutput("Has start room\n")
+                end
+                newLevelMap[#newLevelMap + 1] = {
+                    Data = roomDesc.Data,
+                    Shape = roomDesc.Data.Shape,
+                    GridIndex = roomDesc.GridIndex,
+                    SafeGridIndex = roomDesc.SafeGridIndex,
+                    StartingRoom = level:GetStartingRoomIndex() == roomDesc.SafeGridIndex
+                }
+            end
+        end
+
+        StageAPI.UpdateLevelMap(newLevelMap)
+    end
+
+    local directionStringSwap = {
+        LEFT = "RIGHT",
+        RIGHT = "LEFT",
+        UP = "DOWN",
+        DOWN = "UP"
+    }
+
+    function StageAPI.CheckRoomAdjacency(room1, room2, getDoors) -- Checks if two rooms are adjacent on the map; if getDoors is true, returns the doors in room1 paired to the doors they connect to in room2
+        local adjacentSegments = {}
+        for _, seg in ipairs(room1.MapSegments) do
+            for _, seg2 in ipairs(room2.MapSegments) do
+                if seg.X == seg2.X or seg.Y == seg2.Y then -- only aligned segments could possibly be adjacent
+                    local adjacencyType
+                    if seg.X == seg2.X + 1 then
+                        adjacencyType = "LEFT"
+                    elseif seg.X == seg2.X - 1 then
+                        adjacencyType = "RIGHT"
+                    elseif seg.Y == seg2.Y + 1 then
+                        adjacencyType = "UP"
+                    elseif seg.Y == seg2.Y - 1 then
+                        adjacencyType = "DOWN"
+                    end
+
+                    if adjacencyType then
+                        adjacentSegments[#adjacentSegments + 1] = {seg, seg2, adjacencyType}
+
+                        if not getDoors then
+                            return true
+                        end
+                    end
+                end
+            end
+        end
+
+        if not getDoors then
+            return #adjacentSegments > 0
+        elseif #adjacentSegments > 0 then
+            local doors = {}
+            for _, pair in ipairs(adjacentSegments) do
+                local seg, seg2, adjType = pair[1], pair[2], pair[3]
+
+                if not seg.Doors[adjType] or not seg2.Doors[directionStringSwap[adjType]] then
+                    Isaac.ConsoleOutput("Door Failure. Shapes: " .. tostring(seg.Shape) .. "/" .. tostring(seg2.Shape) .. ", Segments: " .. tostring(seg.Segment) .. "/" .. tostring(seg2.Segment) .. "\n")
+                    Isaac.ConsoleOutput("Connection Type: " .. adjType .. ", Rooms: " .. tostring(seg.Room) .. "/" .. tostring(seg2.Room) .. "\n")
+                    if not seg.Doors[adjType] then
+                        Isaac.ConsoleOutput("First Room Failure\n")
+                    end
+
+                    if not seg2.Doors[directionStringSwap[adjType]] then
+                        Isaac.ConsoleOutput("Second Room Failure\n")
+                    end
+                end
+
+                doors[seg.Doors[adjType]] = {seg2.Doors[directionStringSwap[adjType]], adjType, seg2.Segment}
+            end
+
+            return true, doors
+        end
+
+        return false
+    end
+
+    StageAPI.RoomShapeToRoomGridIndices = {}
+    StageAPI.CurrentCustomMapRoom = nil
+
+    local customMapTransitionInProgress
+    function StageAPI.ExitCustomLevelDoor(door, data, sprite, doorData, doorGridData)
+        local exitSlot = doorGridData.ExitSlot
+        local targetRoom = doorGridData.Data.TargetRoomIndex
+        local direction = doorGridData.Data.Direction
+
+        level.LeaveDoor = -1
+        --Isaac.ConsoleOutput("EnterDoor is " .. tostring(exitSlot) .. "\n")
+        level.EnterDoor = -1
+
+        local targetRoomData = StageAPI.CurrentLevelMap[targetRoom]
+        local shapeIndices = StageAPI.RoomShapeToRoomGridIndices[targetRoomData.Shape]
+
+        local shapeIndex = shapeIndices[doorGridData.Data.Segment]
+
+        local roomDesc = level:GetRoomByIdx(shapeIndex)
+        Isaac.ConsoleOutput(tostring(roomDesc.Data.Shape) .. ", " .. tostring(targetRoomData.Shape) .. ", " .. tostring(shapeIndex) .. "\n")
+        roomDesc.Data = targetRoomData.Data
+        roomDesc.Clear = false
+        roomDesc.VisitedCount = 0
+        roomDesc.ClearCount = 0
+
+        StageAPI.CurrentCustomMapRoom = targetRoom
+
+        StageAPI.RoomGrids = {}
+
+        customMapTransitionInProgress = true
+
+        Isaac.ConsoleOutput(direction .. " transitioned!\n")
+        game:StartRoomTransition(shapeIndex, Direction[direction], 0)
+    end
+
+    StageAPI.CustomLevelDoor = StageAPI.CustomDoor("CustomLevelDoor", nil, nil, nil, nil, nil, nil, nil, StageAPI.ExitCustomLevelDoor)
+    function StageAPI.SpawnCustomLevelDoor(slot, targetRoomIndex, exitSlot, direction, segment)
+        Isaac.ConsoleOutput(tostring(segment) .. "\n")
+        StageAPI.SpawnCustomDoor(slot, false, false, "CustomLevelDoor", {TargetRoomIndex = targetRoomIndex, Direction = direction, Segment = segment}, exitSlot)
+    end
+
+    function StageAPI.LoadCustomMapRoomDoors(room)
+        if room.Doors then
+            for slot, doorData in pairs(room.Doors) do
+                StageAPI.SpawnCustomLevelDoor(slot, doorData[1], doorData[2], doorData[3], doorData[4])
+            end
+        end
+    end
+
+    local forceLabyrinthLost
+    local initializingCustomLevel
+    function StageAPI.InitCustomLevel()
+        customMapTransitionInProgress = true
+        initializingCustomLevel = true
+        local oldSeed = StageAPI.Seeds:GetStartSeedString()
+        StageAPI.Seeds:SetStartSeed("SBPX 37HV")
+        forceLabyrinthLost = true
+        Isaac.ExecuteCommand("stage 11a")
+        forceLabyrinthLost = false
+        StageAPI.Seeds:SetStartSeed(oldSeed)
+        Isaac.ConsoleOutput("Initializing! p1\n")
+
+        if StageAPI.CurrentCustomMapRoom then
+            for i = 0, 7 do
+                if room:GetDoor(i) then
+                    room:RemoveDoor(i)
+                end
+            end
+
+            StageAPI.LoadCustomMapRoomDoors(StageAPI.CurrentLevelMap[StageAPI.CurrentCustomMapRoom])
+        end
+    end
+
+    local initPrint
+    mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, function()
+        Isaac.ConsoleOutput("New room!\n")
+        if initializingCustomLevel then
+            Isaac.ConsoleOutput("Initializing!\n")
+            StageAPI.RoomShapeToRoomGridIndices = {Starting = {level:GetStartingRoomIndex()}}
+
+            local roomsList = level:GetRooms()
+            for i = 0, roomsList.Size do
+                local roomDesc = roomsList:Get(i)
+                if roomDesc then
+                    if roomDesc.Data.Type == RoomType.ROOM_DEFAULT then
+                        local shape = roomDesc.Data.Shape
+                        if not StageAPI.RoomShapeToRoomGridIndices[shape] then
+                            local indices = {}
+                            local tlGridIndex = roomDesc.GridIndex
+                            local segments = StageAPI.RoomShapeToSegments[shape]
+                            for _, seg in ipairs(segments) do
+                                indices[#indices + 1] = tlGridIndex + seg[1] + seg[2] * 13
+                            end
+
+                            StageAPI.RoomShapeToRoomGridIndices[shape] = indices
+                        end
+                    end
+                end
+            end
+
+            for i, room in ipairs(StageAPI.CurrentLevelMap) do
+                if room.StartingRoom then
+                    Isaac.ConsoleOutput("Found starting room!\n")
+                    StageAPI.CurrentCustomMapRoom = i
+                end
+            end
+
+            initializingCustomLevel = nil
+        end
+
+        if level:GetCurrentRoomIndex() == level:GetStartingRoomIndex() and not room:IsFirstVisit() and not customMapTransitionInProgress then
+            StageAPI.CurrentCustomMapRoom = nil
+        end
+
+        if StageAPI.CurrentCustomMapRoom then
+            for i = 0, 7 do
+                if room:GetDoor(i) then
+                    room:RemoveDoor(i)
+                end
+            end
+
+            StageAPI.LoadCustomMapRoomDoors(StageAPI.CurrentLevelMap[StageAPI.CurrentCustomMapRoom])
+        end
+
+        customMapTransitionInProgress = nil
+    end)
+
+    local minimapRenderStart = Vector(300, 100)
+    local minimapRenderWidth = Vector(8, 0)
+    local minimapRenderHeight = Vector(0, 7)
+
+    local minimap = Sprite()
+    minimap:Load("gfx/ui/minimap1.anm2", true)
+
+    mod:AddCallback(ModCallbacks.MC_POST_RENDER, function()
+        if StageAPI.CurrentCustomMapRoom then
+            for i, room in ipairs(StageAPI.CurrentLevelMap) do
+                local x, y = room.X, room.Y
+                local frame = room.Shape - 1
+
+                if StageAPI.CurrentCustomMapRoom == i then
+                    minimap:SetFrame("RoomCurrent", frame)
+                else
+                    minimap:SetFrame("RoomUnvisited", frame)
+                end
+
+                minimap:Render(minimapRenderStart + minimapRenderWidth * x + minimapRenderHeight * y, zeroVector, zeroVector)
+            end
+        end
+    end)
+
+    local shapeAttempts = 0
+    local closest = 999999
+    mod:AddCallback(ModCallbacks.MC_EXECUTE_CMD, function(_, cmd, params)
+        if cmd == "getallshapes" then
+            shapeAttempts = 10000
+        elseif cmd == "reseedtest" then
+            StageAPI.Seeds:SetStartSeed("")
+            Isaac.ExecuteCommand("stage " .. tostring(level:GetStage()) .. StageAPI.StageTypeToString[level:GetStageType()])
+        elseif cmd == "chesttest" then
+            Isaac.ExecuteCommand("stage 11a")
+            StageAPI.CopyCurrentLevelMap()
+            StageAPI.InitCustomLevel()
+        elseif cmd == "suppress" then
+            StageAPI.Seeds:SetStartSeed("SBPX 37HV")
+            Isaac.ExecuteCommand("stage 11a")
+        elseif cmd == "suppress2" then
+            Isaac.ExecuteCommand("stage 11a")
+        end
+    end)
+
+    mod:AddCallback(ModCallbacks.MC_POST_GAME_STARTED, function()
+        shapeAttempts = 0
+    end)
+
+    mod:AddCallback(ModCallbacks.MC_POST_CURSE_EVAL, function(_, curses)
+        if forceLabyrinthLost then
+            return curses | LevelCurse.CURSE_OF_LABYRINTH | LevelCurse.CURSE_OF_THE_LOST
+        end
+    end)
+
+    mod:AddCallback(ModCallbacks.MC_POST_RENDER, function()
+        if Input.IsButtonTriggered(Keyboard.KEY_0, players[1].ControllerIndex) then
+            shapeAttempts = 0
+        end
+
+        if shapeAttempts > 0 then
+            shapeAttempts = shapeAttempts - 1
+
+            StageAPI.Seeds:SetStartSeed("")
+            Isaac.ExecuteCommand("stage " .. tostring(level:GetStage()) .. StageAPI.StageTypeToString[level:GetStageType()])
+
+            local shapesList = {}
+            for name, shape in pairs(RoomShape) do
+                if name ~= "NUM_ROOMSHAPES" and shape > -1 then
+                    shapesList[#shapesList + 1] = shape
+                end
+            end
+
+            local roomsList = level:GetRooms()
+            for i = 0, roomsList.Size do
+                local roomDesc = roomsList:Get(i)
+                if roomDesc then
+                    local shape = roomDesc.Data.Shape
+                    for j, remaining in StageAPI.ReverseIterate(shapesList) do
+                        if shape == remaining then
+                            table.remove(shapesList, j)
+                        end
+                    end
+                end
+            end
+
+            if #shapesList == 0 then
+                shapeAttempts = 0
+                Isaac.ConsoleOutput(StageAPI.Seeds:GetStartSeedString() .. "\n")
+            elseif #shapesList < closest then
+                closest = #shapesList
+                Isaac.ConsoleOutput("New closest! " .. tostring(closest) .. "\n")
+                for _, shape in ipairs(shapesList) do
+                    Isaac.ConsoleOutput("Missing " .. tostring(shape) .. "\n")
+                end
+            elseif shapeAttempts == 0 then
+                Isaac.ConsoleOutput("Done! Not found.\n")
+            end
         end
     end)
 end
