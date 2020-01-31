@@ -3916,20 +3916,22 @@ do -- Extra Rooms
         return StageAPI.LevelRooms[name]
     end
 
+    StageAPI.ActiveTransitionToExtraRoom = nil
+    StageAPI.ActiveTransitionFromExtraRoom = nil
     function StageAPI.InOrTransitioningToExtraRoom()
-        return StageAPI.TransitionTimer or StageAPI.InExtraRoom
+        return StageAPI.ActiveTransitionToExtraRoom or StageAPI.InExtraRoom
     end
 
     function StageAPI.TransitioningToOrFromExtraRoom()
-        return not not StageAPI.TransitionTimer
+        return StageAPI.ActiveTransitionToExtraRoom or StageAPI.ActiveTransitionFromExtraRoom
     end
 
     function StageAPI.TransitioningToExtraRoom()
-        return StageAPI.TransitioningToOrFromExtraRoom() and StageAPI.TransitionToExtra
+        return StageAPI.ActiveTransitionToExtraRoom
     end
 
     function StageAPI.TransitioningFromExtraRoom()
-        return StageAPI.TransitioningToOrFromExtraRoom() and not StageAPI.TransitionToExtra
+        return StageAPI.ActiveTransitionFromExtraRoom
     end
 
     StageAPI.RoomTransitionOverlay = Sprite()
@@ -3954,25 +3956,39 @@ do -- Extra Rooms
     StageAPI.SkipExtraRoomTransition = nil
     StageAPI.ExtraRoomBaseType = "Barren"
     function StageAPI.TransitionToExtraRoom(name, exitSlot, skipTransition, extraRoomBaseType)
+        --[[
         StageAPI.TransitionTimer = 0
         StageAPI.TransitioningTo = name
         StageAPI.TransitionExitSlot = exitSlot
         StageAPI.TransitionToExtra = true
         StageAPI.SkipExtraRoomTransition = skipTransition
         StageAPI.ExtraRoomBaseType = extraRoomBaseType or "Barren"
+        ]]
+        StageAPI.ExtraRoomTransition(name, Direction.NO_DIRECTION, StageAPI.RoomTransitionType.Fade, false, nil, exitSlot, nil, extraRoomBaseType)
     end
 
     function StageAPI.TransitionFromExtraRoom(toIndex, exitSlot)
+        --[[
         StageAPI.TransitionTimer = 0
         StageAPI.TransitioningFromTo = toIndex
         StageAPI.TransitionExitSlot = exitSlot
-        StageAPI.TransitionToExtra = false
+        StageAPI.TransitionToExtra = false]]
+        StageAPI.ExtraRoomTransition(toIndex, Direction.NO_DIRECTION, StageAPI.RoomTransitionType.Fade, false, nil, exitSlot)
     end
+
+    local gotoPrefixes = {
+        Barren = "s.barren.",
+        Boss = "s.boss.",
+        Default = "d."
+    }
 
     StageAPI.RoomShapeToGotoID = {
         [RoomShape.ROOMSHAPE_1x1] = {
-            Barren = "4550",
-            Boss = "1010",
+            Special = {
+                Barren = {
+                    ID = "70050"
+                }
+            },
             Stage = {
                 {
                     Stages = {LevelStage.STAGE1_1, LevelStage.STAGE1_2, LevelStage.STAGE2_1, LevelStage.STAGE2_2, LevelStage.STAGE3_1, LevelStage.STAGE3_2, LevelStage.STAGE4_1, LevelStage.STAGE4_2, LevelStage.STAGE5, LevelStage.STAGE6, LevelStage.STAGE7},
@@ -3982,8 +3998,11 @@ do -- Extra Rooms
             }
         },
         [RoomShape.ROOMSHAPE_IH] = {
-            Barren = "4551",
-            Boss = "1077",
+            Special = {
+                Barren = {
+                    ID = "70051"
+                }
+            },
             Stage = {
                 {
                     Stages = {LevelStage.STAGE1_1, LevelStage.STAGE1_2, LevelStage.STAGE7},
@@ -4003,8 +4022,11 @@ do -- Extra Rooms
             }
         },
         [RoomShape.ROOMSHAPE_IV] = {
-            Barren = "4552",
-            Boss = "1078",
+            Special = {
+                Barren = {
+                    ID = "70052"
+                }
+            },
             Stage = {
                 {
                     Stages = {LevelStage.STAGE1_1, LevelStage.STAGE1_2, LevelStage.STAGE7},
@@ -4024,9 +4046,12 @@ do -- Extra Rooms
             }
         },
         [RoomShape.ROOMSHAPE_1x2] = {
-            Barren = "4553",
-            BarrenLocked = "4562",
-            Boss = "3702",
+            Special = {
+                Barren = {
+                    ID = "70053",
+                    Locked = "70062"
+                }
+            },
             Stage = {
                 {
                     Stages = {LevelStage.STAGE1_1, LevelStage.STAGE1_2, LevelStage.STAGE7},
@@ -4061,8 +4086,11 @@ do -- Extra Rooms
             }
         },
         [RoomShape.ROOMSHAPE_IIV] = {
-            Barren = "4554",
-            Boss = "4554",
+            Special = {
+                Barren = {
+                    ID = "70054"
+                }
+            },
             Stage = {
                 {
                     Stages = {LevelStage.STAGE1_1, LevelStage.STAGE1_2, LevelStage.STAGE7},
@@ -4082,9 +4110,12 @@ do -- Extra Rooms
             }
         },
         [RoomShape.ROOMSHAPE_2x1] = {
-            Barren = "4555",
-            BarrenLocked = "4563",
-            Boss = "3700",
+            Special = {
+                Barren = {
+                    ID = "70055",
+                    Locked = "70064"
+                }
+            },
             Stage = {
                 {
                     Stages = {LevelStage.STAGE1_1, LevelStage.STAGE1_2, LevelStage.STAGE7},
@@ -4119,8 +4150,11 @@ do -- Extra Rooms
             }
         },
         [RoomShape.ROOMSHAPE_IIH] = {
-            Barren = "4556",
-            Boss = "4556",
+            Special = {
+                Barren = {
+                    ID = "70056"
+                }
+            },
             Stage = {
                 {
                     Stages = {LevelStage.STAGE1_1, LevelStage.STAGE1_2, LevelStage.STAGE7},
@@ -4140,9 +4174,12 @@ do -- Extra Rooms
             }
         },
         [RoomShape.ROOMSHAPE_2x2] = {
-            Barren = "4557",
-            BarrenLocked = "4564",
-            Boss = "3414",
+            Special = {
+                Barren = {
+                    ID = "70057",
+                    Locked = "70064"
+                }
+            },
             Stage = {
                 {
                     Stages = {LevelStage.STAGE1_1, LevelStage.STAGE1_2, LevelStage.STAGE7},
@@ -4172,9 +4209,12 @@ do -- Extra Rooms
             }
         },
         [RoomShape.ROOMSHAPE_LTL] = {
-            Barren = "4558",
-            BarrenLocked = "4565",
-            Boss = "4558",
+            Special = {
+                Barren = {
+                    ID = "70058",
+                    Locked = "70065"
+                }
+            },
             Stage = {
                 {
                     Stages = {LevelStage.STAGE1_1, LevelStage.STAGE1_2, LevelStage.STAGE7},
@@ -4199,9 +4239,12 @@ do -- Extra Rooms
             }
         },
         [RoomShape.ROOMSHAPE_LTR] = {
-            Barren = "4559",
-            BarrenLocked = "4566",
-            Boss = "4559",
+            Special = {
+                Barren = {
+                    ID = "70059",
+                    Locked = "70066"
+                }
+            },
             Stage = {
                 {
                     Stages = {LevelStage.STAGE1_1, LevelStage.STAGE1_2, LevelStage.STAGE7},
@@ -4226,9 +4269,12 @@ do -- Extra Rooms
             }
         },
         [RoomShape.ROOMSHAPE_LBL] = {
-            Barren = "4560",
-            BarrenLocked = "4567",
-            Boss = "4560",
+            Special = {
+                Barren = {
+                    ID = "70060",
+                    Locked = "70067"
+                }
+            },
             Stage = {
                 {
                     Stages = {LevelStage.STAGE1_1, LevelStage.STAGE1_2, LevelStage.STAGE7},
@@ -4248,9 +4294,12 @@ do -- Extra Rooms
             }
         },
         [RoomShape.ROOMSHAPE_LBR] = {
-            Barren = "4561",
-            BarrenLocked = "4568",
-            Boss = "4561",
+            Special = {
+                Barren = {
+                    ID = "70061",
+                    Locked = "70068"
+                }
+            },
             Stage = {
                 {
                     Stages = {LevelStage.STAGE1_1, LevelStage.STAGE1_2, LevelStage.STAGE7},
@@ -4270,6 +4319,64 @@ do -- Extra Rooms
             }
         }
     }
+
+    for shape, gotoIds in pairs(StageAPI.RoomShapeToGotoID) do
+        for label, prefix in pairs(gotoPrefixes) do
+            if not gotoIds.Special[label] then
+                gotoIds.Special[label] = {}
+            end
+
+            if not gotoIds.Special[label].ID then
+                gotoIds.Special[label].ID = gotoIds.Special.Barren.ID
+            end
+
+            if not gotoIds.Special[label].Locked and gotoIds.Special.Barren.Locked then
+                gotoIds.Special[label].Locked = gotoIds.Special.Barren.Locked
+            end
+
+            gotoIds.Special[label].Prefix = prefix
+        end
+    end
+
+    StageAPI.LoadedGotoData = false
+    StageAPI.DataLoadNeedsRestart = false
+    mod:AddCallback(ModCallbacks.MC_POST_GAME_STARTED, function()
+        if not StageAPI.LoadedGotoData and (game.Difficulty == Difficulty.DIFFICULTY_NORMAL or game.Difficulty == Difficulty.DIFFICULTY_HARD) then
+            local resetRun
+            local currentIndex = level:GetCurrentRoomIndex()
+            if currentIndex == level:GetStartingRoomIndex() and room:IsFirstVisit() and level:GetStage() == LevelStage.STAGE1_1 then
+                resetRun = true
+            end
+
+            for shape, gotoIds in pairs(StageAPI.RoomShapeToGotoID) do
+                for label, specialGoto in pairs(gotoIds.Special) do
+                    Isaac.ExecuteCommand("goto " .. specialGoto.Prefix .. specialGoto.ID)
+                    local desc = level:GetRoomByIdx(GridRooms.ROOM_DEBUG_IDX)
+                    specialGoto.Data = desc.Data
+                    if specialGoto.Locked then
+                        Isaac.ExecuteCommand("goto " .. specialGoto.Prefix .. specialGoto.Locked)
+                        local desc = level:GetRoomByIdx(GridRooms.ROOM_DEBUG_IDX)
+                        specialGoto.LockedData = desc.Data
+                    end
+                end
+            end
+
+            if resetRun then
+                StageAPI.DataLoadNeedsRestart = true
+            end
+
+            game:StartRoomTransition(currentIndex, Direction.NO_DIRECTION, 0)
+
+            StageAPI.LoadedGotoData = true
+        end
+    end)
+
+    mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, function()
+        if StageAPI.DataLoadNeedsRestart then
+            Isaac.ExecuteCommand("restart")
+            StageAPI.DataLoadNeedsRestart = nil
+        end
+    end)
 
     function StageAPI.GetGotoIDForStage(shape, stage, stagetype)
         local stagesets = StageAPI.RoomShapeToGotoID[shape].Stage
@@ -4299,9 +4406,143 @@ do -- Extra Rooms
 
     StageAPI.StoredExtraRoomThisPause = false
 
+    function StageAPI.GetGotoDataForTypeShape(roomType, roomShape)
+        if type(roomType) ~= "string" then
+            if roomType == RoomType.ROOM_DEFAULT then
+                roomType = "Default"
+            elseif roomType == RoomType.ROOM_BOSS then
+                roomType = "Boss"
+            else
+                roomType = "Barren"
+            end
+        end
+
+        return StageAPI.RoomShapeToGotoID[roomShape].Special[roomType]
+    end
+
+    StageAPI.DoorOneSlots = {
+        [DoorSlot.DOWN1] = true,
+        [DoorSlot.UP1] = true,
+        [DoorSlot.LEFT1] = true,
+        [DoorSlot.RIGHT1] = true
+    }
+
+    StageAPI.DoorSlotToDirection = {
+        [DoorSlot.LEFT0] = Direction.LEFT,
+        [DoorSlot.LEFT1] = Direction.LEFT,
+        [DoorSlot.RIGHT0] = Direction.RIGHT,
+        [DoorSlot.RIGHT1] = Direction.RIGHT,
+        [DoorSlot.UP0] = Direction.UP,
+        [DoorSlot.UP1] = Direction.UP,
+        [DoorSlot.DOWN0] = Direction.DOWN,
+        [DoorSlot.DOWN1] = Direction.DOWN
+    }
+
+    StageAPI.RoomTransitionType = {
+        Default = 0,
+        Fade = 1,
+        Pixelate = 2,
+        Teleport = 3,
+        Instant = 4
+    }
+
+    function StageAPI.ExtraRoomTransition(name, direction, transitionType, isCustomMap, leaveDoor, enterDoor, setPlayerPosition, extraRoomBaseType)
+        leaveDoor = leaveDoor or -1
+        enterDoor = enterDoor or -1
+        transitionType = transitionType or 0
+        direction = direction or Direction.NO_DIRECTION
+        StageAPI.ForcePlayerNewRoomPosition = setPlayerPosition
+
+        if StageAPI.CurrentExtraRoom then
+            StageAPI.ActiveTransitionFromExtraRoom = true
+            StageAPI.CurrentExtraRoom:SaveGridInformation()
+            StageAPI.CurrentExtraRoom:SavePersistentEntities()
+        end
+
+        local transitionFrom = level:GetCurrentRoomIndex()
+        local transitionTo = GridRooms.ROOM_DEBUG_IDX
+        if not isCustomMap then
+            if type(name) ~= "string" then
+                transitionTo = name
+            end
+        else
+            if transitionFrom == GridRooms.ROOM_DEBUG_IDX then
+                transitionTo = StageAPI.CustomLevelReplaceRoom
+            end
+        end
+
+        if transitionTo == GridRooms.ROOM_DEBUG_IDX then
+            StageAPI.EnsureDebugRoomExists()
+        end
+
+        if transitionFrom ~= GridRooms.ROOM_DEBUG_IDX then
+            StageAPI.LastNonExtraRoom = transitionFrom
+        end
+
+        if transitionFrom == GridRooms.ROOM_DEBUG_IDX or StageAPI.CurrentCustomMapRoom then
+            local currentRoomDesc = level:GetRoomByIdx(transitionFrom)
+            local currentGotoSet = StageAPI.GetGotoDataForTypeShape(room:GetType(), room:GetRoomShape())
+            if currentGotoSet.LockedData and StageAPI.DoorOneSlots[leaveDoor] then
+                currentRoomDesc.Data = currentGotoSet.LockedData
+            else
+                currentRoomDesc.Data = currentGotoSet.Data
+            end
+        end
+
+        local setDataForShape
+        if not isCustomMap then
+            if transitionTo == GridRooms.ROOM_DEBUG_IDX then
+                local extraRoom = StageAPI.GetExtraRoom(name)
+                StageAPI.InExtraRoom = true
+                StageAPI.CurrentExtraRoom = extraRoom
+                StageAPI.CurrentExtraRoomName = name
+
+                StageAPI.ActiveTransitionToExtraRoom = true
+
+                if not extraRoomBaseType then
+                    extraRoomBaseType = StageAPI.CurrentExtraRoom.RoomType
+                end
+
+                setDataForShape = extraRoom.Shape
+
+                StageAPI.LoadedExtraRoom = false
+            end
+        else
+            local targetRoomData = StageAPI.CurrentLevelMap[name]
+            setDataForShape = targetRoomData.Shape
+
+            if not extraRoomBaseType then
+                extraRoomBaseType = targetRoomData.RoomType
+            end
+
+            StageAPI.CurrentCustomMapRoom = name
+        end
+
+        if setDataForShape then
+            local targetRoomDesc = level:GetRoomByIdx(transitionTo)
+            local targetGotoSet = StageAPI.GetGotoDataForTypeShape(extraRoomBaseType, setDataForShape)
+            if targetGotoSet.LockedData and StageAPI.DoorOneSlots[enterDoor] then
+                targetRoomDesc.Data = targetGotoSet.LockedData
+            else
+                targetRoomDesc.Data = targetGotoSet.Data
+            end
+        end
+
+        level.LeaveDoor = leaveDoor
+        level.EnterDoor = enterDoor
+
+        if transitionType == StageAPI.RoomTransitionType.Instant then
+            StageAPI.ForcePlayerDoorSlot = enterDoor
+            level:ChangeRoom(transitionTo)
+        else
+            game:StartRoomTransition(transitionTo, direction, transitionType)
+        end
+    end
+
     mod:AddCallback(ModCallbacks.MC_POST_RENDER, function()
         if not game:IsPaused() then
             StageAPI.StoredExtraRoomThisPause = false
+            --[[
             if StageAPI.TransitioningTo or StageAPI.TransitioningFromTo then
                 StageAPI.TransitionTimer = StageAPI.TransitionTimer + 1
                 if StageAPI.TransitionTimer == StageAPI.TransitionFadeTime or StageAPI.SkipExtraRoomTransition then
@@ -4348,7 +4589,7 @@ do -- Extra Rooms
                     StageAPI.TransitionToExtra = nil
                     StageAPI.SkipExtraRoomTransition = nil
                 end
-            end
+            end]]
         elseif StageAPI.LoadedExtraRoom and not StageAPI.StoredExtraRoomThisPause then
             StageAPI.StoredExtraRoomThisPause = true
             StageAPI.CurrentExtraRoom:SaveGridInformation()
@@ -4451,13 +4692,19 @@ do -- Extra Rooms
 
     StageAPI.DefaultDoor = StageAPI.CustomDoor("DefaultDoor")
 
-    function StageAPI.SpawnCustomDoor(slot, leadsToExtra, leadsToNormal, doorDataName, data, exitSlot)
+    function StageAPI.SpawnCustomDoor(slot, leadsTo, isCustomMap, doorDataName, data, exitSlot) -- isCustomMap used to be a leadsToNormal index, with leadsTo being leadsToExtra, so to ensure compatibility there is some funkiness
+        if type(isCustomMap) == "number" then
+            leadsTo = isCustomMap
+            isCustomMap = nil
+        end
+
+        -- String IDs are Extra Rooms, number IDs are level / custom map rooms
         local index = room:GetGridIndex(room:GetDoorSlotPosition(slot))
         StageAPI.CustomDoorGrid:Spawn(index, nil, false, {
             Slot = slot,
             ExitSlot = exitSlot or (slot + 2) % 4,
-            LeadsToExtra = leadsToExtra,
-            LeadsToNormal = leadsToNormal,
+            LeadsTo = leadsTo,
+            IsCustomMap = isCustomMap,
             DoorDataName = doorDataName,
             Data = data
         })
@@ -4583,12 +4830,15 @@ do -- Extra Rooms
                     doorData.ExitFunction(door, data, sprite, doorData, data.DoorGridData)
                 end
 
-                if data.DoorGridData.LeadsToExtra then
-                    transitionStarted = true
-                    StageAPI.TransitionToExtraRoom(data.DoorGridData.LeadsToExtra, data.DoorGridData.ExitSlot)
-                elseif data.DoorGridData.LeadsToNormal then
-                    transitionStarted = true
-                    StageAPI.TransitionFromExtraRoom(data.DoorGridData.LeadsToNormal, data.DoorGridData.ExitSlot)
+                local leadsTo = data.DoorGridData.LeadsTo
+                if leadsTo then
+                    if data.DoorGridData.IsCustomMap then
+                        transitionStarted = true
+                        StageAPI.ExtraRoomTransition(leadsTo, StageAPI.DoorSlotToDirection[data.DoorGridData.Slot], StageAPI.RoomTransitionType.Default, true, data.DoorGridData.Slot, data.DoorGridData.ExitSlot)
+                    else
+                        transitionStarted = true
+                        StageAPI.ExtraRoomTransition(leadsTo, StageAPI.DoorSlotToDirection[data.DoorGridData.Slot], StageAPI.RoomTransitionType.Default, false, data.DoorGridData.Slot, data.DoorGridData.ExitSlot)
+                    end
                 end
             end
         end
@@ -7373,7 +7623,7 @@ do -- Callbacks
         end
 
         local enteringExtraRoomFromOffGridRoom
-        if StageAPI.PreviousExtraRoom and level:GetCurrentRoomIndex() == -3 then
+        if StageAPI.PreviousExtraRoom and level:GetCurrentRoomIndex() == GridRooms.ROOM_DEBUG_IDX then
             StageAPI.CurrentExtraRoom = StageAPI.PreviousExtraRoom
             StageAPI.CurrentExtraRoomName = StageAPI.PreviousExtraRoomName
             StageAPI.InExtraRoom = true
@@ -7400,16 +7650,18 @@ do -- Callbacks
 
         StageAPI.LoadingExtraRoomFromSave = nil
 
-        if StageAPI.TransitionExitSlot then
-            local pos = room:GetDoorSlotPosition(StageAPI.TransitionExitSlot) + (StageAPI.DoorOffsetsByDirection[StageAPI.DoorToDirection[StageAPI.TransitionExitSlot]] * 3)
+        if StageAPI.ForcePlayerDoorSlot or StageAPI.ForcePlayerNewRoomPosition then
+            local pos = StageAPI.ForcePlayerNewRoomPosition or room:GetClampedPosition(room:GetDoorSlotPosition(StageAPI.ForcePlayerDoorSlot), 16)
             for _, player in ipairs(players) do
                 player.Position = pos
             end
 
-            StageAPI.TransitionExitSlot = nil
+            StageAPI.ForcePlayerDoorSlot = nil
+            StageAPI.ForcePlayerNewRoomPosition = nil
         end
 
         if StageAPI.CurrentExtraRoom then
+            Isaac.ConsoleOutput("Loadin extra room\n")
             for i = 0, 7 do
                 if room:GetDoor(i) then
                     room:RemoveDoor(i)
@@ -7605,6 +7857,8 @@ do -- Callbacks
             end
         end
 
+        StageAPI.ActiveTransitionFromExtraRoom = false
+        StageAPI.ActiveTransitionToExtraRoom = false
         StageAPI.RoomRendered = false
     end)
 
@@ -7634,6 +7888,20 @@ do -- Callbacks
             end
         elseif cmd == "extraroomexit" then
             StageAPI.TransitionFromExtraRoom(StageAPI.LastNonExtraRoom)
+        elseif cmd == "regroom" then
+            if StageAPI.Layouts[params] then
+                local testRoom = StageAPI.LevelRoom(params, nil, room:GetSpawnSeed(), StageAPI.Layouts[params].Shape, StageAPI.Layouts[params].Variant)
+                testRoom.RoomType = StageAPI.Layouts[params].Type
+                StageAPI.SetExtraRoom("StageAPITest", testRoom)
+                local doors = {}
+                for _, door in ipairs(StageAPI.Layouts[params].Doors) do
+                    if door.Exists then
+                        doors[#doors + 1] = door.Slot
+                    end
+                end
+
+                StageAPI.TransitionToExtraRoom("StageAPITest", doors[StageAPI.Random(1, #doors)])
+            end
         elseif cmd == "croom" then
             local paramTable = {}
             for word in params:gmatch("%S+") do paramTable[#paramTable + 1] = word end
@@ -8527,8 +8795,8 @@ do -- Custom Floor Generation
                                     if room2 and room2 ~= room1 then
                                         local adjacent, doors = StageAPI.CheckRoomAdjacency(StageAPI.CurrentLevelMap[room1], StageAPI.CurrentLevelMap[room2], true)
                                         if adjacent then
-                                            for exitSlot, doorData in pairs(doors) do
-                                                roomData.Doors[exitSlot] = {room2, doorData[1], doorData[2], doorData[3]}
+                                            for enterSlot, exitSlot in pairs(doors) do
+                                                roomData.Doors[enterSlot] = {room2, exitSlot}
                                             end
                                         end
                                     end
@@ -8701,20 +8969,7 @@ do -- Custom Floor Generation
             local doors = {}
             for _, pair in ipairs(adjacentSegments) do
                 local seg, seg2, adjType = pair[1], pair[2], pair[3]
-
-                if not seg.Doors[adjType] or not seg2.Doors[directionStringSwap[adjType]] then
-                    Isaac.ConsoleOutput("Door Failure. Shapes: " .. tostring(seg.Shape) .. "/" .. tostring(seg2.Shape) .. ", Segments: " .. tostring(seg.Segment) .. "/" .. tostring(seg2.Segment) .. "\n")
-                    Isaac.ConsoleOutput("Connection Type: " .. adjType .. ", Rooms: " .. tostring(seg.Room) .. "/" .. tostring(seg2.Room) .. "\n")
-                    if not seg.Doors[adjType] then
-                        Isaac.ConsoleOutput("First Room Failure\n")
-                    end
-
-                    if not seg2.Doors[directionStringSwap[adjType]] then
-                        Isaac.ConsoleOutput("Second Room Failure\n")
-                    end
-                end
-
-                doors[seg.Doors[adjType]] = {seg2.Doors[directionStringSwap[adjType]], adjType, seg2.Segment}
+                doors[seg.Doors[adjType]] = seg2.Doors[directionStringSwap[adjType]]
             end
 
             return true, doors
@@ -8726,232 +8981,151 @@ do -- Custom Floor Generation
     StageAPI.RoomShapeToRoomGridIndex = {}
     StageAPI.CurrentCustomMapRoom = nil
 
-    local oppositeSlots = {
-        [DoorSlot.DOWN0] = DoorSlot.UP0,
-        [DoorSlot.DOWN1] = DoorSlot.UP1,
-        [DoorSlot.LEFT0] = DoorSlot.RIGHT0,
-        [DoorSlot.LEFT1] = DoorSlot.RIGHT1,
-        [DoorSlot.UP0] = DoorSlot.DOWN0,
-        [DoorSlot.UP1] = DoorSlot.DOWN1,
-        [DoorSlot.RIGHT0] = DoorSlot.LEFT0,
-        [DoorSlot.RIGHT1] = DoorSlot.LEFT1
-    }
-
-    local oneSlots = {
-        [DoorSlot.DOWN1] = true,
-        [DoorSlot.UP1] = true,
-        [DoorSlot.LEFT1] = true,
-        [DoorSlot.RIGHT1] = true
-    }
-
+    --[[
     local customMapTransitionInProgress
     local setPlayerToSlot
-    function StageAPI.ExitCustomLevelDoor(door, data, sprite, doorData, doorGridData)
+    local setPlayerToPosition
+
+    function StageAPI.CustomLevelTransition(targetRoom, direction, transitionType, leaveDoor, enterDoor, setPlayerPosition)
+        leaveDoor = leaveDoor or -1
+        enterDoor = enterDoor or -1
+        transitionType = transitionType or 0
+        direction = direction or Direction.NO_DIRECTION
+
+        setPlayerToPosition = setPlayerPosition
+
+        StageAPI.EnsureDebugRoomExists()
+
         StageAPI.RoomGrids = {}
         StageAPI.CustomGrids = {}
 
-        local targetRoom = doorGridData.Data.TargetRoomIndex
-        local currentRoomData = StageAPI.CurrentLevelMap[StageAPI.CurrentCustomMapRoom]
+        local currentRoomData = StageAPI.CurrentCustomMapRoom and StageAPI.CurrentLevelMap[StageAPI.CurrentCustomMapRoom]
         local targetRoomData = StageAPI.CurrentLevelMap[targetRoom]
+
+        if enterDoor == -1 and targetRoomData.Doors then
+            local possibleDoors = {}
+            for i = 0, 7 do
+                if targetRoomData.Doors[i] then
+                    possibleDoors[#possibleDoors + 1] = i
+                end
+            end
+
+            enterDoor = possibleDoors[StageAPI.Random(1, #possibleDoors)]
+        end
 
         local transitionFrom = level:GetCurrentRoomIndex()
         local transitionTo
         if level:GetCurrentRoomIndex() == GridRooms.ROOM_DEBUG_IDX then
-            transitionTo = StageAPI.RoomShapeToRoomGridIndex[targetRoomData.Shape]
+            transitionTo = StageAPI.CustomLevelReplaceRoom -- StageAPI.RoomShapeToRoomGridIndex[targetRoomData.Shape]
         else
             transitionTo = GridRooms.ROOM_DEBUG_IDX
         end
 
-        local currentRoomDesc = level:GetRoomByIdx(transitionFrom)
-        local currentIDSet = StageAPI.RoomShapeToGotoID[currentRoomData.Shape]
-        if currentRoomData.BarrenLockedData and oneSlots[doorGridData.Slot] then
-            currentRoomDesc.Data = currentIDSet.BarrenLockedData
-        else
-            currentRoomDesc.Data = currentIDSet.BarrenData
+        if StageAPI.CurrentCustomMapRoom then
+            local currentRoomDesc = level:GetRoomByIdx(transitionFrom)
+            local currentIDSet = StageAPI.RoomShapeToGotoID[currentRoomData.Shape]
+            if currentRoomData.BasementLockedData and oneSlots[leaveDoor] then
+                currentRoomDesc.Data = currentIDSet.BasementLockedData
+            else
+                currentRoomDesc.Data = currentIDSet.BasementData
+            end
         end
 
         local targetRoomDesc = level:GetRoomByIdx(transitionTo)
-        targetRoomDesc.VisitedCount = 0
         local targetIDSet = StageAPI.RoomShapeToGotoID[targetRoomData.Shape]
-        if targetIDSet.BarrenLockedData and oneSlots[doorGridData.ExitSlot] then
-            targetRoomDesc.Data = targetIDSet.BarrenLockedData
+        if targetIDSet.BasementLockedData and oneSlots[enterDoor] then
+            targetRoomDesc.Data = targetIDSet.BasementLockedData
         else
-            targetRoomDesc.Data = targetIDSet.BarrenData
+            targetRoomDesc.Data = targetIDSet.BasementData
         end
 
-        level.LeaveDoor = doorGridData.Slot
-        level.EnterDoor = doorGridData.ExitSlot
-
-        --setPlayerToSlot = doorGridData.ExitSlot
+        level.LeaveDoor = leaveDoor
+        level.EnterDoor = enterDoor
 
         customMapTransitionInProgress = true
 
         StageAPI.CurrentCustomMapRoom = targetRoom
 
-        local direction = doorGridData.Data.Direction
-        game:StartRoomTransition(transitionTo, Direction[direction], 0)
-
-        --[[
-        local shapeIndex = StageAPI.RoomShapeToRoomGridIndex[currentRoomData.Shape]
-        local currentRoomDesc = level:GetCurrentRoomDesc()
-
-        local roomDesc = level:GetRoomByIdx(shapeIndex)
-        local currentIDSet = StageAPI.RoomShapeToGotoID[currentRoomData.Shape]
-        if currentIDSet.BarrenLockedData and oneSlots[doorGridData.Slot] then
-            roomDesc.Data = currentIDSet.BarrenLockedData
+        if transitionType == StageAPI.RoomTransitionType.INSTANT then
+            setPlayerToSlot = enterDoor
+            level:ChangeRoom(transitionTo)
         else
-            roomDesc.Data = currentIDSet.BarrenData
+            game:StartRoomTransition(transitionTo, direction, transitionType)
         end
+    end
 
-        roomDesc.DecorationSeed = currentRoomDesc.DecorationSeed
-        roomDesc.SpawnSeed = currentRoomDesc.SpawnSeed
-        roomDesc.AwardSeed = currentRoomDesc.AwardSeed
-
-        for i, player in ipairs(players) do
-            setPlayersPositionMiddleRoom[i] = player.Position
-        end
-
-        level:ChangeRoom(shapeIndex)
-
-        local idSet = StageAPI.RoomShapeToGotoID[targetRoomData.Shape]
-        local id
-        if idSet.BarrenLocked and oneSlots[doorGridData.ExitSlot] then
-            id = idSet.BarrenLocked
-        else
-            id = idSet.Barren
-        end
-
-        Isaac.ExecuteCommand("goto s.barren." .. id)
-
-        Isaac.ConsoleOutput(tostring(doorGridData.Slot) .. ", " .. tostring(doorGridData.ExitSlot) .. "\n")
-        level.LeaveDoor = doorGridData.Slot
-        level.EnterDoor = doorGridData.ExitSlot
-
-        setPlayerToSlot = doorGridData.ExitSlot
-
-        StageAPI.CurrentCustomMapRoom = targetRoom
-
-        customMapTransitionInProgress = true
-
-        local direction = doorGridData.Data.Direction
-
-        setPlayersPositionMiddleRoom = {}
-        game:StartRoomTransition(GridRooms.ROOM_DEBUG_IDX, Direction[direction], 0)]]
+    function StageAPI.ExitCustomLevelDoor(door, data, sprite, doorData, doorGridData)
+        StageAPI.CustomLevelTransition(doorGridData.Data.TargetRoomIndex, Direction[doorGridData.Data.Direction], StageAPI.RoomTransitionType.DEFAULT, doorGridData.Slot, doorGridData.ExitSlot)
     end
 
     StageAPI.CustomLevelDoor = StageAPI.CustomDoor("CustomLevelDoor", nil, nil, nil, nil, nil, nil, nil, StageAPI.ExitCustomLevelDoor)
     function StageAPI.SpawnCustomLevelDoor(slot, targetRoomIndex, exitSlot, direction, segment)
         StageAPI.SpawnCustomDoor(slot, false, false, "CustomLevelDoor", {TargetRoomIndex = targetRoomIndex, Direction = direction, Segment = segment}, exitSlot)
-    end
+    end]]
 
     function StageAPI.LoadCustomMapRoomDoors(room)
         if room.Doors then
             for slot, doorData in pairs(room.Doors) do
-                StageAPI.SpawnCustomLevelDoor(slot, doorData[1], doorData[2], doorData[3], doorData[4])
+                StageAPI.SpawnCustomDoor(slot, doorData[1], true, "DefaultDoor", nil, doorData[2])
             end
         end
     end
 
-    local onlyCallOnce
-    function StageAPI.ExitScrewyDoor(door, data, sprite, doorData, doorGridData)
-        if not onlyCallOnce then
-            level.LeaveDoor = -1 --doorGridData.Slot
-            level.EnterDoor = doorGridData.ExitSlot
-
-            Isaac.ConsoleOutput(tostring(doorGridData.Data.Direction) .. " yeah\n")
-            local target = level:GetCurrentRoomIndex()
-            local roomAbove = level:GetRoomByIdx(target - 13)
-            local current = level:GetRoomByIdx(target)
-            Isaac.ExecuteCommand("goto d.1")
-            game:StartRoomTransition(GridRooms.ROOM_DEBUG_IDX, doorGridData.Data.Direction, 0)
-            onlyCallOnce = true
-        end
-    end
-
-    StageAPI.ScrewyDoor = StageAPI.CustomDoor("ScrewyDoor", nil, nil, nil, nil, nil, nil, nil, StageAPI.ExitScrewyDoor)
-
-    local forceLabyrinthLost
-    local initializingCustomLevel
-    function StageAPI.InitCustomLevel()
-        customMapTransitionInProgress = true
-        initializingCustomLevel = true
+    function StageAPI.InitCustomLevel(levelStartRoom)
+        --[[
         local oldSeed = StageAPI.Seeds:GetStartSeedString()
         StageAPI.Seeds:SetStartSeed("SBPX 37HV")
         forceLabyrinthLost = true
         Isaac.ExecuteCommand("stage 11a")
         forceLabyrinthLost = false
-        StageAPI.Seeds:SetStartSeed(oldSeed)
+        StageAPI.Seeds:SetStartSeed(oldSeed)]]
 
-        local id = StageAPI.RoomShapeToGotoID[RoomShape.ROOMSHAPE_1x1].Barren
-        Isaac.ExecuteCommand("goto s.barren." .. id)
+        level:AddCurse(LevelCurse.CURSE_OF_THE_LOST)
 
-        if StageAPI.CurrentCustomMapRoom then
-            for i = 0, 7 do
-                if room:GetDoor(i) then
-                    room:RemoveDoor(i)
+        local startRoom = level:GetStartingRoomIndex()
+        local roomsList = level:GetRooms()
+        for i = 0, roomsList.Size do
+            local roomDesc = roomsList:Get(i)
+            if roomDesc then
+                if roomDesc.SafeGridIndex ~= startRoom then
+                    StageAPI.CustomLevelReplaceRoom = roomDesc.SafeGridIndex
+                    break
                 end
             end
-
-            StageAPI.LoadCustomMapRoomDoors(StageAPI.CurrentLevelMap[StageAPI.CurrentCustomMapRoom])
-        end
-    end
-
-    mod:AddCallback(ModCallbacks.MC_POST_GAME_STARTED, function()
-        local currentIndex = level:GetCurrentRoomIndex()
-        for shape, gotoIds in pairs(StageAPI.RoomShapeToGotoID) do
-            if gotoIds.Barren then
-                Isaac.ExecuteCommand("goto s.barren." .. gotoIds.Barren)
-                local desc = level:GetRoomByIdx(GridRooms.ROOM_DEBUG_IDX)
-                gotoIds.BarrenData = desc.Data
-                gotoIds.BarrenAllowedDoors = desc.AllowedDoors
-            end
-
-            if gotoIds.BarrenLocked then
-                Isaac.ExecuteCommand("goto s.barren." .. gotoIds.BarrenLocked)
-                local desc = level:GetRoomByIdx(GridRooms.ROOM_DEBUG_IDX)
-                gotoIds.BarrenLockedData = desc.Data
-                gotoIds.BarrenLockedAllowedDoors = desc.AllowedDoors
-            end
         end
 
-        game:StartRoomTransition(currentIndex, Direction.NO_DIRECTION, 0)
-    end)
-
-    local initPrint
-    mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, function()
-        onlyCallOnce = nil
-        if initializingCustomLevel then
-            initPrint = true
-            StageAPI.RoomShapeToRoomGridIndex = {Starting = level:GetStartingRoomIndex()}
-
-            local roomsList = level:GetRooms()
-            for i = 0, roomsList.Size do
-                local roomDesc = roomsList:Get(i)
-                if roomDesc then
-                    if roomDesc.Data.Type == RoomType.ROOM_DEFAULT then
-                        local shape = roomDesc.Data.Shape
-                        if not StageAPI.RoomShapeToRoomGridIndex[shape] and roomDesc.SafeGridIndex ~= StageAPI.RoomShapeToRoomGridIndex["Starting"] then
-                            StageAPI.RoomShapeToRoomGridIndex[shape] = roomDesc.SafeGridIndex
-                        end
+        if levelStartRoom then
+            if levelStartRoom == true then
+                for i, room in ipairs(StageAPI.CurrentLevelMap) do
+                    if room.StartingRoom then
+                        levelStartRoom = i
                     end
                 end
             end
 
-            for i, room in ipairs(StageAPI.CurrentLevelMap) do
-                if room.StartingRoom then
-                    StageAPI.CurrentCustomMapRoom = i
-                end
-            end
-
-            initializingCustomLevel = nil
+            StageAPI.ExtraRoomTransition(levelStartRoom, Direction.NO_DIRECTION, StageAPI.RoomTransitionType.INSTANT, true)
         end
 
-        if level:GetCurrentRoomIndex() == level:GetStartingRoomIndex() and not room:IsFirstVisit() and not customMapTransitionInProgress then
+        initPrint = true
+    end
+
+    function StageAPI.EnsureDebugRoomExists()
+        if not level:GetRoomByIdx(GridRooms.ROOM_DEBUG_IDX) then
+            local currentIndex = level:GetCurrentRoomIndex()
+            Isaac.ExecuteCommand("goto s.barren." .. StageAPI.RoomShapeToGotoID[RoomShape.ROOMSHAPE_1x1].Special.Barren)
+            game:StartRoomTransition(currentIndex, Direction.NO_DIRECTION, 0)
+        end
+    end
+
+    local initPrint
+    mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, function()
+        onlyCallOnce = nil
+        if level:GetCurrentRoomIndex() == level:GetStartingRoomIndex() and room:IsFirstVisit() and not customMapTransitionInProgress then
             StageAPI.CurrentCustomMapRoom = nil
         end
 
         if StageAPI.CurrentCustomMapRoom then
-            StageAPI.ClearRoomLayout(true, true, true, true)
+            StageAPI.ClearRoomLayout(false, true, true, true)
 
             for i = 0, 7 do
                 if room:GetDoor(i) then
@@ -8960,14 +9134,6 @@ do -- Custom Floor Generation
             end
 
             StageAPI.LoadCustomMapRoomDoors(StageAPI.CurrentLevelMap[StageAPI.CurrentCustomMapRoom])
-        end
-
-        if setPlayerToSlot then
-            for _, player in ipairs(players) do
-                player.Position = room:GetClampedPosition(room:GetDoorSlotPosition(setPlayerToSlot), 20)
-            end
-
-            setPlayerToSlot = nil
         end
 
         customMapTransitionInProgress = nil
@@ -9002,6 +9168,57 @@ do -- Custom Floor Generation
         end
     end)
 
+    StageAPI.DoorsBitwise = {
+        [DoorSlot.LEFT0] = 1,
+        [DoorSlot.UP0] = 1 << 1,
+        [DoorSlot.RIGHT0] = 1 << 2,
+        [DoorSlot.DOWN0] = 1 << 3,
+        [DoorSlot.LEFT1] = 1 << 4,
+        [DoorSlot.UP1] = 1 << 5,
+        [DoorSlot.RIGHT1] = 1 << 6,
+        [DoorSlot.DOWN1] = 1 << 7,
+    }
+
+    function StageAPI.GenerateRoomLayoutFromData(data)
+        local layout = StageAPI.CreateEmptyRoomLayout(data.Shape)
+        layout.Name = data.Name
+        layout.RoomFilename = "Special"
+        layout.Type = data.Type
+        layout.Variant = data.Variant
+        layout.SubType = data.Subtype
+        layout.Difficulty = data.Difficulty
+        layout.Weight = data.InitialWeight
+
+        layout.Doors = {}
+
+        for slot = 0, 7 do
+            if data.Doors & StageAPI.DoorsBitwise[slot] ~= 0 then
+                layout.Doors[#layout.Doors + 1] = {
+                    Slot = slot,
+                    Exists = true
+                }
+            end
+        end
+
+
+        local spawns = data.Spawns
+        for i = 0, spawns.Size do
+            local spawn = spawns:Get(i)
+            if spawn then
+                local index = StageAPI.VectorToGrid(spawn.X, spawn.Y, layout.Width)
+                local weight = spawn.SumWeights - 0.01
+                for i = 1, spawn.EntryCount do
+                    local entry = spawn:PickEntry(weight)
+                    weight = weight - entry.Weight
+
+                    StageAPI.AddObjectToRoomLayout(layout, index, entry.Type, entry.Variant, entry.Subtype, spawn.X, spawn.Y)
+                end
+            end
+        end
+
+        return layout
+    end
+
     local shapeAttempts = 0
     local closest = 999999
     mod:AddCallback(ModCallbacks.MC_EXECUTE_CMD, function(_, cmd, params)
@@ -9011,10 +9228,15 @@ do -- Custom Floor Generation
             StageAPI.Seeds:SetStartSeed("")
             Isaac.ExecuteCommand("stage " .. tostring(level:GetStage()) .. StageAPI.StageTypeToString[level:GetStageType()])
         elseif cmd == "chesttest" then
+            local baseStage = level:GetStage()
+            local baseStageType = level:GetStageType()
+            --StageAPI.CreateMapForShapeStringTable(heart)
             Isaac.ExecuteCommand("stage 11a")
-            StageAPI.CreateMapForShapeStringTable(heart)
-            --StageAPI.CopyCurrentLevelMap()
-            StageAPI.InitCustomLevel()
+            StageAPI.CopyCurrentLevelMap()
+            Isaac.ExecuteCommand("stage " .. tostring(baseStage) .. StageAPI.StageTypeToString[baseStageType])
+            StageAPI.InitCustomLevel(true)
+        elseif cmd == "copyroom" then
+            StageAPI.RegisterLayout("CopiedRoom", StageAPI.GenerateRoomLayoutFromData(level:GetCurrentRoomDesc().Data))
         elseif cmd == "suppress" then
             StageAPI.Seeds:SetStartSeed("SBPX 37HV")
             Isaac.ExecuteCommand("stage 11a")
@@ -9025,12 +9247,6 @@ do -- Custom Floor Generation
 
     mod:AddCallback(ModCallbacks.MC_POST_GAME_STARTED, function()
         shapeAttempts = 0
-    end)
-
-    mod:AddCallback(ModCallbacks.MC_POST_CURSE_EVAL, function(_, curses)
-        if forceLabyrinthLost then
-            return curses | LevelCurse.CURSE_OF_LABYRINTH | LevelCurse.CURSE_OF_THE_LOST
-        end
     end)
 
     mod:AddCallback(ModCallbacks.MC_POST_RENDER, function()
