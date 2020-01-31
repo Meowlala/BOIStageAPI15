@@ -996,7 +996,7 @@ do -- Overlays
 
     StageAPI.OverlayDefaultSize = Vector(512, 512)
     StageAPI.Overlay = StageAPI.Class("Overlay")
-    function StageAPI.Overlay:Init(file, velocity, offset, size)
+    function StageAPI.Overlay:Init(file, velocity, offset, size, alpha)
         self.Sprite = Sprite()
         self.Sprite:Load(file, true)
         self.Sprite:Play("Idle", true)
@@ -1004,6 +1004,9 @@ do -- Overlays
         self.Velocity = velocity or zeroVector
         self.Offset = offset or zeroVector
         self.Size = size or StageAPI.OverlayDefaultSize
+        if alpha then
+            self:SetAlpha(alpha, true)
+        end
     end
 
     function StageAPI.Overlay:SetAlpha(alpha, noCancelFade)
@@ -1028,25 +1031,7 @@ do -- Overlays
         self.FadingFinished = false
     end
 
-    function StageAPI.Overlay:Render(noCenterCorrect, additionalOffset)
-        local centerCorrect = not noCenterCorrect
-        if self.Fading and self.FadeTime and self.FadeTotal and self.FadeStep then
-            self.FadeTime = self.FadeTime + self.FadeStep
-            if self.FadeTime < 0 then
-                self.FadeTime = 0
-                self.Fading = false
-                self.FadingFinished = true
-            end
-
-            if self.FadeTime > self.FadeTotal then
-                self.FadeTime = self.FadeTotal
-                self.Fading = false
-                self.FadingFinished = true
-            end
-
-            self:SetAlpha(self.FadeTime / self.FadeTotal, true)
-        end
-
+    function StageAPI.Overlay:Update()
         if self.Velocity then
             self.Position = self.Position + self.Velocity
 
@@ -1069,6 +1054,30 @@ do -- Overlays
             end
 
             self.Position = self.Position:Rotated(self.Sprite.Rotation)
+        end
+    end
+
+    function StageAPI.Overlay:Render(noCenterCorrect, additionalOffset, noUpdate)
+        local centerCorrect = not noCenterCorrect
+        if self.Fading and self.FadeTime and self.FadeTotal and self.FadeStep then
+            self.FadeTime = self.FadeTime + self.FadeStep
+            if self.FadeTime < 0 then
+                self.FadeTime = 0
+                self.Fading = false
+                self.FadingFinished = true
+            end
+
+            if self.FadeTime > self.FadeTotal then
+                self.FadeTime = self.FadeTotal
+                self.Fading = false
+                self.FadingFinished = true
+            end
+
+            self:SetAlpha(self.FadeTime / self.FadeTotal, true)
+        end
+
+        if not noUpdate then
+            self:Update()
         end
 
         StageAPI.RenderSpriteTiled(self.Sprite, self.Position + (self.Offset or zeroVector) + (additionalOffset or zeroVector), self.Size, centerCorrect)
@@ -4223,11 +4232,19 @@ do -- Extra Rooms
                 local btype, stage, stype = room:GetBackdropType(), level:GetStage(), level:GetStageType()
                 if (btype == 10 or btype == 11) and (stage == LevelStage.STAGE4_1 or stage == LevelStage.STAGE4_2) then
                     for _, overlay in ipairs(StageAPI.UteroOverlays) do
-                        overlay:Render()
+                        if not game:IsPaused() then
+                            overlay:Update()
+                        end
+
+                        overlay:Render(nil, nil, true)
                     end
                 elseif (btype == 7 or btype == 8 or btype == 16) and (stage == LevelStage.STAGE3_1 or stage == LevelStage.STAGE3_2 or stage == LevelStage.STAGE6) then
                     for _, overlay in ipairs(StageAPI.NecropolisOverlays) do
-                        overlay:Render()
+                        if not game:IsPaused() then
+                            overlay:Update()
+                        end
+
+                        overlay:Render(nil, nil, true)
                     end
                 end
             end
@@ -5586,8 +5603,9 @@ do -- Definitions
     }
 
     StageAPI.NecropolisOverlays = {
-        StageAPI.Overlay("stageapi/floors/necropolis/overlay.anm2", Vector(0.66, 0.66)),
-        StageAPI.Overlay("stageapi/floors/necropolis/overlay.anm2", Vector(-0.66, 0.66))
+        StageAPI.Overlay("stageapi/floors/necropolis/overlay.anm2", Vector(0.33, -0.15), nil, nil, 0.5),
+        StageAPI.Overlay("stageapi/floors/necropolis/overlay.anm2", Vector(-0.33, -0.15), Vector(128, 128), nil, 0.5),
+        StageAPI.Overlay("stageapi/floors/necropolis/overlay.anm2", Vector(0.33, 0.1), nil, nil, 0.5),
     }
 
     StageAPI.NecropolisBackdrop = StageAPI.BackdropHelper(StageAPI.NecropolisBackdrop, "stageapi/floors/necropolis/", ".png")
@@ -5625,8 +5643,10 @@ do -- Definitions
     }
 
     StageAPI.UteroOverlays = {
-        StageAPI.Overlay("stageapi/floors/utero/overlay.anm2", Vector(0.66, 0.66)),
-        StageAPI.Overlay("stageapi/floors/utero/overlay.anm2", Vector(-0.66, 0.66))
+        StageAPI.Overlay("stageapi/floors/utero/overlay.anm2", Vector(2, -1.6), nil, nil, 0.5),
+        StageAPI.Overlay("stageapi/floors/utero/overlay.anm2", Vector(-0.5, -1.5), nil, nil, 0.5),
+        StageAPI.Overlay("stageapi/floors/utero/overlay.anm2", Vector(-1, -1.5), Vector(128, 128), nil, 0.5),
+        StageAPI.Overlay("stageapi/floors/utero/overlay.anm2", Vector(-2, -1.6), Vector(128, 128), nil, 0.5)
     }
 
     StageAPI.UteroBackdrop = StageAPI.BackdropHelper(StageAPI.UteroBackdrop, "stageapi/floors/utero/", ".png")
@@ -8193,6 +8213,9 @@ converted to type 1000
 - Only prevent clearing wall grids
 "outside" the room; this allows
 custom grids based on GRID_WALL
+
+- Improved the accuracy of
+Depths and Womb overlays
             ]])
 
             REVEL.AddChangelog("StageAPI v1.80 - 82", [[- Extra rooms can now use
