@@ -4417,7 +4417,11 @@ do -- Extra Rooms
             end
         end
 
-        return StageAPI.RoomShapeToGotoID[roomShape].Special[roomType]
+        if StageAPI.RoomShapeToGotoID[roomShape].Special[roomType] then
+            return StageAPI.RoomShapeToGotoID[roomShape].Special[roomType]
+        else
+            return StageAPI.RoomShapeToGotoID[roomShape].Special["Barren"]
+        end
     end
 
     StageAPI.DoorOneSlots = {
