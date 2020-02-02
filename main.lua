@@ -3019,6 +3019,10 @@ do -- RoomsList
     function StageAPI.SetCurrentRoom(room)
         StageAPI.ActiveEntityPersistenceData = {}
         StageAPI.LevelRooms[StageAPI.GetCurrentRoomID()] = room
+        if StageAPI.InExtraRoom then
+            StageAPI.CurrentExtraRoom = room
+            StageAPI.CurrentExtraRoomName = room.ExtraRoomName
+        end
     end
 
     function StageAPI.GetCurrentRoom()
@@ -3909,6 +3913,10 @@ do -- Extra Rooms
     StageAPI.CurrentExtraRoom = nil
     StageAPI.CurrentExtraRoomName = nil
     function StageAPI.SetExtraRoom(name, room)
+        if room then
+            room.ExtraRoomName = name
+        end
+
         StageAPI.LevelRooms[name] = room
     end
 
@@ -4341,7 +4349,7 @@ do -- Extra Rooms
     StageAPI.LoadedGotoData = false
     StageAPI.DataLoadNeedsRestart = false
     mod:AddCallback(ModCallbacks.MC_POST_GAME_STARTED, function()
-        if not StageAPI.LoadedGotoData and (game.Difficulty == Difficulty.DIFFICULTY_NORMAL or game.Difficulty == Difficulty.DIFFICULTY_HARD) then
+        if not StageAPI.LoadedGotoData and (game.Difficulty == Difficulty.DIFFICULTY_NORMAL or game.Difficulty == Difficulty.DIFFICULTY_HARD) and not StageAPI.InTestMode then
             local resetRun
             local currentIndex = level:GetCurrentRoomIndex()
             if currentIndex == level:GetStartingRoomIndex() and room:IsFirstVisit() and level:GetStage() == LevelStage.STAGE1_1 then
@@ -4483,7 +4491,7 @@ do -- Extra Rooms
             StageAPI.LastNonExtraRoom = transitionFrom
         end
 
-        if transitionFrom == GridRooms.ROOM_DEBUG_IDX or StageAPI.CurrentCustomMapRoom then
+        if transitionFrom == GridRooms.ROOM_DEBUG_IDX or StageAPI.InCustomMap then
             local currentRoomDesc = level:GetRoomByIdx(transitionFrom)
             local currentGotoSet = StageAPI.GetGotoDataForTypeShape(room:GetType(), room:GetRoomShape())
             if currentGotoSet.LockedData and StageAPI.DoorOneSlots[leaveDoor] then
@@ -4519,7 +4527,7 @@ do -- Extra Rooms
                 extraRoomBaseType = targetRoomData.RoomType
             end
 
-            StageAPI.CurrentCustomMapRoom = name
+            StageAPI.CurrentCustomMapRoomID = name
         end
 
         if setDataForShape then
@@ -4531,6 +4539,8 @@ do -- Extra Rooms
                 targetRoomDesc.Data = targetGotoSet.Data
             end
         end
+
+        StageAPI.InCustomMap = isCustomMap
 
         level.LeaveDoor = leaveDoor
         level.EnterDoor = enterDoor
@@ -4694,7 +4704,160 @@ do -- Extra Rooms
         StageAPI.DoorTypes[name] = self
     end
 
-    StageAPI.DefaultDoor = StageAPI.CustomDoor("DefaultDoor")
+    StageAPI.CustomStateDoor = StageAPI.Class("CustomStateDoor")
+
+    function StageAPI.CustomStateDoor:Init(name, anm2, states, exitFunction, overlayAnm2)
+        self.Anm2 = anm2 or "gfx/grid/door_01_normaldoor.anm2"
+        self.OverlayAnm2 = overlayAnm2 -- optional, uses a separate sprite rather than an overlay anim for overlay animations
+        self.States = states
+        self.ExitFunction = exitFunction
+        self.IsCustomStateDoor = true
+        StageAPI.DoorTypes[name] = self
+    end
+
+    function StageAPI.CustomStateDoor:SetDoorAnim(sprite, anim, frame, overlayAnim, overlayFrame, overlaySprite)
+        if anim then
+            if frame then
+                sprite:SetFrame(anim, frame)
+            elseif not sprite:IsPlaying(anim) and not sprite:IsFinished(anim) then
+                sprite:Play(anim, true)
+            end
+        end
+
+        if overlayAnim then
+            if overlayFrame then
+                if overlaySprite then
+                    overlaySprite:SetFrame(overlayAnim, overlayFrame)
+                else
+                    sprite:SetOverlayFrame(overlayAnim, overlayFrame)
+                end
+            elseif not overlaySprite and not sprite:IsOverlayPlaying(overlayAnim) and not sprite:IsOverlayFinished(overlayAnim) then
+                sprite:PlayOverlay(overlayAnim, true)
+            elseif overlaySprite and not overlaySprite:IsPlaying(overlayAnim) and not overlaySprite:IsFinished(overlayAnim) then
+                overlaySprite:Play(overlayAnim, true)
+            end
+        end
+    end
+
+    function StageAPI.CustomStateDoor:UpdateDoorSprite(sprite, stateData, triggerAnim, triggerOverlayAnim, overlaySprite)
+        if type(stateData) == "string" then
+            stateData = self.States[stateData]
+        end
+
+        local anim, overlayAnim
+        if not triggerAnim or not sprite:IsPlaying(triggerAnim) then
+            anim = stateData.Anim
+        end
+
+        if not triggerOverlayAnim or not ((overlaySprite and not overlaySprite:IsPlaying(triggerOverlayAnim)) or sprite:IsOverlayPlaying(triggerOverlayAnim)) then
+            overlayAnim = stateData.OverlayAnim
+        end
+
+        self:SetDoorAnim(sprite, anim, stateData.Frame, overlayAnim, stateData.OverlayFrame, overlaySprite)
+
+        if overlaySprite then
+            return (triggerOverlayAnim and overlaySprite:IsPlaying(triggerOverlayAnim)) or overlayAnim
+        end
+    end
+
+    StageAPI.DefaultDoorStates = {
+        Default = "Opened",
+        Closed = {
+            StartAnim = "Close",
+            Anim = "Closed",
+            StartSound = SoundEffect.SOUND_DOOR_HEAVY_CLOSE,
+            Triggers = {
+                Clear = "Opened",
+                Bomb = "BrokenOpen"
+            }
+        },
+        Opened = {
+            StartAnim = "Open",
+            Anim = "Opened",
+            StartSound = SoundEffect.SOUND_DOOR_HEAVY_OPEN,
+            Triggers = {
+                Unclear = "Closed"
+            },
+            Passable = true
+        },
+        BrokenOpen = {
+            StartAnim = "Break",
+            Anim = "BrokenOpen",
+            Passable = true,
+            NoMemory = true
+        }
+    }
+
+    StageAPI.DefaultDoor = StageAPI.CustomStateDoor("DefaultDoor", nil, StageAPI.DefaultDoorStates)
+
+    StageAPI.VaultDoorStates = {
+        Default = "TwoChains",
+        TwoChains = {
+            Anim = "Closed",
+            OverlayAnim = "TwoChains",
+            Triggers = {
+                GoldKey = {
+                    State = "AwaitChain",
+                    OverlayAnim = "GoldenKeyOpenChain1"
+                },
+                Key = {
+                    State = "AwaitChain",
+                    OverlayAnim = "KeyOpenChain1"
+                }
+            }
+        },
+        AwaitChain = {
+            Anim = "Closed",
+            OverlayAnim = "OneChain",
+            Triggers = {
+                OverlayFinish = {
+                    State = "OneChain",
+                    FinishAnims = {"GoldenKeyOpenChain1","KeyOpenChain1"}
+                }
+            },
+            RememberAs = "OneChain"
+        },
+        OneChain = {
+            Anim = "Closed",
+            OverlayAnim = "OneChain",
+            Triggers = {
+                GoldKey = {
+                    State = "Opened",
+                    OverlayAnim = "GoldenKeyOpenChain2"
+                },
+                Key = {
+                    State = "Opened",
+                    OverlayAnim = "KeyOpenChain2"
+                }
+            }
+        },
+        Closed = {
+            StartAnim = "Close",
+            Anim = "Closed",
+            StartSound = SoundEffect.SOUND_DOOR_HEAVY_CLOSE,
+            Triggers = {
+                Clear = "Opened",
+                Bomb = "BrokenOpen"
+            }
+        },
+        Opened = {
+            StartAnim = "Open",
+            Anim = "Opened",
+            StartSound = SoundEffect.SOUND_DOOR_HEAVY_OPEN,
+            Triggers = {
+                Unclear = "Closed"
+            },
+            Passable = true
+        },
+        BrokenOpen = {
+            StartAnim = "Break",
+            Anim = "BrokenOpen",
+            Passable = true,
+            NoMemory = true
+        }
+    }
+
+    StageAPI.DefaultDoor = StageAPI.CustomStateDoor("DefaultDoor", nil, StageAPI.VaultDoorStates, nil, "gfx/grid/door_16_doublelock.anm2")
 
     function StageAPI.SpawnCustomDoor(slot, leadsTo, isCustomMap, doorDataName, data, exitSlot) -- isCustomMap used to be a leadsToNormal index, with leadsTo being leadsToExtra, so to ensure compatibility there is some funkiness
         if type(isCustomMap) == "number" then
@@ -4743,7 +4906,49 @@ do -- Extra Rooms
         sprite.Rotation = persistData.Slot * 90 - 90
         sprite.Offset = StageAPI.DoorOffsetsByDirection[StageAPI.DoorToDirection[persistData.Slot]]
 
-        if not doorData.NoAutoHandling then
+        local opened
+        if doorData.IsCustomStateDoor then
+            if doorData.OverlayAnm2 then
+                data.OverlaySprite = Sprite()
+                data.OverlaySprite.Rotation = sprite.Rotation
+                data.OverlaySprite.Offset = sprite.Offset
+                data.OverlaySprite:Load(doorData.OverlayAnm2, true)
+            end
+
+            data.State = persistData.State
+            if not data.State then
+                data.State = "Default"
+                if room:IsClear() then
+                    if doorData.States.DefaultCleared then
+                        data.State = "DefaultCleared"
+                    end
+                else
+                    if doorData.States.DefaultUncleared then
+                        data.State = "DefaultUncleared"
+                    end
+                end
+
+                if type(doorData.States[data.State]) == "string" then
+                    data.State = doorData.States[data.State]
+                end
+
+                if not doorData.States[data.State].PlayAtStart then
+                    data.PreviousState = data.State
+                end
+            end
+
+            local stateData = doorData.States[data.State]
+
+            if not stateData.PlayAtStart then
+                doorData:UpdateDoorSprite(sprite, stateData, nil, nil, data.OverlaySprite)
+            end
+
+            if stateData.Passable then
+                opened = true
+            else
+                opened = false
+            end
+        elseif not doorData.NoAutoHandling then
             if doorData.AlwaysOpen then
                 sprite:Play(doorData.OpenedAnim, true)
             elseif doorData.AlwaysOpen == false then
@@ -4757,7 +4962,7 @@ do -- Extra Rooms
             end
         end
 
-        local opened = sprite:IsPlaying(doorData.OpenedAnim) or sprite:IsFinished(doorData.OpenedAnim)
+        opened = opened or (opened == nil and (sprite:IsPlaying(doorData.OpenedAnim) or sprite:IsFinished(doorData.OpenedAnim)))
 
         local grid = room:GetGridEntity(index)
         if opened then
@@ -4780,7 +4985,17 @@ do -- Extra Rooms
 
     StageAPI.AddCallback("StageAPI", "PRE_SHADING_RENDER", 0, function(shading)
         for _, door in ipairs(Isaac.FindByType(StageAPI.E.Door.T, StageAPI.E.Door.V, -1, false, false)) do
-            door:GetSprite():Render(Isaac.WorldToRenderPosition(door.Position) + room:GetRenderScrollOffset(), zeroVector, zeroVector)
+            local sprite, data = door:GetSprite(), door:GetData()
+            local rpos = Isaac.WorldToRenderPosition(door.Position) + room:GetRenderScrollOffset()
+            sprite:Render(rpos, zeroVector, zeroVector)
+
+            local isRender = ""
+            if data.OverlaySprite and data.RenderOverlay then
+                isRender = ", rendering"
+                data.OverlaySprite:Render(rpos, zeroVector, zeroVector)
+            end
+
+            IDebug.RenderTextByEntity(door, data.State .. isRender)
         end
     end)
 
@@ -4808,7 +5023,158 @@ do -- Extra Rooms
             return
         end
 
-        if not doorData.NoAutoHandling and doorData.AlwaysOpen == nil then
+        if doorData.IsCustomStateDoor then
+            local stateData = doorData.States[data.State]
+            if data.State ~= data.PreviousState then
+                if stateData.StartAnim then
+                    sprite:Play(stateData.StartAnim, true)
+                    data.TriggerAnim = stateData.StartAnim
+                end
+
+                if stateData.StartOverlayAnim then
+                    sprite:Play(stateData.StartOverlayAnim, true)
+                    data.TriggerOverlayAnim = stateData.StartOverlayAnim
+                end
+
+                if not stateData.ChangeAfterStartAnim then
+                    if stateData.Passable then
+                        StageAPI.SetDoorOpen(true, door)
+                    else
+                        StageAPI.SetDoorOpen(false, door)
+                    end
+                end
+
+                if stateData.StartFunction then
+                    stateData.StartFunction(door, data, sprite, doorData, data.DoorGridData)
+                end
+
+                if stateData.StartSound then
+                    if type(stateData.StartSound) == "table" then
+                        sfx:Play(stateData.StartSound[1], stateData.StartSound[2] or 1, stateData.StartSound[3] or 0, stateData.StartSound[4] or false, stateData.StartSound[5] or 1)
+                    else
+                        sfx:Play(stateData.StartSound, 1, 0, false, 1)
+                    end
+                end
+
+                Isaac.ConsoleOutput("State changed to " .. data.State .. "\n")
+
+                data.PreviousState = data.State
+            end
+
+            if stateData.ChangeAfterTriggerAnim and data.TriggerAnim then
+                if sprite:IsFinished(data.TriggerAnim) then
+                    if stateData.Passable then
+                        StageAPI.SetDoorOpen(true, door)
+                    else
+                        StageAPI.SetDoorOpen(false, door)
+                    end
+                end
+            end
+
+            data.RenderOverlay = doorData:UpdateDoorSprite(sprite, stateData, data.TriggerAnim, data.TriggerOverlayAnim, data.OverlaySprite)
+
+            if not stateData.NoMemory then
+                if stateData.RememberAs then
+                    data.DoorGridData.State = stateData.RememberAs
+                else
+                    data.DoorGridData.State = data.State
+                end
+            end
+
+            if stateData.Triggers then
+                local trigger
+                if stateData.Triggers.Bomb then
+                    for _, explosion in ipairs(Isaac.FindByType(EntityType.ENTITY_EFFECT, EffectVariant.BOMB_EXPLOSION, -1, false, false)) do
+                        if explosion.Position:DistanceSquared(door.Position) < 144 * 144 then
+                            trigger = stateData.Triggers.Bomb
+                        end
+                    end
+                end
+
+                if stateData.Triggers.Unclear and not room:IsClear() then
+                    trigger = stateData.Triggers.Unclear
+                end
+
+                if stateData.Triggers.Clear and room:IsClear() then
+                    trigger = stateData.Triggers.Clear
+                end
+
+                if stateData.Triggers.Key or stateData.Triggers.Coin or stateData.Triggers.GoldKey then
+                    local touched = {}
+                    for _, player in ipairs(players) do
+                        if player:CollidesWithGrid() and player.Position:DistanceSquared(door.Position) < 40 * 40 then
+                            touched[#touched + 1] = player
+                        end
+                    end
+
+                    for _, player in ipairs(touched) do
+                        if stateData.Triggers.GoldKey then
+                            if player:HasGoldenKey() then
+                                trigger = stateData.Triggers.GoldKey
+                                break
+                            end
+                        end
+
+                        if stateData.Triggers.Key then
+                            local keyCount = player:GetNumKeys()
+                            local hasGold = player:HasGoldenKey() and not stateData.Triggers.Key.NoGold
+                            if keyCount > 0 or hasGold then
+                                trigger = stateData.Triggers.Key
+                                if not hasGold then
+                                    player:AddKeys(-1)
+                                end
+
+                                break
+                            end
+                        end
+
+                        if stateData.Triggers.Coin then
+                            local coinCount = player:GetNumCoins()
+                            if coinCount > 0 then
+                                trigger = stateData.Triggers.Coin
+                                player:AddCoins(-1)
+                                break
+                            end
+                        end
+                    end
+                end
+
+                if stateData.Triggers.OverlayEvent then
+                    if data.OverlaySprite:IsEventTriggered(stateData.Triggers.OverlayEvent.Event) then
+                        trigger = stateData.Triggers.OverlayEvent
+                    end
+                end
+
+                if stateData.Triggers.OverlayFinish then
+                    local anims = stateData.Triggers.OverlayFinish.FinishAnims
+                    if stateData.Triggers.OverlayFinish.FinishAnim then
+                        anims = {stateData.Triggers.OverlayFinish.FinishAnim}
+                    end
+
+                    for _, anim in ipairs(anims) do
+                        if (data.OverlaySprite and data.OverlaySprite:IsFinished(anim)) or (not data.OverlaySprite and sprite:IsOverlayFinished(anim)) then
+                            trigger = stateData.Triggers.OverlayFinish
+                            break
+                        end
+                    end
+                end
+
+                if trigger then
+                    if type(trigger) == "table" then
+                        data.State = trigger.State
+                        doorData:SetDoorAnim(sprite, trigger.Anim, nil, trigger.OverlayAnim, nil, data.OverlaySprite)
+                        data.TriggerAnim = trigger.Anim
+                        data.TriggerOverlayAnim = trigger.OverlayAnim
+                    else
+                        data.State = trigger
+                    end
+                end
+            end
+
+            if data.OverlaySprite then
+                data.OverlaySprite:Update()
+            end
+        elseif not doorData.NoAutoHandling and doorData.AlwaysOpen == nil then
             if sprite:IsFinished(doorData.OpenAnim) then
                 StageAPI.SetDoorOpen(true, door)
                 sprite:Play(doorData.OpenedAnim, true)
@@ -5839,6 +6205,53 @@ do -- Custom Stage
             end
         else
             self.SinRooms = sins
+        end
+    end
+
+    function StageAPI.CustomStage:GenerateRoom(rtype, shape, doors)
+        if StageAPI.CurrentStage.SinRooms and (rtype == RoomType.ROOM_MINIBOSS or rtype == RoomType.ROOM_SECRET or rtype == RoomType.ROOM_SHOP) then
+            local usingRoomsList
+            local includedSins = {}
+            for _, entity in ipairs(Isaac.GetRoomEntities()) do
+                for i, sin in ipairs(StageAPI.SinsSplitData) do
+                    if entity.Type == sin.Type and (sin.Variant and entity.Variant == sin.Variant) and ((sin.ListName and StageAPI.CurrentStage.SinRooms[sin.ListName]) or (sin.MultipleListName and StageAPI.CurrentStage.SinRooms[sin.MultipleListName])) then
+                        if not includedSins[i] then
+                            includedSins[i] = 0
+                        end
+
+                        includedSins[i] = includedSins[i] + 1
+                        break
+                    end
+                end
+            end
+
+            for ind, count in pairs(includedSins) do
+                local sin = StageAPI.SinsSplitData[ind]
+                local listName = sin.ListName
+                if count > 1 and sin.MultipleListName then
+                    listName = sin.MultipleListName
+                end
+
+                usingRoomsList = StageAPI.CurrentStage.SinRooms[listName]
+            end
+
+            if usingRoomsList then
+                local shape = room:GetRoomShape()
+                if #usingRoomsList.ByShape[shape] > 0 then
+                    local newRoom = StageAPI.LevelRoom(nil, usingRoomsList, nil, shape, rtype, nil, nil, StageAPI.CurrentStage.RequireRoomTypeSin, nil, doors)
+                    return newRoom
+                end
+            end
+        end
+
+        if not inStartingRoom and StageAPI.CurrentStage.Rooms and StageAPI.CurrentStage.Rooms[rtype] then
+            local newRoom = StageAPI.LevelRoom(nil, StageAPI.CurrentStage.Rooms[rtype], nil, shape, rtype, nil, nil, StageAPI.CurrentStage.RequireRoomTypeMatching, nil, doors)
+            return newRoom
+        end
+
+        if StageAPI.CurrentStage.Bosses and rtype == RoomType.ROOM_BOSS then
+            local newRoom, boss = StageAPI.GenerateBossRoom(nil, true, StageAPI.CurrentStage.Bosses, StageAPI.CurrentStage.Bosses.HasHorseman, StageAPI.CurrentStage.RequireRoomTypeBoss)
+            return newRoom, boss
         end
     end
 
@@ -7543,7 +7956,7 @@ do -- Callbacks
         StageAPI.CallCallbacks("POST_BOSS_ROOM_INIT", false, room, boss, bossID)
     end
 
-    function StageAPI.GenerateBossRoom(bossID, checkEncountered, bosses, hasHorseman, requireRoomTypeBoss, noPlayBossAnim, unskippableBossAnim, isExtraRoom, shape, ignoreDoors)
+    function StageAPI.GenerateBossRoom(bossID, checkEncountered, bosses, hasHorseman, requireRoomTypeBoss, noPlayBossAnim, unskippableBossAnim, isExtraRoom, shape, ignoreDoors, doors, roomType)
         if not bossID then
             bossID = StageAPI.SelectBoss(bosses, hasHorseman)
         elseif checkEncountered then
@@ -7565,9 +7978,22 @@ do -- Callbacks
         end
 
         local levelIndex = StageAPI.GetCurrentRoomID()
-        local newRoom = StageAPI.LevelRoom(nil, boss.Rooms, nil, shape, nil, isExtraRoom, nil, requireRoomTypeBoss, ignoreDoors, nil, levelIndex)
+        local newRoom = StageAPI.LevelRoom(nil, boss.Rooms, roomType, shape, nil, isExtraRoom, nil, requireRoomTypeBoss, ignoreDoors, doors, levelIndex)
         newRoom.PersistentData.BossID = bossID
         StageAPI.CallCallbacks("POST_BOSS_ROOM_INIT", false, newRoom, boss, bossID)
+
+        return newRoom, boss
+    end
+
+    function StageAPI.SetCurrentBossRoom(bossID, checkEncountered, bosses, hasHorseman, requireRoomTypeBoss, noPlayBossAnim, unskippableBossAnim)
+        local newRoom, boss = StageAPI.GenerateBossRoom(bossID, checkEncountered, bosses, hasHorseman, requireRoomTypeBoss)
+        if not newRoom then
+            StageAPI.Log('Could not generate room for boss: ID: ' .. bossID .. ' List Length: ' .. tostring(bosses and #bosses or 0))
+            return nil, nil
+        end
+
+        StageAPI.SetCurrentRoom(newRoom)
+        newRoom:Load()
 
         if noPlayBossAnim == nil then
             noPlayBossAnim = boss.IsMiniboss
@@ -7578,18 +8004,6 @@ do -- Callbacks
         elseif noPlayBossAnim ~= 2 then
             StageAPI.PlayTextStreak(players[1]:GetName() .. " VS " .. boss.Name)
         end
-
-        return newRoom, boss
-    end
-
-    function StageAPI.SetCurrentBossRoom(bossID, checkEncountered, bosses, hasHorseman, requireRoomTypeBoss, noPlayBossAnim)
-        local newRoom, boss = StageAPI.GenerateBossRoom(bossID, checkEncountered, bosses, hasHorseman, requireRoomTypeBoss, noPlayBossAnim)
-        if not newRoom then
-            StageAPI.Log('Could not generate room for boss: ID: ' .. bossID .. ' List Length: ' .. tostring(bosses and #bosses or 0))
-            return nil, nil
-        end
-        StageAPI.SetCurrentRoom(newRoom)
-        newRoom:Load()
 
         return newRoom, boss
     end
@@ -7615,6 +8029,10 @@ do -- Callbacks
                 if level:GetCurses() & LevelCurse.CURSE_OF_LABYRINTH ~= 0 and StageAPI.CurrentStage.XLStage then
                     StageAPI.CurrentStage = StageAPI.CurrentStage.XLStage
                 end
+
+                if StageAPI.CurrentStage.GenerateLevel then
+                    StageAPI.CurrentStage:GenerateLevel()
+                end
             end
 
             StageAPI.NextStage = nil
@@ -7626,46 +8044,16 @@ do -- Callbacks
             end
         end
 
-        local enteringExtraRoomFromOffGridRoom
-        if StageAPI.PreviousExtraRoom and level:GetCurrentRoomIndex() == GridRooms.ROOM_DEBUG_IDX then
-            StageAPI.CurrentExtraRoom = StageAPI.PreviousExtraRoom
-            StageAPI.CurrentExtraRoomName = StageAPI.PreviousExtraRoomName
-            StageAPI.InExtraRoom = true
-            StageAPI.TransitionExitSlot = level.LeaveDoor
-            StageAPI.PreviousExtraRoom = nil
-            StageAPI.PreviousExtraRoomName = nil
-            enteringExtraRoomFromOffGridRoom = true
-        end
-
-        if not StageAPI.TransitioningToExtraRoom() and not enteringExtraRoomFromOffGridRoom and not StageAPI.LoadingExtraRoomFromSave then
-            if StageAPI.InExtraRoom and level:GetCurrentRoomIndex() < 0 then
-                StageAPI.PreviousExtraRoom = StageAPI.CurrentExtraRoom
-                StageAPI.PreviousExtraRoomName = StageAPI.CurrentExtraRoomName
-            else
-                StageAPI.PreviousExtraRoom = nil
-                StageAPI.PreviousExtraRoomName = nil
-            end
-
-            StageAPI.CurrentExtraRoom = nil
-            StageAPI.CurrentExtraRoomName = nil
-            StageAPI.InExtraRoom = false
-            StageAPI.LoadedExtraRoom = false
-        end
-
-        StageAPI.LoadingExtraRoomFromSave = nil
-
-        if StageAPI.ForcePlayerDoorSlot or StageAPI.ForcePlayerNewRoomPosition then
-            local pos = StageAPI.ForcePlayerNewRoomPosition or room:GetClampedPosition(room:GetDoorSlotPosition(StageAPI.ForcePlayerDoorSlot), 16)
-            for _, player in ipairs(players) do
-                player.Position = pos
-            end
-
-            StageAPI.ForcePlayerDoorSlot = nil
-            StageAPI.ForcePlayerNewRoomPosition = nil
+        local currentListIndex = StageAPI.GetCurrentRoomID()
+        local currentRoom, justGenerated, boss = StageAPI.GetCurrentRoom(), nil, nil
+        local retCurrentRoom, retJustGenerated, retBoss = StageAPI.CallCallbacks("PRE_STAGEAPI_NEW_ROOM_GENERATION", true, currentRoom, justGenerated, currentListIndex)
+        local prevRoom = currentRoom
+        currentRoom, justGenerated, boss = retCurrentRoom or currentRoom, retJustGenerated or justGenerated, retBoss or boss
+        if prevRoom ~= currentRoom then
+            StageAPI.SetCurrentRoom(currentRoom)
         end
 
         if StageAPI.CurrentExtraRoom then
-            Isaac.ConsoleOutput("Loadin extra room\n")
             for i = 0, 7 do
                 if room:GetDoor(i) then
                     room:RemoveDoor(i)
@@ -7674,79 +8062,25 @@ do -- Callbacks
 
             StageAPI.CurrentExtraRoom:Load(true)
             StageAPI.LoadedExtraRoom = true
-            StageAPI.PreviousExtraRoom = nil
-            StageAPI.PreviousExtraRoomName = nil
             justGenerated = true
         else
             StageAPI.LoadedExtraRoom = false
         end
 
-        local currentListIndex = StageAPI.GetCurrentRoomID()
-        local currentRoom, justGenerated, boss = StageAPI.GetCurrentRoom(), nil, nil
-
-        local retCurrentRoom, retJustGenerated, retBoss = StageAPI.CallCallbacks("PRE_STAGEAPI_NEW_ROOM_GENERATION", true, currentRoom, justGenerated, currentListIndex)
-        local prevRoom = currentRoom
-        currentRoom, justGenerated, boss = retCurrentRoom or currentRoom, retJustGenerated or justGenerated, retBoss or boss
-        if prevRoom ~= currentRoom then
-            StageAPI.SetCurrentRoom(currentRoom)
-        end
-
         if not StageAPI.InExtraRoom and StageAPI.InNewStage() then
-            local rtype = room:GetType()
-            if not currentRoom and StageAPI.CurrentStage.SinRooms and (rtype == RoomType.ROOM_MINIBOSS or rtype == RoomType.ROOM_SECRET or rtype == RoomType.ROOM_SHOP) then
-                local usingRoomsList
-                local includedSins = {}
-                for _, entity in ipairs(Isaac.GetRoomEntities()) do
-                    for i, sin in ipairs(StageAPI.SinsSplitData) do
-                        if entity.Type == sin.Type and (sin.Variant and entity.Variant == sin.Variant) and ((sin.ListName and StageAPI.CurrentStage.SinRooms[sin.ListName]) or (sin.MultipleListName and StageAPI.CurrentStage.SinRooms[sin.MultipleListName])) then
-                            if not includedSins[i] then
-                                includedSins[i] = 0
-                            end
-
-                            includedSins[i] = includedSins[i] + 1
-                            break
-                        end
-                    end
+            if not currentRoom and not inStartingRoom and StageAPI.CurrentStage.GenerateRoom then
+                local newRoom, newBoss = StageAPI.CurrentStage:GenerateRoom(room:GetType())
+                if newRoom then
+                    newRoom.LevelIndex = currentListIndex
+                    StageAPI.SetCurrentRoom(newRoom)
+                    newRoom:Load()
+                    currentRoom = newRoom
+                    justGenerated = true
                 end
 
-                for ind, count in pairs(includedSins) do
-                    local sin = StageAPI.SinsSplitData[ind]
-                    local listName = sin.ListName
-                    if count > 1 and sin.MultipleListName then
-                        listName = sin.MultipleListName
-                    end
-
-                    usingRoomsList = StageAPI.CurrentStage.SinRooms[listName]
+                if newBoss then
+                    boss = newBoss
                 end
-
-                if usingRoomsList then
-                    local shape = room:GetRoomShape()
-                    if #usingRoomsList.ByShape[shape] > 0 then
-                        local levelIndex = StageAPI.GetCurrentRoomID()
-                        local newRoom = StageAPI.LevelRoom(nil, usingRoomsList, nil, nil, nil, nil, nil, StageAPI.CurrentStage.RequireRoomTypeSin, nil, nil, levelIndex)
-                        StageAPI.SetCurrentRoom(newRoom)
-                        newRoom:Load()
-                        currentRoom = newRoom
-                        justGenerated = true
-                    end
-                end
-            end
-
-            if not inStartingRoom and not currentRoom and StageAPI.CurrentStage.Rooms and StageAPI.CurrentStage.Rooms[rtype] then
-                local levelIndex = StageAPI.GetCurrentRoomID()
-                local newRoom = StageAPI.LevelRoom(nil, StageAPI.CurrentStage.Rooms[rtype], nil, nil, nil, nil, nil, StageAPI.CurrentStage.RequireRoomTypeMatching, nil, nil, levelIndex)
-                StageAPI.SetCurrentRoom(newRoom)
-                newRoom:Load()
-                currentRoom = newRoom
-                justGenerated = true
-            end
-
-            if not currentRoom and StageAPI.CurrentStage.Bosses and rtype == RoomType.ROOM_BOSS then
-                local newRoom
-                newRoom, boss = StageAPI.SetCurrentBossRoom(nil, true, StageAPI.CurrentStage.Bosses, StageAPI.CurrentStage.Bosses.HasHorseman, StageAPI.CurrentStage.RequireRoomTypeBoss)
-
-                currentRoom = newRoom
-                justGenerated = true
             end
         end
 
@@ -7761,19 +8095,15 @@ do -- Callbacks
             boss = StageAPI.GetBossData(currentRoom.PersistentData.BossID)
         end
 
-        --[[
-        if StageAPI.RoomGrids[currentListIndex] and not justGenerated then
-            StageAPI.RemoveExtraGrids(StageAPI.RoomGrids[currentListIndex])
-        end]]
-
         if currentRoom and not StageAPI.InExtraRoom and not justGenerated then
             currentRoom:Load()
-            if not room:IsClear() and boss then
-                if not boss.IsMiniboss then
-                    StageAPI.PlayBossAnimation(boss)
-                else
-                    StageAPI.PlayTextStreak(players[1]:GetName() .. " VS " .. boss.Name)
-                end
+        end
+
+        if boss and not room:IsClear() then
+            if not boss.IsMiniboss then
+                StageAPI.PlayBossAnimation(boss)
+            else
+                StageAPI.PlayTextStreak(players[1]:GetName() .. " VS " .. boss.Name)
             end
         end
 
@@ -7788,7 +8118,15 @@ do -- Callbacks
             end
         end
 
-        if currentRoom then
+        if StageAPI.ForcePlayerDoorSlot or StageAPI.ForcePlayerNewRoomPosition then
+            local pos = StageAPI.ForcePlayerNewRoomPosition or room:GetClampedPosition(room:GetDoorSlotPosition(StageAPI.ForcePlayerDoorSlot), 16)
+            for _, player in ipairs(players) do
+                player.Position = pos
+            end
+
+            StageAPI.ForcePlayerDoorSlot = nil
+            StageAPI.ForcePlayerNewRoomPosition = nil
+        elseif currentRoom then
             local invalidEntrance
             local validDoors = {}
             for _, door in ipairs(currentRoom.Layout.Doors) do
@@ -8983,89 +9321,7 @@ do -- Custom Floor Generation
     end
 
     StageAPI.RoomShapeToRoomGridIndex = {}
-    StageAPI.CurrentCustomMapRoom = nil
-
-    --[[
-    local customMapTransitionInProgress
-    local setPlayerToSlot
-    local setPlayerToPosition
-
-    function StageAPI.CustomLevelTransition(targetRoom, direction, transitionType, leaveDoor, enterDoor, setPlayerPosition)
-        leaveDoor = leaveDoor or -1
-        enterDoor = enterDoor or -1
-        transitionType = transitionType or 0
-        direction = direction or Direction.NO_DIRECTION
-
-        setPlayerToPosition = setPlayerPosition
-
-        StageAPI.EnsureDebugRoomExists()
-
-        StageAPI.RoomGrids = {}
-        StageAPI.CustomGrids = {}
-
-        local currentRoomData = StageAPI.CurrentCustomMapRoom and StageAPI.CurrentLevelMap[StageAPI.CurrentCustomMapRoom]
-        local targetRoomData = StageAPI.CurrentLevelMap[targetRoom]
-
-        if enterDoor == -1 and targetRoomData.Doors then
-            local possibleDoors = {}
-            for i = 0, 7 do
-                if targetRoomData.Doors[i] then
-                    possibleDoors[#possibleDoors + 1] = i
-                end
-            end
-
-            enterDoor = possibleDoors[StageAPI.Random(1, #possibleDoors)]
-        end
-
-        local transitionFrom = level:GetCurrentRoomIndex()
-        local transitionTo
-        if level:GetCurrentRoomIndex() == GridRooms.ROOM_DEBUG_IDX then
-            transitionTo = StageAPI.CustomLevelReplaceRoom -- StageAPI.RoomShapeToRoomGridIndex[targetRoomData.Shape]
-        else
-            transitionTo = GridRooms.ROOM_DEBUG_IDX
-        end
-
-        if StageAPI.CurrentCustomMapRoom then
-            local currentRoomDesc = level:GetRoomByIdx(transitionFrom)
-            local currentIDSet = StageAPI.RoomShapeToGotoID[currentRoomData.Shape]
-            if currentRoomData.BasementLockedData and oneSlots[leaveDoor] then
-                currentRoomDesc.Data = currentIDSet.BasementLockedData
-            else
-                currentRoomDesc.Data = currentIDSet.BasementData
-            end
-        end
-
-        local targetRoomDesc = level:GetRoomByIdx(transitionTo)
-        local targetIDSet = StageAPI.RoomShapeToGotoID[targetRoomData.Shape]
-        if targetIDSet.BasementLockedData and oneSlots[enterDoor] then
-            targetRoomDesc.Data = targetIDSet.BasementLockedData
-        else
-            targetRoomDesc.Data = targetIDSet.BasementData
-        end
-
-        level.LeaveDoor = leaveDoor
-        level.EnterDoor = enterDoor
-
-        customMapTransitionInProgress = true
-
-        StageAPI.CurrentCustomMapRoom = targetRoom
-
-        if transitionType == StageAPI.RoomTransitionType.INSTANT then
-            setPlayerToSlot = enterDoor
-            level:ChangeRoom(transitionTo)
-        else
-            game:StartRoomTransition(transitionTo, direction, transitionType)
-        end
-    end
-
-    function StageAPI.ExitCustomLevelDoor(door, data, sprite, doorData, doorGridData)
-        StageAPI.CustomLevelTransition(doorGridData.Data.TargetRoomIndex, Direction[doorGridData.Data.Direction], StageAPI.RoomTransitionType.DEFAULT, doorGridData.Slot, doorGridData.ExitSlot)
-    end
-
-    StageAPI.CustomLevelDoor = StageAPI.CustomDoor("CustomLevelDoor", nil, nil, nil, nil, nil, nil, nil, StageAPI.ExitCustomLevelDoor)
-    function StageAPI.SpawnCustomLevelDoor(slot, targetRoomIndex, exitSlot, direction, segment)
-        StageAPI.SpawnCustomDoor(slot, false, false, "CustomLevelDoor", {TargetRoomIndex = targetRoomIndex, Direction = direction, Segment = segment}, exitSlot)
-    end]]
+    StageAPI.CurrentCustomMapRoomID = nil
 
     function StageAPI.LoadCustomMapRoomDoors(room)
         if room.Doors then
@@ -9076,14 +9332,6 @@ do -- Custom Floor Generation
     end
 
     function StageAPI.InitCustomLevel(levelStartRoom)
-        --[[
-        local oldSeed = StageAPI.Seeds:GetStartSeedString()
-        StageAPI.Seeds:SetStartSeed("SBPX 37HV")
-        forceLabyrinthLost = true
-        Isaac.ExecuteCommand("stage 11a")
-        forceLabyrinthLost = false
-        StageAPI.Seeds:SetStartSeed(oldSeed)]]
-
         level:AddCurse(LevelCurse.CURSE_OF_THE_LOST)
 
         local startRoom = level:GetStartingRoomIndex()
@@ -9099,6 +9347,8 @@ do -- Custom Floor Generation
         end
 
         if levelStartRoom then
+            StageAPI.InCustomMap = true
+
             if levelStartRoom == true then
                 for i, room in ipairs(StageAPI.CurrentLevelMap) do
                     if room.StartingRoom then
@@ -9113,11 +9363,14 @@ do -- Custom Floor Generation
         initPrint = true
     end
 
-    function StageAPI.EnsureDebugRoomExists()
-        if not level:GetRoomByIdx(GridRooms.ROOM_DEBUG_IDX) then
+    function StageAPI.EnsureDebugRoomExists(noTransition)
+        local debugRoom = level:GetRoomByIdx(GridRooms.ROOM_DEBUG_IDX)
+        if not debugRoom or not debugRoom.Data then
             local currentIndex = level:GetCurrentRoomIndex()
-            Isaac.ExecuteCommand("goto s.barren." .. StageAPI.RoomShapeToGotoID[RoomShape.ROOMSHAPE_1x1].Special.Barren)
-            game:StartRoomTransition(currentIndex, Direction.NO_DIRECTION, 0)
+            Isaac.ExecuteCommand("goto s.barren." .. StageAPI.RoomShapeToGotoID[RoomShape.ROOMSHAPE_1x1].Special.Barren.ID)
+            if not noTransition then
+                game:StartRoomTransition(currentIndex, Direction.NO_DIRECTION, 0)
+            end
         end
     end
 
@@ -9125,10 +9378,11 @@ do -- Custom Floor Generation
     mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, function()
         onlyCallOnce = nil
         if level:GetCurrentRoomIndex() == level:GetStartingRoomIndex() and room:IsFirstVisit() and not customMapTransitionInProgress then
-            StageAPI.CurrentCustomMapRoom = nil
+            StageAPI.CurrentCustomMapRoomID = nil
+            StageAPI.InCustomMap = nil
         end
 
-        if StageAPI.CurrentCustomMapRoom then
+        if StageAPI.CurrentCustomMapRoomID then
             StageAPI.ClearRoomLayout(false, true, true, true)
 
             for i = 0, 7 do
@@ -9137,7 +9391,7 @@ do -- Custom Floor Generation
                 end
             end
 
-            StageAPI.LoadCustomMapRoomDoors(StageAPI.CurrentLevelMap[StageAPI.CurrentCustomMapRoom])
+            StageAPI.LoadCustomMapRoomDoors(StageAPI.CurrentLevelMap[StageAPI.CurrentCustomMapRoomID])
         end
 
         customMapTransitionInProgress = nil
@@ -9156,12 +9410,12 @@ do -- Custom Floor Generation
             initPrint = nil
         end
 
-        if StageAPI.CurrentCustomMapRoom then
+        if StageAPI.InCustomMap then
             for i, room in ipairs(StageAPI.CurrentLevelMap) do
                 local x, y = room.X, room.Y
                 local frame = room.Shape - 1
 
-                if StageAPI.CurrentCustomMapRoom == i then
+                if StageAPI.CurrentCustomMapRoomID == i then
                     minimap:SetFrame("RoomCurrent", frame)
                 else
                     minimap:SetFrame("RoomUnvisited", frame)
@@ -9193,17 +9447,9 @@ do -- Custom Floor Generation
         layout.Difficulty = data.Difficulty
         layout.Weight = data.InitialWeight
 
-        layout.Doors = {}
-
-        for slot = 0, 7 do
-            if data.Doors & StageAPI.DoorsBitwise[slot] ~= 0 then
-                layout.Doors[#layout.Doors + 1] = {
-                    Slot = slot,
-                    Exists = true
-                }
-            end
+        for _, door in ipairs(layout.Doors) do
+            door.Exists = data.Doors & StageAPI.DoorsBitwise[door.Slot] ~= 0
         end
-
 
         local spawns = data.Spawns
         for i = 0, spawns.Size do
