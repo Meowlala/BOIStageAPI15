@@ -7313,6 +7313,9 @@ do -- Callbacks
 
             if usingGfx then
                 StageAPI.ChangeRoomGfx(usingGfx)
+                if currentRoom then
+                    currentRoom.Data.RoomGfx = usingGfx
+                end
             end
 
             local callbacks = StageAPI.GetCallbacks("POST_CHANGE_ROOM_GFX")
@@ -8231,6 +8234,10 @@ custom grids based on GRID_WALL
 Depths and Womb overlays
 
 - Add RemoveCustomGrid function
+
+- CurrentRoom.Data.RoomGfx is set
+to whatever RoomGfx was applied
+to the room after callbacks
             ]])
 
             REVEL.AddChangelog("StageAPI v1.80 - 82", [[- Extra rooms can now use
