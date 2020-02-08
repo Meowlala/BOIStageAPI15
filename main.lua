@@ -3102,8 +3102,8 @@ do -- RoomsList
 
     function StageAPI.LevelRoom:GetEntityMetadataOfType(metatype, index)
         if index then
+            local includedMetadata = {}
             if self.EntityMetadata[index] then
-                local includedMetadata = {}
                 for name, val in pairs(self.EntityMetadata[index]) do
                     if type(val) == "table" and name == metatype then
                         for _, v in ipairs(val) do
@@ -3116,8 +3116,8 @@ do -- RoomsList
                     end
                 end
 
-                return includedMetadata
             end
+            return includedMetadata
         else
             local includedMetadataByIndex = {}
             for index, metadataSet in pairs(self.EntityMetadata) do
