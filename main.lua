@@ -3744,6 +3744,25 @@ do -- Custom Grid Entities
         end
     end
 
+    function StageAPI.RemoveCustomGrid(index, name, keepVanillaGrid)
+        local lindex = StageAPI.GetCurrentRoomID()
+        if StageAPI.CustomGrids[lindex] and StageAPI.CustomGrids[lindex][name] and StageAPI.CustomGrids[lindex][name][index] then
+            StageAPI.CustomGrids[lindex][name][index] = nil
+            StageAPI.CustomGridIndices[index] = nil
+
+            if not keepVanillaGrid then
+                room:RemoveGridEntity(index, 0, false)
+            end
+
+            local callbacks = StageAPI.GetCallbacks("POST_CUSTOM_GRID_REMOVE")
+            for _, callback in ipairs(callbacks) do
+                if not callback.Params[1] or callback.Params[1] == name then
+                    callback.Function(grindex, persistData, StageAPI.CustomGridTypes[name], name)
+                end
+            end
+        end
+    end
+
     function StageAPI.IsCustomGrid(index, name)
         if not name then
             return StageAPI.CustomGridIndices[index]
@@ -3761,13 +3780,7 @@ do -- Custom Grid Entities
                 for grindex, persistData in pairs(grindices) do
                     local grid = room:GetGridEntity(grindex)
                     if not grid and customGridType.BaseType then
-                        grindices[grindex] = nil
-                        local callbacks = StageAPI.GetCallbacks("POST_CUSTOM_GRID_REMOVE")
-                        for _, callback in ipairs(callbacks) do
-                            if not callback.Params[1] or callback.Params[1] == name then
-                                callback.Function(grindex, persistData, StageAPI.CustomGridTypes[name], name)
-                            end
-                        end
+                        StageAPI.RemoveCustomGrid(grindex, name, true)
                     else
                         local callbacks = StageAPI.GetCallbacks("POST_CUSTOM_GRID_UPDATE")
                         for _, callback in ipairs(callbacks) do
@@ -8216,6 +8229,8 @@ custom grids based on GRID_WALL
 
 - Improved the accuracy of
 Depths and Womb overlays
+
+- Add RemoveCustomGrid function
             ]])
 
             REVEL.AddChangelog("StageAPI v1.80 - 82", [[- Extra rooms can now use
