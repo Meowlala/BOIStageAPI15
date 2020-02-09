@@ -2137,51 +2137,46 @@ do -- RoomsList
             if isDynamicPersistent then break end
         end
         if isDynamicPersistent then
-            local isChest
-            for _, var in ipairs(StageAPI.ChestVariants) do
-                if entData.Variant == var then
-                    isChest = true
-                end
-            end
-
-            if isChest then
-                return {
-                    AutoPersists = true,
-                    UpdatePosition = true,
-                    RemoveOnRemove = true,
-                    IgnoreSubType = true,
-                    StoreCheck = function(entity)
-                        return entity.SubType == 0
-                    end
-                }
-            else
-                return {
-                    AutoPersists = true,
-                    UpdatePosition = true,
-                    RemoveOnRemove = true,
-                    StoreCheck = function(entity)
-                        if entity.Type == EntityType.ENTITY_PICKUP then
-                            local variant = entity.Variant
-                            if variant == PickupVariant.PICKUP_COLLECTIBLE then
-                                return entity.SubType == 0
-                            else
-                                local sprite = entity:GetSprite()
-                                if sprite:IsPlaying("Open") or sprite:IsPlaying("Opened") or sprite:IsPlaying("Collect") or sprite:IsFinished("Open") or sprite:IsFinished("Opened") or sprite:IsFinished("Collect") then
-                                    return true
-                                end
-
-                                if entity:IsDead() then
-                                    return true
+            return {
+                AutoPersists = true,
+                UpdatePosition = true,
+                RemoveOnRemove = true,
+                UpdateType = true,
+                UpdateVariant = true,
+                UpdateSubType = true,
+                StoreCheck = function(entity)
+                    if entity.Type == EntityType.ENTITY_PICKUP then
+                        local variant = entity.Variant
+                        if variant == PickupVariant.PICKUP_COLLECTIBLE then
+                            return entity.SubType == 0
+                        else
+                            local isChest
+                            for _, var in ipairs(StageAPI.ChestVariants) do
+                                if variant == var then
+                                    isChest = true
                                 end
                             end
-                        elseif entity.Type == EntityType.ENTITY_FIREPLACE then
-                            return entity.HitPoints <= 2
-                        elseif entity.Type == EntityType.ENTITY_SLOT then
-                            return entity:GetSprite():IsPlaying("Death") or entity:GetSprite():IsPlaying("Broken") or entity:GetSprite():IsFinished("Death") or entity:GetSprite():IsFinished("Broken")
+
+                            if isChest then
+                                return entity.SubType == 0
+                            end
+
+                            local sprite = entity:GetSprite()
+                            if sprite:IsPlaying("Open") or sprite:IsPlaying("Opened") or sprite:IsPlaying("Collect") or sprite:IsFinished("Open") or sprite:IsFinished("Opened") or sprite:IsFinished("Collect") then
+                                return true
+                            end
+
+                            if entity:IsDead() then
+                                return true
+                            end
                         end
+                    elseif entity.Type == EntityType.ENTITY_FIREPLACE then
+                        return entity.HitPoints <= 2
+                    elseif entity.Type == EntityType.ENTITY_SLOT then
+                        return entity:GetSprite():IsPlaying("Death") or entity:GetSprite():IsPlaying("Broken") or entity:GetSprite():IsFinished("Death") or entity:GetSprite():IsFinished("Broken")
                     end
-                }
-            end
+                end
+            }
         end
     end)
 
@@ -2826,10 +2821,12 @@ do -- RoomsList
         return StageAPI.ActiveEntityPersistenceData[GetPtrHash(entity)]
     end
 
-    function StageAPI.SetEntityPersistenceData(entity, persistentIndex, persistentData)
+    function StageAPI.SetEntityPersistenceData(entity, persistentIndex, persistentData, spawnData, spawnInfo)
         StageAPI.ActiveEntityPersistenceData[GetPtrHash(entity)] = {
             PersistentIndex = persistentIndex,
-            PersistenceData = persistentData
+            PersistenceData = persistentData,
+            SpawnData = spawnData,
+            SpawnInfo = spawnInfo
         }
     end
 
@@ -2927,7 +2924,7 @@ do -- RoomsList
                                     ent:GetData().StageAPIEntityListIndex = index
 
                                     if entityInfo.Persistent then
-                                        StageAPI.SetEntityPersistenceData(ent, entityInfo.PersistentIndex, entityInfo.PersistenceData)
+                                        StageAPI.SetEntityPersistenceData(ent, entityInfo.PersistentIndex, entityInfo.PersistenceData, entityData, entityInfo)
                                     end
 
                                     if not loadingWave and ent:CanShutDoors() then
@@ -3397,20 +3394,13 @@ do -- RoomsList
         for index, spawns in pairs(self.ExtraSpawn) do
             for _, spawn in ipairs(spawns) do
                 if spawn.PersistenceData.RemoveOnRemove then
-                    local subtype, variant = spawn.Data.SubType, spawn.Data.Variant
-                    if spawn.PersistenceData.IgnoreSubType then
-                        subtype = -1
-                    end
-
-                    if spawn.PersistenceData.IgnoreVariant then
-                        variant = -1
-                    end
-
                     local hasMatch = false
-                    local matching = Isaac.FindByType(spawn.Data.Type, variant, subtype, false, false)
+                    local matching = Isaac.FindByType(spawn.Data.Type, -1, -1, false, false) -- not gonna bother with variant and subtype since they're subject to change
                     for _, match in ipairs(matching) do
-                        if not spawn.PersistenceData.StoreCheck or not spawn.PersistenceData.StoreCheck(match, match:GetData()) then
+                        local entityPersistData = StageAPI.GetEntityPersistenceData(match)
+                        if entityPersistData and entityPersistData.PersistentIndex == spawn.PersistentIndex then
                             hasMatch = true
+                            break
                         end
                     end
 
@@ -3424,20 +3414,13 @@ do -- RoomsList
         for index, spawns in pairs(self.SpawnEntities) do
             for _, spawn in ipairs(spawns) do
                 if spawn.PersistenceData and spawn.PersistenceData.RemoveOnRemove then
-                    local subtype, variant = spawn.Data.SubType, spawn.Data.Variant
-                    if spawn.PersistenceData.IgnoreSubType then
-                        subtype = -1
-                    end
-
-                    if spawn.PersistenceData.IgnoreVariant then
-                        variant = -1
-                    end
-
                     local hasMatch = false
-                    local matching = Isaac.FindByType(spawn.Data.Type, variant, subtype, false, false)
+                    local matching = Isaac.FindByType(spawn.Data.Type, -1, -1, false, false)
                     for _, match in ipairs(matching) do
-                        if not spawn.PersistenceData.StoreCheck or not spawn.PersistenceData.StoreCheck(match, match:GetData()) then
+                        local entityPersistData = StageAPI.GetEntityPersistenceData(match)
+                        if entityPersistData and entityPersistData.PersistentIndex == spawn.PersistentIndex then
                             hasMatch = true
+                            break
                         end
                     end
 
@@ -3452,6 +3435,33 @@ do -- RoomsList
             local data = entity:GetData()
             local entityPersistData = StageAPI.GetEntityPersistenceData(entity)
             if entityPersistData then
+                local changedSpawn
+                if entityPersistData.PersistenceData.UpdateType then
+                    if entity.Type ~= entityPersistData.SpawnData.Type then
+                        entityPersistData.SpawnData.Type = entity.Type
+                        changedSpawn = true
+                    end
+                end
+
+                if entityPersistData.PersistenceData.UpdateVariant then
+                    if entity.Variant ~= entityPersistData.SpawnData.Variant then
+                        entityPersistData.SpawnData.Variant = entity.Variant
+                        changedSpawn = true
+                    end
+                end
+
+                if entityPersistData.PersistenceData.UpdateSubType then
+                    if entity.SubType ~= entityPersistData.SpawnData.SubType then
+                        entityPersistData.SpawnData.SubType = entity.SubType
+                        changedSpawn = true
+                    end
+                end
+
+                if changedSpawn then
+                    local persistentData = StageAPI.CheckPersistence(entity.Type, entity.Variant, entity.SubType)
+                    entityPersistData.SpawnInfo.PersistenceData = persistentData
+                end
+
                 if entityPersistData.PersistenceData.UpdatePosition then
                     self.PersistentPositions[entityPersistData.PersistentIndex] = {X = entity.Position.X, Y = entity.Position.Y}
                 end
@@ -3470,23 +3480,27 @@ do -- RoomsList
                             self.ExtraSpawn[grindex] = {}
                         end
 
-                        self.ExtraSpawn[grindex][#self.ExtraSpawn[grindex] + 1] = {
-                            Data = {
-                                Type = entity.Type,
-                                Variant = entity.Variant,
-                                SubType = entity.SubType,
-                                Index = grindex
-                            },
+                        local spawnData = {
+                            Type = entity.Type,
+                            Variant = entity.Variant,
+                            SubType = entity.SubType,
+                            Index = grindex
+                        }
+
+                        local spawnInfo = {
+                            Data = spawnData,
                             Persistent = true,
                             PersistentIndex = index,
                             PersistenceData = persistentData
                         }
 
+                        self.ExtraSpawn[grindex][#self.ExtraSpawn[grindex] + 1] = spawnInfo
+
                         if persistentData.UpdatePosition then
                             self.PersistentPositions[index] = {X = entity.Position.X, Y = entity.Position.Y}
                         end
 
-                        StageAPI.SetEntityPersistenceData(entity, index, persistentData)
+                        StageAPI.SetEntityPersistenceData(entity, index, persistentData, spawnData, spawnInfo)
                     end
                 end
             end
