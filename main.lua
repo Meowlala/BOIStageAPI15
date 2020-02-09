@@ -3391,47 +3391,16 @@ do -- RoomsList
     end
 
     function StageAPI.LevelRoom:SavePersistentEntities()
-        for index, spawns in pairs(self.ExtraSpawn) do
-            for _, spawn in ipairs(spawns) do
-                if spawn.PersistenceData.RemoveOnRemove then
-                    local hasMatch = false
-                    local matching = Isaac.FindByType(spawn.Data.Type, -1, -1, false, false) -- not gonna bother with variant and subtype since they're subject to change
-                    for _, match in ipairs(matching) do
-                        local entityPersistData = StageAPI.GetEntityPersistenceData(match)
-                        if entityPersistData and entityPersistData.PersistentIndex == spawn.PersistentIndex then
-                            hasMatch = true
-                            break
-                        end
-                    end
-
-                    if not hasMatch then
-                        self.AvoidSpawning[spawn.PersistentIndex] = true
-                    end
-                end
-            end
-        end
-
-        for index, spawns in pairs(self.SpawnEntities) do
-            for _, spawn in ipairs(spawns) do
-                if spawn.PersistenceData and spawn.PersistenceData.RemoveOnRemove then
-                    local hasMatch = false
-                    local matching = Isaac.FindByType(spawn.Data.Type, -1, -1, false, false)
-                    for _, match in ipairs(matching) do
-                        local entityPersistData = StageAPI.GetEntityPersistenceData(match)
-                        if entityPersistData and entityPersistData.PersistentIndex == spawn.PersistentIndex then
-                            hasMatch = true
-                            break
-                        end
-                    end
-
-                    if not hasMatch then
-                        self.AvoidSpawning[spawn.PersistentIndex] = true
-                    end
-                end
+        local checkExistenceOf = {}
+        for hash, entityPersistData in pairs(StageAPI.ActiveEntityPersistenceData) do
+            if entityPersistData.PersistenceData.RemoveOnRemove then
+                checkExistenceOf[hash] = entityPersistData
             end
         end
 
         for _, entity in ipairs(Isaac.GetRoomEntities()) do
+            checkExistenceOf[GetPtrHash(entity)] = nil
+
             local data = entity:GetData()
             local entityPersistData = StageAPI.GetEntityPersistenceData(entity)
             if entityPersistData then
@@ -3504,6 +3473,10 @@ do -- RoomsList
                     end
                 end
             end
+        end
+
+        for hash, entityPersistData in pairs(checkExistenceOf) do
+            self.AvoidSpawning[entityPersistData.PersistentIndex] = true
         end
     end
 
