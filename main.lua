@@ -2119,6 +2119,17 @@ do -- RoomsList
         EntityType.ENTITY_FIREPLACE,
         EntityType.ENTITY_ETERNALFLY,
     }
+
+    StageAPI.ChestVariants = {
+        PickupVariant.PICKUP_CHEST,
+        PickupVariant.PICKUP_LOCKEDCHEST,
+        PickupVariant.PICKUP_BOMBCHEST,
+        PickupVariant.PICKUP_ETERNALCHEST,
+        PickupVariant.PICKUP_MIMICCHEST,
+        PickupVariant.PICKUP_SPIKEDCHEST,
+        PickupVariant.PICKUP_REDCHEST
+    }
+
     StageAPI.AddPersistenceCheck(function(entData)
         local isDynamicPersistent = false
         for _, type in ipairs(StageAPI.DynamicPersistentTypes) do
@@ -2126,32 +2137,51 @@ do -- RoomsList
             if isDynamicPersistent then break end
         end
         if isDynamicPersistent then
-            return {
-                AutoPersists = true,
-                UpdatePosition = true,
-                RemoveOnRemove = true,
-                StoreCheck = function(entity)
-                    if entity.Type == EntityType.ENTITY_PICKUP then
-                        local variant = entity.Variant
-                        if variant == PickupVariant.PICKUP_COLLECTIBLE then
-                            return entity.SubType == 0
-                        else
-                            local sprite = entity:GetSprite()
-                            if sprite:IsPlaying("Open") or sprite:IsPlaying("Opened") or sprite:IsPlaying("Collect") or sprite:IsFinished("Open") or sprite:IsFinished("Opened") or sprite:IsFinished("Collect") then
-                                return true
-                            end
-
-                            if entity:IsDead() then
-                                return true
-                            end
-                        end
-                    elseif entity.Type == EntityType.ENTITY_FIREPLACE then
-                        return entity.HitPoints <= 2
-                    elseif entity.Type == EntityType.ENTITY_SLOT then
-                        return entity:GetSprite():IsPlaying("Death") or entity:GetSprite():IsPlaying("Broken") or entity:GetSprite():IsFinished("Death") or entity:GetSprite():IsFinished("Broken")
-                    end
+            local isChest
+            for _, var in ipairs(StageAPI.ChestVariants) do
+                if entData.Variant == var then
+                    isChest = true
                 end
-            }
+            end
+
+            if isChest then
+                return {
+                    AutoPersists = true,
+                    UpdatePosition = true,
+                    RemoveOnRemove = true,
+                    IgnoreSubType = true,
+                    StoreCheck = function(entity)
+                        return entity.SubType == 0
+                    end
+                }
+            else
+                return {
+                    AutoPersists = true,
+                    UpdatePosition = true,
+                    RemoveOnRemove = true,
+                    StoreCheck = function(entity)
+                        if entity.Type == EntityType.ENTITY_PICKUP then
+                            local variant = entity.Variant
+                            if variant == PickupVariant.PICKUP_COLLECTIBLE then
+                                return entity.SubType == 0
+                            else
+                                local sprite = entity:GetSprite()
+                                if sprite:IsPlaying("Open") or sprite:IsPlaying("Opened") or sprite:IsPlaying("Collect") or sprite:IsFinished("Open") or sprite:IsFinished("Opened") or sprite:IsFinished("Collect") then
+                                    return true
+                                end
+
+                                if entity:IsDead() then
+                                    return true
+                                end
+                            end
+                        elseif entity.Type == EntityType.ENTITY_FIREPLACE then
+                            return entity.HitPoints <= 2
+                        elseif entity.Type == EntityType.ENTITY_SLOT then
+                            return entity:GetSprite():IsPlaying("Death") or entity:GetSprite():IsPlaying("Broken") or entity:GetSprite():IsFinished("Death") or entity:GetSprite():IsFinished("Broken")
+                        end
+                    end
+                }
+            end
         end
     end)
 
@@ -3367,8 +3397,17 @@ do -- RoomsList
         for index, spawns in pairs(self.ExtraSpawn) do
             for _, spawn in ipairs(spawns) do
                 if spawn.PersistenceData.RemoveOnRemove then
+                    local subtype, variant = spawn.Data.SubType, spawn.Data.Variant
+                    if spawn.PersistenceData.IgnoreSubType then
+                        subtype = -1
+                    end
+
+                    if spawn.PersistenceData.IgnoreVariant then
+                        variant = -1
+                    end
+
                     local hasMatch = false
-                    local matching = Isaac.FindByType(spawn.Data.Type, spawn.Data.Variant, spawn.Data.SubType, false, false)
+                    local matching = Isaac.FindByType(spawn.Data.Type, variant, subtype, false, false)
                     for _, match in ipairs(matching) do
                         if not spawn.PersistenceData.StoreCheck or not spawn.PersistenceData.StoreCheck(match, match:GetData()) then
                             hasMatch = true
@@ -3385,8 +3424,17 @@ do -- RoomsList
         for index, spawns in pairs(self.SpawnEntities) do
             for _, spawn in ipairs(spawns) do
                 if spawn.PersistenceData and spawn.PersistenceData.RemoveOnRemove then
+                    local subtype, variant = spawn.Data.SubType, spawn.Data.Variant
+                    if spawn.PersistenceData.IgnoreSubType then
+                        subtype = -1
+                    end
+
+                    if spawn.PersistenceData.IgnoreVariant then
+                        variant = -1
+                    end
+
                     local hasMatch = false
-                    local matching = Isaac.FindByType(spawn.Data.Type, spawn.Data.Variant, spawn.Data.SubType, false, false)
+                    local matching = Isaac.FindByType(spawn.Data.Type, variant, subtype, false, false)
                     for _, match in ipairs(matching) do
                         if not spawn.PersistenceData.StoreCheck or not spawn.PersistenceData.StoreCheck(match, match:GetData()) then
                             hasMatch = true
