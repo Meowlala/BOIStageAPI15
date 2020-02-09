@@ -3429,6 +3429,7 @@ do -- RoomsList
                 if changedSpawn then
                     local persistentData = StageAPI.CheckPersistence(entity.Type, entity.Variant, entity.SubType)
                     entityPersistData.SpawnInfo.PersistenceData = persistentData
+                    entityPersistData.PersistenceData = persistentData
                 end
 
                 if entityPersistData.PersistenceData.UpdatePosition then
