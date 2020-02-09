@@ -8211,6 +8211,13 @@ do -- Callbacks
             end
         end
 
+        if not StageAPI.ActiveTransitionToExtraRoom then
+            StageAPI.CurrentExtraRoom = nil
+            StageAPI.CurrentExtraRoomName = nil
+            StageAPI.InExtraRoom = false
+            StageAPI.LoadedExtraRoom = false
+        end
+
         local currentListIndex = StageAPI.GetCurrentRoomID()
         local currentRoom, justGenerated, boss = StageAPI.GetCurrentRoom(), nil, nil
         local retCurrentRoom, retJustGenerated, retBoss = StageAPI.CallCallbacks("PRE_STAGEAPI_NEW_ROOM_GENERATION", true, currentRoom, justGenerated, currentListIndex)
@@ -9529,7 +9536,7 @@ do -- Custom Floor Generation
         for i = 0, roomsList.Size do
             local roomDesc = roomsList:Get(i)
             if roomDesc then
-                if roomDesc.SafeGridIndex ~= startRoom then
+                if roomDesc.SafeGridIndex ~= startRoom and roomDesc.Data.Type == RoomType.ROOM_DEFAULT then
                     StageAPI.CustomLevelReplaceRoom = roomDesc.SafeGridIndex
                     break
                 end
