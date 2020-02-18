@@ -399,9 +399,44 @@ do -- Core Definitions
         StageAPI = {}
     end
 
-    function StageAPI.Log(str)
-        str = '[StageAPI] ' .. str
+    function StageAPI.LogConcat(prefix, ...)
+        local str = prefix
+        local args = {...}
+        for i, arg in ipairs(args) do
+            local mt = getmetatable(arg)
+            if mt and mt.__type == "Vector" then
+                str = str .. "V:(" .. tostring(arg.X) .. ", " .. tostring(arg.Y) .. ")"
+            else
+                str = str .. tostring(arg)
+            end
+
+            if i ~= #args then
+                str = str .. " "
+            end
+        end
+
+        return str
+    end
+
+    function StageAPI.Log(...)
+        str = StageAPI.LogConcat('[StageAPI] ', ...)
         Isaac.ConsoleOutput(str .. '\n')
+        Isaac.DebugString(str)
+    end
+
+    function StageAPI.LogErr(...)
+        str = StageAPI.LogConcat('[StageAPI:ERROR] ', ...)
+        Isaac.ConsoleOutput(str .. '\n')
+        Isaac.DebugString(str)
+    end
+
+    StageAPI.DebugMinorLog = false
+    function StageAPI.LogMinor(...)
+        str = StageAPI.LogConcat('[StageAPI] ', ...)
+        if StageAPI.DebugMinorLog then
+            Isaac.ConsoleOutput(str .. "\n")
+        end
+
         Isaac.DebugString(str)
     end
 
@@ -554,7 +589,7 @@ oldENV.setmetatable(_ENV, {
 
 --local game, room, level, players, zeroVector = StageAPI.Game, StageAPI.Room, StageAPI.Level, StageAPI.Players, StageAPI.ZeroVector
 
-Isaac.DebugString("[StageAPI] Loading Core Functions")
+StageAPI.LogMinor("Loading Core Functions")
 do -- Core Functions
 
     mod:AddCallback(ModCallbacks.MC_PRE_GAME_EXIT, function(_, shouldSave)
@@ -577,14 +612,14 @@ do -- Core Functions
         if a and b then
             -- TODO remove after Rev update
             if b - a < 0 then
-                StageAPI.Log('Bad Random Range! ' .. a .. ', ' .. b)
+                StageAPI.LogErr('Bad Random Range! ' .. a .. ', ' .. b)
                 return b - a
             end
             return rng:Next() % (b - a + 1) + a
         elseif a then
             -- TODO remove after Rev update
             if a < 0 then
-                StageAPI.Log('Bad Random Max! ' .. a)
+                StageAPI.LogErr('Bad Random Max! ' .. a)
                 return a
             end
             return rng:Next() % (a + 1)
@@ -977,7 +1012,7 @@ do -- Core Functions
     end
 end
 
-Isaac.DebugString("[StageAPI] Loading Overlay System")
+StageAPI.LogMinor("Loading Overlay System")
 do -- Overlays
     StageAPI.DebugTiling = false
     function StageAPI.RenderSpriteTiled(sprite, position, size, centerCorrect)
@@ -1098,7 +1133,7 @@ do -- Overlays
     end
 end
 
-Isaac.DebugString("[StageAPI] Loading Room Handler")
+StageAPI.LogMinor("Loading Room Handler")
 do -- RoomsList
     StageAPI.RemappedEntities = {}
     function StageAPI.RemapEntity(t1, v1, s1, t2, v2, s2)
@@ -2064,7 +2099,7 @@ do -- RoomsList
             Doors = doors,
             DisallowIDs = disallowIDs
         })
-        if err then StageAPI.Log(err) end
+        if err then StageAPI.LogErr(err) end
 
         local totalWeight = 0
         for _, layout in ipairs(validRooms) do
@@ -2076,7 +2111,7 @@ do -- RoomsList
             StageAPI.RoomChooseRNG:SetSeed(seed, 0)
             return StageAPI.WeightedRNG(validRooms, StageAPI.RoomChooseRNG, nil, totalWeight)
         else
-            StageAPI.Log("No rooms with correct shape and doors!")
+            StageAPI.LogErr("No rooms with correct shape and doors!")
         end
     end
 
@@ -3085,47 +3120,67 @@ do -- RoomsList
         return doors
     end
 
+    function StageAPI.LevelRoomArgPacker(layoutName, roomsList, seed, shape, roomType, isExtraRoom, fromSaveData, requireRoomType, ignoreDoors, doors, levelIndex, ignoreRoomRules)
+        return {
+            LayoutName = layoutName,
+            RoomsList = roomsList,
+            SpawnSeed = seed,
+            Shape = shape,
+            RoomType = roomType,
+            IsExtraRoom = isExtraRoom,
+            FromSave = fromSaveData,
+            RequireRoomType = requireRoomType,
+            IgnoreDoors = ignoreDoors,
+            Doors = doors,
+            LevelIndex = levelIndex,
+            IgnoreRoomRules = ignoreRoomRules
+        }
+    end
+
+    local levelRoomCopyFromArgs = {"IsExtraRoom","LevelIndex","Doors","Shape","RoomType","SpawnSeed","LayoutName","RequireRoomType","IgnoreRoomRules","DecorationSeed","AwardSeed","VisitCount","IsClear","ClearCount","IsPersistentRoom","HasWaterPits","ChallengeDone"}
+
     StageAPI.LevelRoom = StageAPI.Class("LevelRoom")
     StageAPI.NextUniqueRoomIdentifier = 0
-    function StageAPI.LevelRoom:Init(layoutName, roomsList, seed, shape, roomType, isExtraRoom, fromSaveData, requireRoomType, ignoreDoors, doors, levelIndex, ignoreRoomRules)
-        Isaac.DebugString("[StageAPI] Initializing room")
+    function StageAPI.LevelRoom:Init(args, ...)
+        if type(args) ~= "table" then
+            args = StageAPI.LevelRoomArgPacker(args, ...)
+        end
+
+        StageAPI.LogMinor("Initializing room")
         StageAPI.CurrentlyInitializing = self
         self.UniqueRoomIdentifier = StageAPI.NextUniqueRoomIdentifier
         StageAPI.NextUniqueRoomIdentifier = StageAPI.NextUniqueRoomIdentifier + 1
-        if fromSaveData then
-            Isaac.DebugString("[StageAPI] Loading from save data")
-            self.LevelIndex = levelIndex
-            self:LoadSaveData(fromSaveData)
-        else
-            Isaac.DebugString("[StageAPI] Generating room")
-            roomType = roomType or room:GetType()
-            shape = shape or room:GetRoomShape()
-            seed = seed or room:GetSpawnSeed()
 
-            if not doors then
-                doors = StageAPI.GetDoorsForRoom()
-            end
+        if args.FromSave then
+            StageAPI.LogMinor("Loading from save data")
+            self.LevelIndex = args.LevelIndex
+            self:LoadSaveData(args.FromSave)
+        else
+            StageAPI.LogMinor("Generating room")
+
+            args.RoomType = args.RoomType or room:GetType()
+            args.Shape = args.Shape or room:GetRoomShape()
+            args.SpawnSeed = args.SpawnSeed or room:GetSpawnSeed()
+            args.DecorationSeed = args.DecorationSeed or room:GetDecorationSeed()
+            args.AwardSeed = args.AwardSeed or room:GetAwardSeed()
+            args.Doors = args.Doors or StageAPI.GetDoorsForRoom()
+            args.VisitCount = args.VisitCount or 0
+            args.ClearCount = args.ClearCount or 0
 
             self.Data = {}
             self.PersistentData = {}
-
-            self.IsExtraRoom = isExtraRoom
-            self.LevelIndex = levelIndex
-            self.Doors = doors
-            self.Shape = shape
-            self.RoomType = roomType
-            self.Seed = seed
-            self.LayoutName = layoutName
             self.AvoidSpawning = {}
             self.ExtraSpawn = {}
             self.PersistentPositions = {}
             self.FirstLoad = true
-            self.RequireRoomType = requireRoomType
-            self.IgnoreRoomRules = ignoreRoomRules
+
+            for _, v in ipairs(levelRoomCopyFromArgs) do
+                self[v] = args[v]
+            end
 
             local replaceLayoutName = StageAPI.CallCallbacks("PRE_ROOM_LAYOUT_CHOOSE", true, self)
             if replaceLayoutName then
-                Isaac.DebugString("[StageAPI] Layout replaced")
+                StageAPI.LogMinor("Layout replaced")
                 self.LayoutName = replaceLayoutName
             end
 
@@ -3135,13 +3190,13 @@ do -- RoomsList
             end
 
             if not layout then
-                roomsList = StageAPI.CallCallbacks("PRE_ROOMS_LIST_USE", true, self) or roomsList
+                local roomsList = StageAPI.CallCallbacks("PRE_ROOMS_LIST_USE", true, self) or args.RoomsList
                 self.RoomsListName = roomsList.Name
-                layout = StageAPI.ChooseRoomLayout(roomsList, seed, shape, roomType, requireRoomType, ignoreDoors, self.Doors)
+                layout = StageAPI.ChooseRoomLayout(roomsList, self.SpawnSeed, self.Shape, self.RoomType, self.RequireRoomType, self.IgnoreDoors, self.Doors)
             end
 
             self.Layout = layout
-            self:PostGetLayout(seed)
+            self:PostGetLayout(self.SpawnSeed)
         end
 
         StageAPI.CallCallbacks("POST_ROOM_INIT", false, self, not not fromSaveData, fromSaveData)
@@ -3155,11 +3210,11 @@ do -- RoomsList
             end
 
             self.Layout = StageAPI.CreateEmptyRoomLayout(self.Shape)
-            StageAPI.Log("No layout!")
+            StageAPI.LogErr("No layout!")
         end
 
-        Isaac.DebugString("[StageAPI] Initialized room " .. self.Layout.Name .. "." .. tostring(self.Layout.Variant) .. " from file " .. tostring(self.Layout.RoomFilename)
-                            .. (roomsList and (' from list ' .. roomsList.Name) or ''))
+        StageAPI.LogMinor("Initialized room " .. self.Layout.Name .. "." .. tostring(self.Layout.Variant) .. " from file " .. tostring(self.Layout.RoomFilename)
+                          .. (roomsList and (' from list ' .. roomsList.Name) or ''))
 
         if self.Shape == -1 then
             self.Shape = self.Layout.Shape
@@ -3492,18 +3547,22 @@ do -- RoomsList
         end
     end
 
-    function StageAPI.LevelRoom:Load(isExtraRoom)
-        Isaac.DebugString("[StageAPI] Loading room " .. self.Layout.Name .. "." .. tostring(self.Layout.Variant) .. " from file " .. tostring(self.Layout.RoomFilename))
+    function StageAPI.LevelRoom:Load(isExtraRoom, noIncrementVisit)
+        StageAPI.LogMinor("Loading room " .. self.Layout.Name .. "." .. tostring(self.Layout.Variant) .. " from file " .. tostring(self.Layout.RoomFilename))
         if isExtraRoom == nil then
             isExtraRoom = self.IsExtraRoom
         end
 
         room:SetClear(true)
 
+        if not noIncrementVisit then
+            self.VisitCount = self.VisitCount + 1
+        end
+
         local wasFirstLoad = self.FirstLoad
         StageAPI.ClearRoomLayout(false, self.FirstLoad or isExtraRoom, true, self.FirstLoad or isExtraRoom, self.GridTakenIndices, nil, nil, not self.FirstLoad)
         if self.FirstLoad then
-            StageAPI.LoadRoomLayout(self.SpawnGrids, {self.SpawnEntities, self.ExtraSpawn}, true, true, false, true, self.GridInformation, self.AvoidSpawning, self.PersistentPositions)
+            StageAPI.LoadRoomLayout(self.SpawnGrids, {self.SpawnEntities, self.ExtraSpawn}, true, true, self.IsClear, true, self.GridInformation, self.AvoidSpawning, self.PersistentPositions)
             self.WasClearAtStart = room:IsClear()
             self.IsClear = self.WasClearAtStart
             self.FirstLoad = false
@@ -3520,6 +3579,8 @@ do -- RoomsList
             StageAPI.CloseDoors()
         end
 
+        self.Loaded = true
+
         StageAPI.CallCallbacks("POST_ROOM_LOAD", false, self, wasFirstLoad, isExtraRoom)
         StageAPI.StoreRoomGrids()
     end
@@ -3529,26 +3590,35 @@ do -- RoomsList
         self:SaveGridInformation()
     end
 
+    local saveDataCopyDirectly = {
+        "IsClear","WasClearAtStart","RoomsListName","LayoutName","SpawnSeed","AwardSeed","DecorationSeed",
+        "FirstLoad","Shape","RoomType","TypeOverride","PersistentData","IsExtraRoom","LastPersistentIndex",
+        "RequireRoomType", "IgnoreRoomRules", "VisitCount", "ClearCount", "LevelIndex","HasWaterPits","ChallengeDone"
+    }
+
     function StageAPI.LevelRoom:GetSaveData(isExtraRoom)
         if isExtraRoom == nil then
             isExtraRoom = self.IsExtraRoom
         end
 
         local saveData = {}
-        saveData.IsClear = self.IsClear
-        saveData.WasClearAtStart = self.WasClearAtStart
-        saveData.RoomsListName = self.RoomsListName
-        saveData.LayoutName = self.LayoutName
-        saveData.Seed = self.Seed
-        saveData.FirstLoad = self.FirstLoad
-        saveData.Shape = self.Shape
-        saveData.RoomType = self.RoomType
-        saveData.TypeOverride = self.TypeOverride
-        saveData.PersistentData = self.PersistentData
-        saveData.IsExtraRoom = isExtraRoom
-        saveData.LastPersistentIndex = self.LastPersistentIndex
-        saveData.RequireRoomType = self.RequireRoomType
-        saveData.IgnoreRoomRules = self.IgnoreRoomRules
+
+        for _, v in ipairs(saveDataCopyDirectly) do
+            saveData[v] = self[v]
+        end
+
+        if isExtraRoom ~= nil then
+            saveData.IsExtraRoom = isExtraRoom
+        end
+
+        if self.Doors then
+            saveData.Doors = {}
+            for i = 0, 7 do
+                if self.Doors[i] then
+                    saveData.Doors[#saveData.Doors + 1] = i
+                end
+            end
+        end
 
         if self.GridInformation then
             for index, gridInfo in pairs(self.GridInformation) do
@@ -3591,24 +3661,26 @@ do -- RoomsList
 
     function StageAPI.LevelRoom:LoadSaveData(saveData)
         self.Data = {}
-        self.PersistentData = saveData.PersistentData or {}
         self.AvoidSpawning = {}
         self.PersistentPositions = {}
         self.ExtraSpawn = {}
 
-        self.RoomsListName = saveData.RoomsListName
-        self.LayoutName = saveData.LayoutName
-        self.Seed = saveData.Seed
-        self.Shape = saveData.Shape
-        self.RoomType = saveData.RoomType
-        self.RequireRoomType = saveData.RequireRoomType
-        self.TypeOverride = saveData.TypeOverride
-        self.IgnoreRoomRules = saveData.IgnoreRoomRules
+        for _, v in ipairs(saveDataCopyDirectly) do
+            self[v] = saveData[v]
+        end
+
+        self.PersistentData = self.PersistentData or {}
 
         if saveData.Doors then
             self.Doors = {}
             for _, door in ipairs(saveData.Doors) do
                 self.Doors[door] = true
+            end
+
+            for i = 0, 7 do
+                if not self.Doors[i] then
+                    self.Doors[i] = false
+                end
             end
         end
 
@@ -3624,19 +3696,15 @@ do -- RoomsList
                 if retLayout then
                     layout = retLayout
                 else
-                    layout = StageAPI.ChooseRoomLayout(roomsList, self.Seed, self.Shape, self.RoomType, self.RequireRoomType, false, self.Doors)
+                    layout = StageAPI.ChooseRoomLayout(roomsList, self.SpawnSeed, self.Shape, self.RoomType, self.RequireRoomType, false, self.Doors)
                 end
             end
         end
 
         self.Layout = layout
-        self:PostGetLayout(self.Seed)
+        self:PostGetLayout(self.SpawnSeed)
 
-        self.LastPersistentIndex = saveData.LastPersistentIndex or self.LastPersistentIndex
-        self.IsClear = saveData.IsClear
-        self.WasClearAtStart = saveData.WasClearAtStart
-        self.FirstLoad = saveData.FirstLoad
-        self.IsExtraRoom = saveData.IsExtraRoom
+        self.LastPersistentIndex = self.LastPersistentIndex or self.LastPersistentIndex
 
         if saveData.GridInformation then
             for strindex, gridInfo in pairs(saveData.GridInformation) do
@@ -3723,7 +3791,7 @@ do -- RoomsList
     end
 end
 
-Isaac.DebugString("[StageAPI] Loading Custom Grid System")
+StageAPI.LogMinor("Loading Custom Grid System")
 do -- Custom Grid Entities
     StageAPI.CustomGridTypes = {}
     StageAPI.CustomGrid = StageAPI.Class("CustomGrid")
@@ -4533,7 +4601,7 @@ do -- Extra Rooms
         end
 
         local extraRoomName
-        local setDataForShape
+        local setDataForShape, setVisitCount, setClear, setClearCount, setDecoSeed, setSpawnSeed, setAwardSeed, setWater, setChallengeDone
         if not isCustomMap then
             if transitionTo == GridRooms.ROOM_DEBUG_IDX then
                 extraRoomName = name
@@ -4545,12 +4613,18 @@ do -- Extra Rooms
                 extraRoomName = targetRoomData.ExtraRoomName
             end
 
-            if not setDataForShape then
-                setDataForShape = targetRoomData.Shape
-            end
+            setDataForShape = setDataForShape or targetRoomData.Shape
+            extraRoomBaseType = extraRoomBaseType or targetRoomData.RoomType
+            setVisitCount = setVisitCount or targetRoomData.VisitCount
+            setClearCount = setClearCount or targetRoomData.ClearCount
+            setDecoSeed = setDecoSeed or targetRoomData.DecorationSeed
+            setSpawnSeed = setSpawnSeed or targetRoomData.SpawnSeed
+            setAwardSeed = setAwardSeed or targetRoomData.AwardSeed
+            setWater = setWater or targetRoomData.HasWaterPits
+            setChallengeDone = setChallengeDone or targetRoomData.ChallengeDone
 
-            if not extraRoomBaseType then
-                extraRoomBaseType = targetRoomData.RoomType
+            if setClear == nil then
+                setClear = targetRoomData.IsClear
             end
 
             StageAPI.CurrentCustomMapRoomID = name
@@ -4564,25 +4638,75 @@ do -- Extra Rooms
 
             StageAPI.ActiveTransitionToExtraRoom = true
 
-            if not extraRoomBaseType then
-                extraRoomBaseType = StageAPI.CurrentExtraRoom.RoomType
+            extraRoomBaseType = extraRoomBaseType or extraRoom.RoomType
+            setDataForShape = setDataForShape or extraRoom.Shape
+            setSpawnSeed = setSpawnSeed or extraRoom.SpawnSeed
+            setDecoSeed = setDecoSeed or extraRoom.DecorationSeed
+            setAwardSeed = setAwardSeed or extraRoom.AwardSeed
+            setVisitCount = setVisitCount or extraRoom.VisitCount or 0
+            setClearCount = setClearCount or extraRoom.ClearCount or 0
+            setWater = setWater or extraRoom.HasWaterPits
+            setChallengeDone = setChallengeDone or extraRoom.ChallengeDone
+
+            if setWater == nil then
+                setWater = false or extraRoom.HasWaterPits
             end
 
-            if not setDataForShape then
-                setDataForShape = extraRoom.Shape
+            if setChallengeDone == nil then
+                setChallengeDone = false or extraRoom.ChallengeDone
+            end
+
+            if setClear == nil then
+                setClear = true
+                if extraRoom.IsClear ~= nil then
+                    setClear = extraRoom.IsClear
+                end
             end
 
             StageAPI.LoadedExtraRoom = false
         end
 
+        local targetRoomDesc = level:GetRoomByIdx(transitionTo)
+
         if setDataForShape then
-            local targetRoomDesc = level:GetRoomByIdx(transitionTo)
             local targetGotoSet = StageAPI.GetGotoDataForTypeShape(extraRoomBaseType, setDataForShape)
             if targetGotoSet.LockedData and StageAPI.DoorOneSlots[enterDoor] then
                 targetRoomDesc.Data = targetGotoSet.LockedData
             else
                 targetRoomDesc.Data = targetGotoSet.Data
             end
+        end
+
+        if setVisitCount then
+            targetRoomDesc.VisitedCount = setVisitCount
+        end
+
+        if setClear ~= nil then
+            targetRoomDesc.Clear = setClear
+        end
+
+        if setWater ~= nil then
+            targetRoomDesc.HasWater = setWater
+        end
+
+        if setChallengeDone ~= nil then
+            targetRoomDesc.ChallengeDone = setChallengeDone
+        end
+
+        if setClearCount then
+            targetRoomDesc.ClearCount = setClearCount
+        end
+
+        if setDecoSeed then
+            targetRoomDesc.DecorationSeed = setDecoSeed
+        end
+
+        if setSpawnSeed then
+            targetRoomDesc.SpawnSeed = setSpawnSeed
+        end
+
+        if setAwardSeed then
+            targetRoomDesc.AwardSeed = setAwardSeed
         end
 
         StageAPI.InCustomMap = isCustomMap
@@ -4813,190 +4937,6 @@ do -- Extra Rooms
         return renderOverlay, not not anim, not not overlayAnim
     end
 
-    StageAPI.DefaultDoorOpenState = {
-        StartAnim = "Open",
-        Anim = "Opened",
-        StartSound = SoundEffect.SOUND_DOOR_HEAVY_OPEN,
-        Triggers = {
-            Unclear = "Closed"
-        },
-        Passable = true
-    }
-
-    StageAPI.DefaultDoorClosedState = {
-        StartAnim = "Close",
-        Anim = "Closed",
-        StartSound = SoundEffect.SOUND_DOOR_HEAVY_CLOSE,
-        Triggers = {
-            Clear = "Opened",
-            Bomb = "BrokenOpen"
-        }
-    }
-
-    StageAPI.DefaultDoorBrokenOpenState = {
-        StartAnim = "Break",
-        Anim = "BrokenOpen",
-        Passable = true,
-        NoMemory = true
-    }
-
-    StageAPI.DefaultDoorStates = {
-        Default = "Opened",
-        Closed = StageAPI.DefaultDoorClosedState,
-        Opened = StageAPI.DefaultDoorOpenState,
-        BrokenOpen = StageAPI.DefaultDoorBrokenOpenState
-    }
-
-    StageAPI.VaultDoorStates = {
-        Default = "TwoChains",
-        TwoChains = {
-            Anim = "Closed",
-            OverlayAnim = "TwoChains",
-            Triggers = {
-                GoldKey = {
-                    State = "AwaitChain",
-                    OverlayAnim = "GoldenKeyOpenChain1"
-                },
-                Key = {
-                    State = "AwaitChain",
-                    OverlayAnim = "KeyOpenChain1"
-                }
-            }
-        },
-        AwaitChain = {
-            Anim = "Closed",
-            OverlayAnim = "OneChain",
-            Triggers = {
-                FinishOverlayTrigger = "OneChain"
-            },
-            RememberAs = "OneChain"
-        },
-        OneChain = {
-            Anim = "Closed",
-            OverlayAnim = "OneChain",
-            Triggers = {
-                GoldKey = {
-                    State = "Opened",
-                    OverlayAnim = "GoldenKeyOpenChain2"
-                },
-                Key = {
-                    State = "Opened",
-                    OverlayAnim = "KeyOpenChain2"
-                }
-            }
-        },
-        Closed = StageAPI.DefaultDoorClosedState,
-        Opened = StageAPI.DefaultDoorOpenState,
-        BrokenOpen = StageAPI.DefaultDoorBrokenOpenState
-    }
-
-    StageAPI.BedroomDoorStates = {
-        Default = "TwoBombs",
-        TwoBombs = {
-            Anim = "Closed",
-            OverlayAnim = "Idle",
-            Triggers = {
-                Bomb = {
-                    State = "OneBomb",
-                    Particle = {
-                        Variant = EffectVariant.WOOD_PARTICLE,
-                    }
-                }
-            }
-        },
-        OneBomb = {
-            Anim = "Closed",
-            OverlayAnim = "Damaged",
-            Triggers = {
-                Bomb = {
-                    State = "Opened",
-                    Particle = {
-                        Variant = EffectVariant.WOOD_PARTICLE,
-                    }
-                }
-            }
-        },
-        Closed = StageAPI.DefaultDoorClosedState,
-        Opened = StageAPI.DefaultDoorOpenState,
-        BrokenOpen = StageAPI.DefaultDoorBrokenOpenState
-    }
-
-    StageAPI.OneKeyDoorStates = {
-        Default = "Locked",
-        Locked = {
-            Anim = "KeyClosed",
-            Triggers = {
-                GoldKey = {
-                    State = "Opened",
-                    Anim = "GoldenKeyOpen"
-                },
-                Key = {
-                    State = "Opened",
-                    Anim = "KeyOpen"
-                }
-            }
-        },
-        Closed = StageAPI.DefaultDoorClosedState,
-        Opened = StageAPI.DefaultDoorOpenState,
-        BrokenOpen = StageAPI.DefaultDoorBrokenOpenState
-    }
-
-    StageAPI.ArcadeDoorStates = {
-        Default = "Locked",
-        Locked = {
-            Anim = "KeyClosed",
-            Triggers = {
-                Coin = {
-                    State = "Opened",
-                    Anim = "KeyOpen"
-                }
-            }
-        },
-        Closed = StageAPI.DefaultDoorClosedState,
-        Opened = StageAPI.DefaultDoorOpenState,
-        BrokenOpen = StageAPI.DefaultDoorBrokenOpenState
-    }
-
-    StageAPI.SecretDoorStates = {
-        Default = "Hidden",
-        Hidden = {
-            Anim = "Hidden",
-            Triggers = {
-                Bomb = {
-                    State = "Opened",
-                    Anim = "Opened",
-                    Particles = {
-                        {Variant = EffectVariant.ROCK_PARTICLE},
-                        {Variant = EffectVariant.DUST_CLOUD, Timeout = 40, LifeSpan = 40, Rotation = -3, Count = 2, Velocity = 2}
-                    }
-                }
-            }
-        },
-        Closed = {
-            Anim = "Close",
-            StartAnim = "Close",
-            Triggers = {
-                Clear = "Opened"
-            }
-        },
-        Opened = {
-            Anim = "Opened",
-            StartAnim = "Open",
-            Triggers = {
-                Unclear = "Closed"
-            },
-            Passable = true
-        }
-    }
-
-    StageAPI.DefaultDoor = StageAPI.CustomStateDoor("DefaultDoor", nil, StageAPI.DefaultDoorStates)
-    StageAPI.ShopDoor = StageAPI.CustomStateDoor("ShopDoor", nil, StageAPI.OneKeyDoorStates)
-    StageAPI.TreasureDoor = StageAPI.CustomStateDoor("TreasureDoor", "gfx/grid/door_02_treasureroomdoor.anm2", StageAPI.OneKeyDoorStates)
-    StageAPI.SecretDoor = StageAPI.CustomStateDoor("SecretDoor", "gfx/grid/door_08_holeinwall.anm2", StageAPI.SecretDoorStates, nil, nil, StageAPI.SecretDoorOffsetsByDirection)
-    StageAPI.ArcadeDoor = StageAPI.CustomStateDoor("ArcadeDoor", "gfx/grid/door_05_arcaderoomdoor.anm2", StageAPI.ArcadeDoorStates)
-    StageAPI.BedroomDoor = StageAPI.CustomStateDoor("BedroomDoor", nil, StageAPI.BedroomDoorStates, nil, "gfx/grid/door_18_crackeddoor.anm2")
-    StageAPI.VaultDoor = StageAPI.CustomStateDoor("VaultDoor", nil, StageAPI.VaultDoorStates, nil, "gfx/grid/door_16_doublelock.anm2")
-
     function StageAPI.SpawnCustomDoor(slot, leadsTo, isCustomMap, doorDataName, data, exitSlot) -- isCustomMap used to be a leadsToNormal index, with leadsTo being leadsToExtra, so to ensure compatibility there is some funkiness
         if type(isCustomMap) == "number" then
             leadsTo = isCustomMap
@@ -5105,6 +5045,10 @@ do -- Extra Rooms
         opened = opened or (opened == nil and (sprite:IsPlaying(doorData.OpenedAnim) or sprite:IsFinished(doorData.OpenedAnim)))
 
         local grid = room:GetGridEntity(index)
+        if not grid then
+            StageAPI.LogErr("Custom door not find grid at", index, "slot",persistData.Slot)
+        end
+
         if opened then
             grid.CollisionClass = GridCollisionClass.COLLISION_WALL_EXCEPT_PLAYER
         else
@@ -5308,13 +5252,30 @@ do -- Extra Rooms
 
                 if trigger then
                     if type(trigger) == "table" then
-                        data.State = trigger.State
-                        doorData:SetDoorAnim(sprite, trigger.Anim, nil, trigger.OverlayAnim, nil, data.OverlaySprite)
-                        data.TriggerAnim = trigger.Anim
-                        data.TriggerOverlayAnim = trigger.OverlayAnim
+                        if trigger.State then
+                            data.State = trigger.State
+                        end
 
-                        data.SkipStartAnim = not not trigger.Anim
-                        data.SkipStartOverlayAnim = not not trigger.OverlayAnim
+                        if trigger.Anim or trigger.OverlayAnim then
+                            doorData:SetDoorAnim(sprite, trigger.Anim, nil, trigger.OverlayAnim, nil, data.OverlaySprite)
+                        end
+
+                        if trigger.Anim then
+                            data.TriggerAnim = trigger.Anim
+                            data.SkipStartAnim = true
+                        end
+
+                        if trigger.OverlayAnim then
+                            data.TriggerOverlayAnim = trigger.OverlayAnim
+                            data.SkipStartOverlayAnim = true
+                        end
+
+                        if trigger.Jingle then
+                            local currentMusic = StageAPI.Music:GetCurrentMusicID()
+                            StageAPI.Music:Play(trigger.Jingle, 1)
+                            StageAPI.Music:UpdateVolume()
+                            StageAPI.Music:Queue(currentMusic)
+                        end
 
                         if trigger.Particle then
                             trigger.Particles = {trigger.Particle}
@@ -5434,13 +5395,13 @@ do -- Extra Rooms
         if hadFrameWithoutDoorData then
             hadFrameWithoutDoorData = false
         elseif framesWithoutDoorData > 0 then
-            StageAPI.Log("Had no door data for " .. tostring(framesWithoutDoorData) .. " frames")
+            StageAPI.LogErr("Had no door data for " .. tostring(framesWithoutDoorData) .. " frames")
             framesWithoutDoorData = 0
         end
     end)
 end
 
-Isaac.DebugString("[StageAPI] Loading GridGfx Handler")
+StageAPI.LogMinor("Loading GridGfx Handler")
 do -- GridGfx
     StageAPI.GridGfx = StageAPI.Class("GridGfx")
     function StageAPI.GridGfx:Init()
@@ -5503,52 +5464,6 @@ do -- GridGfx
 
     -- No SetPoop, do GridGfx:SetGrid(filename, GridEntityType.GRID_POOP, StageAPI.PoopVariant.Normal)
 
-    StageAPI.DefaultDoorSpawn = {
-        RequireCurrent = {RoomType.ROOM_DEFAULT, RoomType.ROOM_MINIBOSS, RoomType.ROOM_SACRIFICE, RoomType.ROOM_SHOP, RoomType.ROOM_LIBRARY, RoomType.ROOM_BARREN, RoomType.ROOM_ISAACS, RoomType.ROOM_DICE, RoomType.ROOM_CHEST},
-        RequireTarget = {RoomType.ROOM_DEFAULT, RoomType.ROOM_MINIBOSS, RoomType.ROOM_SACRIFICE, RoomType.ROOM_SHOP, RoomType.ROOM_LIBRARY, RoomType.ROOM_BARREN, RoomType.ROOM_ISAACS, RoomType.ROOM_DICE, RoomType.ROOM_CHEST}
-    }
-
-    StageAPI.SecretDoorSpawn = {
-        RequireTarget = {RoomType.ROOM_SECRET, RoomType.ROOM_SUPERSECRET},
-        NotCurrent = {RoomType.ROOM_SECRET, RoomType.ROOM_SUPERSECRET}
-    }
-    --[[
-    DoorInfo
-    {
-        RequireCurrent = {},
-        RequireTarget = {},
-        RequireEither = {},
-        NotCurrent = {},
-        NotTarget = {},
-        NotEither = {}
-    }
-    ]]
-
-    function StageAPI.GridGfx:AddDoors(filename, doorInfo)
-        if not self.Doors then
-            self.Doors = {}
-        end
-
-        if doorInfo.IsBossAmbush then
-            self.HasBossAmbushDoor = true
-        end
-
-        self.Doors[#self.Doors + 1] = {
-            File = filename,
-            RequireCurrent = doorInfo.RequireCurrent,
-            RequireTarget = doorInfo.RequireTarget,
-            RequireEither = doorInfo.RequireEither,
-            NotCurrent = doorInfo.NotCurrent,
-            NotTarget = doorInfo.NotTarget,
-            NotEither = doorInfo.NotEither,
-            IsBossAmbush = doorInfo.IsBossAmbush
-        }
-    end
-
-    function StageAPI.GridGfx:SetPayToPlayDoor(filename)
-        self.PayToPlayDoor = filename
-    end
-
     StageAPI.RockAnimationMap = {
         "normal",
         "black",
@@ -5579,25 +5494,43 @@ do -- GridGfx
     end
 
     StageAPI.BridgeEntities = {}
+    StageAPI.BridgeIndices = {}
     mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, function()
         StageAPI.BridgeEntities = {}
+        StageAPI.BridgeIndices = {}
     end)
 
-    StageAPI.BridgeOffset = Vector(3, 3)
+    StageAPI.BridgeOffset = Vector(3, 4)
 
-    function StageAPI.CheckBridge(grid, index, bridgefilename)
-        if grid.State == 1 and bridgefilename and not StageAPI.BridgeEntities[index] then
-            local bridge = Isaac.Spawn(StageAPI.E.Bridge.T, StageAPI.E.Bridge.V, 0, room:GetGridPosition(index), zeroVector, nil)
+    StageAPI.AddCallback("StageAPI", "PRE_SHADING_RENDER", 0, function(shading)
+        for index, file in pairs(StageAPI.BridgeIndices) do
+            local ent = StageAPI.BridgeEntities[file]
+            local pos = Isaac.WorldToRenderPosition(room:GetGridPosition(index)) + room:GetRenderScrollOffset() + StageAPI.BridgeOffset
+            ent:GetSprite():Render(pos, zeroVector, zeroVector)
+        end
+    end)
+
+    function StageAPI.AddBridge(index, filename)
+        if not StageAPI.BridgeEntities[filename] then
+            local bridge = Isaac.Spawn(StageAPI.E.Bridge.T, StageAPI.E.Bridge.V, 0, zeroVector, zeroVector, nil)
             local sprite = bridge:GetSprite()
-            sprite:Load("stageapi/bridge.anm2", false)
-            sprite:ReplaceSpritesheet(0, bridgefilename)
+            sprite:Load("stageapi/bridge.anm2")
+            sprite:ReplaceSpritesheet(0, filename)
             sprite:LoadGraphics()
             sprite:Play("Idle", true)
 
             bridge:AddEntityFlags(EntityFlag.FLAG_DONT_OVERWRITE)
-            bridge.SpriteOffset = StageAPI.BridgeOffset
-            bridge.RenderZOffset = -10000
-            StageAPI.BridgeEntities[index] = bridge
+            bridge.Visible = false
+
+            StageAPI.BridgeEntities[filename] = bridge
+        end
+
+        StageAPI.BridgeIndices[index] = filename
+    end
+
+    function StageAPI.CheckBridge(grid, index, bridgefilename)
+        if grid.State == 1 and bridgefilename and not StageAPI.BridgeEntities[index] then
+            StageAPI.AddBridge(index, bridgefilename)
         end
     end
 
@@ -5641,6 +5574,139 @@ do -- GridGfx
         grid.Sprite = decSprite
     end
 
+    --[[
+    DoorInfo
+    {
+        RequireCurrent = {},
+        RequireTarget = {},
+        RequireEither = {},
+        NotCurrent = {},
+        NotTarget = {},
+        NotEither = {}
+    }
+
+
+    DoorSprites
+    {
+        -- Can be paired with the type of the current room
+        Default = {
+            [RoomType.ROOM_ANGEL] = "angel_door.png",
+            [RoomType.ROOM_DEFAULT] = "default_door.png"
+        },
+
+        -- Can be a direct definition
+        Angel = "angel_door.png",
+
+        -- The table can be more detailed if you need to change the anm2 of the door or extra sprites
+        Secret = {
+            Anm2 = "secret_darkroom.anm2",
+            Sprite = "secret_darkroom.png",
+            ExtraAnm2 = "doublelock.anm2",
+            ExtraSprite = "doublelock.png",
+            LoadGraphics = false
+        }
+    }
+
+    DoorSpawn
+    {
+        RequireCurrent = {},
+        RequireTarget = {},
+        RequireEither = {},
+        NotCurrent = {},
+        NotTarget = {},
+        NotEither = {},
+        IsBossAmbush = boolean,
+        IsPayToPlay = boolean,
+        Sprite = string
+    }
+
+    ]]
+
+    function StageAPI.GridGfx:SetDoorSprites(doorSprites)
+        self.DoorSprites = doorSprites
+    end
+
+    function StageAPI.GridGfx:SetDoorSpawns(doorSpawns)
+        self.DoorSpawns = doorSpawns
+    end
+
+    -- legacy door system
+    function StageAPI.GridGfx:AddDoors(filename, doorInfo)
+        if not self.Doors then
+            self.Doors = {}
+        end
+
+        if doorInfo.IsBossAmbush then
+            self.HasBossAmbushDoor = true
+        end
+
+        self.Doors[#self.Doors + 1] = {
+            File = filename,
+            RequireCurrent = doorInfo.RequireCurrent,
+            RequireTarget = doorInfo.RequireTarget,
+            RequireEither = doorInfo.RequireEither,
+            NotCurrent = doorInfo.NotCurrent,
+            NotTarget = doorInfo.NotTarget,
+            NotEither = doorInfo.NotEither,
+            IsBossAmbush = doorInfo.IsBossAmbush
+        }
+    end
+
+    function StageAPI.GridGfx:SetPayToPlayDoor(filename)
+        self.PayToPlayDoor = filename
+    end
+
+    function StageAPI.ChangeDoorSprite(door, spriteData)
+        local sprite1, sprite2
+        if door.ToDoor then -- is grid
+            door = door:ToDoor()
+            sprite1, sprite2 = door.Sprite, door.ExtraSprite
+        else -- is custom door
+            sprite1, sprite2 = door:GetSprite(), door:GetData().OverlaySprite
+        end
+
+        local replace1, replace2
+        if type(spriteData) == "string" then
+            replace1 = spriteData
+        elseif spriteData[1] ~= nil or spriteData[2] ~= nil then
+            replace1 = spriteData[1]
+            replace2 = spriteData[2]
+        else
+            replace1 = spriteData.Sprite
+            replace2 = spriteData.ExtraSprite
+
+            if spriteData.Anm2 then
+                sprite1:Load(spriteData.Anm2, spriteData.LoadGraphics or false)
+            end
+
+            if spriteData.ExtraAnm2 then
+                sprite2:Load(spriteData.ExtraAnm2, spriteData.LoadGraphics or false)
+            end
+        end
+
+        if replace1 then
+            for i = 0, 5 do
+                sprite1:ReplaceSpritesheet(i, replace1)
+            end
+
+            sprite1:LoadGraphics()
+        end
+
+        if replace2 then
+            for i = 0, 5 do
+                sprite2:ReplaceSpritesheet(i, replace2)
+            end
+
+            sprite2:LoadGraphics()
+        end
+
+        if door.ToDoor then
+            door.Sprite = sprite1
+            door.ExtraSprite = sprite2
+        end
+    end
+
+    -- TODO: Check if still needed anywhere
     StageAPI.DoorAnimationMap = {
         "Opened",
         "Closed",
@@ -5658,19 +5724,14 @@ do -- GridGfx
         "ArcadeSign"
     }
 
-    function StageAPI.DoesDoorMatch(door, doorSpawn, current, target, hasBossAmbushDoor)
+    function StageAPI.DoesDoorMatch(door, doorSpawn, current, target, hasBossAmbushDoor, isBossAmbush, isPayToPlay)
         current = current or door.CurrentRoomType
         target = target or door.TargetRoomType
         local valid = true
-        local isChallengeRequired = false
         if doorSpawn.RequireCurrent then
             local has = false
             for _, roomType in ipairs(doorSpawn.RequireCurrent) do
                 if current == roomType then
-                    if roomType == RoomType.ROOM_CHALLENGE then
-                        isChallengeRequired = true
-                    end
-
                     has = true
                 end
             end
@@ -5684,10 +5745,6 @@ do -- GridGfx
             local has = false
             for _, roomType in ipairs(doorSpawn.RequireTarget) do
                 if target == roomType then
-                    if roomType == RoomType.ROOM_CHALLENGE then
-                        isChallengeRequired = true
-                    end
-
                     has = true
                 end
             end
@@ -5701,10 +5758,6 @@ do -- GridGfx
             local has = false
             for _, roomType in ipairs(doorSpawn.RequireEither) do
                 if current == roomType or target == roomType then
-                    if roomType == RoomType.ROOM_CHALLENGE then
-                        isChallengeRequired = true
-                    end
-
                     has = true
                 end
             end
@@ -5753,8 +5806,20 @@ do -- GridGfx
             end
         end
 
-        if isChallengeRequired and (current == RoomType.ROOM_CHALLENGE or target == RoomType.ROOM_CHALLENGE) and ((doorSpawn.IsBossAmbush and not level:HasBossChallenge()) or (not doorSpawn.IsBossAmbush and hasBossAmbushDoor and level:HasBossChallenge())) then
-            valid = false
+        if valid and doorSpawn.IsBossAmbush ~= nil then
+            if doorSpawn.IsBossAmbush then
+                valid = isBossAmbush
+            else
+                valid = not isBossAmbush
+            end
+        end
+
+        if valid and doorSpawn.IsPayToPlay ~= nil then
+            if doorSpawn.IsPayToPlay then
+                valid = isPayToPlay
+            else
+                valid = not isPayToPlay
+            end
         end
 
         return valid
@@ -5763,9 +5828,7 @@ do -- GridGfx
     StageAPI.DoorSprite = Sprite()
     function StageAPI.ChangeDoor(door, doors, payToPlay, hasBossAmbushDoor)
         local grid = door.Grid:ToDoor()
-        local current = grid.CurrentRoomType
-        local target = grid.TargetRoomType
-        local isPayToPlay = grid:IsTargetRoomArcade() and target ~= RoomType.ROOM_ARCADE
+        local current, target, isBossAmbush, isPayToPlay = grid.CurrentRoomType, grid.TargetRoomType, level:HasBossChallenge(), grid:IsTargetRoomArcade() and target ~= RoomType.ROOM_ARCADE
 
         if isPayToPlay then
             if payToPlay then
@@ -5783,7 +5846,7 @@ do -- GridGfx
         end
 
         for _, doorOption in ipairs(doors) do
-            if StageAPI.DoesDoorMatch(grid, doorOption, current, target, hasBossAmbushDoor) then
+            if StageAPI.DoesDoorMatch(grid, doorOption, current, target, hasBossAmbushDoor, isBossAmbush, isPayToPlay) then
                 local sprite = grid.Sprite
                 for i = 0, 5 do
                     sprite:ReplaceSpritesheet(i, doorOption.File)
@@ -5794,6 +5857,47 @@ do -- GridGfx
                 grid.Sprite = sprite
 
                 break
+            end
+        end
+    end
+
+    function StageAPI.CheckDoorSpawns(door, doorSpawns, doorSprites, roomType)
+        local useSprite
+        if door.ToDoor then
+            door = door:ToDoor()
+            local current, target, isBossAmbush, isPayToPlay = door.CurrentRoomType, door.TargetRoomType, level:HasBossChallenge(), grid:IsTargetRoomArcade() and target ~= RoomType.ROOM_ARCADE
+            for _, spawn in ipairs(doorSpawns) do
+                if StageAPI.DoesDoorMatch(door, spawn, current, target, nil, isBossAmbush, isPayToPlay) then
+                    useSprite = spawn.Sprite
+                    break
+                end
+            end
+        else
+            local data = door:GetData()
+            if data.DoorSprite then
+                useSprite = data.DoorSprite
+            end
+
+            if data.DoorData.DoorSprite then
+                useSprite = data.DoorData.DoorSprite
+            end
+        end
+
+        if useSprite and doorSprites[useSprite] then
+            local spriteData = doorSprites[useSprite]
+            local changeSprite
+            if type(spriteData) == "table" then
+                if spriteData.Sprite or spriteData.ExtraSprite or spriteData.Anm2 or spriteData.ExtraAnm2 then
+                    changeSprite = spriteData
+                else
+                    changeSprite = spriteData[roomType or StageAPI.GetCurrentRoomType()]
+                end
+            else
+                changeSprite = spriteData
+            end
+
+            if changeSprite then
+                StageAPI.ChangeDoorSprite(door, changeSprite)
             end
         end
     end
@@ -5815,8 +5919,12 @@ do -- GridGfx
         local desc = grid.Desc
         local gtype = desc.Type
         local send = {Grid = grid, Index = i, Type = gtype, Desc = desc}
-        if gtype == GridEntityType.GRID_DOOR and grids.Doors then
-            StageAPI.ChangeDoor(send, grids.Doors, grids.PayToPlayDoor, grids.HasBossAmbushDoor)
+        if gtype == GridEntityType.GRID_DOOR and (grids.Doors or grids.DoorSpawns or grids.DoorSprites) then
+            if grids.Doors then
+                StageAPI.ChangeDoor(send, grids.Doors, grids.PayToPlayDoor, grids.HasBossAmbushDoor)
+            else
+                StageAPI.CheckDoorSpawns(grid, grids.DoorSpawns, grids.DoorSprites)
+            end
         elseif grid:ToRock() and grids.Rocks then
             StageAPI.ChangeRock(send, grids.Rocks)
         elseif gtype == GridEntityType.GRID_PIT and grids.Pits then
@@ -5835,22 +5943,39 @@ do -- GridGfx
 
     function StageAPI.ChangeDoors(doors)
         if doors then
+            local doorSpawns, doorSprites
             local payToPlay
+            local gridGfx
             if doors.Type == "GridGfx" then
-                doors = doors.Doors
-                payToPlay = doors.PayToPlayDoor
+                gridGfx = doors
             elseif doors.Type == "CustomStage" and doors.RoomGfx then
-                local roomgfx = doors.RoomGfx[room:GetType()]
+                local roomgfx = doors.RoomGfx[StageAPI.GetCurrentRoomType()]
                 if roomgfx and roomgfx.Grids then
-                    doors = roomgfx.Grids.Doors
-                    payToPlay = roomgfx.Grids.PayToPlayDoor
+                    gridGfx = roomgfx.Grids
                 end
             elseif doors.Type == "RoomGfx" and doors.Grids then
-                payToPlay = doors.Grids.PayToPlayDoor
-                doors = doors.Grids.Doors
+                gridGfx = doors.Grids
             end
 
-            if doors then
+            if gridGfx then
+                doorSpawns = gridGfx.DoorSpawns
+                doorSprites = gridGfx.DoorSprites
+                payToPlay = gridGfx.PayToPlayDoor
+                doors = gridGfx.Doors
+            end
+
+            if doorSpawns or doorSprites then
+                for i = 0, 7 do
+                    local door = room:GetDoor(i)
+                    if door then
+                        StageAPI.CheckDoorSpawns(door, doorSpawns, doorSprites)
+                    end
+                end
+
+                for _, door in ipairs(Isaac.FindByType(StageAPI.E.Door.T, StageAPI.E.Door.V, -1, false, false)) do
+                    StageAPI.CheckDoorSpawns(door, doorSpawns, doorSprites)
+                end
+            elseif doors then
                 for i = 0, 7 do
                     local door = room:GetDoor(i)
                     if door then
@@ -5863,6 +5988,12 @@ do -- GridGfx
 
     function StageAPI.ChangeGrids(grids)
         StageAPI.GridGfxRNG:SetSeed(room:GetDecorationSeed(), 0)
+
+        local doneDoors
+        if grids.Doors or grids.DoorSpawns or grids.DoorSprites then
+            StageAPI.ChangeDoors(grids)
+            doneDoors = true
+        end
 
         if grids.PitFiles then
             grids.Pits = grids.PitFiles[StageAPI.Random(1, #grids.PitFiles, StageAPI.GridGfxRNG)]
@@ -5882,7 +6013,7 @@ do -- GridGfx
                 if grid then
                     if hasExtraPitFrames and grid.Desc.Type == GridEntityType.GRID_PIT then
                         pits[i] = grid
-                    else
+                    elseif grid.Desc.Type ~= GridEntityType.GRID_DOOR or not doneDoors then
                         StageAPI.ChangeSingleGrid(grid, grids, i)
                     end
                 end
@@ -5912,7 +6043,7 @@ do -- GridGfx
     end
 end
 
-Isaac.DebugString("[StageAPI] Loading Backdrop & RoomGfx Handling")
+StageAPI.LogMinor("Loading Backdrop & RoomGfx Handling")
 do -- Backdrop & RoomGfx
     StageAPI.BackdropRNG = RNG()
     local backdropDefaultOffset = Vector(260,0)
@@ -5978,21 +6109,47 @@ do -- Backdrop & RoomGfx
             shapeName = shapeName .. "X"
         end
 
-        if mode == 1 or mode == 3 then
-            sprite:Load("stageapi/WallBackdrop.anm2", false)
+        if backdrop.PreLoadFunc then
+            local ret = backdrop.PreLoadFunc(sprite, backdrop, mode, shapeName)
+            if ret then
+                mode = ret
+            end
+        end
 
-            if backdrop.Walls then
+        if mode == 1 or mode == 3 then
+            sprite:Load(backdrop.WallAnm2 or "stageapi/WallBackdrop.anm2", false)
+
+            if backdrop.PreWallSheetFunc then
+                backdrop.PreWallSheetFunc(sprite, backdrop, mode, shapeName)
+            end
+
+            local corners
+            local walls
+            if backdrop.WallVariants then
+                walls = backdrop.WallVariants[StageAPI.Random(1, #backdrop.WallVariants, backdropRNG)]
+                corners = walls.Corners or backdrop.Corners
+            else
+                walls = backdrop.Walls
+                corners = backdrop.Corners
+            end
+
+            if walls then
                 for num = 1, StageAPI.ShapeToWallAnm2Layers[shapeName] do
-                    local wall_to_use = backdrop.Walls[StageAPI.Random(1, #backdrop.Walls, backdropRNG)]
+                    local wall_to_use = walls[StageAPI.Random(1, #walls, backdropRNG)]
                     sprite:ReplaceSpritesheet(num, wall_to_use)
                 end
             end
+
             if backdrop.Corners and string.sub(shapeName, 1, 1) == "L" then
                 local corner_to_use = backdrop.Corners[StageAPI.Random(1, #backdrop.Corners, backdropRNG)]
                 sprite:ReplaceSpritesheet(0, corner_to_use)
             end
-        else
-            sprite:Load("stageapi/FloorBackdrop.anm2", false)
+        elseif mode == 2 then
+            sprite:Load(backdrop.FloorAnm2 or "stageapi/FloorBackdrop.anm2", false)
+
+            if backdrop.PreFloorSheetFunc then
+                backdrop.PreFloorSheetFunc(sprite, backdrop, mode, shapeName)
+            end
 
             local floors
             if backdrop.FloorVariants then
@@ -6002,17 +6159,17 @@ do -- Backdrop & RoomGfx
             end
 
             if floors then
-                local numWalls
+                local numFloors
                 if roomShape == RoomShape.ROOMSHAPE_1x1 then
-                    numWalls = 4
+                    numFloors = 4
                 elseif roomShape == RoomShape.ROOMSHAPE_1x2 or roomShape == RoomShape.ROOMSHAPE_2x1 then
-                    numWalls = 8
+                    numFloors = 8
                 elseif roomShape == RoomShape.ROOMSHAPE_2x2 then
-                    numWalls = 16
+                    numFloors = 16
                 end
 
-                if numWalls then
-                    for i = 0, numWalls - 1 do
+                if numFloors then
+                    for i = 0, numFloors - 1 do
                         sprite:ReplaceSpritesheet(i, floors[StageAPI.Random(1, #floors, backdropRNG)])
                     end
                 end
@@ -6040,7 +6197,7 @@ do -- Backdrop & RoomGfx
 
         sprite:Play(shapeName, true)
 
-        return renderPos, needsExtra
+        return renderPos, needsExtra, sprite
     end
 
     function StageAPI.ChangeBackdrop(backdrop, justWalls, storeBackdropEnts)
@@ -6237,7 +6394,7 @@ do -- Backdrop & RoomGfx
     end)
 end
 
-Isaac.DebugString("[StageAPI] Loading CustomStage Handler")
+StageAPI.LogMinor("Loading CustomStage Handler")
 do -- Custom Stage
     StageAPI.CustomStages = {}
 
@@ -6441,14 +6598,28 @@ do -- Custom Stage
             if usingRoomsList then
                 local shape = room:GetRoomShape()
                 if #usingRoomsList.ByShape[shape] > 0 then
-                    local newRoom = StageAPI.LevelRoom(nil, usingRoomsList, nil, shape, rtype, nil, nil, StageAPI.CurrentStage.RequireRoomTypeSin, nil, doors)
+                    local newRoom = StageAPI.LevelRoom{
+                        RoomsList = usingRoomsList,
+                        Shape = shape,
+                        RoomType = rtype,
+                        RequireRoomType = StageAPI.CurrentStage.RequireRoomTypeSin,
+                        Doors = doors
+                    }
+
                     return newRoom
                 end
             end
         end
 
         if not inStartingRoom and StageAPI.CurrentStage.Rooms and StageAPI.CurrentStage.Rooms[rtype] then
-            local newRoom = StageAPI.LevelRoom(nil, StageAPI.CurrentStage.Rooms[rtype], nil, shape, rtype, nil, nil, StageAPI.CurrentStage.RequireRoomTypeMatching, nil, doors)
+            local newRoom = StageAPI.LevelRoom{
+                RoomsList = StageAPI.CurrentStage.Rooms[rtype],
+                Shape = shape,
+                RoomType = rtype,
+                RequireRoomType = StageAPI.CurrentStage.RequireRoomTypeMatching,
+                Doors = doors
+            }
+
             return newRoom
         end
 
@@ -6557,7 +6728,7 @@ do -- Custom Stage
     end
 end
 
-Isaac.DebugString("[StageAPI] Loading Stage Override Definitions")
+StageAPI.LogMinor("Loading Stage Override Handler")
 do -- Definitions
     function StageAPI.BackdropHelper(backdrop, prefix, suffix)
         if #backdrop < 1 then
@@ -6581,177 +6752,15 @@ do -- Definitions
         return backdrop
     end
 
-    StageAPI.CatacombsGridGfx = StageAPI.GridGfx()
-    StageAPI.CatacombsGridGfx:SetRocks("gfx/grid/rocks_catacombs.png")
-    StageAPI.CatacombsGridGfx:SetPits("gfx/grid/grid_pit_catacombs.png", "gfx/grid/grid_pit_water_catacombs.png")
-    StageAPI.CatacombsGridGfx:SetBridges("stageapi/floors/catacombs/grid_bridge_catacombs.png")
-    StageAPI.CatacombsGridGfx:SetDecorations("gfx/grid/props_03_caves.png")
+    StageAPI.StageOverride = {}
 
-    StageAPI.CatacombsFloors = {
-        {"Catacombs1_1", "Catacombs1_2"},
-        {"Catacombs2_1", "Catacombs2_2"},
-        {"CatacombsExtraFloor_1", "CatacombsExtraFloor_2"}
-    }
-
-    StageAPI.CatacombsBackdrop = {
-        {
-            Walls = {"Catacombs1_1", "Catacombs1_2"},
-            FloorVariants = StageAPI.CatacombsFloors,
-            NFloors = {"Catacombs_nfloor"},
-            LFloors = {"Catacombs_lfloor"},
-            Corners = {"Catacombs1_corner"}
-        },
-        {
-            Walls = {"Catacombs2_1", "Catacombs2_2"},
-            FloorVariants = StageAPI.CatacombsFloors,
-            NFloors = {"Catacombs_nfloor"},
-            LFloors = {"Catacombs_lfloor"},
-            Corners = {"Catacombs2_corner"}
+    function StageAPI.AddOverrideStage(name, overrideStage, overrideStageType, replaceWith)
+        StageAPI.StageOverride[name] = {
+            OverrideStage = overrideStage,
+            OverrideStageType = overrideStageType,
+            ReplaceWith = replaceWith
         }
-    }
-
-    StageAPI.CatacombsBackdrop = StageAPI.BackdropHelper(StageAPI.CatacombsBackdrop, "stageapi/floors/catacombs/", ".png")
-    StageAPI.CatacombsRoomGfx = StageAPI.RoomGfx(--[[StageAPI.CatacombsBackdrop]] nil, StageAPI.CatacombsGridGfx, "_default")
-    StageAPI.CatacombsMusicID = Isaac.GetMusicIdByName("Catacombs")
-    StageAPI.Catacombs = StageAPI.CustomStage("Catacombs", nil, true)
-    StageAPI.Catacombs:SetStageMusic(StageAPI.CatacombsMusicID)
-    StageAPI.Catacombs:SetBossMusic({Music.MUSIC_BOSS, Music.MUSIC_BOSS2}, Music.MUSIC_BOSS_OVER)
-    StageAPI.Catacombs:SetRoomGfx(StageAPI.CatacombsRoomGfx, {RoomType.ROOM_DEFAULT, RoomType.ROOM_TREASURE, RoomType.ROOM_MINIBOSS, RoomType.ROOM_BOSS})
-    StageAPI.Catacombs.DisplayName = "Catacombs I"
-
-    StageAPI.CatacombsTwo = StageAPI.Catacombs("Catacombs 2")
-    StageAPI.CatacombsTwo.DisplayName = "Catacombs II"
-
-    StageAPI.CatacombsXL = StageAPI.Catacombs("Catacombs XL")
-    StageAPI.CatacombsXL.DisplayName = "Catacombs XL"
-    StageAPI.Catacombs:SetXLStage(StageAPI.CatacombsXL)
-
-    StageAPI.NecropolisGridGfx = StageAPI.GridGfx()
-    StageAPI.NecropolisGridGfx:SetRocks("gfx/grid/rocks_depths.png")
-    StageAPI.NecropolisGridGfx:SetPits("gfx/grid/grid_pit_necropolis.png")
-    StageAPI.NecropolisGridGfx:SetBridges("stageapi/floors/necropolis/grid_bridge_necropolis.png")
-    StageAPI.NecropolisGridGfx:SetDecorations("gfx/grid/props_05_depths.png", "gfx/grid/props_05_depths.anm2", 43)
-
-    StageAPI.NecropolisBackdrop = {
-        {
-            Walls = {"necropolis1_1"},
-            NFloors = {"necropolis_nfloor1", "necropolis_nfloor2"},
-            LFloors = {"necropolis_lfloor"},
-            Corners = {"necropolis1_corner"}
-        }
-    }
-
-    StageAPI.NecropolisOverlays = {
-        StageAPI.Overlay("stageapi/floors/necropolis/overlay.anm2", Vector(0.33, -0.15), nil, nil, 0.5),
-        StageAPI.Overlay("stageapi/floors/necropolis/overlay.anm2", Vector(-0.33, -0.15), Vector(128, 128), nil, 0.5),
-        StageAPI.Overlay("stageapi/floors/necropolis/overlay.anm2", Vector(0.33, 0.1), nil, nil, 0.5),
-    }
-
-    StageAPI.NecropolisBackdrop = StageAPI.BackdropHelper(StageAPI.NecropolisBackdrop, "stageapi/floors/necropolis/", ".png")
-    StageAPI.NecropolisRoomGfx = StageAPI.RoomGfx(--[[StageAPI.NecropolisBackdrop]] nil, StageAPI.NecropolisGridGfx, "_default")
-    StageAPI.NecropolisMusicID = Isaac.GetMusicIdByName("Necropolis")
-    StageAPI.Necropolis = StageAPI.CustomStage("Necropolis", nil, true)
-    StageAPI.Necropolis:SetStageMusic(StageAPI.NecropolisMusicID)
-    StageAPI.Necropolis:SetBossMusic({Music.MUSIC_BOSS, Music.MUSIC_BOSS2}, Music.MUSIC_BOSS_OVER)
-    StageAPI.Necropolis:SetRoomGfx(StageAPI.NecropolisRoomGfx, {RoomType.ROOM_DEFAULT, RoomType.ROOM_TREASURE, RoomType.ROOM_MINIBOSS, RoomType.ROOM_BOSS})
-    StageAPI.Necropolis.DisplayName = "Necropolis I"
-
-    StageAPI.NecropolisTwo = StageAPI.Necropolis("Necropolis 2")
-    StageAPI.NecropolisTwo.DisplayName = "Necropolis II"
-
-    StageAPI.NecropolisXL = StageAPI.Necropolis("Necropolis XL")
-    StageAPI.NecropolisXL.DisplayName = "Necropolis XL"
-    StageAPI.Necropolis:SetXLStage(StageAPI.NecropolisXL)
-
-    StageAPI.UteroGridGfx = StageAPI.GridGfx()
-    StageAPI.UteroGridGfx:SetRocks("gfx/grid/rocks_womb.png")
-    StageAPI.UteroGridGfx:SetPits("gfx/grid/grid_pit_womb.png", {
-        { File = "gfx/grid/grid_pit_blood_womb.png" },
-        { File = "gfx/grid/grid_pit_acid_womb.png" },
-    })
-    StageAPI.UteroGridGfx:SetBridges("stageapi/floors/utero/grid_bridge_womb.png")
-    StageAPI.UteroGridGfx:SetDecorations("gfx/grid/props_07_the womb.png", "gfx/grid/props_07_the womb.anm2", 43)
-
-    StageAPI.UteroBackdrop = {
-        {
-            Walls = {"utero1_1", "utero1_2", "utero1_3", "utero1_4"},
-            NFloors = {"utero_nfloor"},
-            LFloors = {"utero_lfloor"},
-            Corners = {"utero1_corner"}
-        }
-    }
-
-    StageAPI.UteroOverlays = {
-        StageAPI.Overlay("stageapi/floors/utero/overlay.anm2", Vector(2, -1.6), nil, nil, 0.5),
-        StageAPI.Overlay("stageapi/floors/utero/overlay.anm2", Vector(-0.5, -1.5), nil, nil, 0.5),
-        StageAPI.Overlay("stageapi/floors/utero/overlay.anm2", Vector(-1, -1.5), Vector(128, 128), nil, 0.5),
-        StageAPI.Overlay("stageapi/floors/utero/overlay.anm2", Vector(-2, -1.6), Vector(128, 128), nil, 0.5)
-    }
-
-    StageAPI.UteroOverlaysDark = {
-        StageAPI.Overlay("stageapi/floors/utero/overlay.anm2", Vector(2, -1.6), nil, nil, 0.1),
-        StageAPI.Overlay("stageapi/floors/utero/overlay.anm2", Vector(-0.5, -1.5), nil, nil, 0.1),
-        StageAPI.Overlay("stageapi/floors/utero/overlay.anm2", Vector(-1, -1.5), Vector(128, 128), nil, 0.1),
-        StageAPI.Overlay("stageapi/floors/utero/overlay.anm2", Vector(-2, -1.6), Vector(128, 128), nil, 0.1)
-    }
-
-    StageAPI.UteroBackdrop = StageAPI.BackdropHelper(StageAPI.UteroBackdrop, "stageapi/floors/utero/", ".png")
-    StageAPI.UteroRoomGfx = StageAPI.RoomGfx(--[[StageAPI.UteroBackdrop]] nil, StageAPI.UteroGridGfx, "_default")
-    StageAPI.UteroMusicID = Isaac.GetMusicIdByName("Womb/Utero")
-    StageAPI.Utero = StageAPI.CustomStage("Utero", nil, true)
-    StageAPI.Utero:SetStageMusic(StageAPI.UteroMusicID)
-    StageAPI.Utero:SetBossMusic({Music.MUSIC_BOSS, Music.MUSIC_BOSS2}, Music.MUSIC_BOSS_OVER)
-    StageAPI.Utero:SetRoomGfx(StageAPI.UteroRoomGfx, {RoomType.ROOM_DEFAULT, RoomType.ROOM_TREASURE, RoomType.ROOM_MINIBOSS, RoomType.ROOM_BOSS})
-    StageAPI.Utero.DisplayName = "Utero I"
-
-    StageAPI.UteroTwo = StageAPI.Utero("Utero 2")
-    StageAPI.UteroTwo.DisplayName = "Utero II"
-
-    StageAPI.UteroXL = StageAPI.Utero("Utero XL")
-    StageAPI.UteroXL.DisplayName = "Utero XL"
-    StageAPI.Utero:SetXLStage(StageAPI.UteroXL)
-
-    StageAPI.StageOverride = {
-        CatacombsOne = {
-            OverrideStage = LevelStage.STAGE2_1,
-            OverrideStageType = StageType.STAGETYPE_WOTL,
-            ReplaceWith = StageAPI.Catacombs
-        },
-        CatacombsTwo = {
-            OverrideStage = LevelStage.STAGE2_2,
-            OverrideStageType = StageType.STAGETYPE_WOTL,
-            ReplaceWith = StageAPI.CatacombsTwo
-        },
-        NecropolisOne = {
-            OverrideStage = LevelStage.STAGE3_1,
-            OverrideStageType = StageType.STAGETYPE_WOTL,
-            ReplaceWith = StageAPI.Necropolis
-        },
-        NecropolisTwo = {
-            OverrideStage = LevelStage.STAGE3_2,
-            OverrideStageType = StageType.STAGETYPE_WOTL,
-            ReplaceWith = StageAPI.NecropolisTwo
-        },
-        UteroOne = {
-            OverrideStage = LevelStage.STAGE4_1,
-            OverrideStageType = StageType.STAGETYPE_WOTL,
-            ReplaceWith = StageAPI.Utero
-        },
-        UteroTwo = {
-            OverrideStage = LevelStage.STAGE4_2,
-            OverrideStageType = StageType.STAGETYPE_WOTL,
-            ReplaceWith = StageAPI.UteroTwo
-        }
-    }
-
-    StageAPI.Catacombs:SetReplace(StageAPI.StageOverride.CatacombsOne)
-    StageAPI.CatacombsTwo:SetReplace(StageAPI.StageOverride.CatacombsTwo)
-
-    StageAPI.Necropolis:SetReplace(StageAPI.StageOverride.NecropolisOne)
-    StageAPI.NecropolisTwo:SetReplace(StageAPI.StageOverride.NecropolisTwo)
-
-    StageAPI.Utero:SetReplace(StageAPI.StageOverride.UteroOne)
-    StageAPI.UteroTwo:SetReplace(StageAPI.StageOverride.UteroTwo)
+    end
 
     function StageAPI.InOverriddenStage()
         for name, override in pairs(StageAPI.StageOverride) do
@@ -6797,7 +6806,7 @@ do -- Definitions
     end
 end
 
-Isaac.DebugString("[StageAPI] Loading Boss Handler")
+StageAPI.LogMinor("Loading Boss Handler")
 do -- Bosses
     StageAPI.FloorInfo = {
         [LevelStage.STAGE1_1] = {
@@ -7265,11 +7274,11 @@ do -- Bosses
             elseif #validBosses > 0 then
                 bossID = StageAPI.WeightedRNG(validBosses, rng, nil, totalValidWeight)
             else
-                Isaac.ConsoleOutput("[StageAPI] Trying to select boss, but none are valid!!\n")
+                StageAPI.LogErr("Trying to select boss, but none are valid!!\n")
                 for _, potentialBossID in ipairs(bosses) do
-                    Isaac.ConsoleOutput(potentialBossID .. "\n")
+                    StageAPI.LogErr(potentialBossID .. "\n")
                 end
-                Isaac.ConsoleOutput("Were the options\n")
+                StageAPI.LogErr("Were the options\n")
             end
         end
 
@@ -7277,7 +7286,7 @@ do -- Bosses
     end
 end
 
-Isaac.DebugString("[StageAPI] Loading Transition Handler")
+StageAPI.LogMinor("Loading Transition Handler")
 do -- Transition
     StageAPI.StageTypeToString = {
         [StageType.STAGETYPE_ORIGINAL] = "",
@@ -7521,7 +7530,7 @@ do -- Transition
     end, StageAPI.E.Trapdoor.V)
 end
 
-Isaac.DebugString("[StageAPI] Loading Rock Alt Breaking Override")
+StageAPI.LogMinor("Loading Rock Alt Breaking Override")
 do -- Rock Alt Override
     StageAPI.SpawnOverriddenGrids = {}
     StageAPI.JustBrokenGridSpawns = {}
@@ -7759,7 +7768,7 @@ do -- Rock Alt Override
     end)
 end
 
-Isaac.DebugString("[StageAPI] Loading Core Callbacks")
+StageAPI.LogMinor("Loading Core Callbacks")
 do -- Callbacks
     StageAPI.NonOverrideMusic = {
         Music.MUSIC_GAME_OVER,
@@ -7804,11 +7813,12 @@ do -- Callbacks
 
     mod:AddCallback(ModCallbacks.MC_POST_UPDATE, function()
         local currentRoom = StageAPI.GetCurrentRoom()
-        if currentRoom then
+        if currentRoom and currentRoom.Loaded then
             local isClear = currentRoom.IsClear
             currentRoom.IsClear = room:IsClear()
             currentRoom.JustCleared = nil
             if not isClear and currentRoom.IsClear then
+                currentRoom.ClearCount = currentRoom.ClearCount + 1
                 StageAPI.CallCallbacks("POST_ROOM_CLEAR", false)
                 currentRoom.JustCleared = true
             end
@@ -7974,6 +7984,8 @@ do -- Callbacks
         end
     end
 
+    StageAPI.GlobalCommandMode = false
+
     StageAPI.Music = MusicManager()
     StageAPI.MusicRNG = RNG()
     mod:AddCallback(ModCallbacks.MC_POST_RENDER, function()
@@ -8098,21 +8110,6 @@ do -- Callbacks
             end
         end
 
-        local btype = room:GetBackdropType()
-        if btype == 10 then
-            for _, grid in ipairs(pits) do
-                StageAPI.CheckBridge(grid[1], grid[2], "stageapi/floors/utero/grid_bridge_womb.png")
-            end
-        end
-
-        if StageAPI.OldBackdropType ~= btype then
-            if btype == 5 and not StageAPI.InOverriddenStage() then
-                StageAPI.ChangeRoomGfx(StageAPI.CatacombsRoomGfx)
-            end
-
-            StageAPI.OldBackdropType = btype
-        end
-
         for _, player in ipairs(players) do
             if player:HasCollectible(CollectibleType.COLLECTIBLE_D7) then
                 player:RemoveCollectible(CollectibleType.COLLECTIBLE_D7)
@@ -8146,12 +8143,22 @@ do -- Callbacks
             Isaac.RenderScaledText(custom, 60, 35, scale, scale, 255, 255, 255, 0.75)
             Isaac.RenderScaledText(base, 60, 45, scale, scale, 255, 255, 255, 0.75)
         end
+
+        if StageAPI.GlobalCommandMode then
+            _G.slog = StageAPI.Log
+            _G.game = game
+            _G.level = level
+            _G.room = room
+            _G.desc = level:GetRoomByIdx(level:GetCurrentRoomIndex())
+            _G.apiroom = StageAPI.GetCurrentRoom()
+            _G.player = players[1]
+        end
     end)
 
     function StageAPI.SetCurrentBossRoomInPlace(bossID, room)
         local boss = StageAPI.GetBossData(bossID)
         if not boss then
-            StageAPI.Log("Trying to set boss with invalid ID: " .. tostring(bossID))
+            StageAPI.LogErr("Trying to set boss with invalid ID: " .. tostring(bossID))
             return
         end
 
@@ -8164,14 +8171,14 @@ do -- Callbacks
             bossID = StageAPI.SelectBoss(bosses, hasHorseman)
         elseif checkEncountered then
             if StageAPI.GetBossEncountered(bossID) then
-                StageAPI.Log("Trying to generate boss room for encountered boss: " .. tostring(bossID))
+                StageAPI.LogErr("Trying to generate boss room for encountered boss: " .. tostring(bossID))
                 return
             end
         end
 
         local boss = StageAPI.GetBossData(bossID)
         if not boss then
-            StageAPI.Log("Trying to set boss with invalid ID: " .. tostring(bossID))
+            StageAPI.LogErr("Trying to set boss with invalid ID: " .. tostring(bossID))
             return
         end
 
@@ -8181,7 +8188,17 @@ do -- Callbacks
         end
 
         local levelIndex = StageAPI.GetCurrentRoomID()
-        local newRoom = StageAPI.LevelRoom(nil, boss.Rooms, roomType, shape, nil, isExtraRoom, nil, requireRoomTypeBoss, ignoreDoors, doors, levelIndex)
+        local newRoom = StageAPI.LevelRoom{
+            RoomsList = boss.Rooms,
+            RoomType = roomType,
+            Shape = shape,
+            IsExtraRoom = isExtraRoom,
+            RequireRoomType = requireRoomTypeBoss,
+            IgnoreDoors = ignoreDoors,
+            Doors = doors,
+            LevelIndex = levelIndex
+        }
+
         newRoom.PersistentData.BossID = bossID
         StageAPI.CallCallbacks("POST_BOSS_ROOM_INIT", false, newRoom, boss, bossID)
 
@@ -8191,7 +8208,7 @@ do -- Callbacks
     function StageAPI.SetCurrentBossRoom(bossID, checkEncountered, bosses, hasHorseman, requireRoomTypeBoss, noPlayBossAnim, unskippableBossAnim)
         local newRoom, boss = StageAPI.GenerateBossRoom(bossID, checkEncountered, bosses, hasHorseman, requireRoomTypeBoss)
         if not newRoom then
-            StageAPI.Log('Could not generate room for boss: ID: ' .. bossID .. ' List Length: ' .. tostring(bosses and #bosses or 0))
+            StageAPI.LogErr('Could not generate room for boss: ID: ' .. bossID .. ' List Length: ' .. tostring(bosses and #bosses or 0))
             return nil, nil
         end
 
@@ -8218,9 +8235,26 @@ do -- Callbacks
         local inStartingRoom = level:GetCurrentRoomIndex() == level:GetStartingRoomIndex()
         StageAPI.CustomGridIndices = {}
 
+        for index, room in pairs(StageAPI.LevelRooms) do
+            room.Loaded = false
+        end
+
         if inStartingRoom and room:IsFirstVisit() then
-            StageAPI.CustomGrids = {}
-            StageAPI.LevelRooms = {}
+            local maintainGrids = {}
+            for index, room in pairs(StageAPI.LevelRooms) do
+                if not (room and room.IsPersistentRoom) then
+                    StageAPI.LevelRooms[index] = nil
+                else
+                    maintainGrids[index] = true
+                end
+            end
+
+            for index, grids in pairs(StageAPI.CustomGrids) do
+                if not maintainGrids[index] then
+                    StageAPI.CustomGrids[index] = nil
+                end
+            end
+
             StageAPI.CurrentStage = nil
             if isNewStage then
                 if not StageAPI.NextStage then
@@ -8373,7 +8407,7 @@ do -- Callbacks
         local usingGfx
         if currentRoom and currentRoom.Data.RoomGfx then
             usingGfx = currentRoom.Data.RoomGfx
-        elseif isNewStage then
+        elseif isNewStage and StageAPI.CurrentStage.RoomGfx then
             local rtype = StageAPI.GetCurrentRoomType()
             usingGfx = StageAPI.CurrentStage.RoomGfx[rtype]
         end
@@ -8399,11 +8433,6 @@ do -- Callbacks
                 callback.Function()
             end
         else
-            if room:GetBackdropType() == 5 then
-                StageAPI.ChangeRoomGfx(StageAPI.CatacombsRoomGfx)
-                StageAPI.OldBackdropType = 5
-            end
-
             if room:GetType() ~= RoomType.ROOM_DUNGEON and room:GetBackdropType() ~= 16 then
                 StageAPI.ChangeShading("_default")
             end
@@ -8442,8 +8471,13 @@ do -- Callbacks
             StageAPI.TransitionFromExtraRoom(StageAPI.LastNonExtraRoom)
         elseif cmd == "regroom" then
             if StageAPI.Layouts[params] then
-                local testRoom = StageAPI.LevelRoom(params, nil, room:GetSpawnSeed(), StageAPI.Layouts[params].Shape, StageAPI.Layouts[params].Variant)
-                testRoom.RoomType = StageAPI.Layouts[params].Type
+                local testRoom = StageAPI.LevelRoom{
+                    LayoutName = params,
+                    Shape = StageAPI.Layouts[params].Shape,
+                    RoomType = StageAPI.Layouts[params].Type,
+                    LevelIndex = "StageAPITest"
+                }
+
                 StageAPI.SetExtraRoom("StageAPITest", testRoom)
                 local doors = {}
                 for _, door in ipairs(StageAPI.Layouts[params].Doors) do
@@ -8490,8 +8524,13 @@ do -- Callbacks
 
                 if selectedLayout then
                     StageAPI.RegisterLayout("StageAPITest", selectedLayout)
-                    local testRoom = StageAPI.LevelRoom("StageAPITest", nil, room:GetSpawnSeed(), selectedLayout.Shape, selectedLayout.Variant)
-                    testRoom.RoomType = selectedLayout.Type
+                    local testRoom = StageAPI.LevelRoom{
+                        LayoutName = "StageAPITest",
+                        Shape = selectedLayout.Shape,
+                        RoomType = selectedLayout.Type,
+                        LevelIndex = "StageAPITest"
+                    }
+
                     StageAPI.SetExtraRoom("StageAPITest", testRoom)
                     local doors = {}
                     for _, door in ipairs(selectedLayout.Doors) do
@@ -8543,12 +8582,20 @@ do -- Callbacks
             StageAPI.ClearRoomLayout(false, true, true, true, nil, true, true)
         elseif cmd == "crashit" then
             game:ShowHallucination(0, 0)
-        elseif cmd == "testgotorooms" then
-            StageAPI.TestGotoRoomShapes = {}
-            for _, shape in pairs(RoomShape) do
-                if StageAPI.RoomShapeToGotoID[shape] then
-                    StageAPI.TestGotoRoomShapes[#StageAPI.TestGotoRoomShapes + 1] = shape
-                end
+        elseif cmd == "commandglobals" then
+            if StageAPI.GlobalCommandMode then
+                Isaac.ConsoleOutput("Disabled StageAPI global command mode")
+                _G.slog = nil
+                _G.game = nil
+                _G.room = nil
+                _G.desc = nil
+                _G.apiroom = nil
+                _G.level = nil
+                _G.player = nil
+                StageAPI.GlobalCommandMode = nil
+            else
+                Isaac.ConsoleOutput("Enabled StageAPI global command mode\nslog: Prints any number of args, parses some userdata\ngame, room, level: Correspond to respective objects\nplayer: Corresponds to player 0\ndesc: Current room descriptor, mutable\napiroom: Current StageAPI room, if applicable\nFor use with the lua command!")
+                StageAPI.GlobalCommandMode = true
             end
         end
     end)
@@ -8631,25 +8678,6 @@ do -- Callbacks
                 end
             end
         end
-
-        if StageAPI.TestGotoRoomShapes then
-            if Input.IsButtonTriggered(Keyboard.KEY_N, players[1].ControllerIndex) then
-                local shape = StageAPI.TestGotoRoomShapes[#StageAPI.TestGotoRoomShapes]
-                local layout = StageAPI.CreateEmptyRoomLayout(shape)
-                StageAPI.RegisterLayout("StageAPITest", layout)
-
-                local testRoom = StageAPI.LevelRoom("StageAPITest", nil, room:GetSpawnSeed(), shape, RoomType.ROOM_DEFAULT)
-                StageAPI.SetExtraRoom("StageAPITest", testRoom)
-
-                StageAPI.TransitionToExtraRoom("StageAPITest", layout.Doors[StageAPI.Random(1, #layout.Doors)].Slot, true, "Stage")
-
-                StageAPI.TestGotoRoomShapes[#StageAPI.TestGotoRoomShapes] = nil
-
-                if #StageAPI.TestGotoRoomShapes == 0 then
-                    StageAPI.TestGotoRoomShapes = nil
-                end
-            end
-        end
     end)
 
     function StageAPI.RunWhenMarkedLoaded(name, fn)
@@ -8665,7 +8693,7 @@ do -- Callbacks
     end
 end
 
-Isaac.DebugString("[StageAPI] Loading Save System")
+StageAPI.LogMinor("Loading Save System")
 do
     StageAPI.json = require("json")
     function StageAPI.GetSaveString()
@@ -8796,7 +8824,11 @@ do
             end
 
             if roomSaveData.Room then
-                local customRoom = StageAPI.LevelRoom(nil, nil, nil, nil, nil, nil, roomSaveData.Room, nil, nil, nil, lindex)
+                local customRoom = StageAPI.LevelRoom{
+                    FromSave = roomSaveData.Room,
+                    LevelIndex = lindex
+                }
+
                 retLevelRooms[lindex] = customRoom
             end
         end
@@ -8814,7 +8846,7 @@ do
     end
 end
 
-Isaac.DebugString("[StageAPI] Loading Miscellaneous Functions")
+StageAPI.LogMinor("Loading Miscellaneous Functions")
 do -- Misc helpful functions
     -- Takes whether or not there is a pit in each adjacent space, returns frame to set pit sprite to.
     function StageAPI.GetPitFrame(L, R, U, D, UL, DL, UR, DR, hasExtraFrames)
@@ -8931,7 +8963,7 @@ do -- Misc helpful functions
     end
 end
 
-Isaac.DebugString("[StageAPI] Loading Editor Features")
+StageAPI.LogMinor("Loading Editor Features")
 do
     local recentlyDetonated = {}
     local d12Used = false
@@ -9455,7 +9487,7 @@ do -- Custom Floor Generation
                 end
 
                 if levelMap2D[seg.X][seg.Y] then
-                    Isaac.DebugString("Overriding a room! Something went wrong at " .. tostring(seg.X) .. "x" .. tostring(seg.Y) ..  "!")
+                    StageAPI.LogErr("Overriding a room! Something went wrong at " .. tostring(seg.X) .. "x" .. tostring(seg.Y) ..  "!")
                 end
 
                 levelMap2D[seg.X][seg.Y] = i
@@ -9481,13 +9513,30 @@ do -- Custom Floor Generation
         for i = 0, roomsList.Size do
             local roomDesc = roomsList:Get(i)
             if roomDesc then
+                local id = "CL" .. tostring(i)
                 local layout = StageAPI.GenerateRoomLayoutFromData(roomDesc.Data)
-                StageAPI.RegisterLayout("CL" .. tostring(i), layout)
-                newLevelMap[#newLevelMap + 1] = {
-                    ExtraRoomLayout = "CL" .. tostring(i),
+                StageAPI.RegisterLayout(id, layout)
+                local newRoom = StageAPI.LevelRoom{
+                    LayoutName = id,
+                    SpawnSeed = roomDesc.SpawnSeed,
+                    AwardSeed = roomDesc.AwardSeed,
+                    DecorationSeed = roomDesc.DecorationSeed,
                     Shape = roomDesc.Data.Shape,
+                    RoomType = roomDesc.Data.Type,
+                    IsClear = roomDesc.Clear,
+                    HasWaterPits = roomDesc.HasWater,
+                    IsPersistentRoom = true,
+                    IsExtraRoom = true,
+                    LevelIndex = id
+                }
+
+                StageAPI.SetExtraRoom(id, newRoom)
+
+                newLevelMap[#newLevelMap + 1] = {
+                    ExtraRoomName = id,
                     GridIndex = roomDesc.GridIndex,
                     SafeGridIndex = roomDesc.SafeGridIndex,
+                    Shape = roomDesc.Data.Shape,
                     StartingRoom = level:GetStartingRoomIndex() == roomDesc.SafeGridIndex
                 }
             end
@@ -9576,15 +9625,6 @@ do -- Custom Floor Generation
                     StageAPI.CustomLevelReplaceRoom = roomDesc.SafeGridIndex
                     break
                 end
-            end
-        end
-
-        for i, room in ipairs(StageAPI.CurrentLevelMap) do
-            if room.ExtraRoomLayout then
-                local layout = StageAPI.Layouts[room.ExtraRoomLayout]
-                local extraRoom = StageAPI.LevelRoom(room.ExtraRoomLayout, nil, room.SpawnSeed, layout.Shape, layout.Type, true, nil, nil, nil, nil, "CL" .. tostring(i), nil)
-                StageAPI.SetExtraRoom("CL" .. tostring(i), extraRoom)
-                room.ExtraRoomName = "CL" .. tostring(i)
             end
         end
 
@@ -9688,34 +9728,16 @@ do -- Custom Floor Generation
         return layout
     end
 
-    local shapeAttempts = 0
-    local nextFrame
-    local closest = 999999
+    local chestTestNextFrame
     mod:AddCallback(ModCallbacks.MC_EXECUTE_CMD, function(_, cmd, params)
-        if cmd == "getallshapes" then
-            shapeAttempts = 10000
-        elseif cmd == "reseedtest" then
-            StageAPI.Seeds:SetStartSeed("")
-            Isaac.ExecuteCommand("stage " .. tostring(level:GetStage()) .. StageAPI.StageTypeToString[level:GetStageType()])
-        elseif cmd == "chesttest" then
-            nextFrame = true
-        elseif cmd == "copyroom" then
-            StageAPI.RegisterLayout("CopiedRoom", StageAPI.GenerateRoomLayoutFromData(level:GetCurrentRoomDesc().Data))
-        elseif cmd == "suppress" then
-            StageAPI.Seeds:SetStartSeed("SBPX 37HV")
-            Isaac.ExecuteCommand("stage 11a")
-        elseif cmd == "suppress2" then
-            Isaac.ExecuteCommand("stage 11a")
+        if cmd == "chesttest" then
+            chestTestNextFrame = true
         end
     end)
 
-    mod:AddCallback(ModCallbacks.MC_POST_GAME_STARTED, function()
-        shapeAttempts = 0
-    end)
-
     mod:AddCallback(ModCallbacks.MC_POST_RENDER, function()
-        if nextFrame then
-            nextFrame = nil
+        if chestTestNextFrame then
+            chestTestNextFrame = nil
             local baseStage = level:GetStage()
             local baseStageType = level:GetStageType()
             --StageAPI.CreateMapForShapeStringTable(heart)
@@ -9724,54 +9746,13 @@ do -- Custom Floor Generation
             Isaac.ExecuteCommand("stage " .. tostring(baseStage) .. StageAPI.StageTypeToString[baseStageType])
             StageAPI.InitCustomLevel(true)
         end
-
-        if Input.IsButtonTriggered(Keyboard.KEY_0, players[1].ControllerIndex) then
-            shapeAttempts = 0
-        end
-
-        if shapeAttempts > 0 then
-            shapeAttempts = shapeAttempts - 1
-
-            StageAPI.Seeds:SetStartSeed("")
-            Isaac.ExecuteCommand("stage " .. tostring(level:GetStage()) .. StageAPI.StageTypeToString[level:GetStageType()])
-
-            local shapesList = {}
-            for name, shape in pairs(RoomShape) do
-                if name ~= "NUM_ROOMSHAPES" and shape > -1 then
-                    shapesList[#shapesList + 1] = shape
-                end
-            end
-
-            local roomsList = level:GetRooms()
-            for i = 0, roomsList.Size do
-                local roomDesc = roomsList:Get(i)
-                if roomDesc then
-                    local shape = roomDesc.Data.Shape
-                    for j, remaining in StageAPI.ReverseIterate(shapesList) do
-                        if shape == remaining then
-                            table.remove(shapesList, j)
-                        end
-                    end
-                end
-            end
-
-            if #shapesList == 0 then
-                shapeAttempts = 0
-                Isaac.ConsoleOutput(StageAPI.Seeds:GetStartSeedString() .. "\n")
-            elseif #shapesList < closest then
-                closest = #shapesList
-                Isaac.ConsoleOutput("New closest! " .. tostring(closest) .. "\n")
-                for _, shape in ipairs(shapesList) do
-                    Isaac.ConsoleOutput("Missing " .. tostring(shape) .. "\n")
-                end
-            elseif shapeAttempts == 0 then
-                Isaac.ConsoleOutput("Done! Not found.\n")
-            end
-        end
     end)
 end
 
-Isaac.DebugString("[StageAPI] Loading BR Compatibility")
+-- Data Loading
+pcall(require, "data")
+
+StageAPI.LogMinor("Loading BR Compatibility")
 do -- BR Compatibility
     StageAPI.InTestMode = false
     StageAPI.OverrideTestRoom = false -- toggle this value in console to force enable stageapi override
@@ -9797,7 +9778,7 @@ do -- BR Compatibility
                 or test.Subtype ~= testLayout.SUBTYPE
                 or test.Name    ~= testLayout.NAME
                 or (testData.Rooms and #testData.Rooms ~= #brTestRooms) then
-                    StageAPI.Log("basementrenovator/roomTest.lua did not have values matching the BR test! Make sure your hooks are set up properly")
+                    StageAPI.LogErr("basementrenovator/roomTest.lua did not have values matching the BR test! Make sure your hooks are set up properly")
                     StageAPI.BadTestFile = true
                     return
                 end
@@ -10274,7 +10255,7 @@ other than a door
     end)
 end
 
-Isaac.DebugString("[StageAPI] Fully Loaded, loading dependent mods.")
+StageAPI.LogMinor("[StageAPI] Fully Loaded, loading dependent mods.")
 StageAPI.MarkLoaded("StageAPI", "1.88", true, true)
 
 StageAPI.Loaded = true
