@@ -3747,6 +3747,7 @@ do -- Custom Grid Entities
     function StageAPI.RemoveCustomGrid(index, name, keepVanillaGrid)
         local lindex = StageAPI.GetCurrentRoomID()
         if StageAPI.CustomGrids[lindex] and StageAPI.CustomGrids[lindex][name] and StageAPI.CustomGrids[lindex][name][index] then
+            local persistData = StageAPI.CustomGrids[lindex][name][index]
             StageAPI.CustomGrids[lindex][name][index] = nil
             StageAPI.CustomGridIndices[index] = nil
 
