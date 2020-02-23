@@ -512,6 +512,16 @@ do -- Core Definitions
         end
     end)
 
+    mod:AddCallback(ModCallbacks.MC_POST_UPDATE, function()
+        local numPlayers = StageAPI.Game:GetNumPlayers()
+        if numPlayers ~= #StageAPI.Players then
+            StageAPI.Players = {}
+            for i = 1, numPlayers do
+                StageAPI.Players[i] = Isaac.GetPlayer(i - 1)
+            end
+        end
+    end)
+
     mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, function()
         StageAPI.Level = StageAPI.Game:GetLevel()
         StageAPI.Room = StageAPI.Game:GetRoom()
