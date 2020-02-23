@@ -8249,6 +8249,9 @@ Depths and Womb overlays
 - CurrentRoom.Data.RoomGfx is set
 to whatever RoomGfx was applied
 to the room after callbacks
+
+- Fix a bug that crashed the game
+when a coop player exited
             ]])
 
             REVEL.AddChangelog("StageAPI v1.80 - 82", [[- Extra rooms can now use
