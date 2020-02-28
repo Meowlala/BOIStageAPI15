@@ -8182,7 +8182,7 @@ do -- BR Compatibility
             end
         }
 
-        StageAPI.AddCallback("StageAPI", "PRE_STAGEAPI_NEW_ROOM_GENERATION", 0, function()
+        local function GetBRRoom(foo)
             if StageAPI.BadTestFile or not BasementRenovator.TestRoomData then return end
 
             if not StageAPI.OverrideTestRoom then return end
@@ -8190,8 +8190,23 @@ do -- BR Compatibility
             if BasementRenovator.InTestStage() and room:IsFirstVisit() then
                 local brRoom = BasementRenovator.InTestRoom()
                 if brRoom then
-                    local testRoom = StageAPI.LevelRoom("BRTest-" .. (brRoom.Index or 1), nil, room:GetSpawnSeed(), brRoom.Shape, brRoom.Type, nil, nil, nil, nil, nil, StageAPI.GetCurrentRoomID())
-                    return testRoom
+                    return brRoom
+                end
+            end
+        end
+
+        StageAPI.AddCallback("StageAPI", "PRE_STAGEAPI_NEW_ROOM_GENERATION", 0, function()
+            local brRoom = GetBRRoom()
+            if brRoom then
+                local testRoom = StageAPI.LevelRoom("BRTest-" .. (brRoom.Index or 1), nil, room:GetSpawnSeed(), brRoom.Shape, brRoom.Type, nil, nil, nil, nil, nil, StageAPI.GetCurrentRoomID())
+                return testRoom
+            end
+        end)
+
+        StageAPI.AddCallback("StageAPI", "POST_STAGEAPI_NEW_ROOM", 0, function()
+            if GetBRRoom() then
+                if BasementRenovator.RenderDoorSlots then
+                    BasementRenovator.RenderDoorSlots()
                 end
             end
         end)
