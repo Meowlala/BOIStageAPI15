@@ -5771,7 +5771,7 @@ do -- Definitions
     end
 
     function StageAPI.GetCurrentListIndex()
-        return level:GetCurrentRoomDesc().ListIndex
+        return level:GetCurrentRoomDesc().SafeGridIndex
     end
 end
 
@@ -8267,6 +8267,9 @@ to the room after callbacks
 
 - Fix a bug that crashed the game
 when a coop player exited
+
+- Fix save and continue so rooms
+are loaded in the correct positions
             ]])
 
             REVEL.AddChangelog("StageAPI v1.80 - 82", [[- Extra rooms can now use
