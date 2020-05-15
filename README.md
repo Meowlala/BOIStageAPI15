@@ -21,3 +21,4 @@ Before following the steps below, double-click `setup.bat` in the `basementrenov
     - When you test a room, StageAPI will automatically kick in to set up custom grid and meta entities
     - If you've configured your mod with a `basementrenovator/StageMod.xml` (see Basement Renovator readme) and your rooms are
     configured to load the stage, it will launch the rooms in that stage
+  - If when starting a run you see an error about loading BR compatibility, please follow these steps again, or delete the basementrenovator/roomTest.lua file and replace it with a copy of the adjacent blankRoomTest.lua

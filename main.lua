@@ -8136,7 +8136,8 @@ do -- BR Compatibility
 
     local status, brTestRooms = pcall(require, 'basementrenovator.roomTest')
     if not status then
-        StageAPI.Log('Error loading BR compatibility file: ' .. tostring(brTestRooms))
+        StageAPI.Log("Could not load BR compatibility file; (basementrenovator/roomTest.lua) this will disable testing StageAPI rooms. No other features will be affected. Check log.txt for full error. To suppress this message, delete the compat file and replace it with a renamed copy of blankRoomTest.lua.")
+        Isaac.DebugString('Error loading BR compatibility file: ' .. tostring(brTestRooms))
     elseif brTestRooms then
         local testList = StageAPI.RoomsList("BRTest", brTestRooms)
         for i, testLayout in ipairs(testList.All) do
