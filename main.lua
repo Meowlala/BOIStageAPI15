@@ -8271,6 +8271,9 @@ when a coop player exited
 
 - Fix save and continue so rooms
 are loaded in the correct positions
+
+- Remove all vanilla closet
+boss rooms
             ]])
 
             REVEL.AddChangelog("StageAPI v1.80 - 82", [[- Extra rooms can now use
