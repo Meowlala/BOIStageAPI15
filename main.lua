@@ -2255,10 +2255,9 @@ do -- RoomsList
             [20] = {
                 Name = "Swapper"
             },
-            --[[
             [21] = {
                 Name = "Detonator"
-            },]]
+            },
             [22] = {
                 Name = "RoomClearTrigger",
                 Trigger = true
@@ -2273,11 +2272,10 @@ do -- RoomsList
             [25] = {
                 Name = "BridgeFailsafe"
             },
-            --[[
             [26] = {
                 Name = "DetonatorTrigger",
                 Trigger = true
-            }]]
+            },
             [27] = {
                 Name = "DoorLocker"
             },
@@ -7908,7 +7906,6 @@ do
                     end
                 end
 
-                --[[
                 if metadataSet["Detonator"] then
                     if room:GetGridCollision(index) ~= 0 then
                         local checking = room:GetGridEntity(index)
@@ -7950,7 +7947,7 @@ do
                             end
                         end
                     end
-                end]]
+                end
 
                 if metadataSet["Spawner"] then
                     if currentRoom:WasIndexTriggered(index, nil, 1) then
@@ -8274,6 +8271,13 @@ are loaded in the correct positions
 
 - Remove all vanilla closet
 boss rooms
+
+- Add detonator meta entity
+that when triggered destroys
+its grid or creates a bridge,
+and detonated trigger that
+triggers when detonated in
+that way
             ]])
 
             REVEL.AddChangelog("StageAPI v1.80 - 82", [[- Extra rooms can now use
