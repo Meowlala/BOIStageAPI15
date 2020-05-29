@@ -8017,7 +8017,7 @@ do -- Challenge Rooms
             if npc.CanShutDoors
             and not (npc:HasEntityFlags(EntityFlag.FLAG_FRIENDLY) or npc:HasEntityFlags(EntityFlag.FLAG_PERSISTENT) or npc:HasEntityFlags(EntityFlag.FLAG_NO_TARGET)) then
                 local preventCounting
-                for _, entity in ipairs(Isaac.GetRoomEntities()) do
+                for _, entity in ipairs(Isaac.FindInRadius(StageAPI.ZeroVector, 9999, EntityPartition.ENEMY)) do
                     if entity:ToNPC() and entity:CanShutDoors()
                     and not (entity:HasEntityFlags(EntityFlag.FLAG_FRIENDLY) or entity:HasEntityFlags(EntityFlag.FLAG_PERSISTENT) or entity:HasEntityFlags(EntityFlag.FLAG_NO_TARGET))
                     and entity.FrameCount ~= npc.FrameCount then
