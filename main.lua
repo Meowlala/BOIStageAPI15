@@ -5724,7 +5724,7 @@ do -- GridGfx
         "ArcadeSign"
     }
 
-    function StageAPI.DoesDoorMatch(door, doorSpawn, current, target, hasBossAmbushDoor, isBossAmbush, isPayToPlay)
+    function StageAPI.DoesDoorMatch(door, doorSpawn, current, target, isBossAmbush, isPayToPlay, isSurpriseMiniboss)
         current = current or door.CurrentRoomType
         target = target or door.TargetRoomType
         local valid = true
@@ -5806,6 +5806,14 @@ do -- GridGfx
             end
         end
 
+        if valid and doorSpawn.IsSurpriseMiniboss ~= nil then
+            if doorSpawn.IsSurpriseMiniboss then
+                valid = isSurpriseMiniboss
+            else
+                valid = not isSurpriseMiniboss
+            end
+        end
+
         if valid and doorSpawn.IsBossAmbush ~= nil then
             if doorSpawn.IsBossAmbush then
                 valid = isBossAmbush
@@ -5826,7 +5834,7 @@ do -- GridGfx
     end
 
     StageAPI.DoorSprite = Sprite()
-    function StageAPI.ChangeDoor(door, doors, payToPlay, hasBossAmbushDoor)
+    function StageAPI.ChangeDoor(door, doors, payToPlay)
         local grid = door.Grid:ToDoor()
         local current, target, isBossAmbush, isPayToPlay = grid.CurrentRoomType, grid.TargetRoomType, level:HasBossChallenge(), grid:IsTargetRoomArcade() and target ~= RoomType.ROOM_ARCADE
 
@@ -5846,7 +5854,7 @@ do -- GridGfx
         end
 
         for _, doorOption in ipairs(doors) do
-            if StageAPI.DoesDoorMatch(grid, doorOption, current, target, hasBossAmbushDoor, isBossAmbush, isPayToPlay) then
+            if StageAPI.DoesDoorMatch(grid, doorOption, current, target, isBossAmbush, isPayToPlay) then
                 local sprite = grid.Sprite
                 for i = 0, 5 do
                     sprite:ReplaceSpritesheet(i, doorOption.File)
@@ -5865,9 +5873,11 @@ do -- GridGfx
         local useSprite
         if door.ToDoor then
             door = door:ToDoor()
-            local current, target, isBossAmbush, isPayToPlay = door.CurrentRoomType, door.TargetRoomType, level:HasBossChallenge(), grid:IsTargetRoomArcade() and target ~= RoomType.ROOM_ARCADE
+            local current, target, isBossAmbush, isPayToPlay = door.CurrentRoomType, door.TargetRoomType, level:HasBossChallenge(), door:IsTargetRoomArcade() and target ~= RoomType.ROOM_ARCADE
+            local isSurpriseMiniboss = level:GetCurrentRoomDesc().SurpriseMiniboss
             for _, spawn in ipairs(doorSpawns) do
-                if StageAPI.DoesDoorMatch(door, spawn, current, target, nil, isBossAmbush, isPayToPlay) then
+                if StageAPI.DoesDoorMatch(door, spawn, current, target, isBossAmbush, isPayToPlay, isSurpriseMiniboss) then
+                    selectedSpawn = spawn.Title
                     useSprite = spawn.Sprite
                     break
                 end
@@ -5921,7 +5931,7 @@ do -- GridGfx
         local send = {Grid = grid, Index = i, Type = gtype, Desc = desc}
         if gtype == GridEntityType.GRID_DOOR and (grids.Doors or grids.DoorSpawns or grids.DoorSprites) then
             if grids.Doors then
-                StageAPI.ChangeDoor(send, grids.Doors, grids.PayToPlayDoor, grids.HasBossAmbushDoor)
+                StageAPI.ChangeDoor(send, grids.Doors, grids.PayToPlayDoor)
             else
                 StageAPI.CheckDoorSpawns(grid, grids.DoorSpawns, grids.DoorSprites)
             end
