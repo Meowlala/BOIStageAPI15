@@ -100,6 +100,9 @@ Callback List:
 - POST_CUSTOM_DOOR_UPDATE(door, data, sprite, CustomDoor, persistData)
 -- Takes CustomDoorName as first callback parameter, and will only run if parameter not supplied or matches current door.
 
+- POST_CUSTOM_DOOR_ENTER(player, door, data, sprite, CustomDoor, persistData)
+-- Takes CustomDoorName as first callback parameter, and will only run if parameter not supplied or matches current door.
+
 - PRE_SELECT_BOSS(bosses, allowHorseman, rng)
 -- If a boss is returned, uses it instead.
 
@@ -4430,6 +4433,43 @@ do -- Extra Rooms
         end
     end
 
+    StageAPI.RoomShapeDoorSlotOffsets = {
+        --credits to MinimapAPI by Taz & Wofsauge
+        -- L0 		UP0		R0		D0		L1		UP1		R1		D1
+        {Vector(-1, 0), Vector(0, -1), Vector(1, 0), Vector(0, 1),nil,nil,nil,nil}, -- ROOMSHAPE_1x1
+        {Vector(-1, 0),nil,Vector(1, 0),nil,nil,nil,nil,nil}, -- ROOMSHAPE_IH
+        {nil,Vector(0, -1),nil,Vector(0, 1),nil,nil,nil,nil}, -- ROOMSHAPE_IV
+        {Vector(-1, 0), Vector(0, -1), Vector(1, 0), Vector(0, 2), Vector(-1, 1),nil, Vector(1, 1),nil}, -- ROOMSHAPE_1x2
+        {nil,Vector(0, -1),nil, Vector(0, 2),nil,nil,nil,nil}, -- ROOMSHAPE_IIV
+        {Vector(-1, 0),Vector(0, -1),Vector(2, 0),Vector(0, 1),Vector(-1, 0),Vector(1, -1),Vector(2, 0),Vector(1, 1)}, -- ROOMSHAPE_2x1
+        {Vector(-1, 0),nil,Vector(2,0),nil,nil,nil,nil,nil}, -- ROOMSHAPE_IIH
+        {Vector(-1,0),Vector(0,-1),Vector(2,0),Vector(0,2),Vector(-1,1),Vector(1,-1),Vector(2,1),Vector(1,2)}, -- ROOMSHAPE_2x2
+        {Vector(-1,0),Vector(-1,0),Vector(1,0),Vector(-1,2),Vector(-2,1),Vector(0,-1),Vector(1,1),Vector(0,2)}, -- ROOMSHAPE_LTL
+        {Vector(-1,0),Vector(0,-1),Vector(1,0),Vector(0,2),Vector(-1,1),Vector(1,0),Vector(2,1),Vector(1,2)}, -- ROOMSHAPE_LTR
+        {Vector(-1,0),Vector(0,-1),Vector(2,0),Vector(0,1),Vector(0,1),Vector(1,-1),Vector(2,1),Vector(1,2)}, -- ROOMSHAPE_LBL
+        {Vector(-1,0),Vector(0,-1),Vector(2,0),Vector(0,2),Vector(-1,1),Vector(1,-1),Vector(1,1),Vector(1,1)} -- ROOMSHAPE_LBR
+    }
+    
+    function StageAPI.GetRoomIdxRelativeToSlot(roomDesc, doorSlot, replaceShape, replaceLevelGridIndex)
+        local shape = replaceShape or roomDesc.Data.Shape
+        local pivotIndex = replaceLevelGridIndex or roomDesc.SafeGridIndex
+        local offset = StageAPI.RoomShapeDoorSlotOffsets[shape][doorSlot + 1]
+    
+        if not offset then
+          error("Room slot offset not found; Shape: " .. tostring(shape) .. "; Slot: " .. tostring(doorSlot) .. "\n" .. (debug and debug.traceback() or ""))
+          return
+        end
+    
+        local roomPos = Vector(pivotIndex % 13, math.floor(pivotIndex / 13))
+        local newPos = roomPos + offset
+    
+        if newPos.X < 0 or newPos.X >= 13 or newPos.Y < 0 then
+            return nil
+        end
+    
+        return newPos.X + newPos.Y * 13
+    end    
+
     local framesWithoutDoorData = 0
     local hadFrameWithoutDoorData = false
     mod:AddCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, function(_, door)
@@ -4472,8 +4512,28 @@ do -- Extra Rooms
                     StageAPI.TransitionToExtraRoom(data.DoorGridData.LeadsToExtra, data.DoorGridData.ExitSlot)
                 elseif data.DoorGridData.LeadsToNormal then
                     transitionStarted = true
-                    StageAPI.TransitionFromExtraRoom(data.DoorGridData.LeadsToNormal, data.DoorGridData.ExitSlot)
+
+                    local leadsToAdjacentRoom = false
+                    local slot = data.DoorGridData.Slot
+
+                    if not StageAPI.InExtraRoom then
+                        local slotIndex = StageAPI.GetRoomIdxRelativeToSlot(level:GetCurrentRoomDesc(), slot)
+                        leadsToAdjacentRoom = slotIndex == data.DoorGridData.LeadsToNormal
+                    end
+
+                    if leadsToAdjacentRoom then
+                        game:StartRoomTransition(data.DoorGridData.LeadsToNormal, slot % 4, 0)
+                    else
+                        StageAPI.TransitionFromExtraRoom(data.DoorGridData.LeadsToNormal, data.DoorGridData.ExitSlot)
+                    end
                 end
+
+                local callbacks = StageAPI.GetCallbacks("POST_CUSTOM_DOOR_ENTER")
+                for _, callback in ipairs(callbacks) do
+                    if not callback.Params[1] or callback.Params[1] == data.DoorGridData.DoorDataName then
+                        callback.Function(player, door, data, sprite, doorData, data.DoorGridData)
+                    end
+                end        
             end
         end
 
