@@ -4220,7 +4220,7 @@ do -- Extra Rooms
             Special = {
                 Barren = {
                     ID = "70055",
-                    Locked = "70064"
+                    Locked = "70063"
                 }
             },
             Stage = {
