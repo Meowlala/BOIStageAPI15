@@ -6841,6 +6841,14 @@ do -- Callbacks
         end
     end
 
+    function StageAPI.IsGridUnbroken(grid)
+        return grid and (
+            grid.Desc.Type == GridEntityType.GRID_TNT and grid.State < 4
+            or grid:ToRock() and grid.State ~= 2
+            or grid.Desc.Type == GridEntityType.GRID_POOP and grid.State < 4
+        )
+    end
+
     StageAPI.Music = MusicManager()
     StageAPI.MusicRNG = RNG()
     mod:AddCallback(ModCallbacks.MC_POST_RENDER, function()
@@ -6852,7 +6860,7 @@ do -- Callbacks
         local stage = level:GetStage()
         local stype = level:GetStageType()
         local updatedGrids
-        local gridCount = 0
+        local liveGridsCount = 0
         local pits = {}
         for i = 0, room:GetGridSize() do
             local grid = room:GetGridEntity(i)
@@ -6863,11 +6871,13 @@ do -- Callbacks
 
                 StageAPI.CheckStageTrapdoor(grid, i)
 
-                gridCount = gridCount + 1
+                if StageAPI.IsGridUnbroken(grid) then
+                    liveGridsCount = liveGridsCount + 1
+                end
             end
         end
 
-        if gridCount ~= StageAPI.PreviousGridCount then
+        if liveGridsCount ~= StageAPI.PreviousGridCount then
             local gridCallbacks = StageAPI.CallCallbacks("POST_GRID_UPDATE")
 
             updatedGrids = true
@@ -6875,7 +6885,7 @@ do -- Callbacks
                 StageAPI.StoreRoomGrids()
             end
 
-            StageAPI.PreviousGridCount = gridCount
+            StageAPI.PreviousGridCount = liveGridsCount
         end
 
         if sfx:IsPlaying(SoundEffect.SOUND_CASTLEPORTCULLIS) and not (StageAPI.CurrentStage and StageAPI.CurrentStage.BossMusic and StageAPI.CurrentStage.BossMusic.Intro) then
