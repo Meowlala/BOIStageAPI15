@@ -3627,6 +3627,20 @@ do -- Custom Grid Entities
         StageAPI.CustomGridTypes[name] = self
     end
 
+    StageAPI.DefaultBrokenGridStateByType = {
+        [GridEntityType.GRID_ROCK]      = 2,
+        [GridEntityType.GRID_ROCKB]     = 2,
+        [GridEntityType.GRID_ROCKT]     = 2,
+        [GridEntityType.GRID_ROCK_SS]   = 2,
+        [GridEntityType.GRID_ROCK_BOMB] = 2,
+        [GridEntityType.GRID_ROCK_ALT]  = 2,
+        [GridEntityType.GRID_SPIDERWEB] = 1,
+        [GridEntityType.GRID_LOCK]      = 1,
+        [GridEntityType.GRID_TNT]       = 4,
+        [GridEntityType.GRID_FIREPLACE] = 4,
+        [GridEntityType.GRID_POOP]      = 4,
+    }
+
     StageAPI.CustomGrids = {}
     StageAPI.CustomGridIndices = {}
     function StageAPI.CustomGrid:Spawn(grindex, force, reSpawning, startPersistData)
@@ -3639,8 +3653,11 @@ do -- Custom Grid Entities
                 grid = room:GetGridEntity(grindex)
             end
 
-            if self.OverrideGridSpawns and grid and grid.State ~= self.OverrideGridSpawnState or 2 then
+            if self.OverrideGridSpawns and grid then
+                local overrideState = self.OverrideGridSpawnState or StageAPI.DefaultBrokenGridStateByType[grid.Type] or 2
+                if grid.State ~= overrideState then
                 StageAPI.SpawnOverriddenGrids[grindex] = self.OverrideGridSpawnState or true
+            end
             end
 
             if self.Sprite and grid then
@@ -6407,9 +6424,11 @@ do -- Rock Alt Override
         if StageAPI.SpawnOverriddenGrids[grindex] then
             local grid = room:GetGridEntity(grindex)
 
-            local stateCheck = 2
+            local stateCheck
             if type(StageAPI.SpawnOverriddenGrids[grindex]) == "number" then
                 stateCheck = StageAPI.SpawnOverriddenGrids[grindex]
+            else
+                stateCheck = StageAPI.DefaultBrokenGridStateByType[grid.Type] or 2
             end
 
             if not grid or grid.State == stateCheck then
