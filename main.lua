@@ -3656,8 +3656,8 @@ do -- Custom Grid Entities
             if self.OverrideGridSpawns and grid then
                 local overrideState = self.OverrideGridSpawnState or StageAPI.DefaultBrokenGridStateByType[grid.Type] or 2
                 if grid.State ~= overrideState then
-                StageAPI.SpawnOverriddenGrids[grindex] = self.OverrideGridSpawnState or true
-            end
+                    StageAPI.SpawnOverriddenGrids[grindex] = self.OverrideGridSpawnState or true
+                end
             end
 
             if self.Sprite and grid then
@@ -7842,9 +7842,7 @@ do -- Misc helpful functions
         return frames
     end
 
-    function StageAPI.GetPitFramesForLayoutEntities(t, v, s, entities, width, height, hasExtraFrames)
-        width = width or room:GetGridWidth()
-        height = height or room:GetGridHeight()
+    function StageAPI.GetIndicesWithEntity(t, v, s, entities)
         local indicesWithEntity = {}
         for index, entityList in pairs(entities) do
             for _, entityInfo in ipairs(entityList) do
@@ -7856,6 +7854,14 @@ do -- Misc helpful functions
                 end
             end
         end
+
+        return indicesWithEntity
+    end
+
+    function StageAPI.GetPitFramesForLayoutEntities(t, v, s, entities, width, height, hasExtraFrames)
+        width = width or room:GetGridWidth()
+        height = height or room:GetGridHeight()
+        local indicesWithEntity = StageAPI.GetIndicesWithEntity(t, v, s, entities)
 
         return StageAPI.GetPitFramesFromIndices(indicesWithEntity, width, height, hasExtraFrames)
     end
@@ -8234,6 +8240,11 @@ do -- Mod Compatibility
     mod:AddCallback(ModCallbacks.MC_POST_GAME_STARTED, function()
         if REVEL and REVEL.AddChangelog and not REVEL.AddedStageAPIChangelogs then
             REVEL.AddedStageAPIChangelogs = true
+
+            REVEL.AddChangelog("StageAPI v1.85", [[- Add convenience function
+GetIndicesWithEntity
+
+            ]])
 
             REVEL.AddChangelog("StageAPI v1.84", [[- Fix issue with room test file
 that was causing startup crashes
