@@ -8235,22 +8235,7 @@ do -- Mod Compatibility
         if REVEL and REVEL.AddChangelog and not REVEL.AddedStageAPIChangelogs then
             REVEL.AddedStageAPIChangelogs = true
 
-            REVEL.AddChangelog("StageAPI v1.83 - 84", [[- Fix a bug with
-PRE_SPAWN_ENTITY that caused
-replacements to persist
-between runs
-
-- Make compatible with
-multi-room Basement Renovator
-tests
-
-- Add GetValidRoomsForLayout
-and GetDoorsForRoom
-
-- Fix bug where missing door
-weights were unused
-
-- Fix issue with room test file
+            REVEL.AddChangelog("StageAPI v1.84", [[- Fix issue with room test file
 that was causing startup crashes
 
 - Add POST_CUSTOM_GRID_REMOVE
@@ -8297,6 +8282,26 @@ its grid or creates a bridge,
 and detonated trigger that
 triggers when detonated in
 that way
+
+- Add default broken states
+for alt grids with
+overridden spawns
+            ]])
+
+            REVEL.AddChangelog("StageAPI v1.83", [[- Fix a bug with
+PRE_SPAWN_ENTITY that caused
+replacements to persist
+between runs
+
+- Make compatible with
+multi-room Basement Renovator
+tests
+
+- Add GetValidRoomsForLayout
+and GetDoorsForRoom
+
+- Fix bug where missing door
+weights were unused
             ]])
 
             REVEL.AddChangelog("StageAPI v1.80 - 82", [[- Extra rooms can now use
@@ -8599,7 +8604,7 @@ other than a door
 end
 
 Isaac.DebugString("[StageAPI] Fully Loaded, loading dependent mods.")
-StageAPI.MarkLoaded("StageAPI", "1.84", true, true)
+StageAPI.MarkLoaded("StageAPI", "1.85", true, true)
 
 StageAPI.Loaded = true
 if StageAPI.ToCall then
