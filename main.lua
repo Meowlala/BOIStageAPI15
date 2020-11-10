@@ -4270,7 +4270,12 @@ do -- Extra Rooms
             if not StageAPI.InNewStage() then
                 local btype, stage, stype = room:GetBackdropType(), level:GetStage(), level:GetStageType()
                 if (btype == 10 or btype == 11) and (stage == LevelStage.STAGE4_1 or stage == LevelStage.STAGE4_2) then
-                    for _, overlay in ipairs(StageAPI.UteroOverlays) do
+                    local useUteroOverlays = StageAPI.UteroOverlays
+                    if level:GetCurses() & LevelCurse.CURSE_OF_DARKNESS ~= 0 then
+                        useUteroOverlays = StageAPI.UteroOverlaysDark
+                    end
+
+                    for _, overlay in ipairs(useUteroOverlays) do
                         if not game:IsPaused() then
                             overlay:Update()
                         end
@@ -5686,6 +5691,13 @@ do -- Definitions
         StageAPI.Overlay("stageapi/floors/utero/overlay.anm2", Vector(-0.5, -1.5), nil, nil, 0.5),
         StageAPI.Overlay("stageapi/floors/utero/overlay.anm2", Vector(-1, -1.5), Vector(128, 128), nil, 0.5),
         StageAPI.Overlay("stageapi/floors/utero/overlay.anm2", Vector(-2, -1.6), Vector(128, 128), nil, 0.5)
+    }
+
+    StageAPI.UteroOverlaysDark = {
+        StageAPI.Overlay("stageapi/floors/utero/overlay.anm2", Vector(2, -1.6), nil, nil, 0.1),
+        StageAPI.Overlay("stageapi/floors/utero/overlay.anm2", Vector(-0.5, -1.5), nil, nil, 0.1),
+        StageAPI.Overlay("stageapi/floors/utero/overlay.anm2", Vector(-1, -1.5), Vector(128, 128), nil, 0.1),
+        StageAPI.Overlay("stageapi/floors/utero/overlay.anm2", Vector(-2, -1.6), Vector(128, 128), nil, 0.1)
     }
 
     StageAPI.UteroBackdrop = StageAPI.BackdropHelper(StageAPI.UteroBackdrop, "stageapi/floors/utero/", ".png")
@@ -8244,6 +8256,8 @@ do -- Mod Compatibility
             REVEL.AddChangelog("StageAPI v1.85", [[- Add convenience function
 GetIndicesWithEntity
 
+- Improve womb overlay visuals
+in curse of darkness
             ]])
 
             REVEL.AddChangelog("StageAPI v1.84", [[- Fix issue with room test file
