@@ -8266,7 +8266,7 @@ effects are automatically
 converted to type 1000
 
 - Only prevent clearing wall grids
-"outside" the room; this allows
+"outside" the room. this allows
 custom grids based on GRID_WALL
 
 - Improved the accuracy of
