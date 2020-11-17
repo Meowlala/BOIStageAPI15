@@ -6013,17 +6013,21 @@ do -- Bosses
 
             local centerPos = StageAPI.GetScreenCenterPosition()
             if StageAPI.BossOffset then
-                for i = 0, 10 do
-                    if i ~= 4 and i ~= 9 then
-                        StageAPI.PlayingBossSprite:RenderLayer(i, centerPos)
+                local layerRenderOrder = {0,1,14,3,12,2,9,4,5,13,11,6,7,8,10,15}
+                local isDoubleTrouble = StageAPI.BossOffset.One or StageAPI.BossOffset.Two
+                for _, layer in ipairs(layerRenderOrder) do
+                    local pos = centerPos
+                    if isDoubleTrouble then  -- Double trouble, table {One = Vector, Two = Vector}
+                        if layer == 4 then
+                            pos = pos + StageAPI.BossOffset.One or zeroVector
+                        elseif layer == 9 then
+                            pos = pos + StageAPI.BossOffset.Two or zeroVector
+                        end
+                    elseif layer == 4 then
+                        pos = pos + StageAPI.BossOffset
                     end
-                end
 
-                if StageAPI.BossOffset.One or StageAPI.BossOffset.Two then -- Double trouble, table {One = Vector, Two = Vector}
-                    StageAPI.PlayingBossSprite:RenderLayer(4, centerPos + (StageAPI.BossOffset.One or zeroVector))
-                    StageAPI.PlayingBossSprite:RenderLayer(9, centerPos + (StageAPI.BossOffset.Two or zeroVector))
-                else -- Standard, Vector
-                    StageAPI.PlayingBossSprite:RenderLayer(4, centerPos + StageAPI.BossOffset)
+                    StageAPI.PlayingBossSprite:RenderLayer(layer, pos)
                 end
             else
                 StageAPI.PlayingBossSprite:Render(centerPos, zeroVector, zeroVector)
@@ -8258,6 +8262,11 @@ GetIndicesWithEntity
 
 - Improve womb overlay visuals
 in curse of darkness
+
+- Add compatibility with
+Classy Vs Screen and
+fix double trouble
+rendering bug
             ]])
 
             REVEL.AddChangelog("StageAPI v1.84", [[- Fix issue with room test file
