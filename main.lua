@@ -1190,6 +1190,89 @@ do -- RoomsList
         }
     }
 
+    function StageAPI.AddObjectToRoomLayout(layout, index, objtype, variant, subtype, gridX, gridY)
+        if gridX and gridY and not index then
+            index = StageAPI.VectorToGrid(gridX, gridY, layout.Width)
+        end
+
+        if StageAPI.CorrectedGridTypes[objtype] then
+            local t, v = StageAPI.CorrectedGridTypes[objtype], variant
+            if type(t) == "table" then
+                v = t.Variant
+                t = t.Type
+            end
+
+            local gridData = {
+                Type = t,
+                Variant = v,
+                GridX = gridX,
+                GridY = gridY,
+                Index = index
+            }
+
+            layout.GridEntities[#layout.GridEntities + 1] = gridData
+
+            if not layout.GridEntitiesByIndex[gridData.Index] then
+                layout.GridEntitiesByIndex[gridData.Index] = {}
+            end
+
+            layout.GridEntitiesByIndex[gridData.Index][#layout.GridEntitiesByIndex[gridData.Index] + 1] = gridData
+        elseif objtype ~= 0 then
+            local entData = {
+                Type = objtype,
+                Variant = variant,
+                SubType = subtype,
+                GridX = gridX,
+                GridY = gridY,
+                Index = index
+            }
+
+            if entData.Type == 1400 or entData.Type == 1410 then
+                entData.Type = EntityType.ENTITY_FIREPLACE
+                if entData.Type == 1410 then
+                    entData.Variant = 1
+                else
+                    entData.Variant = 0
+                end
+            end
+
+            if entData.Type == 999 then
+                entData.Type = 1000
+            end
+
+            if StageAPI.RemappedEntities[entData.Type] then
+                local remapTo
+                if entData.Variant and StageAPI.RemappedEntities[entData.Type][entData.Variant] then
+                    if entData.SubType and StageAPI.RemappedEntities[entData.Type][entData.Variant][entData.SubType] then
+                        remapTo = StageAPI.RemappedEntities[entData.Type][entData.Variant][entData.SubType]
+                    elseif StageAPI.RemappedEntities[entData.Type][entData.Variant]["Default"] then
+                        remapTo = StageAPI.RemappedEntities[entData.Type][entData.Variant]["Default"]
+                    end
+                elseif StageAPI.RemappedEntities[entData.Type]["Default"] then
+                    remapTo = StageAPI.RemappedEntities[entData.Type]["Default"]["Default"]
+                end
+
+                if remapTo then
+                    entData.Type = remapTo.Type
+                    if remapTo.Variant then
+                        entData.Variant = remapTo.Variant
+                    end
+
+                    if remapTo.SubType then
+                        entData.SubType = remapTo.SubType
+                    end
+                end
+            end
+
+            if not layout.EntitiesByIndex[entData.Index] then
+                layout.EntitiesByIndex[entData.Index] = {}
+            end
+
+            layout.EntitiesByIndex[entData.Index][#layout.EntitiesByIndex[entData.Index] + 1] = entData
+            layout.Entities[#layout.Entities + 1] = entData
+        end
+    end
+
     StageAPI.LastRoomID = 0
     function StageAPI.SimplifyRoomLayout(layout)
         local outLayout = {
@@ -1225,81 +1308,7 @@ do -- RoomsList
             if not object.ISDOOR then
                 local index = StageAPI.VectorToGrid(object.GRIDX, object.GRIDY, outLayout.Width)
                 for _, entityData in ipairs(object) do
-                    if StageAPI.CorrectedGridTypes[entityData.TYPE] then
-                        local t, v = StageAPI.CorrectedGridTypes[entityData.TYPE], entityData.VARIANT
-                        if type(t) == "table" then
-                            v = t.Variant
-                            t = t.Type
-                        end
-
-                        local gridData = {
-                            Type = t,
-                            Variant = v,
-                            GridX = object.GRIDX,
-                            GridY = object.GRIDY,
-                            Index = index
-                        }
-                        outLayout.GridEntities[#outLayout.GridEntities + 1] = gridData
-
-                        if not outLayout.GridEntitiesByIndex[gridData.Index] then
-                            outLayout.GridEntitiesByIndex[gridData.Index] = {}
-                        end
-
-                        outLayout.GridEntitiesByIndex[gridData.Index][#outLayout.GridEntitiesByIndex[gridData.Index] + 1] = gridData
-                    elseif entityData.TYPE ~= 0 then
-                        local entData = {
-                            Type = entityData.TYPE,
-                            Variant = entityData.VARIANT,
-                            SubType = entityData.SUBTYPE,
-                            GridX = object.GRIDX,
-                            GridY = object.GRIDY,
-                            Index = index
-                        }
-
-                        if entData.Type == 1400 or entData.Type == 1410 then
-                            entData.Type = EntityType.ENTITY_FIREPLACE
-                            if entData.Type == 1410 then
-                                entData.Variant = 1
-                            else
-                                entData.Variant = 0
-                            end
-                        end
-
-                        if entData.Type == 999 then
-                            entData.Type = 1000
-                        end
-
-                        if StageAPI.RemappedEntities[entData.Type] then
-                            local remapTo
-                            if entData.Variant and StageAPI.RemappedEntities[entData.Type][entData.Variant] then
-                                if entData.SubType and StageAPI.RemappedEntities[entData.Type][entData.Variant][entData.SubType] then
-                                    remapTo = StageAPI.RemappedEntities[entData.Type][entData.Variant][entData.SubType]
-                                elseif StageAPI.RemappedEntities[entData.Type][entData.Variant]["Default"] then
-                                    remapTo = StageAPI.RemappedEntities[entData.Type][entData.Variant]["Default"]
-                                end
-                            elseif StageAPI.RemappedEntities[entData.Type]["Default"] then
-                                remapTo = StageAPI.RemappedEntities[entData.Type]["Default"]["Default"]
-                            end
-
-                            if remapTo then
-                                entData.Type = remapTo.Type
-                                if remapTo.Variant then
-                                    entData.Variant = remapTo.Variant
-                                end
-
-                                if remapTo.SubType then
-                                    entData.SubType = remapTo.SubType
-                                end
-                            end
-                        end
-
-                        if not outLayout.EntitiesByIndex[entData.Index] then
-                            outLayout.EntitiesByIndex[entData.Index] = {}
-                        end
-
-                        outLayout.EntitiesByIndex[entData.Index][#outLayout.EntitiesByIndex[entData.Index] + 1] = entData
-                        outLayout.Entities[#outLayout.Entities + 1] = entData
-                    end
+                    StageAPI.AddObjectToRoomLayout(outLayout, index, entityData.TYPE, entityData.VARIANT, entityData.SUBTYPE, object.GRIDX, object.GRIDY)
                 end
             else
                 outLayout.Doors[#outLayout.Doors + 1] = {
@@ -1355,6 +1364,49 @@ do -- RoomsList
         end
 
         return newRoom
+    end
+
+    StageAPI.DoorsBitwise = {
+        [DoorSlot.LEFT0] = 1,
+        [DoorSlot.UP0] = 1 << 1,
+        [DoorSlot.RIGHT0] = 1 << 2,
+        [DoorSlot.DOWN0] = 1 << 3,
+        [DoorSlot.LEFT1] = 1 << 4,
+        [DoorSlot.UP1] = 1 << 5,
+        [DoorSlot.RIGHT1] = 1 << 6,
+        [DoorSlot.DOWN1] = 1 << 7,
+    }
+
+    function StageAPI.GenerateRoomLayoutFromData(data) -- converts RoomDescriptor.Data to a StageAPI layout
+        local layout = StageAPI.CreateEmptyRoomLayout(data.Shape)
+        layout.Name = data.Name
+        layout.RoomFilename = "Special"
+        layout.Type = data.Type
+        layout.Variant = data.Variant
+        layout.SubType = data.Subtype
+        layout.Difficulty = data.Difficulty
+        layout.Weight = data.InitialWeight
+
+        for _, door in ipairs(layout.Doors) do
+            door.Exists = data.Doors & StageAPI.DoorsBitwise[door.Slot] ~= 0
+        end
+
+        local spawns = data.Spawns
+        for i = 0, spawns.Size do
+            local spawn = spawns:Get(i)
+            if spawn then
+                local sumWeight = spawn.SumWeights
+                local weight = 0
+                for i = 1, spawn.EntryCount do
+                    local entry = spawn:PickEntry(weight)
+                    weight = weight + entry.Weight / sumWeight
+
+                    StageAPI.AddObjectToRoomLayout(layout, index, entry.Type, entry.Variant, entry.Subtype, spawn.X, spawn.Y)
+                end
+            end
+        end
+
+        return layout
     end
 
     StageAPI.Layouts = {}
@@ -2325,6 +2377,36 @@ do -- RoomsList
                 end
             end
         end
+    end
+
+    function StageAPI.IsMetadataEntity(etype, variant)
+        if type(etype) == "table" then
+            variant = etype.Variant
+            etype = etype.Type
+        end
+
+        return StageAPI.MetadataEntities[etype] and StageAPI.MetadataEntities[etype][variant]
+    end
+
+    function StageAPI.RoomDataHasMetadataEntity(data)
+        local spawns = data.Spawns
+        for i = 0, spawns.Size do
+            local spawn = spawns:Get(i)
+            if spawn then
+                local sumWeight = spawn.SumWeights
+                local weight = 0
+                for i = 1, spawn.EntryCount do
+                    local entry = spawn:PickEntry(weight)
+                    weight = weight + entry.Weight / sumWeight
+
+                    if StageAPI.IsMetadataEntity(entry.Type, entry.Variant) then
+                        return true
+                    end
+                end
+            end
+        end
+
+        return false
     end
 
     function StageAPI.AddUnblockableEntities(etype, variant, subtype) -- an entity that will not be blocked by the Spawner or other BlockEntities triggers
@@ -8256,6 +8338,15 @@ do -- Mod Compatibility
     mod:AddCallback(ModCallbacks.MC_POST_GAME_STARTED, function()
         if REVEL and REVEL.AddChangelog and not REVEL.AddedStageAPIChangelogs then
             REVEL.AddedStageAPIChangelogs = true
+
+            REVEL.AddChangelog("StageAPI v1.86", [[- Added functions
+AddObjectToRoomLayout,
+GenerateRoomLayoutFromData,
+IsMetadataEntity,
+RoomDataHasMetadataEntity
+for interaction with
+RoomDescriptor.Data
+]])
 
             REVEL.AddChangelog("StageAPI v1.85", [[- Add convenience function
 GetIndicesWithEntity
