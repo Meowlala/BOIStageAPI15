@@ -5377,6 +5377,29 @@ do -- Backdrop & RoomGfx
             Prefix = shadingPrefix
         }
     end
+
+    StageAPI.AddCallback("StageAPI", "POST_STAGEAPI_NEW_ROOM", 0, function()
+        if not game:IsGreedMode()
+        and StageAPI.ShouldRenderStartingRoomControls()
+        and level:GetCurrentRoomIndex() == level:GetStartingRoomIndex() then
+            local p1 = players[1]
+            if not p1 then return end
+
+            local gfxData = StageAPI.TryGetPlayerGraphicsInfo(p1)
+            local controls = gfxData.Controls or 'stageapi/controls.png'
+            local controlsOffset = gfxData.ControlsOffset or StageAPI.ZeroVector
+
+            local eff = StageAPI.SpawnFloorEffect(room:GetCenterPos() + controlsOffset, StageAPI.ZeroVector, nil, 'stageapi/controls.anm2', true)
+            local sprite = eff:GetSprite()
+            sprite:Play("Idle")
+		    sprite:ReplaceSpritesheet(0, controls)
+            sprite:LoadGraphics()
+            local color = StageAPI.GetStageFloorTextColor()
+            if color then
+                sprite.Color = color
+            end
+        end
+    end)
 end
 
 Isaac.DebugString("[StageAPI] Loading CustomStage Handler")
@@ -5509,6 +5532,14 @@ do -- Custom Stage
             Intro = intro,
             Outro = outro
         }
+    end
+
+    function StageAPI.CustomStage:SetRenderStartingRoomControls(doRender)
+        self.RenderStartingRoomControls = doRender
+    end
+
+    function StageAPI.CustomStage:SetFloorTextColor(color)
+        self.FloorTextColor = color
     end
 
     function StageAPI.CustomStage:SetSpots(bossSpot, playerSpot)
@@ -5888,52 +5919,117 @@ Isaac.DebugString("[StageAPI] Loading Boss Handler")
 do -- Bosses
     StageAPI.FloorInfo = {
         [LevelStage.STAGE1_1] = {
-            [StageType.STAGETYPE_ORIGINAL] = "01_basement",
-            [StageType.STAGETYPE_WOTL] = "02_cellar",
-            [StageType.STAGETYPE_AFTERBIRTH] = "13_burning_basement",
-            [StageType.STAGETYPE_GREEDMODE] = "01_basement"
+            [StageType.STAGETYPE_ORIGINAL] = {
+                Prefix = "01_basement",
+            },
+            [StageType.STAGETYPE_WOTL] = {
+                Prefix = "02_cellar",
+            },
+            [StageType.STAGETYPE_AFTERBIRTH] = {
+                Prefix = "13_burning_basement",
+                FloorTextColor = Color(0.5,0.5,0.5,1,0,0,0),
+            },
+            [StageType.STAGETYPE_GREEDMODE] = {
+                Prefix = "01_basement",
+            }
         },
         [LevelStage.STAGE2_1] = {
-            [StageType.STAGETYPE_ORIGINAL] = "03_caves",
-            [StageType.STAGETYPE_WOTL] = "04_catacombs",
-            [StageType.STAGETYPE_AFTERBIRTH] = "14_drowned_caves",
-            [StageType.STAGETYPE_GREEDMODE] = "03_caves"
+            [StageType.STAGETYPE_ORIGINAL] = {
+                Prefix = "03_caves",
+            },
+            [StageType.STAGETYPE_WOTL] = {
+                Prefix = "04_catacombs",
+            },
+            [StageType.STAGETYPE_AFTERBIRTH] = {
+                Prefix = "14_drowned_caves",
+            },
+            [StageType.STAGETYPE_GREEDMODE] = {
+                Prefix = "03_caves",
+            },
         },
         [LevelStage.STAGE3_1] = {
-            [StageType.STAGETYPE_ORIGINAL] = "05_depths",
-            [StageType.STAGETYPE_WOTL] = "06_necropolis",
-            [StageType.STAGETYPE_AFTERBIRTH] = "15_dank_depths",
-            [StageType.STAGETYPE_GREEDMODE] = "05_depths"
+            [StageType.STAGETYPE_ORIGINAL] = {
+                Prefix = "05_depths",
+            },
+            [StageType.STAGETYPE_WOTL] = {
+                Prefix = "06_necropolis",
+            },
+            [StageType.STAGETYPE_AFTERBIRTH] = {
+                Prefix = "15_dank_depths",
+            },
+            [StageType.STAGETYPE_GREEDMODE] = {
+                Prefix = "05_depths",
+            },
         },
         [LevelStage.STAGE4_1] = {
-            [StageType.STAGETYPE_ORIGINAL] = "07_womb",
-            [StageType.STAGETYPE_WOTL] = "07_womb",
-            [StageType.STAGETYPE_AFTERBIRTH] = "16_scarred_womb",
-            [StageType.STAGETYPE_GREEDMODE] = "07_womb"
+            [StageType.STAGETYPE_ORIGINAL] = {
+                Prefix = "07_womb",
+            },
+            [StageType.STAGETYPE_WOTL] = {
+                Prefix = "07_womb",
+            },
+            [StageType.STAGETYPE_AFTERBIRTH] = {
+                Prefix = "16_scarred_womb",
+            },
+            [StageType.STAGETYPE_GREEDMODE] = {
+                Prefix = "07_womb",
+            },
         },
         [LevelStage.STAGE4_3] = {
-            [StageType.STAGETYPE_ORIGINAL] = "17_blue_womb",
-            [StageType.STAGETYPE_WOTL] = "17_blue_womb",
-            [StageType.STAGETYPE_AFTERBIRTH] = "17_blue_womb",
-            [StageType.STAGETYPE_GREEDMODE] = "17_blue_womb"
+            [StageType.STAGETYPE_ORIGINAL] = {
+                Prefix = "17_blue_womb",
+            },
+            [StageType.STAGETYPE_WOTL] = {
+                Prefix = "17_blue_womb",
+            },
+            [StageType.STAGETYPE_AFTERBIRTH] = {
+                Prefix = "17_blue_womb",
+            },
+            [StageType.STAGETYPE_GREEDMODE] = {
+                Prefix = "17_blue_womb",
+            },
         },
         [LevelStage.STAGE5] = {
-            [StageType.STAGETYPE_ORIGINAL] = "09_sheol",
-            [StageType.STAGETYPE_WOTL] = "10_cathedral",
-            [StageType.STAGETYPE_AFTERBIRTH] = "09_sheol",
-            [StageType.STAGETYPE_GREEDMODE] = "09_sheol"
+            [StageType.STAGETYPE_ORIGINAL] = {
+                Prefix = "09_sheol",
+            },
+            [StageType.STAGETYPE_WOTL] = {
+                Prefix = "10_cathedral",
+            },
+            [StageType.STAGETYPE_AFTERBIRTH] = {
+                Prefix = "09_sheol",
+            },
+            [StageType.STAGETYPE_GREEDMODE] = {
+                Prefix = "09_sheol",
+            },
         },
         [LevelStage.STAGE6] = {
-            [StageType.STAGETYPE_ORIGINAL] = "11_darkroom",
-            [StageType.STAGETYPE_WOTL] = "12_chest",
-            [StageType.STAGETYPE_AFTERBIRTH] = "11_darkroom",
-            [StageType.STAGETYPE_GREEDMODE] = "18_shop"
+            [StageType.STAGETYPE_ORIGINAL] = {
+                Prefix = "11_darkroom",
+            },
+            [StageType.STAGETYPE_WOTL] = {
+                Prefix = "12_chest",
+            },
+            [StageType.STAGETYPE_AFTERBIRTH] = {
+                Prefix = "11_darkroom",
+            },
+            [StageType.STAGETYPE_GREEDMODE] = {
+                Prefix = "18_shop",
+            },
         },
         [LevelStage.STAGE7] = {
-            [StageType.STAGETYPE_ORIGINAL] = "19_void",
-            [StageType.STAGETYPE_WOTL] = "19_void",
-            [StageType.STAGETYPE_AFTERBIRTH] = "19_void",
-            [StageType.STAGETYPE_GREEDMODE] = "18_shop"
+            [StageType.STAGETYPE_ORIGINAL] = {
+                Prefix = "19_void",
+            },
+            [StageType.STAGETYPE_WOTL] = {
+                Prefix = "19_void",
+            },
+            [StageType.STAGETYPE_AFTERBIRTH] = {
+                Prefix = "19_void",
+            },
+            [StageType.STAGETYPE_GREEDMODE] = {
+                Prefix = "18_shop",
+            },
         }
     }
 
@@ -5995,15 +6091,24 @@ do -- Bosses
     StageAPI.PlayerBossInfo.keeper.NoShake = true
     StageAPI.PlayerBossInfo.theforgotten.NoShake = true
     StageAPI.PlayerBossInfo.thesoul.NoShake = true
+    StageAPI.PlayerBossInfo.theforgotten.Controls = "stageapi/controls_forgotten.png"
+    StageAPI.PlayerBossInfo.thesoul.Controls = "stageapi/controls_forgotten.png"
     StageAPI.PlayerBossInfo.thelost.NoShake = true
 
     function StageAPI.AddPlayerGraphicsInfo(name, portrait, namefile, portraitbig, noshake)
-        StageAPI.PlayerBossInfo[string.gsub(string.lower(name), "%s+", "")] = {
-            Portrait = portrait,
-            Name = namefile,
-            PortraitBig = portraitbig,
-            NoShake = noshake
-        }
+        local args = portrait
+        if type(args) ~= "table" then
+            args = {
+                Portrait = portrait,
+                Name = namefile,
+                PortraitBig = portraitbig,
+                NoShake = noshake,
+                Controls = nil,
+                ControlsOffset = nil,
+            }
+        end
+
+        StageAPI.PlayerBossInfo[string.gsub(string.lower(name), "%s+", "")] = args
     end
 
     StageAPI.AddPlayerGraphicsInfo("Black Judas", "gfx/ui/boss/playerportrait_blackjudas.png", "gfx/ui/boss/playername_04_judas.png", "gfx/ui/stage/playerportraitbig_blackjudas.png")
@@ -6015,17 +6120,46 @@ do -- Bosses
             return StageAPI.CurrentStage.BossSpot or "gfx/ui/boss/bossspot.png", StageAPI.CurrentStage.PlayerSpot or "gfx/ui/boss/playerspot.png"
         else
             local stage, stype = level:GetStage(), level:GetStageType()
-            local spot = StageAPI.FloorInfo[stage][stype]
+            local spot = StageAPI.FloorInfo[stage][stype].Prefix
             return "gfx/ui/boss/bossspot_" .. spot .. ".png", "gfx/ui/boss/playerspot_" .. spot .. ".png"
         end
     end
 
+    function StageAPI.ShouldRenderStartingRoomControls()
+        if StageAPI.InNewStage() then
+            return StageAPI.CurrentStage.RenderStartingRoomControls
+        else
+            return level:GetStage() == 1
+        end
+    end
+
+    -- returns nil if no special color
+    function StageAPI.GetStageFloorTextColor()
+        if StageAPI.InNewStage() then
+            return StageAPI.CurrentStage.FloorTextColor
+        else
+            local stage, stype = level:GetStage(), level:GetStageType()
+            return StageAPI.FloorInfo[stage][stype].FloorTextColor
+        end
+    end
+
     function StageAPI.TryGetPlayerGraphicsInfo(player)
-        local playerName = string.gsub(string.lower(player:GetName()), "%s+", "")
+        local playerName
+        if type(player) == "string" then
+            playerName = player
+        else
+            playerName = player:GetName()
+        end
+        playerName = string.gsub(string.lower(playerName), "%s+", "")
+
         if StageAPI.PlayerBossInfo[playerName] then
-            return StageAPI.PlayerBossInfo[playerName].Portrait, StageAPI.PlayerBossInfo[playerName].Name, StageAPI.PlayerBossInfo[playerName].PortraitBig, StageAPI.PlayerBossInfo[playerName].NoShake
+            return StageAPI.PlayerBossInfo[playerName]
         else -- worth a shot, most common naming convention
-            return "gfx/ui/boss/playerportrait_" .. playerName .. ".png", "gfx/ui/boss/playername_" .. playerName .. ".png", "gfx/ui/stage/playerportraitbig_" .. playerName .. ".png"
+            return {
+                Portrait    = "gfx/ui/boss/playerportrait_" .. playerName .. ".png",
+                Name        = "gfx/ui/boss/playername_" .. playerName .. ".png",
+                PortraitBig = "gfx/ui/stage/playerportraitbig_" .. playerName .. ".png"
+            }
         end
     end
 
@@ -6353,7 +6487,7 @@ do -- Transition
     end, EffectVariant.MOM_FOOT_STOMP)
 
     function StageAPI.GetLevelTransitionIcon(stage, stype)
-        local base = StageAPI.FloorInfo[stage][stype]
+        local base = StageAPI.FloorInfo[stage][stype].Prefix
         if base == "07_womb" and stype == StageType.STAGETYPE_WOTL then
             base = "utero"
         end
@@ -8358,6 +8492,10 @@ in curse of darkness
 Classy Vs Screen and
 fix double trouble
 rendering bug
+
+- Add Starting Room
+Controls rendering API
+per character
             ]])
 
             REVEL.AddChangelog("StageAPI v1.84", [[- Fix issue with room test file
