@@ -8473,7 +8473,7 @@ do -- Mod Compatibility
         if REVEL and REVEL.AddChangelog and not REVEL.AddedStageAPIChangelogs then
             REVEL.AddedStageAPIChangelogs = true
 
-            REVEL.AddChangelog("StageAPI v1.86 - 87", [[- Added functions
+            REVEL.AddChangelog("StageAPI v1.86 - 88", [[- Added functions
 AddObjectToRoomLayout,
 GenerateRoomLayoutFromData,
 IsMetadataEntity,
@@ -8867,7 +8867,7 @@ other than a door
 end
 
 Isaac.DebugString("[StageAPI] Fully Loaded, loading dependent mods.")
-StageAPI.MarkLoaded("StageAPI", "1.87", true, true)
+StageAPI.MarkLoaded("StageAPI", "1.88", true, true)
 
 StageAPI.Loaded = true
 if StageAPI.ToCall then
