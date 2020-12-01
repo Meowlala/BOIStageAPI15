@@ -6292,14 +6292,14 @@ do -- Bosses
     StageAPI.DummyBoss = {}
     function StageAPI.PlayBossAnimation(boss, unskippable)
         local bSpot, pSpot = StageAPI.GetStageSpot()
-        local playerPortrait, playerName = StageAPI.TryGetPlayerGraphicsInfo(StageAPI.Players[1])
+        local gfxData = StageAPI.TryGetPlayerGraphicsInfo(StageAPI.Players[1])
         StageAPI.PlayBossAnimationManual({
             BossPortrait = boss.Portrait,
             BossPortraitTwo = boss.PortraitTwo,
             BossName = boss.BossName or boss.Bossname,
             BossSpot = boss.Spot or bSpot,
-            PlayerPortrait = playerPortrait,
-            PlayerName = playerName,
+            PlayerPortrait = gfxData.Portrait,
+            PlayerName = gfxData.Name,
             PlayerSpot = pSpot,
             Unskippable = unskippable,
             BossOffset = boss.Offset
@@ -6522,8 +6522,8 @@ do -- Transition
     end
 
     function StageAPI.PlayTransitionAnimation(stage)
-        local _, _, portraitbig, noshake = StageAPI.TryGetPlayerGraphicsInfo(players[1])
-        StageAPI.PlayTransitionAnimationManual(portraitbig, stage.TransitionIcon, stage.TransitionMusic, stage.Music[RoomType.ROOM_DEFAULT], noshake)
+        local gfxData = StageAPI.TryGetPlayerGraphicsInfo(players[1])
+        StageAPI.PlayTransitionAnimationManual(gfxData.PortraitBig, stage.TransitionIcon, stage.TransitionMusic, stage.Music[RoomType.ROOM_DEFAULT], gfxData.NoShake)
     end
 
     StageAPI.StageRNG = RNG()
@@ -6548,8 +6548,8 @@ do -- Transition
             end
 
             if playTransition then
-                local _, _, portraitbig, noshake = StageAPI.TryGetPlayerGraphicsInfo(players[1])
-                StageAPI.PlayTransitionAnimationManual(portraitbig, StageAPI.GetLevelTransitionIcon(stage.Stage, stageType), nil, nil, noshake)
+                local gfxData = StageAPI.TryGetPlayerGraphicsInfo(players[1])
+                StageAPI.PlayTransitionAnimationManual(gfxData.PortraitBig, StageAPI.GetLevelTransitionIcon(stage.Stage, stageType), nil, nil, gfxData.NoShake)
             end
 
             Isaac.ExecuteCommand("stage " .. tostring(stage.Stage) .. StageAPI.StageTypeToString[stageType])
