@@ -8473,20 +8473,13 @@ do -- Mod Compatibility
         if REVEL and REVEL.AddChangelog and not REVEL.AddedStageAPIChangelogs then
             REVEL.AddedStageAPIChangelogs = true
 
-            REVEL.AddChangelog("StageAPI v1.86", [[- Added functions
+            REVEL.AddChangelog("StageAPI v1.86 - 87", [[- Added functions
 AddObjectToRoomLayout,
 GenerateRoomLayoutFromData,
 IsMetadataEntity,
 RoomDataHasMetadataEntity
 for interaction with
 RoomDescriptor.Data
-]])
-
-            REVEL.AddChangelog("StageAPI v1.85", [[- Add convenience function
-GetIndicesWithEntity
-
-- Improve womb overlay visuals
-in curse of darkness
 
 - Add compatibility with
 Classy Vs Screen and
@@ -8496,6 +8489,13 @@ rendering bug
 - Add Starting Room
 Controls rendering API
 per character
+]])
+
+            REVEL.AddChangelog("StageAPI v1.85", [[- Add convenience function
+GetIndicesWithEntity
+
+- Improve womb overlay visuals
+in curse of darkness
             ]])
 
             REVEL.AddChangelog("StageAPI v1.84", [[- Fix issue with room test file
@@ -8867,7 +8867,7 @@ other than a door
 end
 
 Isaac.DebugString("[StageAPI] Fully Loaded, loading dependent mods.")
-StageAPI.MarkLoaded("StageAPI", "1.85", true, true)
+StageAPI.MarkLoaded("StageAPI", "1.87", true, true)
 
 StageAPI.Loaded = true
 if StageAPI.ToCall then
