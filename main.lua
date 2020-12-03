@@ -8469,11 +8469,31 @@ do -- BR Compatibility
 end
 
 do -- Mod Compatibility
-    mod:AddCallback(ModCallbacks.MC_POST_GAME_STARTED, function()
-        if REVEL and REVEL.AddChangelog and not REVEL.AddedStageAPIChangelogs then
-            REVEL.AddedStageAPIChangelogs = true
+    local latestChangelog
+    local function TryAddChangelog(ver, log)
+        if not latestChangelog then
+            latestChangelog = ver
+        end
 
-            REVEL.AddChangelog("StageAPI v1.86 - 88", [[- Added functions
+        if DeadSeaScrollsMenu and DeadSeaScrollsMenu.AddChangelog then
+            log = string.gsub(log, "%*%*", "{FSIZE2}")
+            if latestChangelog == ver then
+                Isaac.DebugString(log)
+            end
+
+            DeadSeaScrollsMenu.AddChangelog("StageAPI", ver, log, false, latestChangelog == ver, false)
+        elseif REVEL and REVEL.AddChangelog then
+            REVEL.AddChangelog("StageAPI " .. ver, log)
+        end
+    end
+
+    mod:AddCallback(ModCallbacks.MC_POST_GAME_STARTED, function()
+        if (DeadSeaScrollsMenu and DeadSeaScrollsMenu.AddChangelog) or (REVEL and REVEL.AddChangelog and not REVEL.AddedStageAPIChangelogs) then
+            if not (DeadSeaScrollsMenu and DeadSeaScrollsMenu.AddChangelog) then
+                REVEL.AddedStageAPIChangelogs = true
+            end
+
+            TryAddChangelog("v1.86 - 88", [[- Added functions
 AddObjectToRoomLayout,
 GenerateRoomLayoutFromData,
 IsMetadataEntity,
@@ -8491,14 +8511,14 @@ Controls rendering API
 per character
 ]])
 
-            REVEL.AddChangelog("StageAPI v1.85", [[- Add convenience function
+            TryAddChangelog("v1.85", [[- Add convenience function
 GetIndicesWithEntity
 
 - Improve womb overlay visuals
 in curse of darkness
             ]])
 
-            REVEL.AddChangelog("StageAPI v1.84", [[- Fix issue with room test file
+            TryAddChangelog("v1.84", [[- Fix issue with room test file
 that was causing startup crashes
 
 - Add POST_CUSTOM_GRID_REMOVE
@@ -8551,7 +8571,7 @@ for alt grids with
 overridden spawns
             ]])
 
-            REVEL.AddChangelog("StageAPI v1.83", [[- Fix a bug with
+            TryAddChangelog("v1.83", [[- Fix a bug with
 PRE_SPAWN_ENTITY that caused
 replacements to persist
 between runs
@@ -8567,7 +8587,7 @@ and GetDoorsForRoom
 weights were unused
             ]])
 
-            REVEL.AddChangelog("StageAPI v1.80 - 82", [[- Extra rooms can now use
+            TryAddChangelog("v1.80 - 82", [[- Extra rooms can now use
 default or boss room types
 from the current floor
 as a base for their backdrop
@@ -8638,7 +8658,7 @@ overridden with PRE_SELECT_NEXT_STAGE
 IsSecondStage and StageNumber
 ]])
 
-            REVEL.AddChangelog("StageAPI v1.78 - 79", [[-Fixed an issue where "fart damage" was
+            TryAddChangelog("v1.78 - 79", [[-Fixed an issue where "fart damage" was
 cancelled even with none in the room,
 which broke Sharp Plug.
 
@@ -8651,7 +8671,7 @@ PRE_ROOM_ENTITY_SPAWN
 - Improve RNG (?)
 ]])
 
-            REVEL.AddChangelog("StageAPI v1.75 - 78", [[-Fixed an issue with nightmare
+            TryAddChangelog("v1.75 - 78", [[-Fixed an issue with nightmare
 jingle not being overridden
 
 -Relocated test room lua, fixing
@@ -8701,7 +8721,7 @@ being loaded on save
 and continue
             ]])
 
-            REVEL.AddChangelog("StageAPI v1.72 - 74", [[-Basement renovator integration
+            TryAddChangelog("v1.72 - 74", [[-Basement renovator integration
 
 -Added stb converter to mod folder,
 contained within scripts zip
@@ -8732,7 +8752,7 @@ override StageAPI's default
 trapdoor replacement system
             ]])
 
-            REVEL.AddChangelog("StageAPI v1.69 - 71", [[-Fixed transitions out of special rooms
+            TryAddChangelog("v1.69 - 71", [[-Fixed transitions out of special rooms
 not properly resetting the music
 
 -Allowed following base game
@@ -8795,7 +8815,7 @@ invalid door slots
 as a table rather than alone
             ]])
 
-            REVEL.AddChangelog("StageAPI v1.68", [[-Fixed some persistent entities
+            TryAddChangelog("v1.68", [[-Fixed some persistent entities
 duplicating or respawning
 when they shouldn't
 in extra rooms
@@ -8809,11 +8829,11 @@ room resulting in an infinitely
 looping bedroom
             ]])
 
-            REVEL.AddChangelog("StageAPI v1.67", [[-Missing door weight is now
+            TryAddChangelog("v1.67", [[-Missing door weight is now
 scaled correctly by original weight
             ]])
 
-            REVEL.AddChangelog("StageAPI v1.66", [[-Fixed persistent entity data
+            TryAddChangelog("v1.66", [[-Fixed persistent entity data
 not always unloading when
 the room changes
 
@@ -8825,15 +8845,15 @@ of unavailable doors
 more likely to appear
             ]])
 
-            REVEL.AddChangelog("StageAPI v1.65", [[-Fixed dead slot machines
+            TryAddChangelog("v1.65", [[-Fixed dead slot machines
 respawning in extra rooms
             ]])
 
-            REVEL.AddChangelog("StageAPI v1.64", [[-Disabled backdrop setting
+            TryAddChangelog("v1.64", [[-Disabled backdrop setting
 on non-custom floors
             ]])
 
-            REVEL.AddChangelog("StageAPI v1.63", [[-Fixed stage shadows not
+            TryAddChangelog("v1.63", [[-Fixed stage shadows not
 being properly centered
 in some L shaped rooms
 
@@ -8842,18 +8862,18 @@ stage and room transitions
 not scaling with screen.
             ]])
 
-            REVEL.AddChangelog("StageAPI v1.62", [[-Fixed extra rooms containing
+            TryAddChangelog("v1.62", [[-Fixed extra rooms containing
 persistent entities from the
 previous room, after you
 re-enter the room twice
             ]])
 
-            REVEL.AddChangelog("StageAPI v1.61", [[-Fixed extra rooms containing
+            TryAddChangelog("v1.61", [[-Fixed extra rooms containing
 persistent entities from the
 previous room
             ]])
 
-            REVEL.AddChangelog("StageAPI v1.60", [[-Fixed Mom's Heart track
+            TryAddChangelog("v1.60", [[-Fixed Mom's Heart track
 not playing properly in Utero 2
 
 -Fixed extra rooms (for example
