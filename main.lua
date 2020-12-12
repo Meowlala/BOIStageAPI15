@@ -3163,6 +3163,7 @@ do -- RoomsList
             args.SpawnSeed = args.SpawnSeed or room:GetSpawnSeed()
             args.DecorationSeed = args.DecorationSeed or room:GetDecorationSeed()
             args.AwardSeed = args.AwardSeed or room:GetAwardSeed()
+            args.SurpriseMiniboss = args.SurpriseMiniboss or level:GetCurrentRoomDesc().SurpriseMiniboss
             args.Doors = args.Doors or StageAPI.GetDoorsForRoom()
             args.VisitCount = args.VisitCount or 0
             args.ClearCount = args.ClearCount or 0
@@ -3481,18 +3482,22 @@ do -- RoomsList
                     end
                 end
 
-                if changedSpawn then
-                    local persistentData = StageAPI.CheckPersistence(entity.Type, entity.Variant, entity.SubType)
-                    entityPersistData.SpawnInfo.PersistenceData = persistentData
-                    entityPersistData.PersistenceData = persistentData
-                end
-
                 if entityPersistData.PersistenceData.UpdatePosition then
                     self.PersistentPositions[entityPersistData.PersistentIndex] = {X = entity.Position.X, Y = entity.Position.Y}
                 end
 
                 if entityPersistData.PersistenceData.StoreCheck and entityPersistData.PersistenceData.StoreCheck(entity, data) then
                     self.AvoidSpawning[entityPersistData.PersistentIndex] = true
+                end
+
+                if changedSpawn then
+                    local persistentData = StageAPI.CheckPersistence(entity.Type, entity.Variant, entity.SubType)
+                    if not persistentData then
+                        StageAPI.RemovePersistentEntity(entity)
+                    else
+                        entityPersistData.SpawnInfo.PersistenceData = persistentData
+                        entityPersistData.PersistenceData = persistentData
+                    end
                 end
             else
                 local persistentData = StageAPI.CheckPersistence(entity.Type, entity.Variant, entity.SubType)
@@ -3593,7 +3598,8 @@ do -- RoomsList
     local saveDataCopyDirectly = {
         "IsClear","WasClearAtStart","RoomsListName","LayoutName","SpawnSeed","AwardSeed","DecorationSeed",
         "FirstLoad","Shape","RoomType","TypeOverride","PersistentData","IsExtraRoom","LastPersistentIndex",
-        "RequireRoomType", "IgnoreRoomRules", "VisitCount", "ClearCount", "LevelIndex","HasWaterPits","ChallengeDone"
+        "RequireRoomType", "IgnoreRoomRules", "VisitCount", "ClearCount", "LevelIndex","HasWaterPits","ChallengeDone",
+        "SurpriseMiniboss"
     }
 
     function StageAPI.LevelRoom:GetSaveData(isExtraRoom)
@@ -5246,7 +5252,7 @@ do -- Extra Rooms
                 if stateData.Triggers.Function then
                     local active = stateData.Triggers.Function(door, data, sprite, doorData, data.DoorGridData)
                     if active then
-                        trigger = stateData.Triggers.Function
+                        trigger = active
                     end
                 end
 
@@ -5724,6 +5730,7 @@ do -- GridGfx
         "ArcadeSign"
     }
 
+    -- TODO: consider deprecating passing door into DoesDoorMatch
     function StageAPI.DoesDoorMatch(door, doorSpawn, current, target, isBossAmbush, isPayToPlay, isSurpriseMiniboss)
         current = current or door.CurrentRoomType
         target = target or door.TargetRoomType
@@ -5869,19 +5876,27 @@ do -- GridGfx
         end
     end
 
+    function StageAPI.CompareDoorSpawns(doorSpawns, current, target, isBossAmbush, isPayToPlay, isSurpriseMiniboss)
+        local useSprite, useDoor
+        for _, spawn in ipairs(doorSpawns) do
+            if StageAPI.DoesDoorMatch(nil, spawn, current, target, isBossAmbush, isPayToPlay, isSurpriseMiniboss) then
+                useSprite = spawn.Sprite
+                useDoor = spawn.StateDoor
+                break
+            end
+        end
+
+        return useSprite, useDoor
+    end
+
     function StageAPI.CheckDoorSpawns(door, doorSpawns, doorSprites, roomType)
         local useSprite
         if door.ToDoor then
             door = door:ToDoor()
             local current, target, isBossAmbush, isPayToPlay = door.CurrentRoomType, door.TargetRoomType, level:HasBossChallenge(), door:IsTargetRoomArcade() and target ~= RoomType.ROOM_ARCADE
             local isSurpriseMiniboss = level:GetCurrentRoomDesc().SurpriseMiniboss
-            for _, spawn in ipairs(doorSpawns) do
-                if StageAPI.DoesDoorMatch(door, spawn, current, target, isBossAmbush, isPayToPlay, isSurpriseMiniboss) then
-                    selectedSpawn = spawn.Title
-                    useSprite = spawn.Sprite
-                    break
-                end
-            end
+
+            useSprite = StageAPI.CompareDoorSpawns(doorSpawns, current, target, isBossAmbush, isPayToPlay, isSurpriseMiniboss)
         else
             local data = door:GetData()
             if data.DoorSprite then
@@ -9387,7 +9402,10 @@ do -- Custom Floor Generation
                                         local adjacent, doors = StageAPI.CheckRoomAdjacency(levelMap[room1], levelMap[room2], true)
                                         if adjacent then
                                             for enterSlot, exitSlot in pairs(doors) do
-                                                roomData.Doors[enterSlot] = {room2, exitSlot}
+                                                roomData.Doors[enterSlot] = {
+                                                    ExitRoom = room2,
+                                                    ExitSlot = exitSlot
+                                                }
                                             end
                                         end
                                     end
@@ -9481,6 +9499,28 @@ do -- Custom Floor Generation
         return onMap
     end
 
+    function StageAPI.GetMapSegmentsFromRoomObject(roomObject, noCaching)
+        local typ = type(roomObject)
+        if typ == "table" then
+            if roomObject.MapSegments then
+                return roomObject.MapSegments
+            elseif roomObject.X and roomObject.Y and roomObject.Shape then
+                local segs = StageAPI.GetRoomMapSegments(roomObject.X, roomObject.Y, roomObject.Shape)
+                if not noInterference then
+                    roomObject.MapSegments = segs
+                end
+
+                return segs
+            end
+        elseif typ == "userdata" then
+            local x, y = StageAPI.GridToVector(roomObject.GridIndex, 13)
+            local shape = roomObject.Data.Shape
+            return StageAPI.GetRoomMapSegments(x, y, shape)
+        elseif typ == "number" then
+            return StageAPI.GetMapSegmentsFromRoomObject(level:GetRoomByIdx(roomObject), noCaching)
+        end
+    end
+
     function StageAPI.GenerateLevelMap2D(levelMap)
         local lowX, lowY, highX, highY
         local levelMap2D = {}
@@ -9535,6 +9575,7 @@ do -- Custom Floor Generation
                     RoomType = roomDesc.Data.Type,
                     IsClear = roomDesc.Clear,
                     HasWaterPits = roomDesc.HasWater,
+                    SurpriseMiniboss = roomDesc.SurpriseMiniboss,
                     IsPersistentRoom = true,
                     IsExtraRoom = true,
                     LevelIndex = id
@@ -9562,10 +9603,10 @@ do -- Custom Floor Generation
         DOWN = "UP"
     }
 
-    function StageAPI.CheckRoomAdjacency(room1, room2, getDoors) -- Checks if two rooms are adjacent on the map; if getDoors is true, returns the doors in room1 paired to the doors they connect to in room2
+    function StageAPI.CheckAdjacentRoomSegments(segs1, segs2, getDoors, getSegs)
         local adjacentSegments = {}
-        for _, seg in ipairs(room1.MapSegments) do
-            for _, seg2 in ipairs(room2.MapSegments) do
+        for _, seg in ipairs(segs1) do
+            for _, seg2 in ipairs(segs2) do
                 if seg.X == seg2.X or seg.Y == seg2.Y then -- only aligned segments could possibly be adjacent
                     local adjacencyType
                     if seg.X == seg2.X + 1 then
@@ -9581,7 +9622,7 @@ do -- Custom Floor Generation
                     if adjacencyType then
                         adjacentSegments[#adjacentSegments + 1] = {seg, seg2, adjacencyType}
 
-                        if not getDoors then
+                        if not (getDoors or getSegs) then
                             return true
                         end
                     end
@@ -9589,28 +9630,49 @@ do -- Custom Floor Generation
             end
         end
 
-        if not getDoors then
-            return #adjacentSegments > 0
-        elseif #adjacentSegments > 0 then
-            local doors = {}
-            for _, pair in ipairs(adjacentSegments) do
-                local seg, seg2, adjType = pair[1], pair[2], pair[3]
-                doors[seg.Doors[adjType]] = seg2.Doors[directionStringSwap[adjType]]
-            end
+        if #adjacentSegments > 0 then
+            local doors
+            if getDoors then
+                doors = {}
+                for _, pair in ipairs(adjacentSegments) do
+                    local seg, seg2, adjType = pair[1], pair[2], pair[3]
+                    doors[seg.Doors[adjType]] = seg2.Doors[directionStringSwap[adjType]]
+                end
 
-            return true, doors
+                if getSegs then
+                    return true, doors, adjacentSegments
+                else
+                    return true, doors
+                end
+            else -- getDoors or getSegs will always be true in adjacent rooms since otherwise the function is cut short
+                return true, adjacentSegments
+            end
         end
 
         return false
     end
 
+    function StageAPI.CheckRoomAdjacency(room1, room2, getDoors, getSegs, preventCaching) -- Checks if two rooms are adjacent on the map; if getDoors is true, returns the doors in room1 paired to the doors they connect to in room2
+        local segs1, segs2 = StageAPI.GetMapSegmentsFromRoomObject(room1, preventCaching), StageAPI.GetMapSegmentsFromRoomObject(room2, preventCaching)
+        return StageAPI.CheckAdjacentRoomSegments(segs1, segs2, getDoors, getSegs)
+    end
+
     StageAPI.RoomShapeToRoomGridIndex = {}
     StageAPI.CurrentCustomMapRoomID = nil
 
-    function StageAPI.LoadCustomMapRoomDoors(room)
-        if room.Doors then
-            for slot, doorData in pairs(room.Doors) do
-                StageAPI.SpawnCustomDoor(slot, doorData[1], true, "DefaultDoor", nil, doorData[2])
+    function StageAPI.LoadCustomMapRoomDoors(mapRoom, map)
+        map = map or StageAPI.CurrentLevelMap
+        if mapRoom.Doors then
+            local levelRoom = StageAPI.GetExtraRoom(mapRoom.ExtraRoomName)
+            for slot, doorData in pairs(mapRoom.Doors) do
+                local targRoom = map[doorData.ExitRoom]
+                local targLevelRoom = StageAPI.GetExtraRoom(targRoom.ExtraRoomName)
+                local current, target = levelRoom.RoomType, targLevelRoom.RoomType
+                local isBossAmbush = nil
+                local isPayToPlay = nil
+                local isSurpriseMiniboss = levelRoom.SurpriseMiniboss
+                local _, useDoor = StageAPI.CompareDoorSpawns(StageAPI.BaseDoorSpawnList, current, target, isBossAmbush, isPayToPlay, isSurpriseMiniboss)
+                StageAPI.SpawnCustomDoor(slot, doorData.ExitRoom, true, useDoor, nil, doorData.ExitSlot)
             end
         end
     end
@@ -9751,7 +9813,7 @@ do -- Custom Floor Generation
             local baseStage = level:GetStage()
             local baseStageType = level:GetStageType()
             --StageAPI.CreateMapForShapeStringTable(heart)
-            Isaac.ExecuteCommand("stage 11a")
+            Isaac.ExecuteCommand("stage 5a")
             StageAPI.CopyCurrentLevelMap()
             Isaac.ExecuteCommand("stage " .. tostring(baseStage) .. StageAPI.StageTypeToString[baseStageType])
             StageAPI.InitCustomLevel(true)
