@@ -3688,7 +3688,7 @@ Isaac.DebugString("[StageAPI] Loading Custom Grid System")
 do -- Custom Grid Entities
     StageAPI.CustomGridTypes = {}
     StageAPI.CustomGrid = StageAPI.Class("CustomGrid")
-    function StageAPI.CustomGrid:Init(name, baseType, baseVariant, anm2, animation, frame, variantFrames, offset, overrideGridSpawns, overrideGridSpawnAtState, forceSpawning)
+    function StageAPI.CustomGrid:Init(name, baseType, baseVariant, anm2, animation, frame, variantFrames, offset, overrideGridSpawns, overrideGridSpawnAtState, forceSpawning, noOverrideGridSprite)
         self.Name = name
         self.BaseType = baseType
         self.BaseVariant = baseVariant
@@ -3698,6 +3698,7 @@ do -- Custom Grid Entities
         self.VariantFrames = variantFrames
         self.OverrideGridSpawns = overrideGridSpawns
         self.OverrideGridSpawnState = overrideGridSpawnAtState
+        self.NoOverrideGridSprite = noOverrideGridSprite
         self.ForceSpawning = forceSpawning
         self.Offset = offset
 
@@ -3849,6 +3850,25 @@ do -- Custom Grid Entities
                 Index = index
             }
         end
+    end
+
+    function StageAPI.GetCustomGridsAtIndex(index)
+        local lindex = StageAPI.GetCurrentRoomID()
+        local grids = {}
+        if StageAPI.CustomGrids[lindex] then
+            for k, v in pairs(StageAPI.CustomGrids[lindex]) do
+                if v[index] then
+                    grids[#grids + 1] = {
+                        Name = k,
+                        PersistData = v[index],
+                        Data = StageAPI.CustomGridTypes[k],
+                        Index = index
+                    }
+                end
+            end
+        end
+
+        return grids
     end
 
     function StageAPI.RemoveCustomGrid(index, name, keepVanillaGrid)
@@ -5042,7 +5062,15 @@ do -- GridGfx
         local gridCount = 0
         local pits = {}
         for i = 0, room:GetGridSize() do
-            if not StageAPI.CustomGridIndices[i] then
+            local customGrids = StageAPI.GetCustomGridsAtIndex(i)
+            local customGridBlocking = false
+            for _, cgrid in ipairs(customGrids) do
+                if not cgrid.Data.NoOverrideGridSprite then
+                    customGridBlocking = true
+                end
+            end
+
+            if not customGridBlocking then
                 local grid = room:GetGridEntity(i)
                 if grid then
                     if hasExtraPitFrames and grid.Desc.Type == GridEntityType.GRID_PIT then
