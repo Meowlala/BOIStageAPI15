@@ -625,6 +625,15 @@ do -- Core Functions
         end
     end
 
+    -- no rng: defaults to StageAPI.RandomRNG
+    function StageAPI.GetRandomTableString(stringOrTable, rng)
+        if type(stringOrTable) ~= "table" then
+            return stringOrTable
+        else
+            return stringOrTable[StageAPI.Random(1, #stringOrTable, rng)]
+        end
+    end
+
     StageAPI.Class = {}
     function StageAPI.ClassInit(tbl, ...)
         local inst = {}
@@ -6322,10 +6331,10 @@ do -- Bosses
         local bSpot, pSpot = StageAPI.GetStageSpot()
         local gfxData = StageAPI.TryGetPlayerGraphicsInfo(StageAPI.Players[1])
         StageAPI.PlayBossAnimationManual({
-            BossPortrait = boss.Portrait,
-            BossPortraitTwo = boss.PortraitTwo,
-            BossName = boss.BossName or boss.Bossname,
-            BossSpot = boss.Spot or bSpot,
+            BossPortrait = StageAPI.GetRandomTableString(boss.Portrait),
+            BossPortraitTwo = StageAPI.GetRandomTableString(boss.PortraitTwo),
+            BossName = StageAPI.GetRandomTableString(boss.BossName or boss.Bossname),
+            BossSpot = StageAPI.GetRandomTableString(boss.Spot or bSpot),
             PlayerPortrait = gfxData.Portrait,
             PlayerName = gfxData.Name,
             PlayerSpot = pSpot,
