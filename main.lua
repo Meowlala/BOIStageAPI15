@@ -7015,21 +7015,26 @@ do -- Callbacks
 
     mod:AddCallback(ModCallbacks.MC_PRE_USE_ITEM, StageAPI.ReprocessRoomGrids, CollectibleType.COLLECTIBLE_D12)
 
-    StageAPI.OverriddenD7 = Isaac.GetItemIdByName("D7 ")
-    StageAPI.JustUsedD7 = nil
-
     function StageAPI.UseD7()
         local currentRoom = StageAPI.GetCurrentRoom()
         if currentRoom then
-            StageAPI.JustUsedD7 = true
-        else
-            players[1]:UseActiveItem(CollectibleType.COLLECTIBLE_D7, false, true, true, false)
-        end
+            if room:GetType() == RoomType.ROOM_BOSS then
+                game:MoveToRandomRoom(false, room:GetSpawnSeed())
+            else
+                StageAPI.JustUsedD7 = true
+            end
 
-        return true
+            for _, player in ipairs(players) do
+                if player:HasCollectible(CollectibleType.COLLECTIBLE_D7) and Input.IsActionTriggered(ButtonAction.ACTION_ITEM, player.ControllerIndex) then
+                    player:AnimateCollectible(CollectibleType.COLLECTIBLE_D7, "UseItem", "PlayerPickup")
+                end
+            end
+
+            return true
+        end
     end
 
-    mod:AddCallback(ModCallbacks.MC_USE_ITEM, StageAPI.UseD7, StageAPI.OverriddenD7)
+    mod:AddCallback(ModCallbacks.MC_PRE_USE_ITEM, StageAPI.UseD7, CollectibleType.COLLECTIBLE_D7)
 
     mod:AddCallback(ModCallbacks.MC_PRE_USE_ITEM, function()
         if StageAPI.InNewStage() then
@@ -7043,12 +7048,6 @@ do -- Callbacks
             return true
         end
     end, CollectibleType.COLLECTIBLE_FORGET_ME_NOW)
-
-    mod:AddCallback(ModCallbacks.MC_PRE_ENTITY_SPAWN, function(_, t, v, s, po, ve, sp, se)
-        if t == EntityType.ENTITY_PICKUP and v == PickupVariant.PICKUP_COLLECTIBLE and s == CollectibleType.COLLECTIBLE_D7 then
-            return {t, v, StageAPI.OverriddenD7, se}
-        end
-    end)
 
     mod:AddCallback(ModCallbacks.MC_POST_EFFECT_INIT, function(_, eff)
         if StageAPI.InNewStage() and not eff:GetData().StageAPIDoNotDelete then
@@ -7257,13 +7256,6 @@ do -- Callbacks
             end
 
             StageAPI.OldBackdropType = btype
-        end
-
-        for _, player in ipairs(players) do
-            if player:HasCollectible(CollectibleType.COLLECTIBLE_D7) then
-                player:RemoveCollectible(CollectibleType.COLLECTIBLE_D7)
-                player:AddCollectible(StageAPI.OverriddenD7, player:GetActiveCharge(), false)
-            end
         end
 
         if StageAPI.RoomNamesEnabled then
