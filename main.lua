@@ -7168,8 +7168,11 @@ do -- Callbacks
 
             local gridsOverride = StageAPI.CallCallbacks("PRE_UPDATE_GRID_GFX", false)
 
+            local currentRoom = StageAPI.GetCurrentRoom()
             if gridsOverride then
                 grids = gridsOverride
+            elseif currentRoom and currentRoom.Data.RoomGfx then
+                grids = currentRoom.Data.RoomGfx.Grids
             elseif StageAPI.CurrentStage.RoomGfx and StageAPI.CurrentStage.RoomGfx[rtype] and StageAPI.CurrentStage.RoomGfx[rtype].Grids then
                 grids = StageAPI.CurrentStage.RoomGfx[rtype].Grids
             end
