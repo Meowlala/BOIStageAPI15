@@ -478,11 +478,6 @@ do -- Core Definitions
 
     function StageAPI.TryLoadModData(continued)
         if Isaac.HasModData(mod) and continued then
-            -- TODO: Remove this, loading mod data was broken in the first rep api patch
-            if true then
-                return
-            end
-
             local data = Isaac.LoadModData(mod)
             StageAPI.LoadSaveString(data)
         else
