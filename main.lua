@@ -4379,20 +4379,7 @@ do -- Extra Rooms
         if not StageAPI.IsHUDAnimationPlaying() then
             if not StageAPI.InNewStage() then
                 local btype, stage, stype = room:GetBackdropType(), level:GetStage(), level:GetStageType()
-                if (btype == 10 or btype == 11) and (stage == LevelStage.STAGE4_1 or stage == LevelStage.STAGE4_2) then
-                    local useUteroOverlays = StageAPI.UteroOverlays
-                    if level:GetCurses() & LevelCurse.CURSE_OF_DARKNESS ~= 0 then
-                        useUteroOverlays = StageAPI.UteroOverlaysDark
-                    end
-
-                    for _, overlay in ipairs(useUteroOverlays) do
-                        if not game:IsPaused() then
-                            overlay:Update()
-                        end
-
-                        overlay:Render(nil, nil, true)
-                    end
-                elseif (btype == 7 or btype == 8 or btype == 16) and (stage == LevelStage.STAGE3_1 or stage == LevelStage.STAGE3_2 or stage == LevelStage.STAGE6) then
+                if (btype == 7 or btype == 8 or btype == 16) and (stage == LevelStage.STAGE3_1 or stage == LevelStage.STAGE3_2 or stage == LevelStage.STAGE6) then
                     for _, overlay in ipairs(StageAPI.NecropolisOverlays) do
                         if not game:IsPaused() then
                             overlay:Update()
@@ -5820,20 +5807,6 @@ do -- Definitions
         }
     }
 
-    StageAPI.UteroOverlays = {
-        StageAPI.Overlay("stageapi/floors/utero/overlay.anm2", Vector(2, -1.6), nil, nil, 0.5),
-        StageAPI.Overlay("stageapi/floors/utero/overlay.anm2", Vector(-0.5, -1.5), nil, nil, 0.5),
-        StageAPI.Overlay("stageapi/floors/utero/overlay.anm2", Vector(-1, -1.5), Vector(128, 128), nil, 0.5),
-        StageAPI.Overlay("stageapi/floors/utero/overlay.anm2", Vector(-2, -1.6), Vector(128, 128), nil, 0.5)
-    }
-
-    StageAPI.UteroOverlaysDark = {
-        StageAPI.Overlay("stageapi/floors/utero/overlay.anm2", Vector(2, -1.6), nil, nil, 0.1),
-        StageAPI.Overlay("stageapi/floors/utero/overlay.anm2", Vector(-0.5, -1.5), nil, nil, 0.1),
-        StageAPI.Overlay("stageapi/floors/utero/overlay.anm2", Vector(-1, -1.5), Vector(128, 128), nil, 0.1),
-        StageAPI.Overlay("stageapi/floors/utero/overlay.anm2", Vector(-2, -1.6), Vector(128, 128), nil, 0.1)
-    }
-
     StageAPI.UteroBackdrop = StageAPI.BackdropHelper(StageAPI.UteroBackdrop, "stageapi/floors/utero/", ".png")
     StageAPI.UteroRoomGfx = StageAPI.RoomGfx(--[[StageAPI.UteroBackdrop]] nil, StageAPI.UteroGridGfx, "_default")
     StageAPI.UteroMusicID = Isaac.GetMusicIdByName("Utero")
@@ -6998,7 +6971,6 @@ do -- Callbacks
     end)
 
     StageAPI.RoomNamesEnabled = false
-    StageAPI.OldBackdropType = nil
     StageAPI.PreviousGridCount = nil
 
     function StageAPI.ReprocessRoomGrids()
@@ -7216,14 +7188,6 @@ do -- Callbacks
             for _, grid in ipairs(pits) do
                 StageAPI.CheckBridge(grid[1], grid[2], "stageapi/floors/utero/grid_bridge_womb.png")
             end
-        end
-
-        if StageAPI.OldBackdropType ~= btype then
-            if btype == 5 and not StageAPI.InOverriddenStage() then
-                StageAPI.ChangeRoomGfx(StageAPI.CatacombsRoomGfx)
-            end
-
-            StageAPI.OldBackdropType = btype
         end
 
         if StageAPI.RoomNamesEnabled then
@@ -7571,11 +7535,6 @@ do -- Callbacks
                 callback.Function()
             end
         else
-            if room:GetBackdropType() == 5 then
-                StageAPI.ChangeRoomGfx(StageAPI.CatacombsRoomGfx)
-                StageAPI.OldBackdropType = 5
-            end
-
             if room:GetType() ~= RoomType.ROOM_DUNGEON and room:GetBackdropType() ~= 16 then
                 StageAPI.ChangeShading("_default")
             end
