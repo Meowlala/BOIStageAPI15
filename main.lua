@@ -478,6 +478,11 @@ do -- Core Definitions
 
     function StageAPI.TryLoadModData(continued)
         if Isaac.HasModData(mod) and continued then
+            -- TODO: Remove this, loading mod data was broken in the first rep api patch
+            if true then
+                return
+            end
+
             local data = Isaac.LoadModData(mod)
             StageAPI.LoadSaveString(data)
         else
@@ -6192,6 +6197,7 @@ do -- Bosses
 
     StageAPI.BossSprite = Sprite()
     StageAPI.BossSprite:Load("gfx/ui/boss/versusscreen.anm2", false)
+    StageAPI.BossSprite:ReplaceSpritesheet(0, "gfx/ui/boss/bgblack.png")
     StageAPI.PlayingBossSprite = nil
     StageAPI.UnskippableBossAnim = nil
     StageAPI.BossOffset = nil
@@ -6255,11 +6261,11 @@ do -- Bosses
             end
 
             local centerPos = StageAPI.GetScreenCenterPosition()
-            if StageAPI.BossOffset then
-                local layerRenderOrder = {0,1,14,3,12,2,9,4,5,13,11,6,7,8,10,15}
-                local isDoubleTrouble = StageAPI.BossOffset.One or StageAPI.BossOffset.Two
-                for _, layer in ipairs(layerRenderOrder) do
-                    local pos = centerPos
+            local layerRenderOrder = {0,1,2,3,14,9,13,4,12,6,7,8,10}
+            for _, layer in ipairs(layerRenderOrder) do
+                local pos = centerPos
+                if StageAPI.BossOffset then
+                    local isDoubleTrouble = StageAPI.BossOffset.One or StageAPI.BossOffset.Two
                     if isDoubleTrouble then  -- Double trouble, table {One = Vector, Two = Vector}
                         if layer == 4 then
                             pos = pos + StageAPI.BossOffset.One or zeroVector
@@ -6269,11 +6275,9 @@ do -- Bosses
                     elseif layer == 4 then
                         pos = pos + StageAPI.BossOffset
                     end
-
-                    StageAPI.PlayingBossSprite:RenderLayer(layer, pos)
                 end
-            else
-                StageAPI.PlayingBossSprite:Render(centerPos, zeroVector, zeroVector)
+
+                StageAPI.PlayingBossSprite:RenderLayer(layer, pos)
             end
         elseif isPlaying then
              StageAPI.PlayingBossSprite:Stop()
