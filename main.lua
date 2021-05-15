@@ -6156,7 +6156,7 @@ do -- Bosses
         if StageAPI.InNewStage() then
             return StageAPI.CurrentStage.RenderStartingRoomControls
         else
-            return level:GetStage() == 1
+            return level:GetStage() == 1 and level:GetStageType() < StageType.STAGETYPE_REPENTANCE
         end
     end
 
