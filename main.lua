@@ -3714,11 +3714,6 @@ do -- Custom Grid Entities
         self.ForceSpawning = forceSpawning
         self.Offset = offset
 
-        if anm2 then
-            self.Sprite = Sprite()
-            self.Sprite:Load(anm2, true)
-        end
-
         StageAPI.CustomGridTypes[name] = self
     end
 
@@ -3755,24 +3750,23 @@ do -- Custom Grid Entities
                 end
             end
 
-            if self.Sprite and grid then
+            if self.Anm2 and grid then
+                local sprite = grid:GetSprite()
+                sprite:Load(self.Anm2, true)
                 if self.VariantFrames or self.Frame then
-                    local animation = self.Animation or self.Sprite:GetDefaultAnimation()
+                    local animation = self.Animation or sprite:GetDefaultAnimation()
                     if self.VariantFrames then
-                        self.Sprite:SetFrame(animation, StageAPI.Random(0, self.VariantFrames))
+                        sprite:SetFrame(animation, StageAPI.Random(0, self.VariantFrames))
                     else
-                        self.Sprite:SetFrame(animation, self.Frame)
+                        sprite:SetFrame(animation, self.Frame)
                     end
                 elseif self.Animation then
-                    self.Sprite:Play(self.Animation, true)
+                    sprite:Play(self.Animation, true)
                 end
 
-                -- TODO: CHANGE CUSTOM GRID SPRITE HANDLING
-                -- grid.Sprite = self.Sprite
-                --[[
                 if self.Offset then
-                    grid.Sprite.Offset = self.Offset
-                end]]
+                    sprite.Offset = self.Offset
+                end
             end
         end
 
