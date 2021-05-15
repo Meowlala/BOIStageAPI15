@@ -405,6 +405,18 @@ do -- Core Definitions
         Isaac.DebugString(str)
     end
 
+    StageAPI.RockTypes = {
+        [GridEntityType.GRID_ROCK] = true,
+        [GridEntityType.GRID_ROCKB] = true,
+        [GridEntityType.GRID_ROCKT] = true,
+        [GridEntityType.GRID_ROCK_BOMB] = true,
+        [GridEntityType.GRID_ROCK_ALT] = true,
+        [GridEntityType.GRID_ROCK_SS] = true,
+        [GridEntityType.GRID_ROCK_SPIKED] = true,
+        [GridEntityType.GRID_ROCK_ALT2] = true,
+        [GridEntityType.GRID_ROCK_GOLD] = true,
+    }
+
     StageAPI.PoopVariant = {
         Normal = 0,
         Red = 1,
@@ -1022,7 +1034,7 @@ do -- Overlays
     function StageAPI.Overlay:SetAlpha(alpha, noCancelFade)
         local sprite = self.Sprite
         self.Alpha = alpha
-        sprite.Color = Color(sprite.Color.R, sprite.Color.G, sprite.Color.B, alpha, math.floor(sprite.Color.RO*255), math.floor(sprite.Color.GO*255), math.floor(sprite.Color.BO*255))
+        sprite.Color = Color(sprite.Color.R, sprite.Color.G, sprite.Color.B, alpha, sprite.Color.RO, sprite.Color.GO, sprite.Color.BO)
         if not noCancelFade then
             self.Fading = false
             self.FadingFinished = nil
@@ -2921,7 +2933,7 @@ do -- RoomsList
             if grid then
                 grid:PostInit()
 
-                if grid:ToRock() then
+                if StageAPI.RockTypes[grid.Desc.Type] then
                     grid:ToRock():UpdateAnimFrame()
                 end
             end
@@ -3755,10 +3767,12 @@ do -- Custom Grid Entities
                     self.Sprite:Play(self.Animation, true)
                 end
 
-                grid.Sprite = self.Sprite
+                -- TODO: CHANGE CUSTOM GRID SPRITE HANDLING
+                -- grid.Sprite = self.Sprite
+                --[[
                 if self.Offset then
                     grid.Sprite.Offset = self.Offset
-                end
+                end]]
             end
         end
 
@@ -4747,20 +4761,16 @@ do -- GridGfx
 
     StageAPI.GridGfxRNG = RNG()
 
-    StageAPI.RockSprite = Sprite()
-    StageAPI.RockSprite:Load("gfx/grid/grid_rock.anm2", true)
     function StageAPI.ChangeRock(rock, filename)
-        local grid = rock.Grid:ToRock()
-
+        local grid = rock.Grid
+        local gsprite = grid:GetSprite()
         for i = 0, 4 do
-            StageAPI.RockSprite:ReplaceSpritesheet(i, filename)
+            gsprite:ReplaceSpritesheet(i, filename)
         end
 
-        StageAPI.RockSprite:LoadGraphics()
+        gsprite:LoadGraphics()
 
-        grid.Sprite = StageAPI.RockSprite
-        grid.Sprite:Play(grid.Anim, true)
-        grid:UpdateAnimFrame()
+        grid:ToRock():UpdateAnimFrame()
     end
 
     StageAPI.BridgeEntities = {}
@@ -4786,20 +4796,21 @@ do -- GridGfx
         end
     end
 
-    StageAPI.PitSprite = Sprite()
-    StageAPI.PitSprite:Load("stageapi/pit.anm2", true)
     function StageAPI.ChangePit(pit, pitFile, bridgefilename, alt)
         local grid = pit.Grid
+        local gsprite = grid:GetSprite()
 
-        if alt and room:HasWaterPits() then
-            StageAPI.PitSprite:ReplaceSpritesheet(0, alt.File)
-        else
-            StageAPI.PitSprite:ReplaceSpritesheet(0, pitFile.File)
+        if gsprite:GetFilename() ~= "stageapi/pit.anm2" then
+            gsprite:Load("stageapi/pit.anm2", true)
         end
 
-        StageAPI.PitSprite:LoadGraphics()
+        if alt and room:HasWaterPits() then
+            gsprite:ReplaceSpritesheet(0, alt.File)
+        else
+            gsprite:ReplaceSpritesheet(0, pitFile.File)
+        end
 
-        grid.Sprite = StageAPI.PitSprite
+        gsprite:LoadGraphics()
 
         StageAPI.CheckBridge(grid, pit.Index, bridgefilename)
     end
@@ -4808,22 +4819,17 @@ do -- GridGfx
     function StageAPI.ChangeDecoration(decoration, decorations)
         local grid = decoration.Grid
 
-        local decSprite = StageAPI.DecorationSprites[decorations.Anm2]
-        if not decSprite then
-            decSprite = Sprite()
-            decSprite:Load(decorations.Anm2, false)
-            StageAPI.DecorationSprites[decorations.Anm2] = decSprite
-        end
+        local gsprite = grid:GetSprite()
+        gsprite:Load(decorations.Anm2, false)
 
-        decSprite:ReplaceSpritesheet(0, decorations.Png)
-        decSprite:LoadGraphics()
+        gsprite:ReplaceSpritesheet(0, decorations.Png)
+        gsprite:LoadGraphics()
         local prop = StageAPI.Random(1, decorations.PropCount, StageAPI.GridGfxRNG)
         if prop < 10 then
             prop = "0" .. tostring(prop)
         end
 
-        decSprite:Play(decorations.Prefix .. tostring(prop) .. decorations.Suffix, true)
-        grid.Sprite = decSprite
+        gsprite:Play(decorations.Prefix .. tostring(prop) .. decorations.Suffix, true)
     end
 
     StageAPI.DoorAnimationMap = {
@@ -4948,20 +4954,18 @@ do -- GridGfx
     StageAPI.DoorSprite = Sprite()
     function StageAPI.ChangeDoor(door, doors, payToPlay, hasBossAmbushDoor)
         local grid = door.Grid:ToDoor()
+        local gsprite = grid:GetSprite()
         local current = grid.CurrentRoomType
         local target = grid.TargetRoomType
         local isPayToPlay = grid:IsTargetRoomArcade() and target ~= RoomType.ROOM_ARCADE
 
         if isPayToPlay then
             if payToPlay then
-                local sprite = grid.Sprite
                 for i = 0, 5 do
-                    sprite:ReplaceSpritesheet(i, payToPlay)
+                    gsprite:ReplaceSpritesheet(i, payToPlay)
                 end
 
-                sprite:LoadGraphics()
-
-                grid.Sprite = sprite
+                gsprite:LoadGraphics()
             end
 
             return
@@ -4969,14 +4973,11 @@ do -- GridGfx
 
         for _, doorOption in ipairs(doors) do
             if StageAPI.DoesDoorMatch(grid, doorOption, current, target, hasBossAmbushDoor) then
-                local sprite = grid.Sprite
                 for i = 0, 5 do
-                    sprite:ReplaceSpritesheet(i, doorOption.File)
+                    gsprite:ReplaceSpritesheet(i, doorOption.File)
                 end
 
-                sprite:LoadGraphics()
-
-                grid.Sprite = sprite
+                gsprite:LoadGraphics()
 
                 break
             end
@@ -4985,7 +4986,7 @@ do -- GridGfx
 
     function StageAPI.ChangeGrid(sent, filename)
         local grid = sent.Grid
-        local sprite = grid.Sprite
+        local sprite = grid:GetSprite()
 
         if type(filename) == "table" then
             filename = filename[StageAPI.Random(1, #filename, StageAPI.GridGfxRNG)]
@@ -4993,7 +4994,6 @@ do -- GridGfx
 
         sprite:ReplaceSpritesheet(0, filename)
         sprite:LoadGraphics()
-        grid.Sprite = sprite
     end
 
     function StageAPI.ChangeSingleGrid(grid, grids, i)
@@ -5002,7 +5002,7 @@ do -- GridGfx
         local send = {Grid = grid, Index = i, Type = gtype, Desc = desc}
         if gtype == GridEntityType.GRID_DOOR and grids.Doors then
             StageAPI.ChangeDoor(send, grids.Doors, grids.PayToPlayDoor, grids.HasBossAmbushDoor)
-        elseif grid:ToRock() and grids.Rocks then
+        elseif StageAPI.RockTypes[gtype] and grids.Rocks then
             StageAPI.ChangeRock(send, grids.Rocks)
         elseif gtype == GridEntityType.GRID_PIT and grids.Pits then
             StageAPI.ChangePit(send, grids.Pits, grids.Bridges, grids.AltPits)
@@ -5088,7 +5088,7 @@ do -- GridGfx
             local width = room:GetGridWidth()
             for index, pit in pairs(pits) do
                 StageAPI.ChangePit({Grid = pit, Index = index}, grids.Pits, grids.Bridges, grids.AltPits)
-                local sprite = pit.Sprite
+                local sprite = pit:GetSprite()
 
                 local adj = {index - 1, index + 1, index - width, index + width, index - width - 1, index + width - 1, index - width + 1, index + width + 1}
                 local adjPits = {}
@@ -5099,7 +5099,6 @@ do -- GridGfx
 
                 adjPits[#adjPits + 1] = true
                 sprite:SetFrame("pit", StageAPI.GetPitFrame(table.unpack(adjPits)))
-                pit.Sprite = sprite
             end
         end
     end
@@ -5843,7 +5842,7 @@ do -- Definitions
 
     StageAPI.UteroBackdrop = StageAPI.BackdropHelper(StageAPI.UteroBackdrop, "stageapi/floors/utero/", ".png")
     StageAPI.UteroRoomGfx = StageAPI.RoomGfx(--[[StageAPI.UteroBackdrop]] nil, StageAPI.UteroGridGfx, "_default")
-    StageAPI.UteroMusicID = Isaac.GetMusicIdByName("Womb/Utero")
+    StageAPI.UteroMusicID = Isaac.GetMusicIdByName("Utero")
     StageAPI.Utero = StageAPI.CustomStage("Utero", nil, true)
     StageAPI.Utero:SetStageMusic(StageAPI.UteroMusicID)
     StageAPI.Utero:SetBossMusic({Music.MUSIC_BOSS, Music.MUSIC_BOSS2}, Music.MUSIC_BOSS_OVER)
@@ -7114,7 +7113,7 @@ do -- Callbacks
         local currStage = StageAPI.CurrentStage or {}
         local nextStage = StageAPI.CallCallbacks("PRE_SELECT_NEXT_STAGE", true, StageAPI.CurrentStage) or currStage.NextStage
         if nextStage and not currStage.OverridingTrapdoors then
-            StageAPI.SpawnCustomTrapdoor(room:GetGridPosition(index), nextStage, grid.Sprite:GetFilename(), 32, true)
+            StageAPI.SpawnCustomTrapdoor(room:GetGridPosition(index), nextStage, grid:GetSprite():GetFilename(), 32, true)
             room:RemoveGridEntity(index, 0, false)
         end
     end
@@ -7217,33 +7216,6 @@ do -- Callbacks
             end
 
             StageAPI.RoomRendered = true
-        end
-
-        if stype == StageType.STAGETYPE_ORIGINAL and (stage == LevelStage.STAGE4_1 or stage == LevelStage.STAGE4_2) then
-            local shouldPlayMusic, shouldLayer = StageAPI.ShouldPlayStageMusic()
-            if shouldPlayMusic then
-                local id = StageAPI.Music:GetCurrentMusicID()
-                local musicID = StageAPI.UteroMusicID
-                local queuedID = StageAPI.Music:GetQueuedMusicID()
-
-                local canOverride, canOverrideQueue = StageAPI.CanOverrideMusic(queuedID)
-                if queuedID ~= musicID and (canOverride or canOverrideQueue) then
-                    StageAPI.Music:Queue(musicID)
-                end
-
-                local canOverride = StageAPI.CanOverrideMusic(id)
-                if id ~= musicID and canOverride then
-                    StageAPI.Music:Play(musicID, 0)
-                end
-
-                StageAPI.Music:UpdateVolume()
-
-                if shouldLayer and not StageAPI.Music:IsLayerEnabled() then
-                    StageAPI.Music:EnableLayer()
-                elseif not shouldLayer and StageAPI.Music:IsLayerEnabled() then
-                    StageAPI.Music:DisableLayer()
-                end
-            end
         end
 
         local btype = room:GetBackdropType()
@@ -8164,7 +8136,7 @@ do
                             local adjacent = {index - 1, index + 1, index - width, index + width}
                             for _, index2 in ipairs(adjacent) do
                                 local grid = room:GetGridEntity(index2)
-                                if grid and room:GetGridCollision(index2) == 0 and (grid:ToRock() or grid.Desc.Type == GridEntityType.GRID_POOP) then
+                                if grid and room:GetGridCollision(index2) == 0 and (StageAPI.RockTypes[grid.Desc.Type] or grid.Desc.Type == GridEntityType.GRID_POOP) then
                                     room:GetGridEntity(index):ToPit():MakeBridge()
                                     break
                                 end
@@ -8177,9 +8149,9 @@ do
                     if currentRoom:WasIndexTriggered(index, 100) then
                         local grid = room:GetGridEntity(index)
                         if grid and room:GetGridCollision(index) ~= 0 then
-                            if grid:ToRock() then
+                            if StageAPI.RockTypes[grid.Desc.Type] then
                                 grid:Destroy()
-                            elseif grid:ToPit() then
+                            elseif grid.Desc.Type == GridEntityType.GRID_PIT then
                                 grid:ToPit():MakeBridge()
                             end
                         end
@@ -8197,9 +8169,9 @@ do
                                     if room:GetGridCollision(index2) == 0 then
                                         local grid = room:GetGridEntity(index2)
                                         if grid then
-                                            if checking:ToRock() and grid:ToRock() then
+                                            if StageAPI.RockTypes[checking.Desc.Type] and StageAPI.RockTypes[grid.Desc.Type] then
                                                 checking:Destroy()
-                                            elseif checking:ToPit() and grid:ToPit() then
+                                            elseif checking.Desc.Type == GridEntityType.GRID_PIT and grid.Desc.Type == GridEntityType.GRID_PIT then
                                                 checking:ToPit():MakeBridge()
                                             end
                                             Isaac.Spawn(EntityType.ENTITY_EFFECT, EffectVariant.POOF01, 0, room:GetGridPosition(index), zeroVector, nil)
@@ -8215,9 +8187,9 @@ do
                         end
 
                         if shouldDetonate then
-                            if checking:ToRock() then
+                            if StageAPI.RockTypes[checking.Desc.Type] then
                                 checking:Destroy()
-                            elseif checking:ToPit() then
+                            elseif checking.Desc.Type == GridEntityType.GRID_PIT then
                                 checking:ToPit():MakeBridge()
                             end
                             Isaac.Spawn(EntityType.ENTITY_EFFECT, EffectVariant.POOF01, 0, room:GetGridPosition(index), zeroVector, nil)

@@ -1,5 +1,5 @@
 <music root="music/">
 	<track name="Catacombs" intro="Catacombs Intro.ogg" path="Catacombs.ogg" layerintro="Catacombs Layer Intro.ogg" layer="Catacombs Layer.ogg" loop="true" />
 	<track name="Necropolis" intro="Necropolis Intro.ogg" path="Necropolis.ogg" layerintro="Necropolis Layer Intro.ogg" layer="Necropolis Layer.ogg" loop="true" />
-	<track name="Womb/Utero" intro="The Womb Chapter Four Intro.ogg" path="The Womb Chapter Four.ogg" layerintro="The Womb Layer Intro.ogg" layer="The Womb Layer.ogg" loop="true" />
+	<track name="Utero" path="Utero.ogg" layer="Utero Heavy.ogg" loop="true" layermode="2" layerfadespeed="0.005" />
 </music>
