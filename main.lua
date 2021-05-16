@@ -3728,7 +3728,7 @@ do -- Custom Grid Entities
         [GridEntityType.GRID_LOCK]      = 1,
         [GridEntityType.GRID_TNT]       = 4,
         [GridEntityType.GRID_FIREPLACE] = 4,
-        [GridEntityType.GRID_POOP]      = 4,
+        [GridEntityType.GRID_POOP]      = 1000,
     }
 
     StageAPI.CustomGrids = {}
@@ -3744,9 +3744,9 @@ do -- Custom Grid Entities
             end
 
             if self.OverrideGridSpawns and grid then
-                local overrideState = self.OverrideGridSpawnState or StageAPI.DefaultBrokenGridStateByType[grid.Type] or 2
+                local overrideState = self.OverrideGridSpawnState or StageAPI.DefaultBrokenGridStateByType[grid.Desc.Type] or 2
                 if grid.State ~= overrideState then
-                    StageAPI.SpawnOverriddenGrids[grindex] = self.OverrideGridSpawnState or true
+                    StageAPI.SpawnOverriddenGrids[grindex] = self.OverrideGridSpawnState or overrideState
                 end
             end
 
