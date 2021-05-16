@@ -2897,7 +2897,7 @@ do -- RoomsList
                                     if currentRoom and not currentRoom.IgnoreRoomRules then
                                         if entityData.Type == EntityType.ENTITY_PICKUP and entityData.Variant == PickupVariant.PICKUP_COLLECTIBLE then
                                             if currentRoom.RoomType == RoomType.ROOM_TREASURE and (currentRoom.Layout.Variant > 0 or string.find(string.lower(currentRoom.Layout.Name), "choice") or string.find(string.lower(currentRoom.Layout.Name), "choose")) then
-                                                ent:ToPickup().TheresOptionsPickup = true
+                                                ent:ToPickup().OptionsPickupIndex = 1
                                             end
                                         end
                                     end
