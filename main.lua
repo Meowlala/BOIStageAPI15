@@ -412,6 +412,7 @@ do -- Core Definitions
         [GridEntityType.GRID_ROCK_BOMB] = true,
         [GridEntityType.GRID_ROCK_ALT] = true,
         [GridEntityType.GRID_ROCK_SS] = true,
+        [GridEntityType.GRID_PILLAR] = true,
         [GridEntityType.GRID_ROCK_SPIKED] = true,
         [GridEntityType.GRID_ROCK_ALT2] = true,
         [GridEntityType.GRID_ROCK_GOLD] = true,
@@ -4728,17 +4729,6 @@ do -- GridGfx
     function StageAPI.GridGfx:SetPayToPlayDoor(filename)
         self.PayToPlayDoor = filename
     end
-
-    StageAPI.RockAnimationMap = {
-        "normal",
-        "black",
-        "tinted",
-        "alt",
-        "bombrock",
-        "big",
-        "superspecial",
-        "ss_broken"
-    }
 
     StageAPI.GridGfxRNG = RNG()
 
