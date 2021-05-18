@@ -4629,8 +4629,12 @@ do -- GridGfx
         self.Doors = false
     end
 
-    function StageAPI.GridGfx:SetRocks(filename)
+    function StageAPI.GridGfx:SetRocks(filename, noBridge)
         self.Rocks = filename
+
+        if not self.Bridges and not noBridge then
+            self.Bridges = filename
+        end
     end
 
     function StageAPI.GridGfx:SetGrid(filename, t, v)
@@ -4744,26 +4748,18 @@ do -- GridGfx
         grid:ToRock():UpdateAnimFrame()
     end
 
-    StageAPI.BridgeEntities = {}
+    StageAPI.BridgedPits = {}
     mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, function()
-        StageAPI.BridgeEntities = {}
+        StageAPI.BridgedPits = {}
     end)
 
-    StageAPI.BridgeOffset = Vector(3, 3)
-
     function StageAPI.CheckBridge(grid, index, bridgefilename)
-        if grid.State == 1 and bridgefilename and not StageAPI.BridgeEntities[index] then
-            local bridge = Isaac.Spawn(StageAPI.E.Bridge.T, StageAPI.E.Bridge.V, 0, room:GetGridPosition(index), zeroVector, nil)
-            local sprite = bridge:GetSprite()
-            sprite:Load("stageapi/bridge.anm2", false)
-            sprite:ReplaceSpritesheet(0, bridgefilename)
+        if grid.State == 1 and bridgefilename and not StageAPI.BridgedPits[index] then
+            local sprite = grid:GetSprite()
+            sprite:ReplaceSpritesheet(1, bridgefilename)
             sprite:LoadGraphics()
-            sprite:Play("Idle", true)
 
-            bridge:AddEntityFlags(EntityFlag.FLAG_DONT_OVERWRITE)
-            bridge.SpriteOffset = StageAPI.BridgeOffset
-            bridge.RenderZOffset = -10000
-            StageAPI.BridgeEntities[index] = bridge
+            StageAPI.BridgedPits[index] = true
         end
     end
 
@@ -4781,9 +4777,11 @@ do -- GridGfx
             gsprite:ReplaceSpritesheet(0, pitFile.File)
         end
 
-        gsprite:LoadGraphics()
+        if bridgefilename then
+            gsprite:ReplaceSpritesheet(1, bridgefilename)
+        end
 
-        StageAPI.CheckBridge(grid, pit.Index, bridgefilename)
+        gsprite:LoadGraphics()
     end
 
     StageAPI.DecorationSprites = {}
@@ -7171,13 +7169,6 @@ do -- Callbacks
             end
 
             StageAPI.RoomRendered = true
-        end
-
-        local btype = room:GetBackdropType()
-        if btype == 10 then
-            for _, grid in ipairs(pits) do
-                StageAPI.CheckBridge(grid[1], grid[2], "stageapi/floors/utero/grid_bridge_womb.png")
-            end
         end
 
         if StageAPI.RoomNamesEnabled then
