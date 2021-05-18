@@ -455,8 +455,8 @@ do -- Core Definitions
     }
 
     StageAPI.E = {
+        MetaEntity = "StageAPIMetaEntity",
         Backdrop = "StageAPIBackdrop",
-        Bridge = "StageAPIBridge",
         Shading = "StageAPIShading",
         StageShadow = "StageAPIStageShadow",
         GenericEffect = "StageAPIGenericEffect",
@@ -2192,7 +2192,7 @@ do -- RoomsList
     StageAPI.RoomLoadRNG = RNG()
 
     StageAPI.MetadataEntities = {
-        [900] = {
+        [199] = {
             [0] = {
                 Name = "Group 0",
                 Group = "Groups",
@@ -2350,6 +2350,12 @@ do -- RoomsList
         }
     }
 
+    mod:AddCallback(ModCallbacks.MC_NPC_UPDATE, function(_, npc)
+        if npc.Variant ~= StageAPI.E.DeleteMeNPC.Variant then
+            print("Something is wrong! A StageAPI metadata entity has spawned when it should have been removed.")
+        end
+    end, StageAPI.E.MetaEntity.T)
+
     StageAPI.MetadataEntitiesByName = {}
 
     StageAPI.UnblockableEntities = {}
@@ -2365,9 +2371,9 @@ do -- RoomsList
     function StageAPI.AddMetadataEntities(tbl)
         if type(next(tbl)) == "table" and next(tbl).Name then
             for variant, data in pairs(tbl) do
-                data.Type = 900
+                data.Type = 199
                 data.Variant = variant
-                StageAPI.MetadataEntities[900][variant] = data
+                StageAPI.MetadataEntities[199][variant] = data
                 StageAPI.MetadataEntitiesByName[data.Name] = data
             end
         else
@@ -8064,13 +8070,15 @@ do
                 if metadataSet["BridgeFailsafe"] then
                     if room:GetGridCollision(index) ~= 0 then
                         if d12Used then
-                            room:GetGridEntity(index):ToPit():MakeBridge()
+                            local grid = room:GetGridEntity(index)
+                            grid:ToPit():MakeBridge(grid)
                         else
                             local adjacent = {index - 1, index + 1, index - width, index + width}
                             for _, index2 in ipairs(adjacent) do
                                 local grid = room:GetGridEntity(index2)
                                 if grid and room:GetGridCollision(index2) == 0 and (StageAPI.RockTypes[grid.Desc.Type] or grid.Desc.Type == GridEntityType.GRID_POOP) then
-                                    room:GetGridEntity(index):ToPit():MakeBridge()
+                                    local pit = room:GetGridEntity(index)
+                                    pit:ToPit():MakeBridge(pit)
                                     break
                                 end
                             end
@@ -8085,7 +8093,7 @@ do
                             if StageAPI.RockTypes[grid.Desc.Type] then
                                 grid:Destroy()
                             elseif grid.Desc.Type == GridEntityType.GRID_PIT then
-                                grid:ToPit():MakeBridge()
+                                grid:ToPit():MakeBridge(grid)
                             end
                         end
                     end
@@ -8105,7 +8113,7 @@ do
                                             if StageAPI.RockTypes[checking.Desc.Type] and StageAPI.RockTypes[grid.Desc.Type] then
                                                 checking:Destroy()
                                             elseif checking.Desc.Type == GridEntityType.GRID_PIT and grid.Desc.Type == GridEntityType.GRID_PIT then
-                                                checking:ToPit():MakeBridge()
+                                                checking:ToPit():MakeBridge(checking)
                                             end
                                             Isaac.Spawn(EntityType.ENTITY_EFFECT, EffectVariant.POOF01, 0, room:GetGridPosition(index), zeroVector, nil)
                                             recentlyDetonated[index] = 5
@@ -8123,7 +8131,7 @@ do
                             if StageAPI.RockTypes[checking.Desc.Type] then
                                 checking:Destroy()
                             elseif checking.Desc.Type == GridEntityType.GRID_PIT then
-                                checking:ToPit():MakeBridge()
+                                checking:ToPit():MakeBridge(checking)
                             end
                             Isaac.Spawn(EntityType.ENTITY_EFFECT, EffectVariant.POOF01, 0, room:GetGridPosition(index), zeroVector, nil)
                             recentlyDetonated[index] = 5
