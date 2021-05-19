@@ -425,7 +425,8 @@ do -- Core Definitions
         Golden = 3,
         Rainbow = 4,
         Black = 5,
-        White = 6
+        White = 6,
+        Charming = 11
     }
 
     StageAPI.CorrectedGridTypes = {
@@ -444,6 +445,7 @@ do -- Core Definitions
         [1494]={Type = GridEntityType.GRID_POOP, Variant = StageAPI.PoopVariant.Rainbow},
         [1490]={Type = GridEntityType.GRID_POOP, Variant = StageAPI.PoopVariant.Red},
         [1500]=GridEntityType.GRID_POOP,
+        [1501]={Type = GridEntityType.GRID_POOP, Variant = StageAPI.PoopVariant.Charming},
         [1900]=GridEntityType.GRID_ROCKB,
         [1901]=GridEntityType.GRID_PILLAR,
         [1930]=GridEntityType.GRID_SPIKES,
