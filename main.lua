@@ -436,6 +436,7 @@ do -- Core Definitions
         [1010]=GridEntityType.GRID_ROCK_SPIKED,
         [1011]=GridEntityType.GRID_ROCK_GOLD,
         [1300]=GridEntityType.GRID_TNT,
+        [1499]={Type = GridEntityType.GRID_POOP, Variant = StageAPI.PoopVariant.Normal}, -- giant, does not work
         [1498]={Type = GridEntityType.GRID_POOP, Variant = StageAPI.PoopVariant.White},
         [1497]={Type = GridEntityType.GRID_POOP, Variant = StageAPI.PoopVariant.Black},
         [1496]={Type = GridEntityType.GRID_POOP, Variant = StageAPI.PoopVariant.Golden},
