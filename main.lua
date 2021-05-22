@@ -6694,7 +6694,7 @@ do -- Rock Alt Override
             local stateCheck
             if type(StageAPI.SpawnOverriddenGrids[grindex]) == "number" then
                 stateCheck = StageAPI.SpawnOverriddenGrids[grindex]
-            else
+            elseif grid then
                 stateCheck = StageAPI.DefaultBrokenGridStateByType[grid.Type] or 2
             end
 
