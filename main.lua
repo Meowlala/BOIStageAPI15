@@ -1934,13 +1934,21 @@ do -- RoomsList
         return includesAny and #mustIncludeAllCopy == 0
     end
 
+    local excludeTypesFromClearing = {
+        [EntityType.ENTITY_FAMILIAR] = true,
+        [EntityType.ENTITY_PLAYER] = true,
+        [EntityType.ENTITY_KNIFE] = true,
+        [EntityType.ENTITY_DARK_ESAU] = true,
+        [EntityType.ENTITY_MOTHERS_SHADOW] = true
+    }
+
     function StageAPI.ClearRoomLayout(keepDecoration, doGrids, doEnts, doPersistentEnts, onlyRemoveTheseDecorations, doWalls, doDoors)
         if doEnts or doPersistentEnts then
             for _, ent in ipairs(Isaac.GetRoomEntities()) do
                 local etype = ent.Type
-                if etype ~= EntityType.ENTITY_FAMILIAR and etype ~= EntityType.ENTITY_PLAYER and etype ~= EntityType.ENTITY_KNIFE and not (etype == StageAPI.E.Shading.T and ent.Variant == StageAPI.E.Shading.V) then
+                if not excludeTypesFromClearing[etype] and not (etype == StageAPI.E.Shading.T and ent.Variant == StageAPI.E.Shading.V) then
                     local persistentData = StageAPI.CheckPersistence(ent.Type, ent.Variant, ent.SubType)
-                    if (doPersistentEnts or (ent:ToNPC() and (not persistentData or not persistentData.AutoPersists))) and not (ent:HasEntityFlags(EntityFlag.FLAG_CHARM) or ent:HasEntityFlags(EntityFlag.FLAG_FRIENDLY)) then
+                    if (doPersistentEnts or (ent:ToNPC() and (not persistentData or not persistentData.AutoPersists))) and not (ent:HasEntityFlags(EntityFlag.FLAG_CHARM) or ent:HasEntityFlags(EntityFlag.FLAG_FRIENDLY) or ent:HasEntityFlags(EntityFlag.FLAG_PERSISTENT)) then
                         ent:Remove()
                     end
                 end
@@ -5754,6 +5762,9 @@ do -- Definitions
     StageAPI.CatacombsXL.DisplayName = "Catacombs XL"
     StageAPI.Catacombs:SetXLStage(StageAPI.CatacombsXL)
 
+    StageAPI.CatacombsGreed = StageAPI.Catacombs("Catacombs Greed")
+    StageAPI.CatacombsGreed.DisplayName = "Catacombs"
+
     StageAPI.NecropolisGridGfx = StageAPI.GridGfx()
     StageAPI.NecropolisGridGfx:SetRocks("gfx/grid/rocks_depths.png")
     StageAPI.NecropolisGridGfx:SetPits("gfx/grid/grid_pit_necropolis.png")
@@ -5791,6 +5802,9 @@ do -- Definitions
     StageAPI.NecropolisXL.DisplayName = "Necropolis XL"
     StageAPI.Necropolis:SetXLStage(StageAPI.NecropolisXL)
 
+    StageAPI.NecropolisGreed = StageAPI.Necropolis("Necropolis Greed")
+    StageAPI.NecropolisGreed.DisplayName = "Necropolis"
+
     StageAPI.UteroGridGfx = StageAPI.GridGfx()
     StageAPI.UteroGridGfx:SetRocks("gfx/grid/rocks_womb.png")
     StageAPI.UteroGridGfx:SetPits("gfx/grid/grid_pit_womb.png", {
@@ -5825,6 +5839,9 @@ do -- Definitions
     StageAPI.UteroXL.DisplayName = "Utero XL"
     StageAPI.Utero:SetXLStage(StageAPI.UteroXL)
 
+    StageAPI.UteroGreed = StageAPI.Utero("Utero Greed")
+    StageAPI.UteroGreed.DisplayName = "Utero"
+
     StageAPI.StageOverride = {
         CatacombsOne = {
             OverrideStage = LevelStage.STAGE2_1,
@@ -5836,6 +5853,12 @@ do -- Definitions
             OverrideStageType = StageType.STAGETYPE_WOTL,
             ReplaceWith = StageAPI.CatacombsTwo
         },
+        CatacombsGreed = {
+            OverrideStage = LevelStage.STAGE2_GREED,
+            OverrideStageType = StageType.STAGETYPE_WOTL,
+            GreedMode = true,
+            ReplaceWith = StageAPI.CatacombsGreed
+        },
         NecropolisOne = {
             OverrideStage = LevelStage.STAGE3_1,
             OverrideStageType = StageType.STAGETYPE_WOTL,
@@ -5846,6 +5869,12 @@ do -- Definitions
             OverrideStageType = StageType.STAGETYPE_WOTL,
             ReplaceWith = StageAPI.NecropolisTwo
         },
+        NecropolisGreed = {
+            OverrideStage = LevelStage.STAGE3_GREED,
+            OverrideStageType = StageType.STAGETYPE_WOTL,
+            GreedMode = true,
+            ReplaceWith = StageAPI.NecropolisGreed
+        },
         UteroOne = {
             OverrideStage = LevelStage.STAGE4_1,
             OverrideStageType = StageType.STAGETYPE_WOTL,
@@ -5855,24 +5884,35 @@ do -- Definitions
             OverrideStage = LevelStage.STAGE4_2,
             OverrideStageType = StageType.STAGETYPE_WOTL,
             ReplaceWith = StageAPI.UteroTwo
+        },
+        UteroGreed = {
+            OverrideStage = LevelStage.STAGE4_GREED,
+            OverrideStageType = StageType.STAGETYPE_WOTL,
+            GreedMode = true,
+            ReplaceWith = StageAPI.UteroGreed
         }
     }
 
     StageAPI.Catacombs:SetReplace(StageAPI.StageOverride.CatacombsOne)
     StageAPI.CatacombsTwo:SetReplace(StageAPI.StageOverride.CatacombsTwo)
+    StageAPI.CatacombsGreed:SetReplace(StageAPI.StageOverride.CatacombsGreed)
 
     StageAPI.Necropolis:SetReplace(StageAPI.StageOverride.NecropolisOne)
     StageAPI.NecropolisTwo:SetReplace(StageAPI.StageOverride.NecropolisTwo)
+    StageAPI.NecropolisGreed:SetReplace(StageAPI.StageOverride.NecropolisGreed)
 
     StageAPI.Utero:SetReplace(StageAPI.StageOverride.UteroOne)
     StageAPI.UteroTwo:SetReplace(StageAPI.StageOverride.UteroTwo)
+    StageAPI.UteroGreed:SetReplace(StageAPI.StageOverride.UteroGreed)
 
     function StageAPI.InOverriddenStage()
         for name, override in pairs(StageAPI.StageOverride) do
-            local isStage = level:GetStage() == override.OverrideStage and
-                            level:GetStageType() == override.OverrideStageType
-            if isStage then
-                return true, override, name
+            if (not not override.GreedMode) == game:IsGreedMode() then
+                local isStage = level:GetStage() == override.OverrideStage and
+                                level:GetStageType() == override.OverrideStageType
+                if isStage then
+                    return true, override, name
+                end
             end
         end
     end
