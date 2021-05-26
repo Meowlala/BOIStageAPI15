@@ -11,8 +11,12 @@ Special thanks to the artists whose floors make up the thumbnail!
 
 HappyHead - Cove, Bottom Right
 Origami - Crystal Caves, Bottom Left
-Ashkal - Glacier and Tomb, Top</description>
-    <version>1.87</version>
+Ashkal - Glacier and Tomb, Top
+
+If you're looking for the Afterbirth+ version of StageAPI, it can be found [url=https://steamcommunity.com/sharedfiles/filedetails/?id=2498098491]here[/url].
+
+For developers, a more up to date version of StageAPI can be found at [url=https://github.com/Meowlala/BOIStageAPI15]our Github repository[/url]. Please report any issues you find there!</description>
+    <version>1.90</version>
     <visibility>Public</visibility>
     <tag id="Lua"/>
     <tag id="Rooms"/>

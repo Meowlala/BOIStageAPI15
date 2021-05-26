@@ -8477,6 +8477,35 @@ do -- Mod Compatibility
                 REVEL.AddedStageAPIChangelogs = true
             end
 
+            TryAddChangelog("v1.89", [[- Updated StageAPI to
+function with Repentance.
+Note that it is still
+a work in progress, and
+may have some bugs. Please
+report any issues at
+StageAPI's github page,
+linked in the steam
+description.
+
+- StageAPI no longer
+overrides the D7
+
+- StageAPI now supports
+Dead Sea Scrolls
+changelogs
+
+- Custom grids can now
+disable the usual grid
+sprite replacement that
+custom stages do, via
+a new argument to CustomGrid()
+
+- Fixed an issue with
+overridden RoomGfx not
+using the correct GridGfx
+on custom stages
+]])
+
             TryAddChangelog("v1.86 - 88", [[- Added functions
 AddObjectToRoomLayout,
 GenerateRoomLayoutFromData,
