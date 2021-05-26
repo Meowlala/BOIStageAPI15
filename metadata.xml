@@ -1,21 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <metadata>
-    <name>Custom Stage API</name>
-    <directory>stageapi15</directory>
-    <id>1348031964</id>
-    <description>It's an API for making custom stages.
+    <name>Custom Stage API (AFTERBIRTH+ ONLY)</name>
+    <directory>stageapi15ab</directory>
+    <id>2498098491</id>
+    <description>Afterbirth+ version of StageAPI. Out of date and unsupported, but should function with old mods.
 
-Built from scratch to replace Revelations' StageAPI. Incompatible with old Revelations, needed for new version.
-
-Special thanks to the artists whose floors make up the thumbnail!
-
-HappyHead - Cove, Bottom Right
-Origami - Crystal Caves, Bottom Left
-Ashkal - Glacier and Tomb, Top</description>
-    <version>1.87</version>
-    <visibility>Public</visibility>
-    <tag id="Lua"/>
-    <tag id="Rooms"/>
-    <tag id="Floors"/>
-    <tag id="Tweaks"/>
+The Repentance and only supported version of Custom Stage API can be found [url=https://steamcommunity.com/sharedfiles/filedetails/?id=1348031964]here[/url].</description>
+    <version>1.1</version>
+    <visibility>Private</visibility>
 </metadata>
