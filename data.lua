@@ -805,8 +805,12 @@ StageAPI.CatacombsXL = StageAPI.Catacombs("Catacombs XL")
 StageAPI.CatacombsXL.DisplayName = "Catacombs XL"
 StageAPI.Catacombs:SetXLStage(StageAPI.CatacombsXL)
 
+StageAPI.CatacombsGreed = StageAPI.Catacombs("Catacombs Greed")
+StageAPI.CatacombsGreed.DisplayName = "Catacombs"
+
 StageAPI.AddOverrideStage("CatacombsOne", LevelStage.STAGE2_1, StageType.STAGETYPE_WOTL, StageAPI.Catacombs)
 StageAPI.AddOverrideStage("CatacombsTwo", LevelStage.STAGE2_2, StageType.STAGETYPE_WOTL, StageAPI.CatacombsTwo)
+StageAPI.AddOverrideStage("CatacombsGreed", LevelStage.STAGE2_GREED, StageType.STAGETYPE_WOTL, StageAPI.CatacombsGreed, true)
 
 StageAPI.Catacombs:SetReplace(StageAPI.StageOverride.CatacombsOne)
 StageAPI.CatacombsTwo:SetReplace(StageAPI.StageOverride.CatacombsTwo)
@@ -838,8 +842,12 @@ StageAPI.NecropolisXL = StageAPI.Necropolis("Necropolis XL")
 StageAPI.NecropolisXL.DisplayName = "Necropolis XL"
 StageAPI.Necropolis:SetXLStage(StageAPI.NecropolisXL)
 
+StageAPI.NecropolisGreed = StageAPI.Necropolis("Necropolis Greed")
+StageAPI.NecropolisGreed.DisplayName = "Necropolis"
+
 StageAPI.AddOverrideStage("NecropolisOne", LevelStage.STAGE3_1, StageType.STAGETYPE_WOTL, StageAPI.Necropolis)
 StageAPI.AddOverrideStage("NecropolisTwo", LevelStage.STAGE3_2, StageType.STAGETYPE_WOTL, StageAPI.NecropolisTwo)
+StageAPI.AddOverrideStage("NecropolisGreed", LevelStage.STAGE3_GREED, StageType.STAGETYPE_WOTL, StageAPI.NecropolisGreed, true)
 
 -- Utero --
 
@@ -848,20 +856,6 @@ StageAPI.UteroGridGfx = StageAPI.BaseGridGfx.Utero
 StageAPI.UteroBackdrop = StageAPI.BaseBackdrops.Utero
 StageAPI.UteroRoomGfx = StageAPI.BaseRoomGfx.Utero
 --StageAPI.Utero:SetRoomGfx(StageAPI.BaseRoomGfx.Utero, {RoomType.ROOM_DEFAULT, RoomType.ROOM_TREASURE, RoomType.ROOM_MINIBOSS, RoomType.ROOM_BOSS})
-
-StageAPI.UteroOverlays = {
-    StageAPI.Overlay("stageapi/floors/utero/overlay.anm2", Vector(2, -1.6), nil, nil, 0.5),
-    StageAPI.Overlay("stageapi/floors/utero/overlay.anm2", Vector(-0.5, -1.5), nil, nil, 0.5),
-    StageAPI.Overlay("stageapi/floors/utero/overlay.anm2", Vector(-1, -1.5), Vector(128, 128), nil, 0.5),
-    StageAPI.Overlay("stageapi/floors/utero/overlay.anm2", Vector(-2, -1.6), Vector(128, 128), nil, 0.5)
-}
-
-StageAPI.UteroOverlaysDark = {
-    StageAPI.Overlay("stageapi/floors/utero/overlay.anm2", Vector(2, -1.6), nil, nil, 0.1),
-    StageAPI.Overlay("stageapi/floors/utero/overlay.anm2", Vector(-0.5, -1.5), nil, nil, 0.1),
-    StageAPI.Overlay("stageapi/floors/utero/overlay.anm2", Vector(-1, -1.5), Vector(128, 128), nil, 0.1),
-    StageAPI.Overlay("stageapi/floors/utero/overlay.anm2", Vector(-2, -1.6), Vector(128, 128), nil, 0.1)
-}
 
 StageAPI.UteroMusicID = Isaac.GetMusicIdByName("Womb/Utero")
 StageAPI.Utero = StageAPI.CustomStage("Utero", nil, true)
@@ -876,8 +870,12 @@ StageAPI.UteroXL = StageAPI.Utero("Utero XL")
 StageAPI.UteroXL.DisplayName = "Utero XL"
 StageAPI.Utero:SetXLStage(StageAPI.UteroXL)
 
+StageAPI.UteroGreed = StageAPI.Utero("Utero Greed")
+StageAPI.UteroGreed.DisplayName = "Utero"
+
 StageAPI.AddOverrideStage("UteroOne", LevelStage.STAGE4_1, StageType.STAGETYPE_WOTL, StageAPI.Utero)
 StageAPI.AddOverrideStage("UteroTwo", LevelStage.STAGE4_2, StageType.STAGETYPE_WOTL, StageAPI.UteroTwo)
+StageAPI.AddOverrideStage("UteroGreed", LevelStage.STAGE4_GREED, StageType.STAGETYPE_WOTL, StageAPI.UteroGreed, true)
 
 end
 
