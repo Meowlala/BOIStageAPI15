@@ -7201,7 +7201,7 @@ do -- Callbacks
 
                 local queuedID = StageAPI.Music:GetQueuedMusicID()
                 local canOverride, canOverrideQueue = StageAPI.CanOverrideMusic(queuedID)
-                if queuedID ~= shouldQueue and (canOverride or canOverrideQueue or disregardNonOverride) then
+                if queuedID ~= shouldQueue then
                     StageAPI.Music:Queue(shouldQueue)
                 end
 
