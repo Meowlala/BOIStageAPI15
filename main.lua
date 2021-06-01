@@ -8474,7 +8474,7 @@ do -- Mod Compatibility
                 REVEL.AddedStageAPIChangelogs = true
             end
 
-            TryAddChangelog("v1.89", [[- Updated StageAPI to
+            TryAddChangelog("v1.89 - 90", [[- Updated StageAPI to
 function with Repentance.
 Note that it is still
 a work in progress, and
@@ -8501,6 +8501,16 @@ a new argument to CustomGrid()
 overridden RoomGfx not
 using the correct GridGfx
 on custom stages
+
+- Fixed the base game's
+black market crawlspace
+leading to an error room
+
+- StageAPI no longer
+overrides music.xml, which
+should allow for considerably
+more compatibility with
+music replacing mods
 ]])
 
             TryAddChangelog("v1.86 - 88", [[- Added functions
@@ -8897,7 +8907,7 @@ other than a door
 end
 
 Isaac.DebugString("[StageAPI] Fully Loaded, loading dependent mods.")
-StageAPI.MarkLoaded("StageAPI", "1.90", true, true)
+StageAPI.MarkLoaded("StageAPI", "1.91", true, true)
 
 StageAPI.Loaded = true
 if StageAPI.ToCall then

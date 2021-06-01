@@ -3,7 +3,9 @@
     <name>Custom Stage API</name>
     <directory>stageapi15</directory>
     <id>1348031964</id>
-    <description>It's an API for making custom stages.
+    <description>[h1]Repentance Stage API[/h1]
+
+It's an API for making custom stages.
 
 Built from scratch to replace Revelations' StageAPI. Incompatible with old Revelations, needed for new version.
 
@@ -16,7 +18,7 @@ Ashkal - Glacier and Tomb, Top
 If you're looking for the Afterbirth+ version of StageAPI, it can be found [url=https://steamcommunity.com/sharedfiles/filedetails/?id=2498098491]here[/url].
 
 For developers, a more up to date version of StageAPI can be found at [url=https://github.com/Meowlala/BOIStageAPI15]our Github repository.[/url] Please report any issues you find there!</description>
-    <version>1.90</version>
+    <version>1.91</version>
     <visibility>Public</visibility>
     <tag id="Lua"/>
     <tag id="Rooms"/>
