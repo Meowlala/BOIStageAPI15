@@ -4,13 +4,13 @@
     <stage id="2" name="Cellar" path="02.Cellar.xml" playerspot="playerspot_02_cellar.png" bossspot="bossspot_02_cellar.png" music="4" backdrop="2" />
 	<stage id="3" name="Burning Basement" path="03.Burning Basement.xml" playerspot="playerspot_13_burning_basement.png" bossspot="bossspot_13_burning_basement.png" music="14" backdrop="3" />
     <stage id="4" name="Caves" path="04.Caves.xml" playerspot="playerspot_03_caves.png" bossspot="bossspot_03_caves.png" music="2" backdrop="4" />
-    <stage id="5" name="" path="05.Catacombs.xml" playerspot="playerspot_04_catacombs.png" bossspot="bossspot_04_catacombs.png" music="5" backdrop="5" />
+    <stage id="5" name="" path="05.Catacombs.xml" playerspot="playerspot_04_catacombs.png" bossspot="bossspot_04_catacombs.png" music="0" backdrop="5" />
 	<stage id="6" name="Flooded Caves" path="06.Flooded Caves.xml" playerspot="playerspot_14_drowned_caves.png" bossspot="bossspot_14_drowned_caves.png" music="15" backdrop="6" suffix="_downpour" />
     <stage id="7" name="Depths" path="07.Depths.xml" playerspot="playerspot_05_depths.png" bossspot="bossspot_05_depths.png" music="3" backdrop="7" />
-    <stage id="8" name="" path="08.Necropolis.xml" playerspot="playerspot_06_necropolis.png" bossspot="bossspot_06_necropolis.png" music="6" backdrop="8" />
+    <stage id="8" name="" path="08.Necropolis.xml" playerspot="playerspot_06_necropolis.png" bossspot="bossspot_06_necropolis.png" music="0" backdrop="8" />
 	<stage id="9" name="Dank Depths" path="09.Dank Depths.xml" playerspot="playerspot_15_dank_depths.png" bossspot="bossspot_15_dank_depths.png" music="16" backdrop="9" />
     <stage id="10" name="Womb" path="10.Womb.xml" playerspot="playerspot_07_womb.png" bossspot="bossspot_07_womb.png" music="7" backdrop="10" />
-    <stage id="11" name="" path="11.Utero.xml" playerspot="playerspot_08_utero.png" bossspot="bossspot_08_utero.png" music="19" backdrop="11" />
+    <stage id="11" name="" path="11.Utero.xml" playerspot="playerspot_08_utero.png" bossspot="bossspot_08_utero.png" music="0" backdrop="11" />
 	<stage id="12" name="Scarred Womb" path="12.Scarred Womb.xml" playerspot="playerspot_16_scarred_womb.png" bossspot="bossspot_16_scarred_womb.png" music="17" backdrop="12" />
     <stage id="13" name="???" path="13.Blue Womb.xml" playerspot="playerspot_17_blue_womb.png" bossspot="bossspot_17_blue_womb.png" music="18" backdrop="13" />
     <stage id="14" name="Sheol" path="14.Sheol.xml" playerspot="playerspot_09_sheol.png" bossspot="bossspot_09_sheol.png" music="11" backdrop="14" />

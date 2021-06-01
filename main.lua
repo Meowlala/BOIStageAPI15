@@ -5748,9 +5748,8 @@ do -- Definitions
 
     StageAPI.CatacombsBackdrop = StageAPI.BackdropHelper(StageAPI.CatacombsBackdrop, "stageapi/floors/catacombs/", ".png")
     StageAPI.CatacombsRoomGfx = StageAPI.RoomGfx(--[[StageAPI.CatacombsBackdrop]] nil, StageAPI.CatacombsGridGfx, "_default")
-    StageAPI.CatacombsMusicID = Isaac.GetMusicIdByName("Catacombs")
     StageAPI.Catacombs = StageAPI.CustomStage("Catacombs", nil, true)
-    StageAPI.Catacombs:SetStageMusic(StageAPI.CatacombsMusicID)
+    StageAPI.Catacombs:SetStageMusic(Music.MUSIC_CATACOMBS)
     StageAPI.Catacombs:SetBossMusic({Music.MUSIC_BOSS, Music.MUSIC_BOSS2}, Music.MUSIC_BOSS_OVER)
     StageAPI.Catacombs:SetRoomGfx(StageAPI.CatacombsRoomGfx, {RoomType.ROOM_DEFAULT, RoomType.ROOM_TREASURE, RoomType.ROOM_MINIBOSS, RoomType.ROOM_BOSS})
     StageAPI.Catacombs.DisplayName = "Catacombs I"
@@ -5788,9 +5787,8 @@ do -- Definitions
 
     StageAPI.NecropolisBackdrop = StageAPI.BackdropHelper(StageAPI.NecropolisBackdrop, "stageapi/floors/necropolis/", ".png")
     StageAPI.NecropolisRoomGfx = StageAPI.RoomGfx(--[[StageAPI.NecropolisBackdrop]] nil, StageAPI.NecropolisGridGfx, "_default")
-    StageAPI.NecropolisMusicID = Isaac.GetMusicIdByName("Necropolis")
     StageAPI.Necropolis = StageAPI.CustomStage("Necropolis", nil, true)
-    StageAPI.Necropolis:SetStageMusic(StageAPI.NecropolisMusicID)
+    StageAPI.Necropolis:SetStageMusic(Music.MUSIC_NECROPOLIS)
     StageAPI.Necropolis:SetBossMusic({Music.MUSIC_BOSS, Music.MUSIC_BOSS2}, Music.MUSIC_BOSS_OVER)
     StageAPI.Necropolis:SetRoomGfx(StageAPI.NecropolisRoomGfx, {RoomType.ROOM_DEFAULT, RoomType.ROOM_TREASURE, RoomType.ROOM_MINIBOSS, RoomType.ROOM_BOSS})
     StageAPI.Necropolis.DisplayName = "Necropolis I"
@@ -5825,9 +5823,8 @@ do -- Definitions
 
     StageAPI.UteroBackdrop = StageAPI.BackdropHelper(StageAPI.UteroBackdrop, "stageapi/floors/utero/", ".png")
     StageAPI.UteroRoomGfx = StageAPI.RoomGfx(--[[StageAPI.UteroBackdrop]] nil, StageAPI.UteroGridGfx, "_default")
-    StageAPI.UteroMusicID = Isaac.GetMusicIdByName("Utero")
     StageAPI.Utero = StageAPI.CustomStage("Utero", nil, true)
-    StageAPI.Utero:SetStageMusic(StageAPI.UteroMusicID)
+    StageAPI.Utero:SetStageMusic(Music.MUSIC_UTERO)
     StageAPI.Utero:SetBossMusic({Music.MUSIC_BOSS, Music.MUSIC_BOSS2}, Music.MUSIC_BOSS_OVER)
     StageAPI.Utero:SetRoomGfx(StageAPI.UteroRoomGfx, {RoomType.ROOM_DEFAULT, RoomType.ROOM_TREASURE, RoomType.ROOM_MINIBOSS, RoomType.ROOM_BOSS})
     StageAPI.Utero.DisplayName = "Utero I"
