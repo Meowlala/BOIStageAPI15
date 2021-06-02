@@ -6926,7 +6926,16 @@ do -- Callbacks
         Music.MUSIC_JINGLE_TREASUREROOM_ENTRY_0,
         Music.MUSIC_JINGLE_TREASUREROOM_ENTRY_1,
         Music.MUSIC_JINGLE_TREASUREROOM_ENTRY_2,
-        Music.MUSIC_JINGLE_TREASUREROOM_ENTRY_3
+        Music.MUSIC_JINGLE_TREASUREROOM_ENTRY_3,
+
+        -- Rep
+        Music.MUSIC_JINGLE_BOSS_RUSH_OUTRO,
+        Music.MUSIC_JINGLE_BOSS_OVER3,
+        Music.MUSIC_JINGLE_MOTHER_OVER,
+        Music.MUSIC_JINGLE_DOGMA_OVER,
+        Music.MUSIC_JINGLE_BEAST_OVER,
+        Music.MUSIC_JINGLE_CHALLENGE_ENTRY,
+        Music.MUSIC_JINGLE_CHALLENGE_OUTRO
     }
 
     function StageAPI.StopOverridingMusic(music, allowOverrideQueue, neverOverrideQueue)
