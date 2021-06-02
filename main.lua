@@ -5541,6 +5541,7 @@ do -- Custom Stage
 
     function StageAPI.CustomStage:SetTransitionMusic(music)
         self.TransitionMusic = music
+        StageAPI.StopOverridingMusic(music)
     end
 
     function StageAPI.CustomStage:SetBossMusic(music, clearedMusic, intro, outro)
@@ -5643,7 +5644,7 @@ do -- Custom Stage
                     musicID = newMusicID
                 end
 
-                if musicID and id ~= self.TransitionMusic then
+                if musicID then
                     return musicID, not room:IsClear()
                 end
             end
@@ -6912,7 +6913,7 @@ end
 Isaac.DebugString("[StageAPI] Loading Core Callbacks")
 do -- Callbacks
     StageAPI.NonOverrideMusic = {
-        Music.MUSIC_GAME_OVER,
+        {Music.MUSIC_GAME_OVER, false, true},
         Music.MUSIC_JINGLE_GAME_OVER,
         Music.MUSIC_JINGLE_SECRETROOM_FIND,
         {Music.MUSIC_JINGLE_NIGHTMARE, true},
@@ -6928,9 +6929,9 @@ do -- Callbacks
         Music.MUSIC_JINGLE_TREASUREROOM_ENTRY_3
     }
 
-    function StageAPI.StopOverridingMusic(music, allowOverrideQueue)
-        if allowOverrideQueue ~= nil then
-            StageAPI.NonOverrideMusic[#StageAPI.NonOverrideMusic + 1] = {music, allowOverrideQueue}
+    function StageAPI.StopOverridingMusic(music, allowOverrideQueue, neverOverrideQueue)
+        if allowOverrideQueue ~= nil or neverOverrideQueue ~= nil then
+            StageAPI.NonOverrideMusic[#StageAPI.NonOverrideMusic + 1] = {music, allowOverrideQueue, neverOverrideQueue}
         else
             StageAPI.NonOverrideMusic[#StageAPI.NonOverrideMusic + 1] = music
         end
@@ -6944,7 +6945,7 @@ do -- Callbacks
                 end
             else
                 if music == id[1] then
-                    return false, id[2]
+                    return false, id[2], id[3]
                 end
             end
         end
@@ -7200,8 +7201,13 @@ do -- Callbacks
                 end
 
                 local queuedID = StageAPI.Music:GetQueuedMusicID()
-                local canOverride, canOverrideQueue = StageAPI.CanOverrideMusic(queuedID)
-                if queuedID ~= shouldQueue then
+                local canOverride, canOverrideQueue, neverOverrideQueue = StageAPI.CanOverrideMusic(queuedID)
+                local shouldOverrideQueue = shouldQueue and (canOverride or canOverrideQueue or disregardNonOverride)
+                if not neverOverrideQueue and shouldQueue then
+                    shouldOverrideQueue = shouldOverrideQueue or (id == queuedID)
+                end
+
+                if queuedID ~= shouldQueue and shouldOverrideQueue then
                     StageAPI.Music:Queue(shouldQueue)
                 end
 
