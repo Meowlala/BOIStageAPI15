@@ -8489,7 +8489,7 @@ do -- Mod Compatibility
                 REVEL.AddedStageAPIChangelogs = true
             end
 
-            TryAddChangelog("v1.89 - 90", [[- Updated StageAPI to
+            TryAddChangelog("v1.89 - 91", [[- Updated StageAPI to
 function with Repentance.
 Note that it is still
 a work in progress, and
@@ -8922,7 +8922,7 @@ other than a door
 end
 
 Isaac.DebugString("[StageAPI] Fully Loaded, loading dependent mods.")
-StageAPI.MarkLoaded("StageAPI", "1.91", true, true)
+StageAPI.MarkLoaded("StageAPI", "1.92", true, true)
 
 StageAPI.Loaded = true
 if StageAPI.ToCall then
