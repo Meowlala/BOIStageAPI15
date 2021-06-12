@@ -5404,14 +5404,19 @@ do -- Backdrop & RoomGfx
             if not p1 then return end
 
             local gfxData = StageAPI.TryGetPlayerGraphicsInfo(p1)
-            local controls = gfxData.Controls or 'stageapi/controls.png'
+			local controls = gfxData.Controls or 'stageapi/controls.png'
+            local controlsFrame = gfxData.ControlsFrame or 0
             local controlsOffset = gfxData.ControlsOffset or StageAPI.ZeroVector
+
 
             local eff = StageAPI.SpawnFloorEffect(room:GetCenterPos() + controlsOffset, StageAPI.ZeroVector, nil, 'stageapi/controls.anm2', true)
             local sprite = eff:GetSprite()
-            sprite:Play("Idle")
 		    sprite:ReplaceSpritesheet(0, controls)
             sprite:LoadGraphics()
+			sprite:Play("Controls")
+			sprite:SetLayerFrame(0, controlsFrame)
+			sprite:Stop()
+			
             local color = StageAPI.GetStageFloorTextColor()
             if color then
                 sprite.Color = color
@@ -6081,7 +6086,10 @@ do -- Bosses
         keeper = "14",
         apollyon = "15",
         theforgotten = "16",
-        thesoul = "16"
+        thesoul = "16",
+		bethany = "18",
+		jacob = "19",
+		esau = "19"
     }
 
     for k, v in pairs(StageAPI.PlayerBossInfo) do
@@ -6119,8 +6127,10 @@ do -- Bosses
     StageAPI.PlayerBossInfo.keeper.NoShake = true
     StageAPI.PlayerBossInfo.theforgotten.NoShake = true
     StageAPI.PlayerBossInfo.thesoul.NoShake = true
-    StageAPI.PlayerBossInfo.theforgotten.Controls = "stageapi/controls_forgotten.png"
-    StageAPI.PlayerBossInfo.thesoul.Controls = "stageapi/controls_forgotten.png"
+    StageAPI.PlayerBossInfo.theforgotten.ControlsFrame = 1
+    StageAPI.PlayerBossInfo.thesoul.ControlsFrame = 1
+	StageAPI.PlayerBossInfo.jacob.ControlsFrame = 2
+    StageAPI.PlayerBossInfo.esau.ControlsFrame = 2
     StageAPI.PlayerBossInfo.thelost.NoShake = true
 
     function StageAPI.AddPlayerGraphicsInfo(name, portrait, namefile, portraitbig, noshake)
@@ -6131,7 +6141,8 @@ do -- Bosses
                 Name = namefile,
                 PortraitBig = portraitbig,
                 NoShake = noshake,
-                Controls = nil,
+				Controls = nil,
+                ControlsFrame = 0,
                 ControlsOffset = nil,
             }
         end
