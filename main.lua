@@ -5721,7 +5721,6 @@ do -- Definitions
     StageAPI.CatacombsGridGfx = StageAPI.GridGfx()
     StageAPI.CatacombsGridGfx:SetRocks("gfx/grid/rocks_catacombs.png")
     StageAPI.CatacombsGridGfx:SetPits("gfx/grid/grid_pit_catacombs.png", "gfx/grid/grid_pit_water_catacombs.png")
-    StageAPI.CatacombsGridGfx:SetBridges("stageapi/floors/catacombs/grid_bridge_catacombs.png")
     StageAPI.CatacombsGridGfx:SetDecorations("gfx/grid/props_03_caves.png")
 
     StageAPI.CatacombsFloors = {
@@ -5768,7 +5767,6 @@ do -- Definitions
     StageAPI.NecropolisGridGfx = StageAPI.GridGfx()
     StageAPI.NecropolisGridGfx:SetRocks("gfx/grid/rocks_depths.png")
     StageAPI.NecropolisGridGfx:SetPits("gfx/grid/grid_pit_necropolis.png")
-    StageAPI.NecropolisGridGfx:SetBridges("stageapi/floors/necropolis/grid_bridge_necropolis.png")
     StageAPI.NecropolisGridGfx:SetDecorations("gfx/grid/props_05_depths.png", "gfx/grid/props_05_depths.anm2", 43)
 
     StageAPI.NecropolisBackdrop = {
@@ -5805,13 +5803,9 @@ do -- Definitions
     StageAPI.NecropolisGreed.DisplayName = "Necropolis"
 
     StageAPI.UteroGridGfx = StageAPI.GridGfx()
-    StageAPI.UteroGridGfx:SetRocks("gfx/grid/rocks_womb.png")
-    StageAPI.UteroGridGfx:SetPits("gfx/grid/grid_pit_womb.png", {
-        { File = "gfx/grid/grid_pit_blood_womb.png" },
-        { File = "gfx/grid/grid_pit_acid_womb.png" },
-    })
-    StageAPI.UteroGridGfx:SetBridges("stageapi/floors/utero/grid_bridge_womb.png")
-    StageAPI.UteroGridGfx:SetDecorations("gfx/grid/props_07_the womb.png", "gfx/grid/props_07_the womb.anm2", 43)
+    StageAPI.UteroGridGfx:SetRocks("gfx/grid/rocks_utero.png")
+    StageAPI.UteroGridGfx:SetPits("gfx/grid/grid_pit_utero.png")
+    StageAPI.UteroGridGfx:SetDecorations("gfx/grid/props_07_utero.png", "gfx/grid/props_07_utero.anm2", 43)
 
     StageAPI.UteroBackdrop = {
         {
@@ -7107,8 +7101,14 @@ do -- Callbacks
         end
     end)
 
+    StageAPI.NonOverrideTrapdoors = {
+        ["gfx/grid/trapdoor_downpour.anm2"] = true,
+        ["gfx/grid/trapdoor_mines.anm2"] = true,
+        ["gfx/grid/trapdoor_mausoleum.anm2"] = true,
+    }
+
     function StageAPI.CheckStageTrapdoor(grid, index)
-        if not (grid.Desc.Type == GridEntityType.GRID_TRAPDOOR and grid.State == 1) then
+        if not (grid.Desc.Type == GridEntityType.GRID_TRAPDOOR and grid.State == 1) or StageAPI.NonOverrideTrapdoors[grid:GetSprite():GetFilename()] then
             return
         end
 
@@ -8488,6 +8488,27 @@ do -- Mod Compatibility
             if not (DeadSeaScrollsMenu and DeadSeaScrollsMenu.AddChangelog) then
                 REVEL.AddedStageAPIChangelogs = true
             end
+
+            TryAddChangelog("v1.92", [[- Fixed bridges not
+functioning in Catacombs,
+Necropolis, and Utero
+
+- Fixed Downpour, Mines,
+and Mausoleum trapdoors
+being overridden in
+custom stages
+
+- Updated StageAPI Utero
+backdrop to match new version
+in Repentance
+
+- StageAPI now enables sprite
+suffix replacements for
+all base game floors
+
+- StageAPI now loads before
+most or all other mods
+]])
 
             TryAddChangelog("v1.89 - 91", [[- Updated StageAPI to
 function with Repentance.
