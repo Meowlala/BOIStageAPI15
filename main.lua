@@ -8524,7 +8524,7 @@ do -- Mod Compatibility
                 REVEL.AddedStageAPIChangelogs = true
             end
 
-            TryAddChangelog("v1.92", [[- Fixed bridges not
+            TryAddChangelog("v1.92 - 93", [[- Fixed bridges not
 functioning in Catacombs,
 Necropolis, and Utero
 
@@ -8543,6 +8543,20 @@ all base game floors
 
 - StageAPI now loads before
 most or all other mods
+
+- Updated StageAPI.FloorInfo for
+Repentance stages
+
+- Fixed ShouldOverrideRoom returning
+true for default room types
+on custom stages without
+any default rooms defined
+
+- Fix starting room controls for
+Repentance, although they don't
+have keys due to the inability
+to tell what the game keybinds
+are set to
 ]])
 
             TryAddChangelog("v1.89 - 91", [[- Updated StageAPI to
@@ -8978,7 +8992,7 @@ other than a door
 end
 
 Isaac.DebugString("[StageAPI] Fully Loaded, loading dependent mods.")
-StageAPI.MarkLoaded("StageAPI", "1.92", true, true)
+StageAPI.MarkLoaded("StageAPI", "1.94", true, true)
 
 StageAPI.Loaded = true
 if StageAPI.ToCall then
