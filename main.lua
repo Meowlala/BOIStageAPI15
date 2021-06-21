@@ -5951,7 +5951,7 @@ end
 Isaac.DebugString("[StageAPI] Loading Boss Handler")
 do -- Bosses
     StageAPI.FloorInfo = {
-                [LevelStage.STAGE1_1] = {
+        [LevelStage.STAGE1_1] = {
             [StageType.STAGETYPE_ORIGINAL] = {
                 Prefix = "01_basement",
             },
