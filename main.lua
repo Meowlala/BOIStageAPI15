@@ -5951,7 +5951,7 @@ end
 Isaac.DebugString("[StageAPI] Loading Boss Handler")
 do -- Bosses
     StageAPI.FloorInfo = {
-        [LevelStage.STAGE1_1] = {
+                [LevelStage.STAGE1_1] = {
             [StageType.STAGETYPE_ORIGINAL] = {
                 Prefix = "01_basement",
             },
@@ -5964,7 +5964,13 @@ do -- Bosses
             },
             [StageType.STAGETYPE_GREEDMODE] = {
                 Prefix = "01_basement",
-            }
+            },
+            [StageType.STAGETYPE_REPENTANCE] = {
+                Prefix = "01x_downpour",
+            },
+            [StageType.STAGETYPE_REPENTANCE_B] = {
+                Prefix = "02x_dross",
+            },
         },
         [LevelStage.STAGE2_1] = {
             [StageType.STAGETYPE_ORIGINAL] = {
@@ -5978,6 +5984,12 @@ do -- Bosses
             },
             [StageType.STAGETYPE_GREEDMODE] = {
                 Prefix = "03_caves",
+            },
+            [StageType.STAGETYPE_REPENTANCE] = {
+                Prefix = "03x_mines",
+            },
+            [StageType.STAGETYPE_REPENTANCE_B] = {
+                Prefix = "04x_ashpit",
             },
         },
         [LevelStage.STAGE3_1] = {
@@ -5993,6 +6005,12 @@ do -- Bosses
             [StageType.STAGETYPE_GREEDMODE] = {
                 Prefix = "05_depths",
             },
+            [StageType.STAGETYPE_REPENTANCE] = {
+                Prefix = "05x_mausoleum",
+            },
+            [StageType.STAGETYPE_REPENTANCE_B] = {
+                Prefix = "06x_gehenna",
+            },
         },
         [LevelStage.STAGE4_1] = {
             [StageType.STAGETYPE_ORIGINAL] = {
@@ -6006,6 +6024,12 @@ do -- Bosses
             },
             [StageType.STAGETYPE_GREEDMODE] = {
                 Prefix = "07_womb",
+            },
+            [StageType.STAGETYPE_REPENTANCE] = {
+                Prefix = "07x_corpse",
+            },
+            [StageType.STAGETYPE_REPENTANCE_B] = {
+                Prefix = "07x_corpse",
             },
         },
         [LevelStage.STAGE4_3] = {
