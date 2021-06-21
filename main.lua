@@ -5416,7 +5416,7 @@ do -- Backdrop & RoomGfx
 			sprite:Play("Controls")
 			sprite:SetLayerFrame(0, controlsFrame)
 			sprite:Stop()
-			
+
             local color = StageAPI.GetStageFloorTextColor()
             if color then
                 sprite.Color = color
@@ -7093,7 +7093,7 @@ do -- Callbacks
             currentRoom = StageAPI.GetCurrentRoom()
         end
 
-        if currentRoom or StageAPI.InExtraRoom or (not inStartingRoom and StageAPI.InNewStage() and (room:GetType() == RoomType.ROOM_DEFAULT or (StageAPI.CurrentStage.Bosses and room:GetType() == RoomType.ROOM_BOSS))) then
+        if currentRoom or StageAPI.InExtraRoom or (not inStartingRoom and StageAPI.InNewStage() and ((StageAPI.CurrentStage.Rooms and StageAPI.CurrentStage.Rooms[room:GetType()]) or (StageAPI.CurrentStage.Bosses and room:GetType() == RoomType.ROOM_BOSS))) then
             return true
         end
     end
