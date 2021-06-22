@@ -6462,13 +6462,17 @@ do -- Transition
     StageAPI.StageTypeToString = {
         [StageType.STAGETYPE_ORIGINAL] = "",
         [StageType.STAGETYPE_WOTL] = "a",
-        [StageType.STAGETYPE_AFTERBIRTH] = "b"
+        [StageType.STAGETYPE_AFTERBIRTH] = "b",
+		[StageType.STAGETYPE_REPENTANCE] = "c",
+		[StageType.STAGETYPE_REPENTANCE_B] = "d"
     }
 
     StageAPI.StageTypes = {
         StageType.STAGETYPE_ORIGINAL,
         StageType.STAGETYPE_WOTL,
-        StageType.STAGETYPE_AFTERBIRTH
+        StageType.STAGETYPE_AFTERBIRTH,
+		StageType.STAGETYPE_REPENTANCE,
+		StageType.STAGETYPE_REPENTANCE_B
     }
 
     StageAPI.TransitionAnimation = Sprite()
