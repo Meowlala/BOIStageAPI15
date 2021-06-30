@@ -2916,7 +2916,6 @@ do -- RoomsList
 												local player = Isaac.GetPlayer(i)
 												
 												if player:GetPlayerType() == PlayerType.PLAYER_KEEPER_B then
-													entityData.Variant = PickupVariant.PICKUP_SHOPITEM
 													isShopItem = true
 													break
 												end
