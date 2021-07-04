@@ -9422,49 +9422,6 @@ do -- Custom Floor Generation
         end
     end)
 
-    StageAPI.DoorsBitwise = {
-        [DoorSlot.LEFT0] = 1,
-        [DoorSlot.UP0] = 1 << 1,
-        [DoorSlot.RIGHT0] = 1 << 2,
-        [DoorSlot.DOWN0] = 1 << 3,
-        [DoorSlot.LEFT1] = 1 << 4,
-        [DoorSlot.UP1] = 1 << 5,
-        [DoorSlot.RIGHT1] = 1 << 6,
-        [DoorSlot.DOWN1] = 1 << 7,
-    }
-
-    function StageAPI.GenerateRoomLayoutFromData(data)
-        local layout = StageAPI.CreateEmptyRoomLayout(data.Shape)
-        layout.Name = data.Name
-        layout.RoomFilename = "Special"
-        layout.Type = data.Type
-        layout.Variant = data.Variant
-        layout.SubType = data.Subtype
-        layout.Difficulty = data.Difficulty
-        layout.Weight = data.InitialWeight
-
-        for _, door in ipairs(layout.Doors) do
-            door.Exists = data.Doors & StageAPI.DoorsBitwise[door.Slot] ~= 0
-        end
-
-        local spawns = data.Spawns
-        for i = 0, spawns.Size do
-            local spawn = spawns:Get(i)
-            if spawn then
-                local index = StageAPI.VectorToGrid(spawn.X, spawn.Y, layout.Width)
-                local weight = spawn.SumWeights - 0.01
-                for i = 1, spawn.EntryCount do
-                    local entry = spawn:PickEntry(weight)
-                    weight = weight - entry.Weight
-
-                    StageAPI.AddObjectToRoomLayout(layout, index, entry.Type, entry.Variant, entry.Subtype, spawn.X, spawn.Y)
-                end
-            end
-        end
-
-        return layout
-    end
-
     local chestTestNextFrame
     mod:AddCallback(ModCallbacks.MC_EXECUTE_CMD, function(_, cmd, params)
         if cmd == "chesttest" then
