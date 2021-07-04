@@ -791,9 +791,8 @@ StageAPI.CatacombsBackdrop = StageAPI.BaseBackdrops.Catacombs
 StageAPI.CatacombsRoomGfx = StageAPI.BaseRoomGfx.Catacombs
 --StageAPI.Catacombs:SetRoomGfx(StageAPI.BaseRoomGfx.Catacombs, {RoomType.ROOM_DEFAULT, RoomType.ROOM_TREASURE, RoomType.ROOM_MINIBOSS, RoomType.ROOM_BOSS})
 
-StageAPI.CatacombsMusicID = Isaac.GetMusicIdByName("Catacombs")
 StageAPI.Catacombs = StageAPI.CustomStage("Catacombs", nil, true)
-StageAPI.Catacombs:SetStageMusic(StageAPI.CatacombsMusicID)
+StageAPI.Catacombs:SetStageMusic(Music.MUSIC_CATACOMBS)
 StageAPI.Catacombs:SetBossMusic({Music.MUSIC_BOSS, Music.MUSIC_BOSS2}, Music.MUSIC_BOSS_OVER)
 
 StageAPI.Catacombs.DisplayName = "Catacombs I"
@@ -829,9 +828,8 @@ StageAPI.NecropolisOverlays = {
     StageAPI.Overlay("stageapi/floors/necropolis/overlay.anm2", Vector(0.33, 0.1), nil, nil, 0.5),
 }
 
-StageAPI.NecropolisMusicID = Isaac.GetMusicIdByName("Necropolis")
 StageAPI.Necropolis = StageAPI.CustomStage("Necropolis", nil, true)
-StageAPI.Necropolis:SetStageMusic(StageAPI.NecropolisMusicID)
+StageAPI.Necropolis:SetStageMusic(Music.MUSIC_NECROPOLIS)
 StageAPI.Necropolis:SetBossMusic({Music.MUSIC_BOSS, Music.MUSIC_BOSS2}, Music.MUSIC_BOSS_OVER)
 StageAPI.Necropolis.DisplayName = "Necropolis I"
 
@@ -857,9 +855,8 @@ StageAPI.UteroBackdrop = StageAPI.BaseBackdrops.Utero
 StageAPI.UteroRoomGfx = StageAPI.BaseRoomGfx.Utero
 --StageAPI.Utero:SetRoomGfx(StageAPI.BaseRoomGfx.Utero, {RoomType.ROOM_DEFAULT, RoomType.ROOM_TREASURE, RoomType.ROOM_MINIBOSS, RoomType.ROOM_BOSS})
 
-StageAPI.UteroMusicID = Isaac.GetMusicIdByName("Womb/Utero")
 StageAPI.Utero = StageAPI.CustomStage("Utero", nil, true)
-StageAPI.Utero:SetStageMusic(StageAPI.UteroMusicID)
+StageAPI.Utero:SetStageMusic(Music.MUSIC_UTERO)
 StageAPI.Utero:SetBossMusic({Music.MUSIC_BOSS, Music.MUSIC_BOSS2}, Music.MUSIC_BOSS_OVER)
 StageAPI.Utero.DisplayName = "Utero I"
 
@@ -881,5 +878,3 @@ end
 
 do -- Boss Animation Data
 end
-
-StageAPI.IntentionalError.Cause = true
