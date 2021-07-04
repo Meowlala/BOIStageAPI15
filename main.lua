@@ -3260,6 +3260,9 @@ do -- RoomsList
                 self[v] = args[v]
             end
 
+            -- backwards compatibility
+            self.Seed = self.SpawnSeed
+
             local replaceLayoutName = StageAPI.CallCallbacks("PRE_ROOM_LAYOUT_CHOOSE", true, self)
             if replaceLayoutName then
                 StageAPI.LogMinor("Layout replaced")
@@ -4381,9 +4384,13 @@ do -- Extra Rooms
 
         local transitionFrom = level:GetCurrentRoomIndex()
         local transitionTo = GridRooms.ROOM_DEBUG_IDX
+        local fromExtraRoom = transitionFrom == GridRooms.ROOM_DEBUG_IDX
+        local extraRoomName
         if not isCustomMap then
             if type(name) ~= "string" then
                 transitionTo = name
+            else
+                extraRoomName = name
             end
         else
             if transitionFrom == GridRooms.ROOM_DEBUG_IDX then
@@ -4391,15 +4398,9 @@ do -- Extra Rooms
             end
         end
 
-        if transitionTo == GridRooms.ROOM_DEBUG_IDX then
-            -- StageAPI.EnsureDebugRoomExists(true)
-        end
-
-        if transitionFrom ~= GridRooms.ROOM_DEBUG_IDX then
+        if not (fromExtraRoom or StageAPI.InCustomMap) then
             StageAPI.LastNonExtraRoom = transitionFrom
-        end
-
-        if transitionFrom == GridRooms.ROOM_DEBUG_IDX or StageAPI.InCustomMap then
+        else
             local currentRoomDesc = level:GetRoomByIdx(transitionFrom)
             local currentGotoSet = StageAPI.GetGotoDataForTypeShape(room:GetType(), room:GetRoomShape())
             if currentGotoSet.LockedData and StageAPI.DoorOneSlots[leaveDoor] then
@@ -4409,13 +4410,8 @@ do -- Extra Rooms
             end
         end
 
-        local extraRoomName
         local setDataForShape, setVisitCount, setClear, setClearCount, setDecoSeed, setSpawnSeed, setAwardSeed, setWater, setChallengeDone
-        if not isCustomMap then
-            if transitionTo == GridRooms.ROOM_DEBUG_IDX then
-                extraRoomName = name
-            end
-        else
+        if isCustomMap then
             local targetRoomData = StageAPI.CurrentLevelMap[name]
 
             if targetRoomData.ExtraRoomName then
@@ -4437,9 +4433,7 @@ do -- Extra Rooms
             end
 
             StageAPI.CurrentCustomMapRoomID = name
-        end
-
-        if extraRoomName then
+        elseif extraRoomName then
             local extraRoom = StageAPI.GetExtraRoom(extraRoomName)
             StageAPI.InExtraRoom = true
             StageAPI.CurrentExtraRoom = extraRoom
@@ -5935,6 +5929,13 @@ do -- Backdrop & RoomGfx
     end
 
     function StageAPI.ChangeBackdrop(backdrop, justWalls, storeBackdropEnts)
+        if type(backdrop) == "number" then
+            game:ShowHallucination(0, backdrop)
+            sfx:Stop(SoundEffect.SOUND_DEATH_CARD)
+
+            return
+        end
+
         StageAPI.BackdropRNG:SetSeed(room:GetDecorationSeed(), 1)
         local needsExtra, backdropEnts
         if storeBackdropEnts then
@@ -6551,191 +6552,67 @@ end
 
 StageAPI.LogMinor("Loading Boss Handler")
 do -- Bosses
-    StageAPI.FloorInfo = {
-        [LevelStage.STAGE1_1] = {
-            [StageType.STAGETYPE_ORIGINAL] = {
-                Prefix = "01_basement",
-            },
-            [StageType.STAGETYPE_WOTL] = {
-                Prefix = "02_cellar",
-            },
-            [StageType.STAGETYPE_AFTERBIRTH] = {
-                Prefix = "13_burning_basement",
-                FloorTextColor = Color(0.5,0.5,0.5,1,0,0,0),
-            },
-            [StageType.STAGETYPE_GREEDMODE] = {
-                Prefix = "01_basement",
-            },
-            [StageType.STAGETYPE_REPENTANCE] = {
-                Prefix = "01x_downpour",
-            },
-            [StageType.STAGETYPE_REPENTANCE_B] = {
-                Prefix = "02x_dross",
-            },
-        },
-        [LevelStage.STAGE2_1] = {
-            [StageType.STAGETYPE_ORIGINAL] = {
-                Prefix = "03_caves",
-            },
-            [StageType.STAGETYPE_WOTL] = {
-                Prefix = "04_catacombs",
-            },
-            [StageType.STAGETYPE_AFTERBIRTH] = {
-                Prefix = "14_drowned_caves",
-            },
-            [StageType.STAGETYPE_GREEDMODE] = {
-                Prefix = "03_caves",
-            },
-            [StageType.STAGETYPE_REPENTANCE] = {
-                Prefix = "03x_mines",
-            },
-            [StageType.STAGETYPE_REPENTANCE_B] = {
-                Prefix = "04x_ashpit",
-            },
-        },
-        [LevelStage.STAGE3_1] = {
-            [StageType.STAGETYPE_ORIGINAL] = {
-                Prefix = "05_depths",
-            },
-            [StageType.STAGETYPE_WOTL] = {
-                Prefix = "06_necropolis",
-            },
-            [StageType.STAGETYPE_AFTERBIRTH] = {
-                Prefix = "15_dank_depths",
-            },
-            [StageType.STAGETYPE_GREEDMODE] = {
-                Prefix = "05_depths",
-            },
-            [StageType.STAGETYPE_REPENTANCE] = {
-                Prefix = "05x_mausoleum",
-            },
-            [StageType.STAGETYPE_REPENTANCE_B] = {
-                Prefix = "06x_gehenna",
-            },
-        },
-        [LevelStage.STAGE4_1] = {
-            [StageType.STAGETYPE_ORIGINAL] = {
-                Prefix = "07_womb",
-            },
-            [StageType.STAGETYPE_WOTL] = {
-                Prefix = "07_womb",
-            },
-            [StageType.STAGETYPE_AFTERBIRTH] = {
-                Prefix = "16_scarred_womb",
-            },
-            [StageType.STAGETYPE_GREEDMODE] = {
-                Prefix = "07_womb",
-            },
-            [StageType.STAGETYPE_REPENTANCE] = {
-                Prefix = "07x_corpse",
-            },
-            [StageType.STAGETYPE_REPENTANCE_B] = {
-                Prefix = "07x_corpse",
-            },
-        },
-        [LevelStage.STAGE4_3] = {
-            [StageType.STAGETYPE_ORIGINAL] = {
-                Prefix = "17_blue_womb",
-            },
-            [StageType.STAGETYPE_WOTL] = {
-                Prefix = "17_blue_womb",
-            },
-            [StageType.STAGETYPE_AFTERBIRTH] = {
-                Prefix = "17_blue_womb",
-            },
-            [StageType.STAGETYPE_GREEDMODE] = {
-                Prefix = "17_blue_womb",
-            },
-        },
-        [LevelStage.STAGE5] = {
-            [StageType.STAGETYPE_ORIGINAL] = {
-                Prefix = "09_sheol",
-            },
-            [StageType.STAGETYPE_WOTL] = {
-                Prefix = "10_cathedral",
-            },
-            [StageType.STAGETYPE_AFTERBIRTH] = {
-                Prefix = "09_sheol",
-            },
-            [StageType.STAGETYPE_GREEDMODE] = {
-                Prefix = "09_sheol",
-            },
-        },
-        [LevelStage.STAGE6] = {
-            [StageType.STAGETYPE_ORIGINAL] = {
-                Prefix = "11_darkroom",
-            },
-            [StageType.STAGETYPE_WOTL] = {
-                Prefix = "12_chest",
-            },
-            [StageType.STAGETYPE_AFTERBIRTH] = {
-                Prefix = "11_darkroom",
-            },
-            [StageType.STAGETYPE_GREEDMODE] = {
-                Prefix = "18_shop",
-            },
-        },
-        [LevelStage.STAGE7] = {
-            [StageType.STAGETYPE_ORIGINAL] = {
-                Prefix = "19_void",
-            },
-            [StageType.STAGETYPE_WOTL] = {
-                Prefix = "19_void",
-            },
-            [StageType.STAGETYPE_AFTERBIRTH] = {
-                Prefix = "19_void",
-            },
-            [StageType.STAGETYPE_GREEDMODE] = {
-                Prefix = "18_shop",
-            },
-        }
+    StageAPI.FloorInfo = {}
+    StageAPI.FloorInfoGreed = {}
+
+    local stageToGreed = {
+        [LevelStage.STAGE1_1] = LevelStage.STAGE1_GREED,
+        [LevelStage.STAGE2_1] = LevelStage.STAGE2_GREED,
+        [LevelStage.STAGE3_1] = LevelStage.STAGE3_GREED,
+        [LevelStage.STAGE4_1] = LevelStage.STAGE4_GREED,
     }
 
-    StageAPI.FloorInfo[LevelStage.STAGE1_2] = StageAPI.FloorInfo[LevelStage.STAGE1_1]
-    StageAPI.FloorInfo[LevelStage.STAGE2_2] = StageAPI.FloorInfo[LevelStage.STAGE2_1]
-    StageAPI.FloorInfo[LevelStage.STAGE3_2] = StageAPI.FloorInfo[LevelStage.STAGE3_1]
-    StageAPI.FloorInfo[LevelStage.STAGE4_2] = StageAPI.FloorInfo[LevelStage.STAGE4_1]
-
-    StageAPI.FloorInfoGreed = {
-        [LevelStage.STAGE1_GREED] = StageAPI.FloorInfo[LevelStage.STAGE1_1],
-        [LevelStage.STAGE2_GREED] = StageAPI.FloorInfo[LevelStage.STAGE2_1],
-        [LevelStage.STAGE3_GREED] = StageAPI.FloorInfo[LevelStage.STAGE3_1],
-        [LevelStage.STAGE4_GREED] = StageAPI.FloorInfo[LevelStage.STAGE4_1],
-        [LevelStage.STAGE5_GREED] = {
-            [StageType.STAGETYPE_ORIGINAL] = {
-                Prefix = "09_sheol",
-            },
-            [StageType.STAGETYPE_WOTL] = {
-                Prefix = "09_sheol",
-            },
-            [StageType.STAGETYPE_AFTERBIRTH] = {
-                Prefix = "09_sheol",
-            },
-            [StageType.STAGETYPE_GREEDMODE] = {
-                Prefix = "09_sheol",
-            },
-        },
-        [LevelStage.STAGE6_GREED] = {
-            [StageType.STAGETYPE_ORIGINAL] = {
-                Prefix = "18_shop",
-            },
-            [StageType.STAGETYPE_WOTL] = {
-                Prefix = "18_shop",
-            },
-            [StageType.STAGETYPE_AFTERBIRTH] = {
-                Prefix = "18_shop",
-            },
-            [StageType.STAGETYPE_GREEDMODE] = {
-                Prefix = "18_shop",
-            },
-        },
+    local stageToSecondStage = {
+        [LevelStage.STAGE1_1] = LevelStage.STAGE1_2,
+        [LevelStage.STAGE2_1] = LevelStage.STAGE2_2,
+        [LevelStage.STAGE3_1] = LevelStage.STAGE3_2,
+        [LevelStage.STAGE4_1] = LevelStage.STAGE4_2,
     }
 
-    StageAPI.FloorInfoGreed[LevelStage.STAGE7_GREED] = StageAPI.FloorInfoGreed[LevelStage.STAGE6_GREED]
+    StageAPI.StageTypes = {
+        StageType.STAGETYPE_ORIGINAL,
+        StageType.STAGETYPE_WOTL,
+        StageType.STAGETYPE_AFTERBIRTH,
+        StageType.STAGETYPE_REPENTANCE,
+        StageType.STAGETYPE_REPENTANCE_B
+    }
 
-    function StageAPI.GetBaseFloorInfo()
-        local stage, stageType = level:GetStage(), level:GetStageType()
-        if game:IsGreedMode() then
+    -- if doGreed is false, will not add to greed at all, if true, will only add to greed. nil for both.
+    -- if stagetype is true, will set floorinfo for all stagetypes
+    function StageAPI.SetFloorInfo(info, stage, stagetype, doGreed)
+        if stagetype == true then
+            for _, stype in ipairs(StageAPI.StageTypes) do
+                StageAPI.SetFloorInfo(info, stage, stype, doGreed)
+            end
+
+            return
+        end
+
+        if doGreed ~= true then
+            StageAPI.FloorInfo[stage] = StageAPI.FloorInfo[stage] or {}
+            StageAPI.FloorInfo[stage][stagetype] = info
+
+            local stageTwo = stageToSecondStage[stage]
+            if stageTwo then
+                StageAPI.FloorInfo[stageTwo] = StageAPI.FloorInfo[stageTwo] or {}
+                StageAPI.FloorInfo[stageTwo][stagetype] = info
+            end
+        end
+
+        if doGreed ~= false then
+            local greedStage = stage
+            if doGreed == nil then
+                greedStage = stageToGreed[stage] or stage
+            end
+
+            StageAPI.FloorInfoGreed[greedStage] = StageAPI.FloorInfoGreed[greedStage] or {}
+            StageAPI.FloorInfoGreed[greedStage][stagetype] = info
+        end
+    end
+
+    function StageAPI.GetBaseFloorInfo(stage, stageType, isGreed)
+        stage, stageType, isGreed = stage or level:GetStage(), stageType or level:GetStageType(), isGreed or game:IsGreedMode()
+        if isGreed then
             return StageAPI.FloorInfoGreed[stage][stageType]
         else
             return StageAPI.FloorInfo[stage][stageType]
@@ -8097,6 +7974,7 @@ do -- Callbacks
 
         local currentListIndex = StageAPI.GetCurrentRoomID()
         local currentRoom, justGenerated, boss = StageAPI.GetCurrentRoom(), nil, nil
+
         local retCurrentRoom, retJustGenerated, retBoss = StageAPI.CallCallbacks("PRE_STAGEAPI_NEW_ROOM_GENERATION", true, currentRoom, justGenerated, currentListIndex)
         local prevRoom = currentRoom
         currentRoom, justGenerated, boss = retCurrentRoom or currentRoom, retJustGenerated or justGenerated, retBoss or boss
@@ -8114,6 +7992,8 @@ do -- Callbacks
             StageAPI.CurrentExtraRoom:Load(true)
             StageAPI.LoadedExtraRoom = true
             justGenerated = StageAPI.CurrentExtraRoom.FirstLoad
+
+            StageAPI.ChangeBackdrop(StageAPI.GetBaseFloorInfo().Backdrop)
         else
             StageAPI.LoadedExtraRoom = false
         end
