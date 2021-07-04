@@ -7898,6 +7898,7 @@ do -- Callbacks
         local inStartingRoom = level:GetCurrentRoomIndex() == level:GetStartingRoomIndex()
         StageAPI.CustomGridIndices = {}
 
+        -- Only a room the player is actively in can be "Loaded"
         for index, room in pairs(StageAPI.LevelRooms) do
             room.Loaded = false
         end
@@ -7918,6 +7919,8 @@ do -- Callbacks
                 end
             end
 
+            StageAPI.CustomGrids = {}
+            StageAPI.LevelRooms = {}
             StageAPI.CurrentStage = nil
             if isNewStage then
                 if not StageAPI.NextStage then
