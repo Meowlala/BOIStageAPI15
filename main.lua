@@ -2008,7 +2008,7 @@ do -- RoomsList
         [EntityType.ENTITY_MOTHERS_SHADOW] = true
     }
 
-    function StageAPI.ClearRoomLayout(keepDecoration, doGrids, doEnts, doPersistentEnts, onlyRemoveTheseDecorations, doWalls, doDoors)
+    function StageAPI.ClearRoomLayout(keepDecoration, doGrids, doEnts, doPersistentEnts, onlyRemoveTheseDecorations, doWalls, doDoors, skipIndexedGrids)
         if doEnts or doPersistentEnts then
             for _, ent in ipairs(Isaac.GetRoomEntities()) do
                 local etype = ent.Type
@@ -2022,9 +2022,12 @@ do -- RoomsList
         end
 
         if doGrids then
-            local lindex = StageAPI.GetCurrentRoomID()
-            StageAPI.CustomGrids[lindex] = {}
-            StageAPI.RoomGrids[lindex] = {}
+            if not skipIndexedGrids then
+                local lindex = StageAPI.GetCurrentRoomID()
+                StageAPI.CustomGrids[lindex] = {}
+                StageAPI.RoomGrids[lindex] = {}
+            end
+
             for i = 0, room:GetGridSize() do
                 local grid = room:GetGridEntity(i)
                 if grid then
@@ -3633,7 +3636,7 @@ do -- RoomsList
         end
     end
 
-    function StageAPI.LevelRoom:Load(isExtraRoom)
+    function StageAPI.LevelRoom:Load(isExtraRoom, noIncrementVisit)
         StageAPI.LogMinor("Loading room " .. self.Layout.Name .. "." .. tostring(self.Layout.Variant) .. " from file " .. tostring(self.Layout.RoomFilename))
         if isExtraRoom == nil then
             isExtraRoom = self.IsExtraRoom
@@ -3641,10 +3644,14 @@ do -- RoomsList
 
         room:SetClear(true)
 
+        if not noIncrementVisit then
+            self.VisitCount = self.VisitCount + 1
+        end
+
         local wasFirstLoad = self.FirstLoad
-        StageAPI.ClearRoomLayout(false, self.FirstLoad or isExtraRoom, true, self.FirstLoad or isExtraRoom, self.GridTakenIndices)
+        StageAPI.ClearRoomLayout(false, self.FirstLoad or isExtraRoom, true, self.FirstLoad or isExtraRoom, self.GridTakenIndices, nil, nil, not self.FirstLoad)
         if self.FirstLoad then
-            StageAPI.LoadRoomLayout(self.SpawnGrids, {self.SpawnEntities, self.ExtraSpawn}, true, true, false, true, self.GridInformation, self.AvoidSpawning, self.PersistentPositions)
+            StageAPI.LoadRoomLayout(self.SpawnGrids, {self.SpawnEntities, self.ExtraSpawn}, true, true, self.IsClear, true, self.GridInformation, self.AvoidSpawning, self.PersistentPositions)
             self.WasClearAtStart = room:IsClear()
             self.IsClear = self.WasClearAtStart
             self.FirstLoad = false
@@ -3660,6 +3667,8 @@ do -- RoomsList
         if not self.IsClear then
             StageAPI.CloseDoors()
         end
+
+        self.Loaded = true
 
         StageAPI.CallCallbacks("POST_ROOM_LOAD", false, self, wasFirstLoad, isExtraRoom)
         StageAPI.StoreRoomGrids()
@@ -5347,7 +5356,7 @@ do -- Backdrop & RoomGfx
 
         sprite:Play(shapeName, true)
 
-        return renderPos, needsExtra
+        return renderPos, needsExtra, sprite
     end
 
     function StageAPI.ChangeBackdrop(backdrop, justWalls, storeBackdropEnts)
@@ -6941,11 +6950,12 @@ do -- Callbacks
 
     mod:AddCallback(ModCallbacks.MC_POST_UPDATE, function()
         local currentRoom = StageAPI.GetCurrentRoom()
-        if currentRoom then
+        if currentRoom and currentRoom.Loaded then
             local isClear = currentRoom.IsClear
             currentRoom.IsClear = room:IsClear()
             currentRoom.JustCleared = nil
             if not isClear and currentRoom.IsClear then
+                currentRoom.ClearCount = currentRoom.ClearCount + 1
                 StageAPI.CallCallbacks("POST_ROOM_CLEAR", false)
                 currentRoom.JustCleared = true
             end
@@ -7339,7 +7349,27 @@ do -- Callbacks
         local inStartingRoom = level:GetCurrentRoomIndex() == level:GetStartingRoomIndex()
         StageAPI.CustomGridIndices = {}
 
+        -- Only a room the player is actively in can be "Loaded"
+        for index, room in pairs(StageAPI.LevelRooms) do
+            room.Loaded = false
+        end
+
         if inStartingRoom and room:IsFirstVisit() then
+            local maintainGrids = {}
+            for index, room in pairs(StageAPI.LevelRooms) do
+                if not (room and room.IsPersistentRoom) then
+                    StageAPI.LevelRooms[index] = nil
+                else
+                    maintainGrids[index] = true
+                end
+            end
+
+            for index, grids in pairs(StageAPI.CustomGrids) do
+                if not maintainGrids[index] then
+                    StageAPI.CustomGrids[index] = nil
+                end
+            end
+
             StageAPI.CustomGrids = {}
             StageAPI.LevelRooms = {}
             StageAPI.CurrentStage = nil
