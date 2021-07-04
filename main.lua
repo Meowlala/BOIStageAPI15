@@ -3171,43 +3171,67 @@ do -- RoomsList
         return doors
     end
 
+    function StageAPI.LevelRoomArgPacker(layoutName, roomsList, seed, shape, roomType, isExtraRoom, fromSaveData, requireRoomType, ignoreDoors, doors, levelIndex, ignoreRoomRules)
+        return {
+            LayoutName = layoutName,
+            RoomsList = roomsList,
+            SpawnSeed = seed,
+            Shape = shape,
+            RoomType = roomType,
+            IsExtraRoom = isExtraRoom,
+            FromSave = fromSaveData,
+            RequireRoomType = requireRoomType,
+            IgnoreDoors = ignoreDoors,
+            Doors = doors,
+            LevelIndex = levelIndex,
+            IgnoreRoomRules = ignoreRoomRules
+        }
+    end
+
+    local levelRoomCopyFromArgs = {"IsExtraRoom","LevelIndex","Doors","Shape","RoomType","SpawnSeed","LayoutName","RequireRoomType","IgnoreRoomRules","DecorationSeed","AwardSeed","VisitCount","IsClear","ClearCount","IsPersistentRoom","HasWaterPits","ChallengeDone"}
+
     StageAPI.LevelRoom = StageAPI.Class("LevelRoom")
     StageAPI.NextUniqueRoomIdentifier = 0
-    function StageAPI.LevelRoom:Init(layoutName, roomsList, seed, shape, roomType, isExtraRoom, fromSaveData, requireRoomType, ignoreDoors, doors, levelIndex, ignoreRoomRules)
+    function StageAPI.LevelRoom:Init(args, ...)
+        if type(args) ~= "table" then
+            args = StageAPI.LevelRoomArgPacker(args, ...)
+        end
+
         StageAPI.LogMinor("Initializing room")
         StageAPI.CurrentlyInitializing = self
         self.UniqueRoomIdentifier = StageAPI.NextUniqueRoomIdentifier
         StageAPI.NextUniqueRoomIdentifier = StageAPI.NextUniqueRoomIdentifier + 1
-        if fromSaveData then
+
+        if args.FromSave then
             StageAPI.LogMinor("Loading from save data")
-            self.LevelIndex = levelIndex
-            self:LoadSaveData(fromSaveData)
+            self.LevelIndex = args.LevelIndex
+            self:LoadSaveData(args.FromSave)
         else
             StageAPI.LogMinor("Generating room")
-            roomType = roomType or room:GetType()
-            shape = shape or room:GetRoomShape()
-            seed = seed or room:GetSpawnSeed()
 
-            if not doors then
-                doors = StageAPI.GetDoorsForRoom()
-            end
+            args.RoomType = args.RoomType or room:GetType()
+            args.Shape = args.Shape or room:GetRoomShape()
+            args.SpawnSeed = args.SpawnSeed or room:GetSpawnSeed()
+            args.DecorationSeed = args.DecorationSeed or room:GetDecorationSeed()
+            args.AwardSeed = args.AwardSeed or room:GetAwardSeed()
+            args.SurpriseMiniboss = args.SurpriseMiniboss or level:GetCurrentRoomDesc().SurpriseMiniboss
+            args.Doors = args.Doors or StageAPI.GetDoorsForRoom()
+            args.VisitCount = args.VisitCount or 0
+            args.ClearCount = args.ClearCount or 0
 
             self.Data = {}
             self.PersistentData = {}
-
-            self.IsExtraRoom = isExtraRoom
-            self.LevelIndex = levelIndex
-            self.Doors = doors
-            self.Shape = shape
-            self.RoomType = roomType
-            self.Seed = seed
-            self.LayoutName = layoutName
             self.AvoidSpawning = {}
             self.ExtraSpawn = {}
             self.PersistentPositions = {}
             self.FirstLoad = true
-            self.RequireRoomType = requireRoomType
-            self.IgnoreRoomRules = ignoreRoomRules
+
+            for _, v in ipairs(levelRoomCopyFromArgs) do
+                self[v] = args[v]
+            end
+
+            -- backwards compatibility
+            self.Seed = self.SpawnSeed
 
             local replaceLayoutName = StageAPI.CallCallbacks("PRE_ROOM_LAYOUT_CHOOSE", true, self)
             if replaceLayoutName then
@@ -3221,13 +3245,13 @@ do -- RoomsList
             end
 
             if not layout then
-                roomsList = StageAPI.CallCallbacks("PRE_ROOMS_LIST_USE", true, self) or roomsList
+                local roomsList = StageAPI.CallCallbacks("PRE_ROOMS_LIST_USE", true, self) or args.RoomsList
                 self.RoomsListName = roomsList.Name
-                layout = StageAPI.ChooseRoomLayout(roomsList, seed, shape, roomType, requireRoomType, ignoreDoors, self.Doors)
+                layout = StageAPI.ChooseRoomLayout(roomsList, self.SpawnSeed, self.Shape, self.RoomType, self.RequireRoomType, self.IgnoreDoors, self.Doors)
             end
 
             self.Layout = layout
-            self:PostGetLayout(seed)
+            self:PostGetLayout(self.SpawnSeed)
         end
 
         StageAPI.CallCallbacks("POST_ROOM_INIT", false, self, not not fromSaveData, fromSaveData)
@@ -3616,7 +3640,7 @@ do -- RoomsList
         saveData.WasClearAtStart = self.WasClearAtStart
         saveData.RoomsListName = self.RoomsListName
         saveData.LayoutName = self.LayoutName
-        saveData.Seed = self.Seed
+        saveData.SpawnSeed = self.SpawnSeed
         saveData.FirstLoad = self.FirstLoad
         saveData.Shape = self.Shape
         saveData.RoomType = self.RoomType
@@ -3675,7 +3699,8 @@ do -- RoomsList
 
         self.RoomsListName = saveData.RoomsListName
         self.LayoutName = saveData.LayoutName
-        self.Seed = saveData.Seed
+        self.SpawnSeed = saveData.SpawnSeed
+        self.Seed = self.SpawnSeed
         self.Shape = saveData.Shape
         self.RoomType = saveData.RoomType
         self.RequireRoomType = saveData.RequireRoomType
@@ -4048,20 +4073,22 @@ do -- Extra Rooms
         return StageAPI.LevelRooms[name]
     end
 
+    StageAPI.ActiveTransitionToExtraRoom = nil
+    StageAPI.ActiveTransitionFromExtraRoom = nil
     function StageAPI.InOrTransitioningToExtraRoom()
-        return StageAPI.TransitionTimer or StageAPI.InExtraRoom
+        return StageAPI.ActiveTransitionToExtraRoom or StageAPI.InExtraRoom
     end
 
     function StageAPI.TransitioningToOrFromExtraRoom()
-        return not not StageAPI.TransitionTimer
+        return StageAPI.ActiveTransitionToExtraRoom or StageAPI.ActiveTransitionFromExtraRoom
     end
 
     function StageAPI.TransitioningToExtraRoom()
-        return StageAPI.TransitioningToOrFromExtraRoom() and StageAPI.TransitionToExtra
+        return StageAPI.ActiveTransitionToExtraRoom
     end
 
     function StageAPI.TransitioningFromExtraRoom()
-        return StageAPI.TransitioningToOrFromExtraRoom() and not StageAPI.TransitionToExtra
+        return StageAPI.ActiveTransitionFromExtraRoom
     end
 
     StageAPI.RoomTransitionOverlay = Sprite()
@@ -4076,346 +4103,171 @@ do -- Extra Rooms
         StageAPI.RoomTransitionOverlay:Render(StageAPI.GetScreenCenterPosition(), zeroVector, zeroVector)
     end
 
-    StageAPI.TransitionFadeTime = 30
-
-    StageAPI.TransitionTimer = nil
-    StageAPI.TransitioningTo = nil
-    StageAPI.TransitioningFromTo = nil
-    StageAPI.TransitionExitSlot = nil
-    StageAPI.TransitionToExtra = nil
-    StageAPI.SkipExtraRoomTransition = nil
-    StageAPI.ExtraRoomBaseType = "Barren"
     function StageAPI.TransitionToExtraRoom(name, exitSlot, skipTransition, extraRoomBaseType)
-        StageAPI.TransitionTimer = 0
-        StageAPI.TransitioningTo = name
-        StageAPI.TransitionExitSlot = exitSlot
-        StageAPI.TransitionToExtra = true
-        StageAPI.SkipExtraRoomTransition = skipTransition
-        StageAPI.ExtraRoomBaseType = extraRoomBaseType or "Barren"
+        StageAPI.ExtraRoomTransition(name, Direction.NO_DIRECTION, RoomTransitionAnim.FADE, false, nil, exitSlot, nil, extraRoomBaseType)
     end
 
     function StageAPI.TransitionFromExtraRoom(toIndex, exitSlot)
-        StageAPI.TransitionTimer = 0
-        StageAPI.TransitioningFromTo = toIndex
-        StageAPI.TransitionExitSlot = exitSlot
-        StageAPI.TransitionToExtra = false
+        StageAPI.ExtraRoomTransition(toIndex, Direction.NO_DIRECTION, RoomTransitionAnim.FADE, false, nil, exitSlot)
     end
+
+    local gotoPrefixes = {
+        Barren = "s.barren.",
+        Boss = "s.boss.",
+        Default = "d."
+    }
 
     StageAPI.RoomShapeToGotoID = {
         [RoomShape.ROOMSHAPE_1x1] = {
-            Barren = "4550",
-            Boss = "1010",
-            Stage = {
-                {
-                    Stages = {LevelStage.STAGE1_1, LevelStage.STAGE1_2, LevelStage.STAGE2_1, LevelStage.STAGE2_2, LevelStage.STAGE3_1, LevelStage.STAGE3_2, LevelStage.STAGE4_1, LevelStage.STAGE4_2, LevelStage.STAGE5, LevelStage.STAGE6, LevelStage.STAGE7},
-                    StageTypes = {StageType.STAGETYPE_ORIGINAL, StageType.STAGETYPE_WOTL, StageType.STAGETYPE_AFTERBIRTH},
-                    ID = "0"
+            Special = {
+                Barren = {
+                    ID = "70050"
                 }
             }
         },
         [RoomShape.ROOMSHAPE_IH] = {
-            Barren = "4551",
-            Boss = "1077",
-            Stage = {
-                {
-                    Stages = {LevelStage.STAGE1_1, LevelStage.STAGE1_2, LevelStage.STAGE7},
-                    StageTypes = {StageType.STAGETYPE_ORIGINAL, StageType.STAGETYPE_WOTL, StageType.STAGETYPE_AFTERBIRTH},
-                    ID = "569"
-                },
-                {
-                    Stages = {LevelStage.STAGE2_1, LevelStage.STAGE2_2, LevelStage.STAGE3_1, LevelStage.STAGE3_2, LevelStage.STAGE4_1, LevelStage.STAGE4_2},
-                    StageTypes = {StageType.STAGETYPE_ORIGINAL, StageType.STAGETYPE_WOTL, StageType.STAGETYPE_AFTERBIRTH},
-                    ID = "616"
-                },
-                {
-                    Stages = {LevelStage.STAGE5, LevelStage.STAGE6},
-                    StageTypes = {StageType.STAGETYPE_ORIGINAL, StageType.STAGETYPE_WOTL, StageType.STAGETYPE_AFTERBIRTH},
-                    ID = "254"
+            Special = {
+                Barren = {
+                    ID = "70051"
                 }
             }
         },
         [RoomShape.ROOMSHAPE_IV] = {
-            Barren = "4552",
-            Boss = "1078",
-            Stage = {
-                {
-                    Stages = {LevelStage.STAGE1_1, LevelStage.STAGE1_2, LevelStage.STAGE7},
-                    StageTypes = {StageType.STAGETYPE_ORIGINAL, StageType.STAGETYPE_WOTL, StageType.STAGETYPE_AFTERBIRTH},
-                    ID = "578"
-                },
-                {
-                    Stages = {LevelStage.STAGE2_1, LevelStage.STAGE2_2, LevelStage.STAGE3_1, LevelStage.STAGE3_2, LevelStage.STAGE4_1, LevelStage.STAGE4_2},
-                    StageTypes = {StageType.STAGETYPE_ORIGINAL, StageType.STAGETYPE_WOTL, StageType.STAGETYPE_AFTERBIRTH},
-                    ID = "638"
-                },
-                {
-                    Stages = {LevelStage.STAGE5, LevelStage.STAGE6},
-                    StageTypes = {StageType.STAGETYPE_ORIGINAL, StageType.STAGETYPE_WOTL, StageType.STAGETYPE_AFTERBIRTH},
-                    ID = "270"
+            Special = {
+                Barren = {
+                    ID = "70052"
                 }
             }
         },
         [RoomShape.ROOMSHAPE_1x2] = {
-            Barren = "4553",
-            Boss = "3702",
-            Stage = {
-                {
-                    Stages = {LevelStage.STAGE1_1, LevelStage.STAGE1_2, LevelStage.STAGE7},
-                    StageTypes = {StageType.STAGETYPE_ORIGINAL, StageType.STAGETYPE_WOTL, StageType.STAGETYPE_AFTERBIRTH},
-                    ID = "780"
-                },
-                {
-                    Stages = {LevelStage.STAGE2_1, LevelStage.STAGE2_2},
-                    StageTypes = {StageType.STAGETYPE_ORIGINAL, StageType.STAGETYPE_WOTL, StageType.STAGETYPE_AFTERBIRTH},
-                    ID = "863"
-                },
-                {
-                    Stages = {LevelStage.STAGE3_1, LevelStage.STAGE3_2},
-                    StageTypes = {StageType.STAGETYPE_ORIGINAL, StageType.STAGETYPE_WOTL, StageType.STAGETYPE_AFTERBIRTH},
-                    ID = "775"
-                },
-                {
-                    Stages = {LevelStage.STAGE4_1, LevelStage.STAGE4_2},
-                    StageTypes = {StageType.STAGETYPE_ORIGINAL, StageType.STAGETYPE_WOTL, StageType.STAGETYPE_AFTERBIRTH},
-                    ID = "797"
-                },
-                {
-                    Stages = {LevelStage.STAGE5},
-                    StageTypes = {StageType.STAGETYPE_ORIGINAL, StageType.STAGETYPE_WOTL, StageType.STAGETYPE_AFTERBIRTH},
-                    ID = "346"
-                },
-                {
-                    Stages = {LevelStage.STAGE6},
-                    StageTypes = {StageType.STAGETYPE_ORIGINAL, StageType.STAGETYPE_WOTL, StageType.STAGETYPE_AFTERBIRTH},
-                    ID = "318"
+            Special = {
+                Barren = {
+                    ID = "70053",
+                    Locked = "70062"
                 }
             }
         },
         [RoomShape.ROOMSHAPE_IIV] = {
-            Barren = "4554",
-            Boss = "4554",
-            Stage = {
-                {
-                    Stages = {LevelStage.STAGE1_1, LevelStage.STAGE1_2, LevelStage.STAGE7},
-                    StageTypes = {StageType.STAGETYPE_ORIGINAL, StageType.STAGETYPE_WOTL, StageType.STAGETYPE_AFTERBIRTH},
-                    ID = "700"
-                },
-                {
-                    Stages = {LevelStage.STAGE2_1, LevelStage.STAGE2_2, LevelStage.STAGE3_1, LevelStage.STAGE3_2, LevelStage.STAGE4_1, LevelStage.STAGE4_2},
-                    StageTypes = {StageType.STAGETYPE_ORIGINAL, StageType.STAGETYPE_WOTL, StageType.STAGETYPE_AFTERBIRTH},
-                    ID = "654"
-                },
-                {
-                    Stages = {LevelStage.STAGE5, LevelStage.STAGE6},
-                    StageTypes = {StageType.STAGETYPE_ORIGINAL, StageType.STAGETYPE_WOTL, StageType.STAGETYPE_AFTERBIRTH},
-                    ID = "306"
+            Special = {
+                Barren = {
+                    ID = "70054"
                 }
             }
         },
         [RoomShape.ROOMSHAPE_2x1] = {
-            Barren = "4555",
-            Boss = "3700",
-            Stage = {
-                {
-                    Stages = {LevelStage.STAGE1_1, LevelStage.STAGE1_2, LevelStage.STAGE7},
-                    StageTypes = {StageType.STAGETYPE_ORIGINAL, StageType.STAGETYPE_WOTL, StageType.STAGETYPE_AFTERBIRTH},
-                    ID = "785"
-                },
-                {
-                    Stages = {LevelStage.STAGE2_1, LevelStage.STAGE2_2, LevelStage.STAGE3_1, LevelStage.STAGE3_2},
-                    StageTypes = {StageType.STAGETYPE_ORIGINAL, StageType.STAGETYPE_WOTL, StageType.STAGETYPE_AFTERBIRTH},
-                    ID = "729"
-                },
-                {
-                    Stages = {LevelStage.STAGE4_1, LevelStage.STAGE4_2},
-                    StageTypes = {StageType.STAGETYPE_ORIGINAL, StageType.STAGETYPE_WOTL, StageType.STAGETYPE_AFTERBIRTH},
-                    ID = "733"
-                },
-                {
-                    Stages = {LevelStage.STAGE5},
-                    StageTypes = {StageType.STAGETYPE_ORIGINAL},
-                    ID = "180"
-                },
-                {
-                    Stages = {LevelStage.STAGE5},
-                    StageTypes = {StageType.STAGETYPE_WOTL},
-                    ID = "145"
-                },
-                {
-                    Stages = {LevelStage.STAGE6},
-                    StageTypes = {StageType.STAGETYPE_ORIGINAL, StageType.STAGETYPE_WOTL, StageType.STAGETYPE_AFTERBIRTH},
-                    ID = "58"
+            Special = {
+                Barren = {
+                    ID = "70055",
+                    Locked = "70063"
                 }
             }
         },
         [RoomShape.ROOMSHAPE_IIH] = {
-            Barren = "4556",
-            Boss = "4556",
-            Stage = {
-                {
-                    Stages = {LevelStage.STAGE1_1, LevelStage.STAGE1_2, LevelStage.STAGE7},
-                    StageTypes = {StageType.STAGETYPE_ORIGINAL, StageType.STAGETYPE_WOTL, StageType.STAGETYPE_AFTERBIRTH},
-                    ID = "712"
-                },
-                {
-                    Stages = {LevelStage.STAGE2_1, LevelStage.STAGE2_2, LevelStage.STAGE3_1, LevelStage.STAGE3_2, LevelStage.STAGE4_1, LevelStage.STAGE4_2},
-                    StageTypes = {StageType.STAGETYPE_ORIGINAL, StageType.STAGETYPE_WOTL, StageType.STAGETYPE_AFTERBIRTH},
-                    ID = "669"
-                },
-                {
-                    Stages = {LevelStage.STAGE5, LevelStage.STAGE6},
-                    StageTypes = {StageType.STAGETYPE_ORIGINAL, StageType.STAGETYPE_WOTL, StageType.STAGETYPE_AFTERBIRTH},
-                    ID = "310"
+            Special = {
+                Barren = {
+                    ID = "70056"
                 }
             }
         },
         [RoomShape.ROOMSHAPE_2x2] = {
-            Barren = "4557",
-            Boss = "3414",
-            Stage = {
-                {
-                    Stages = {LevelStage.STAGE1_1, LevelStage.STAGE1_2, LevelStage.STAGE7},
-                    StageTypes = {StageType.STAGETYPE_ORIGINAL, StageType.STAGETYPE_WOTL, StageType.STAGETYPE_AFTERBIRTH},
-                    ID = "774"
-                },
-                {
-                    Stages = {LevelStage.STAGE2_1, LevelStage.STAGE2_2, LevelStage.STAGE3_1, LevelStage.STAGE3_2, LevelStage.STAGE4_1, LevelStage.STAGE4_2},
-                    StageTypes = {StageType.STAGETYPE_ORIGINAL, StageType.STAGETYPE_WOTL, StageType.STAGETYPE_AFTERBIRTH},
-                    ID = "730"
-                },
-                {
-                    Stages = {LevelStage.STAGE5},
-                    StageTypes = {StageType.STAGETYPE_ORIGINAL},
-                    ID = "223"
-                },
-                {
-                    Stages = {LevelStage.STAGE5},
-                    StageTypes = {StageType.STAGETYPE_WOTL},
-                    ID = "172"
-                },
-                {
-                    Stages = {LevelStage.STAGE6},
-                    StageTypes = {StageType.STAGETYPE_ORIGINAL, StageType.STAGETYPE_WOTL, StageType.STAGETYPE_AFTERBIRTH},
-                    ID = "77"
+            Special = {
+                Barren = {
+                    ID = "70057",
+                    Locked = "70064"
                 }
             }
         },
         [RoomShape.ROOMSHAPE_LTL] = {
-            Barren = "4558",
-            Boss = "4558",
-            Stage = {
-                {
-                    Stages = {LevelStage.STAGE1_1, LevelStage.STAGE1_2, LevelStage.STAGE7},
-                    StageTypes = {StageType.STAGETYPE_ORIGINAL, StageType.STAGETYPE_WOTL, StageType.STAGETYPE_AFTERBIRTH},
-                    ID = "814"
-                },
-                {
-                    Stages = {LevelStage.STAGE2_1, LevelStage.STAGE2_2, LevelStage.STAGE3_1, LevelStage.STAGE3_2, LevelStage.STAGE4_1, LevelStage.STAGE4_2},
-                    StageTypes = {StageType.STAGETYPE_ORIGINAL, StageType.STAGETYPE_WOTL, StageType.STAGETYPE_AFTERBIRTH},
-                    ID = "751"
-                },
-                {
-                    Stages = {LevelStage.STAGE5, LevelStage.STAGE6},
-                    StageTypes = {StageType.STAGETYPE_ORIGINAL},
-                    ID = "295"
-                },
-                {
-                    Stages = {LevelStage.STAGE5, LevelStage.STAGE6},
-                    StageTypes = {StageType.STAGETYPE_WOTL},
-                    ID = "296"
+            Special = {
+                Barren = {
+                    ID = "70058",
+                    Locked = "70065"
                 }
             }
         },
         [RoomShape.ROOMSHAPE_LTR] = {
-            Barren = "4559",
-            Boss = "4559",
-            Stage = {
-                {
-                    Stages = {LevelStage.STAGE1_1, LevelStage.STAGE1_2, LevelStage.STAGE7},
-                    StageTypes = {StageType.STAGETYPE_ORIGINAL, StageType.STAGETYPE_WOTL, StageType.STAGETYPE_AFTERBIRTH},
-                    ID = "820"
-                },
-                {
-                    Stages = {LevelStage.STAGE2_1, LevelStage.STAGE2_2, LevelStage.STAGE3_1, LevelStage.STAGE3_2, LevelStage.STAGE4_1, LevelStage.STAGE4_2},
-                    StageTypes = {StageType.STAGETYPE_ORIGINAL, StageType.STAGETYPE_WOTL, StageType.STAGETYPE_AFTERBIRTH},
-                    ID = "757"
-                },
-                {
-                    Stages = {LevelStage.STAGE5, LevelStage.STAGE6},
-                    StageTypes = {StageType.STAGETYPE_ORIGINAL},
-                    ID = "299"
-                },
-                {
-                    Stages = {LevelStage.STAGE5, LevelStage.STAGE6},
-                    StageTypes = {StageType.STAGETYPE_WOTL},
-                    ID = "297"
+            Special = {
+                Barren = {
+                    ID = "70059",
+                    Locked = "70066"
                 }
             }
         },
         [RoomShape.ROOMSHAPE_LBL] = {
-            Barren = "4560",
-            Boss = "4560",
-            Stage = {
-                {
-                    Stages = {LevelStage.STAGE1_1, LevelStage.STAGE1_2, LevelStage.STAGE7},
-                    StageTypes = {StageType.STAGETYPE_ORIGINAL, StageType.STAGETYPE_WOTL, StageType.STAGETYPE_AFTERBIRTH},
-                    ID = "828"
-                },
-                {
-                    Stages = {LevelStage.STAGE2_1, LevelStage.STAGE2_2, LevelStage.STAGE3_1, LevelStage.STAGE3_2, LevelStage.STAGE4_1, LevelStage.STAGE4_2},
-                    StageTypes = {StageType.STAGETYPE_ORIGINAL, StageType.STAGETYPE_WOTL, StageType.STAGETYPE_AFTERBIRTH},
-                    ID = "763"
-                },
-                {
-                    Stages = {LevelStage.STAGE5, LevelStage.STAGE6},
-                    StageTypes = {StageType.STAGETYPE_ORIGINAL, StageType.STAGETYPE_WOTL, StageType.STAGETYPE_AFTERBIRTH},
-                    ID = "300"
+            Special = {
+                Barren = {
+                    ID = "70060",
+                    Locked = "70067"
                 }
             }
         },
         [RoomShape.ROOMSHAPE_LBR] = {
-            Barren = "4561",
-            Boss = "4561",
-            Stage = {
-                {
-                    Stages = {LevelStage.STAGE1_1, LevelStage.STAGE1_2, LevelStage.STAGE7},
-                    StageTypes = {StageType.STAGETYPE_ORIGINAL, StageType.STAGETYPE_WOTL, StageType.STAGETYPE_AFTERBIRTH},
-                    ID = "830"
-                },
-                {
-                    Stages = {LevelStage.STAGE2_1, LevelStage.STAGE2_2, LevelStage.STAGE3_1, LevelStage.STAGE3_2, LevelStage.STAGE4_1, LevelStage.STAGE4_2},
-                    StageTypes = {StageType.STAGETYPE_ORIGINAL, StageType.STAGETYPE_WOTL, StageType.STAGETYPE_AFTERBIRTH},
-                    ID = "769"
-                },
-                {
-                    Stages = {LevelStage.STAGE5, LevelStage.STAGE6},
-                    StageTypes = {StageType.STAGETYPE_ORIGINAL, StageType.STAGETYPE_WOTL, StageType.STAGETYPE_AFTERBIRTH},
-                    ID = "303"
+            Special = {
+                Barren = {
+                    ID = "70061",
+                    Locked = "70068"
                 }
             }
         }
     }
 
-    function StageAPI.GetGotoIDForStage(shape, stage, stagetype)
-        local stagesets = StageAPI.RoomShapeToGotoID[shape].Stage
-        for _, stageset in ipairs(stagesets) do
-            local isIn
-            for _, lvlstage in ipairs(stageset.Stages) do
-                if stage == lvlstage then
-                    isIn = true
-                    break
-                end
+    for shape, gotoIds in pairs(StageAPI.RoomShapeToGotoID) do
+        for label, prefix in pairs(gotoPrefixes) do
+            if not gotoIds.Special[label] then
+                gotoIds.Special[label] = {}
             end
 
-            if isIn then
-                for _, stgtype in ipairs(stageset.StageTypes) do
-                    if stagetype == stgtype then
-                        return stageset.ID
+            if not gotoIds.Special[label].ID then
+                gotoIds.Special[label].ID = gotoIds.Special.Barren.ID
+            end
+
+            if not gotoIds.Special[label].Locked and gotoIds.Special.Barren.Locked then
+                gotoIds.Special[label].Locked = gotoIds.Special.Barren.Locked
+            end
+
+            gotoIds.Special[label].Prefix = prefix
+        end
+    end
+
+    StageAPI.LoadedGotoData = false
+    StageAPI.DataLoadNeedsRestart = false
+    mod:AddCallback(ModCallbacks.MC_POST_GAME_STARTED, function()
+        if not StageAPI.LoadedGotoData and (game.Difficulty == Difficulty.DIFFICULTY_NORMAL or game.Difficulty == Difficulty.DIFFICULTY_HARD) and not StageAPI.InTestMode then
+            local resetRun
+            local currentIndex = level:GetCurrentRoomIndex()
+            if currentIndex == level:GetStartingRoomIndex() and room:IsFirstVisit() and level:GetStage() == LevelStage.STAGE1_1 then
+                resetRun = true
+            end
+
+            for shape, gotoIds in pairs(StageAPI.RoomShapeToGotoID) do
+                for label, specialGoto in pairs(gotoIds.Special) do
+                    Isaac.ExecuteCommand("goto " .. specialGoto.Prefix .. specialGoto.ID)
+                    local desc = level:GetRoomByIdx(GridRooms.ROOM_DEBUG_IDX)
+                    specialGoto.Data = desc.Data
+                    if specialGoto.Locked then
+                        Isaac.ExecuteCommand("goto " .. specialGoto.Prefix .. specialGoto.Locked)
+                        local desc = level:GetRoomByIdx(GridRooms.ROOM_DEBUG_IDX)
+                        specialGoto.LockedData = desc.Data
                     end
                 end
             end
+
+            if resetRun then
+                StageAPI.DataLoadNeedsRestart = true
+            end
+
+            game:StartRoomTransition(currentIndex, Direction.NO_DIRECTION, 0)
+
+            StageAPI.LoadedGotoData = true
         end
-    end
+    end)
+
+    mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, function()
+        if StageAPI.DataLoadNeedsRestart then
+            Isaac.ExecuteCommand("restart")
+            StageAPI.DataLoadNeedsRestart = nil
+        end
+    end)
 
     local shadowSprite = Sprite()
     shadowSprite:Load("stageapi/stage_shadow.anm2", false)
@@ -4424,56 +4276,174 @@ do -- Extra Rooms
 
     StageAPI.StoredExtraRoomThisPause = false
 
+    function StageAPI.GetGotoDataForTypeShape(roomType, roomShape)
+        if type(roomType) ~= "string" then
+            if roomType == RoomType.ROOM_DEFAULT then
+                roomType = "Default"
+            elseif roomType == RoomType.ROOM_BOSS then
+                roomType = "Boss"
+            else
+                roomType = "Barren"
+            end
+        end
+
+        if StageAPI.RoomShapeToGotoID[roomShape].Special[roomType] then
+            return StageAPI.RoomShapeToGotoID[roomShape].Special[roomType]
+        else
+            return StageAPI.RoomShapeToGotoID[roomShape].Special["Barren"]
+        end
+    end
+
+    StageAPI.DoorOneSlots = {
+        [DoorSlot.DOWN1] = true,
+        [DoorSlot.UP1] = true,
+        [DoorSlot.LEFT1] = true,
+        [DoorSlot.RIGHT1] = true
+    }
+
+    StageAPI.DoorSlotToDirection = {
+        [DoorSlot.LEFT0] = Direction.LEFT,
+        [DoorSlot.LEFT1] = Direction.LEFT,
+        [DoorSlot.RIGHT0] = Direction.RIGHT,
+        [DoorSlot.RIGHT1] = Direction.RIGHT,
+        [DoorSlot.UP0] = Direction.UP,
+        [DoorSlot.UP1] = Direction.UP,
+        [DoorSlot.DOWN0] = Direction.DOWN,
+        [DoorSlot.DOWN1] = Direction.DOWN
+    }
+
+    -- isCustomMap is unused currently, but will be used if custom floor gen is added
+    function StageAPI.ExtraRoomTransition(name, direction, transitionType, isCustomMap, leaveDoor, enterDoor, setPlayerPosition, extraRoomBaseType)
+        leaveDoor = leaveDoor or -1
+        enterDoor = enterDoor or -1
+        transitionType = transitionType or RoomTransitionAnim.WALK
+        direction = direction or Direction.NO_DIRECTION
+        StageAPI.ForcePlayerNewRoomPosition = setPlayerPosition
+
+        if StageAPI.CurrentExtraRoom then
+            StageAPI.ActiveTransitionFromExtraRoom = true
+            StageAPI.CurrentExtraRoom:SaveGridInformation()
+            StageAPI.CurrentExtraRoom:SavePersistentEntities()
+        end
+
+        local transitionFrom = level:GetCurrentRoomIndex()
+        local transitionTo = GridRooms.ROOM_DEBUG_IDX
+        local fromExtraRoom = transitionFrom == GridRooms.ROOM_DEBUG_IDX
+
+        local extraRoomName
+        if type(name) ~= "string" then
+            transitionTo = name
+        else
+            extraRoomName = name
+        end
+
+        if not fromExtraRoom then
+            StageAPI.LastNonExtraRoom = transitionFrom
+        else
+            local currentRoomDesc = level:GetRoomByIdx(transitionFrom)
+            local currentGotoSet = StageAPI.GetGotoDataForTypeShape(room:GetType(), room:GetRoomShape())
+            if currentGotoSet.LockedData and StageAPI.DoorOneSlots[leaveDoor] then
+                currentRoomDesc.Data = currentGotoSet.LockedData
+            else
+                currentRoomDesc.Data = currentGotoSet.Data
+            end
+        end
+
+        local setDataForShape, setVisitCount, setClear, setClearCount, setDecoSeed, setSpawnSeed, setAwardSeed, setWater, setChallengeDone
+
+        if extraRoomName then
+            local extraRoom = StageAPI.GetExtraRoom(extraRoomName)
+            StageAPI.InExtraRoom = true
+            StageAPI.CurrentExtraRoom = extraRoom
+            StageAPI.CurrentExtraRoomName = extraRoomName
+
+            StageAPI.ActiveTransitionToExtraRoom = true
+
+            extraRoomBaseType = extraRoomBaseType or extraRoom.RoomType
+            setDataForShape = setDataForShape or extraRoom.Shape
+            setSpawnSeed = setSpawnSeed or extraRoom.SpawnSeed
+            setDecoSeed = setDecoSeed or extraRoom.DecorationSeed
+            setAwardSeed = setAwardSeed or extraRoom.AwardSeed
+            setVisitCount = setVisitCount or extraRoom.VisitCount or 0
+            setClearCount = setClearCount or extraRoom.ClearCount or 0
+            setWater = setWater or extraRoom.HasWaterPits
+            setChallengeDone = setChallengeDone or extraRoom.ChallengeDone
+
+            if setWater == nil then
+                setWater = false or extraRoom.HasWaterPits
+            end
+
+            if setChallengeDone == nil then
+                setChallengeDone = false or extraRoom.ChallengeDone
+            end
+
+            if setClear == nil then
+                setClear = true
+                if extraRoom.IsClear ~= nil then
+                    setClear = extraRoom.IsClear
+                end
+            end
+
+            StageAPI.LoadedExtraRoom = false
+        end
+
+        local targetRoomDesc = level:GetRoomByIdx(transitionTo)
+
+        if setDataForShape then
+            local targetGotoSet = StageAPI.GetGotoDataForTypeShape(extraRoomBaseType, setDataForShape)
+            if targetGotoSet.LockedData and StageAPI.DoorOneSlots[enterDoor] then
+                targetRoomDesc.Data = targetGotoSet.LockedData
+            else
+                targetRoomDesc.Data = targetGotoSet.Data
+            end
+        end
+
+        if setVisitCount then
+            targetRoomDesc.VisitedCount = setVisitCount
+        end
+
+        if setClear ~= nil then
+            targetRoomDesc.Clear = setClear
+        end
+
+        if setWater ~= nil then
+            targetRoomDesc.HasWater = setWater
+        end
+
+        if setChallengeDone ~= nil then
+            targetRoomDesc.ChallengeDone = setChallengeDone
+        end
+
+        if setClearCount then
+            targetRoomDesc.ClearCount = setClearCount
+        end
+
+        if setDecoSeed then
+            targetRoomDesc.DecorationSeed = setDecoSeed
+        end
+
+        if setSpawnSeed then
+            targetRoomDesc.SpawnSeed = setSpawnSeed
+        end
+
+        if setAwardSeed then
+            targetRoomDesc.AwardSeed = setAwardSeed
+        end
+
+        level.LeaveDoor = leaveDoor
+        level.EnterDoor = enterDoor
+
+        if transitionType == -1 then -- StageAPI special, instant transition
+            StageAPI.ForcePlayerDoorSlot = (enterDoor == -1 and nil) or enterDoor
+            level:ChangeRoom(transitionTo)
+        else
+            game:StartRoomTransition(transitionTo, direction, transitionType)
+        end
+    end
+
     mod:AddCallback(ModCallbacks.MC_POST_RENDER, function()
         if not game:IsPaused() then
             StageAPI.StoredExtraRoomThisPause = false
-            if StageAPI.TransitioningTo or StageAPI.TransitioningFromTo then
-                StageAPI.TransitionTimer = StageAPI.TransitionTimer + 1
-                if StageAPI.TransitionTimer == StageAPI.TransitionFadeTime or StageAPI.SkipExtraRoomTransition then
-                    if StageAPI.CurrentExtraRoom then
-                        StageAPI.CurrentExtraRoom:SaveGridInformation()
-                        StageAPI.CurrentExtraRoom:SavePersistentEntities()
-                    end
-
-                    if StageAPI.TransitioningTo then
-                        if not StageAPI.InExtraRoom then
-                            StageAPI.LastNonExtraRoom = level:GetCurrentRoomIndex()
-                        end
-
-                        local extraRoom = StageAPI.GetExtraRoom(StageAPI.TransitioningTo)
-                        StageAPI.InExtraRoom = true
-                        StageAPI.CurrentExtraRoom = extraRoom
-                        StageAPI.CurrentExtraRoomName = StageAPI.TransitioningTo
-                        StageAPI.TransitioningTo = nil
-
-                        if StageAPI.ExtraRoomBaseType == "Barren" then
-                            local id = StageAPI.RoomShapeToGotoID[extraRoom.Shape].Barren
-                            Isaac.ExecuteCommand("goto s.barren." .. id)
-                        elseif StageAPI.ExtraRoomBaseType == "Stage" then
-                            local id = StageAPI.GetGotoIDForStage(extraRoom.Shape, level:GetStage(), level:GetStageType())
-                            Isaac.ExecuteCommand("goto d." .. id)
-                        elseif StageAPI.ExtraRoomBaseType == "Boss" then
-                            local id = StageAPI.RoomShapeToGotoID[extraRoom.Shape].Boss
-                            Isaac.ExecuteCommand("goto s.boss." .. id)
-                        end
-                    elseif StageAPI.TransitioningFromTo then
-                        StageAPI.InExtraRoom = nil
-                        StageAPI.CurrentExtraRoom = nil
-                        StageAPI.CurrentExtraRoomName = nil
-                        game:StartRoomTransition(StageAPI.TransitioningFromTo, Direction.NO_DIRECTION, 0)
-                        StageAPI.TransitioningFromTo = nil
-                    end
-
-                    StageAPI.LoadedExtraRoom = false
-                end
-            elseif StageAPI.TransitionTimer then
-                StageAPI.TransitionTimer = StageAPI.TransitionTimer - 1
-                if StageAPI.TransitionTimer <= 0 or StageAPI.SkipExtraRoomTransition then
-                    StageAPI.TransitionTimer = nil
-                    StageAPI.TransitionToExtra = nil
-                    StageAPI.SkipExtraRoomTransition = nil
-                end
-            end
         elseif StageAPI.LoadedExtraRoom and not StageAPI.StoredExtraRoomThisPause then
             StageAPI.StoredExtraRoomThisPause = true
             StageAPI.CurrentExtraRoom:SaveGridInformation()
@@ -4513,15 +4483,11 @@ do -- Extra Rooms
         end
 
         StageAPI.CallCallbacks("PRE_TRANSITION_RENDER")
-        if StageAPI.TransitionTimer then
-            for _, player in ipairs(players) do
-                player.ControlsCooldown = 2
-            end
-
-            StageAPI.RenderBlackScreen(StageAPI.TransitionTimer / StageAPI.TransitionFadeTime)
-        end
     end)
+end
 
+StageAPI.LogMinor("Loading Custom Door Handler")
+do -- Custom Doors
     StageAPI.DoorToDirection = {
         [DoorSlot.DOWN0] = Direction.DOWN,
         [DoorSlot.DOWN1] = Direction.DOWN,
@@ -4562,13 +4528,17 @@ do -- Extra Rooms
 
     StageAPI.DefaultDoor = StageAPI.CustomDoor("DefaultDoor")
 
-    function StageAPI.SpawnCustomDoor(slot, leadsToExtra, leadsToNormal, doorDataName, data, exitSlot)
+    function StageAPI.SpawnCustomDoor(slot, leadsTo, legacyLeadsToNormal, doorDataName, data, exitSlot)
+        if type(legacyLeadsToNormal) == "number" then
+            leadsTo = legacyLeadsToNormal
+            legacyLeadsToNormal = nil
+        end
+
         local index = room:GetGridIndex(room:GetDoorSlotPosition(slot))
         StageAPI.CustomDoorGrid:Spawn(index, nil, false, {
             Slot = slot,
             ExitSlot = exitSlot or (slot + 2) % 4,
-            LeadsToExtra = leadsToExtra,
-            LeadsToNormal = leadsToNormal,
+            LeadsTo = leadsTo,
             DoorDataName = doorDataName,
             Data = data
         })
@@ -4690,12 +4660,10 @@ do -- Extra Rooms
         for _, player in ipairs(players) do
             local size = 32 + player.Size
             if not room:IsPositionInRoom(player.Position, -16) and player.Position:DistanceSquared(door.Position) < size * size then
-                if data.DoorGridData.LeadsToExtra then
+                local leadsTo = data.DoorGridData.LeadsTo
+                if leadsTo then
                     transitionStarted = true
-                    StageAPI.TransitionToExtraRoom(data.DoorGridData.LeadsToExtra, data.DoorGridData.ExitSlot)
-                elseif data.DoorGridData.LeadsToNormal then
-                    transitionStarted = true
-                    StageAPI.TransitionFromExtraRoom(data.DoorGridData.LeadsToNormal, data.DoorGridData.ExitSlot)
+                    StageAPI.ExtraRoomTransition(leadsTo, StageAPI.DoorSlotToDirection[data.DoorGridData.Slot], RoomTransitionAnim.WALK, false, data.DoorGridData.Slot, data.DoorGridData.ExitSlot)
                 end
             end
         end
@@ -5308,6 +5276,13 @@ do -- Backdrop & RoomGfx
     end
 
     function StageAPI.ChangeBackdrop(backdrop, justWalls, storeBackdropEnts)
+        if type(backdrop) == "number" then
+            game:ShowHallucination(0, backdrop)
+            sfx:Stop(SoundEffect.SOUND_DEATH_CARD)
+
+            return
+        end
+
         StageAPI.BackdropRNG:SetSeed(room:GetDecorationSeed(), 1)
         local needsExtra, backdropEnts
         if storeBackdropEnts then
@@ -5681,6 +5656,67 @@ do -- Custom Stage
         end
     end
 
+    function StageAPI.CustomStage:GenerateRoom(rtype, shape, doors)
+        if StageAPI.CurrentStage.SinRooms and (rtype == RoomType.ROOM_MINIBOSS or rtype == RoomType.ROOM_SECRET or rtype == RoomType.ROOM_SHOP) then
+            local usingRoomsList
+            local includedSins = {}
+            for _, entity in ipairs(Isaac.GetRoomEntities()) do
+                for i, sin in ipairs(StageAPI.SinsSplitData) do
+                    if entity.Type == sin.Type and (sin.Variant and entity.Variant == sin.Variant) and ((sin.ListName and StageAPI.CurrentStage.SinRooms[sin.ListName]) or (sin.MultipleListName and StageAPI.CurrentStage.SinRooms[sin.MultipleListName])) then
+                        if not includedSins[i] then
+                            includedSins[i] = 0
+                        end
+
+                        includedSins[i] = includedSins[i] + 1
+                        break
+                    end
+                end
+            end
+
+            for ind, count in pairs(includedSins) do
+                local sin = StageAPI.SinsSplitData[ind]
+                local listName = sin.ListName
+                if count > 1 and sin.MultipleListName then
+                    listName = sin.MultipleListName
+                end
+
+                usingRoomsList = StageAPI.CurrentStage.SinRooms[listName]
+            end
+
+            if usingRoomsList then
+                local shape = room:GetRoomShape()
+                if #usingRoomsList.ByShape[shape] > 0 then
+                    local newRoom = StageAPI.LevelRoom{
+                        RoomsList = usingRoomsList,
+                        Shape = shape,
+                        RoomType = rtype,
+                        RequireRoomType = StageAPI.CurrentStage.RequireRoomTypeSin,
+                        Doors = doors
+                    }
+
+                    return newRoom
+                end
+            end
+        end
+
+        if not inStartingRoom and StageAPI.CurrentStage.Rooms and StageAPI.CurrentStage.Rooms[rtype] then
+            local newRoom = StageAPI.LevelRoom{
+                RoomsList = StageAPI.CurrentStage.Rooms[rtype],
+                Shape = shape,
+                RoomType = rtype,
+                RequireRoomType = StageAPI.CurrentStage.RequireRoomTypeMatching,
+                Doors = doors
+            }
+
+            return newRoom
+        end
+
+        if StageAPI.CurrentStage.Bosses and rtype == RoomType.ROOM_BOSS then
+            local newRoom, boss = StageAPI.GenerateBossRoom(nil, true, StageAPI.CurrentStage.Bosses, StageAPI.CurrentStage.Bosses.HasHorseman, StageAPI.CurrentStage.RequireRoomTypeBoss)
+            return newRoom, boss
+        end
+    end
+
     function StageAPI.CustomStage:GetPlayingMusic()
         local roomType = room:GetType()
         local id = StageAPI.Music:GetCurrentMusicID()
@@ -5863,191 +5899,67 @@ end
 
 StageAPI.LogMinor("Loading Boss Handler")
 do -- Bosses
-    StageAPI.FloorInfo = {
-        [LevelStage.STAGE1_1] = {
-            [StageType.STAGETYPE_ORIGINAL] = {
-                Prefix = "01_basement",
-            },
-            [StageType.STAGETYPE_WOTL] = {
-                Prefix = "02_cellar",
-            },
-            [StageType.STAGETYPE_AFTERBIRTH] = {
-                Prefix = "13_burning_basement",
-                FloorTextColor = Color(0.5,0.5,0.5,1,0,0,0),
-            },
-            [StageType.STAGETYPE_GREEDMODE] = {
-                Prefix = "01_basement",
-            },
-            [StageType.STAGETYPE_REPENTANCE] = {
-                Prefix = "01x_downpour",
-            },
-            [StageType.STAGETYPE_REPENTANCE_B] = {
-                Prefix = "02x_dross",
-            },
-        },
-        [LevelStage.STAGE2_1] = {
-            [StageType.STAGETYPE_ORIGINAL] = {
-                Prefix = "03_caves",
-            },
-            [StageType.STAGETYPE_WOTL] = {
-                Prefix = "04_catacombs",
-            },
-            [StageType.STAGETYPE_AFTERBIRTH] = {
-                Prefix = "14_drowned_caves",
-            },
-            [StageType.STAGETYPE_GREEDMODE] = {
-                Prefix = "03_caves",
-            },
-            [StageType.STAGETYPE_REPENTANCE] = {
-                Prefix = "03x_mines",
-            },
-            [StageType.STAGETYPE_REPENTANCE_B] = {
-                Prefix = "04x_ashpit",
-            },
-        },
-        [LevelStage.STAGE3_1] = {
-            [StageType.STAGETYPE_ORIGINAL] = {
-                Prefix = "05_depths",
-            },
-            [StageType.STAGETYPE_WOTL] = {
-                Prefix = "06_necropolis",
-            },
-            [StageType.STAGETYPE_AFTERBIRTH] = {
-                Prefix = "15_dank_depths",
-            },
-            [StageType.STAGETYPE_GREEDMODE] = {
-                Prefix = "05_depths",
-            },
-            [StageType.STAGETYPE_REPENTANCE] = {
-                Prefix = "05x_mausoleum",
-            },
-            [StageType.STAGETYPE_REPENTANCE_B] = {
-                Prefix = "06x_gehenna",
-            },
-        },
-        [LevelStage.STAGE4_1] = {
-            [StageType.STAGETYPE_ORIGINAL] = {
-                Prefix = "07_womb",
-            },
-            [StageType.STAGETYPE_WOTL] = {
-                Prefix = "07_womb",
-            },
-            [StageType.STAGETYPE_AFTERBIRTH] = {
-                Prefix = "16_scarred_womb",
-            },
-            [StageType.STAGETYPE_GREEDMODE] = {
-                Prefix = "07_womb",
-            },
-            [StageType.STAGETYPE_REPENTANCE] = {
-                Prefix = "07x_corpse",
-            },
-            [StageType.STAGETYPE_REPENTANCE_B] = {
-                Prefix = "07x_corpse",
-            },
-        },
-        [LevelStage.STAGE4_3] = {
-            [StageType.STAGETYPE_ORIGINAL] = {
-                Prefix = "17_blue_womb",
-            },
-            [StageType.STAGETYPE_WOTL] = {
-                Prefix = "17_blue_womb",
-            },
-            [StageType.STAGETYPE_AFTERBIRTH] = {
-                Prefix = "17_blue_womb",
-            },
-            [StageType.STAGETYPE_GREEDMODE] = {
-                Prefix = "17_blue_womb",
-            },
-        },
-        [LevelStage.STAGE5] = {
-            [StageType.STAGETYPE_ORIGINAL] = {
-                Prefix = "09_sheol",
-            },
-            [StageType.STAGETYPE_WOTL] = {
-                Prefix = "10_cathedral",
-            },
-            [StageType.STAGETYPE_AFTERBIRTH] = {
-                Prefix = "09_sheol",
-            },
-            [StageType.STAGETYPE_GREEDMODE] = {
-                Prefix = "09_sheol",
-            },
-        },
-        [LevelStage.STAGE6] = {
-            [StageType.STAGETYPE_ORIGINAL] = {
-                Prefix = "11_darkroom",
-            },
-            [StageType.STAGETYPE_WOTL] = {
-                Prefix = "12_chest",
-            },
-            [StageType.STAGETYPE_AFTERBIRTH] = {
-                Prefix = "11_darkroom",
-            },
-            [StageType.STAGETYPE_GREEDMODE] = {
-                Prefix = "18_shop",
-            },
-        },
-        [LevelStage.STAGE7] = {
-            [StageType.STAGETYPE_ORIGINAL] = {
-                Prefix = "19_void",
-            },
-            [StageType.STAGETYPE_WOTL] = {
-                Prefix = "19_void",
-            },
-            [StageType.STAGETYPE_AFTERBIRTH] = {
-                Prefix = "19_void",
-            },
-            [StageType.STAGETYPE_GREEDMODE] = {
-                Prefix = "18_shop",
-            },
-        }
+    StageAPI.FloorInfo = {}
+    StageAPI.FloorInfoGreed = {}
+
+    local stageToGreed = {
+        [LevelStage.STAGE1_1] = LevelStage.STAGE1_GREED,
+        [LevelStage.STAGE2_1] = LevelStage.STAGE2_GREED,
+        [LevelStage.STAGE3_1] = LevelStage.STAGE3_GREED,
+        [LevelStage.STAGE4_1] = LevelStage.STAGE4_GREED,
     }
 
-    StageAPI.FloorInfo[LevelStage.STAGE1_2] = StageAPI.FloorInfo[LevelStage.STAGE1_1]
-    StageAPI.FloorInfo[LevelStage.STAGE2_2] = StageAPI.FloorInfo[LevelStage.STAGE2_1]
-    StageAPI.FloorInfo[LevelStage.STAGE3_2] = StageAPI.FloorInfo[LevelStage.STAGE3_1]
-    StageAPI.FloorInfo[LevelStage.STAGE4_2] = StageAPI.FloorInfo[LevelStage.STAGE4_1]
-
-    StageAPI.FloorInfoGreed = {
-        [LevelStage.STAGE1_GREED] = StageAPI.FloorInfo[LevelStage.STAGE1_1],
-        [LevelStage.STAGE2_GREED] = StageAPI.FloorInfo[LevelStage.STAGE2_1],
-        [LevelStage.STAGE3_GREED] = StageAPI.FloorInfo[LevelStage.STAGE3_1],
-        [LevelStage.STAGE4_GREED] = StageAPI.FloorInfo[LevelStage.STAGE4_1],
-        [LevelStage.STAGE5_GREED] = {
-            [StageType.STAGETYPE_ORIGINAL] = {
-                Prefix = "09_sheol",
-            },
-            [StageType.STAGETYPE_WOTL] = {
-                Prefix = "09_sheol",
-            },
-            [StageType.STAGETYPE_AFTERBIRTH] = {
-                Prefix = "09_sheol",
-            },
-            [StageType.STAGETYPE_GREEDMODE] = {
-                Prefix = "09_sheol",
-            },
-        },
-        [LevelStage.STAGE6_GREED] = {
-            [StageType.STAGETYPE_ORIGINAL] = {
-                Prefix = "18_shop",
-            },
-            [StageType.STAGETYPE_WOTL] = {
-                Prefix = "18_shop",
-            },
-            [StageType.STAGETYPE_AFTERBIRTH] = {
-                Prefix = "18_shop",
-            },
-            [StageType.STAGETYPE_GREEDMODE] = {
-                Prefix = "18_shop",
-            },
-        },
+    local stageToSecondStage = {
+        [LevelStage.STAGE1_1] = LevelStage.STAGE1_2,
+        [LevelStage.STAGE2_1] = LevelStage.STAGE2_2,
+        [LevelStage.STAGE3_1] = LevelStage.STAGE3_2,
+        [LevelStage.STAGE4_1] = LevelStage.STAGE4_2,
     }
 
-    StageAPI.FloorInfoGreed[LevelStage.STAGE7_GREED] = StageAPI.FloorInfoGreed[LevelStage.STAGE6_GREED]
+    StageAPI.StageTypes = {
+        StageType.STAGETYPE_ORIGINAL,
+        StageType.STAGETYPE_WOTL,
+        StageType.STAGETYPE_AFTERBIRTH,
+        StageType.STAGETYPE_REPENTANCE,
+        StageType.STAGETYPE_REPENTANCE_B
+    }
 
-    function StageAPI.GetBaseFloorInfo()
-        local stage, stageType = level:GetStage(), level:GetStageType()
-        if game:IsGreedMode() then
+    -- if doGreed is false, will not add to greed at all, if true, will only add to greed. nil for both.
+    -- if stagetype is true, will set floorinfo for all stagetypes
+    function StageAPI.SetFloorInfo(info, stage, stagetype, doGreed)
+        if stagetype == true then
+            for _, stype in ipairs(StageAPI.StageTypes) do
+                StageAPI.SetFloorInfo(info, stage, stype, doGreed)
+            end
+
+            return
+        end
+
+        if doGreed ~= true then
+            StageAPI.FloorInfo[stage] = StageAPI.FloorInfo[stage] or {}
+            StageAPI.FloorInfo[stage][stagetype] = info
+
+            local stageTwo = stageToSecondStage[stage]
+            if stageTwo then
+                StageAPI.FloorInfo[stageTwo] = StageAPI.FloorInfo[stageTwo] or {}
+                StageAPI.FloorInfo[stageTwo][stagetype] = info
+            end
+        end
+
+        if doGreed ~= false then
+            local greedStage = stage
+            if doGreed == nil then
+                greedStage = stageToGreed[stage] or stage
+            end
+
+            StageAPI.FloorInfoGreed[greedStage] = StageAPI.FloorInfoGreed[greedStage] or {}
+            StageAPI.FloorInfoGreed[greedStage][stagetype] = info
+        end
+    end
+
+    function StageAPI.GetBaseFloorInfo(stage, stageType, isGreed)
+        stage, stageType, isGreed = stage or level:GetStage(), stageType or level:GetStageType(), isGreed or game:IsGreedMode()
+        if isGreed then
             return StageAPI.FloorInfoGreed[stage][stageType]
         else
             return StageAPI.FloorInfo[stage][stageType]
@@ -7344,6 +7256,10 @@ do -- Callbacks
                 if level:GetCurses() & LevelCurse.CURSE_OF_LABYRINTH ~= 0 and StageAPI.CurrentStage.XLStage then
                     StageAPI.CurrentStage = StageAPI.CurrentStage.XLStage
                 end
+
+                if StageAPI.CurrentStage.GenerateLevel then
+                    StageAPI.CurrentStage:GenerateLevel()
+                end
             end
 
             StageAPI.NextStage = nil
@@ -7355,56 +7271,10 @@ do -- Callbacks
             end
         end
 
-        local enteringExtraRoomFromOffGridRoom
-        if StageAPI.PreviousExtraRoom and level:GetCurrentRoomIndex() == -3 then
-            StageAPI.CurrentExtraRoom = StageAPI.PreviousExtraRoom
-            StageAPI.CurrentExtraRoomName = StageAPI.PreviousExtraRoomName
-            StageAPI.InExtraRoom = true
-            StageAPI.TransitionExitSlot = level.LeaveDoor
-            StageAPI.PreviousExtraRoom = nil
-            StageAPI.PreviousExtraRoomName = nil
-            enteringExtraRoomFromOffGridRoom = true
-        end
-
-        if not StageAPI.TransitioningToExtraRoom() and not enteringExtraRoomFromOffGridRoom and not StageAPI.LoadingExtraRoomFromSave then
-            if StageAPI.InExtraRoom and level:GetCurrentRoomIndex() < 0 then
-                StageAPI.PreviousExtraRoom = StageAPI.CurrentExtraRoom
-                StageAPI.PreviousExtraRoomName = StageAPI.CurrentExtraRoomName
-            else
-                StageAPI.PreviousExtraRoom = nil
-                StageAPI.PreviousExtraRoomName = nil
-            end
-
+        if not StageAPI.ActiveTransitionToExtraRoom then
             StageAPI.CurrentExtraRoom = nil
             StageAPI.CurrentExtraRoomName = nil
             StageAPI.InExtraRoom = false
-            StageAPI.LoadedExtraRoom = false
-        end
-
-        StageAPI.LoadingExtraRoomFromSave = nil
-
-        if StageAPI.TransitionExitSlot then
-            local pos = room:GetDoorSlotPosition(StageAPI.TransitionExitSlot) + (StageAPI.DoorOffsetsByDirection[StageAPI.DoorToDirection[StageAPI.TransitionExitSlot]] * 3)
-            for _, player in ipairs(players) do
-                player.Position = pos
-            end
-
-            StageAPI.TransitionExitSlot = nil
-        end
-
-        if StageAPI.CurrentExtraRoom then
-            for i = 0, 7 do
-                if room:GetDoor(i) then
-                    room:RemoveDoor(i)
-                end
-            end
-
-            StageAPI.CurrentExtraRoom:Load(true)
-            StageAPI.LoadedExtraRoom = true
-            StageAPI.PreviousExtraRoom = nil
-            StageAPI.PreviousExtraRoomName = nil
-            justGenerated = true
-        else
             StageAPI.LoadedExtraRoom = false
         end
 
@@ -7418,62 +7288,36 @@ do -- Callbacks
             StageAPI.SetCurrentRoom(currentRoom)
         end
 
+        if StageAPI.CurrentExtraRoom then
+            for i = 0, 7 do
+                if room:GetDoor(i) then
+                    room:RemoveDoor(i)
+                end
+            end
+
+            StageAPI.CurrentExtraRoom:Load(true)
+            StageAPI.LoadedExtraRoom = true
+            justGenerated = StageAPI.CurrentExtraRoom.FirstLoad
+
+            StageAPI.ChangeBackdrop(StageAPI.GetBaseFloorInfo().Backdrop)
+        else
+            StageAPI.LoadedExtraRoom = false
+        end
+
         if not StageAPI.InExtraRoom and StageAPI.InNewStage() then
-            local rtype = room:GetType()
-            if not currentRoom and StageAPI.CurrentStage.SinRooms and (rtype == RoomType.ROOM_MINIBOSS or rtype == RoomType.ROOM_SECRET or rtype == RoomType.ROOM_SHOP) then
-                local usingRoomsList
-                local includedSins = {}
-                for _, entity in ipairs(Isaac.GetRoomEntities()) do
-                    for i, sin in ipairs(StageAPI.SinsSplitData) do
-                        if entity.Type == sin.Type and (sin.Variant and entity.Variant == sin.Variant) and ((sin.ListName and StageAPI.CurrentStage.SinRooms[sin.ListName]) or (sin.MultipleListName and StageAPI.CurrentStage.SinRooms[sin.MultipleListName])) then
-                            if not includedSins[i] then
-                                includedSins[i] = 0
-                            end
-
-                            includedSins[i] = includedSins[i] + 1
-                            break
-                        end
-                    end
+            if not currentRoom and not inStartingRoom and StageAPI.CurrentStage.GenerateRoom then
+                local newRoom, newBoss = StageAPI.CurrentStage:GenerateRoom(room:GetType())
+                if newRoom then
+                    newRoom.LevelIndex = currentListIndex
+                    StageAPI.SetCurrentRoom(newRoom)
+                    newRoom:Load()
+                    currentRoom = newRoom
+                    justGenerated = true
                 end
 
-                for ind, count in pairs(includedSins) do
-                    local sin = StageAPI.SinsSplitData[ind]
-                    local listName = sin.ListName
-                    if count > 1 and sin.MultipleListName then
-                        listName = sin.MultipleListName
-                    end
-
-                    usingRoomsList = StageAPI.CurrentStage.SinRooms[listName]
+                if newBoss then
+                    boss = newBoss
                 end
-
-                if usingRoomsList then
-                    local shape = room:GetRoomShape()
-                    if #usingRoomsList.ByShape[shape] > 0 then
-                        local levelIndex = StageAPI.GetCurrentRoomID()
-                        local newRoom = StageAPI.LevelRoom(nil, usingRoomsList, nil, nil, nil, nil, nil, StageAPI.CurrentStage.RequireRoomTypeSin, nil, nil, levelIndex)
-                        StageAPI.SetCurrentRoom(newRoom)
-                        newRoom:Load()
-                        currentRoom = newRoom
-                        justGenerated = true
-                    end
-                end
-            end
-
-            if not inStartingRoom and not currentRoom and StageAPI.CurrentStage.Rooms and StageAPI.CurrentStage.Rooms[rtype] then
-                local levelIndex = StageAPI.GetCurrentRoomID()
-                local newRoom = StageAPI.LevelRoom(nil, StageAPI.CurrentStage.Rooms[rtype], nil, nil, nil, nil, nil, StageAPI.CurrentStage.RequireRoomTypeMatching, nil, nil, levelIndex)
-                StageAPI.SetCurrentRoom(newRoom)
-                newRoom:Load()
-                currentRoom = newRoom
-                justGenerated = true
-            end
-
-            if not currentRoom and StageAPI.CurrentStage.Bosses and rtype == RoomType.ROOM_BOSS then
-                local newRoom
-                newRoom, boss = StageAPI.SetCurrentBossRoom(nil, true, StageAPI.CurrentStage.Bosses, StageAPI.CurrentStage.Bosses.HasHorseman, StageAPI.CurrentStage.RequireRoomTypeBoss)
-
-                currentRoom = newRoom
-                justGenerated = true
             end
         end
 
@@ -7488,19 +7332,15 @@ do -- Callbacks
             boss = StageAPI.GetBossData(currentRoom.PersistentData.BossID)
         end
 
-        --[[
-        if StageAPI.RoomGrids[currentListIndex] and not justGenerated then
-            StageAPI.RemoveExtraGrids(StageAPI.RoomGrids[currentListIndex])
-        end]]
-
         if currentRoom and not StageAPI.InExtraRoom and not justGenerated then
             currentRoom:Load()
-            if not room:IsClear() and boss then
-                if not boss.IsMiniboss then
-                    StageAPI.PlayBossAnimation(boss)
-                else
-                    StageAPI.PlayTextStreak(players[1]:GetName() .. " VS " .. boss.Name)
-                end
+        end
+
+        if boss and not room:IsClear() then
+            if not boss.IsMiniboss then
+                StageAPI.PlayBossAnimation(boss)
+            else
+                StageAPI.PlayTextStreak(players[1]:GetName() .. " VS " .. boss.Name)
             end
         end
 
@@ -7515,7 +7355,15 @@ do -- Callbacks
             end
         end
 
-        if currentRoom then
+        if StageAPI.ForcePlayerDoorSlot or StageAPI.ForcePlayerNewRoomPosition then
+            local pos = StageAPI.ForcePlayerNewRoomPosition or room:GetClampedPosition(room:GetDoorSlotPosition(StageAPI.ForcePlayerDoorSlot), 16)
+            for _, player in ipairs(players) do
+                player.Position = pos
+            end
+
+            StageAPI.ForcePlayerDoorSlot = nil
+            StageAPI.ForcePlayerNewRoomPosition = nil
+        elseif currentRoom then
             local invalidEntrance
             local validDoors = {}
             for _, door in ipairs(currentRoom.Layout.Doors) do
@@ -7583,6 +7431,8 @@ do -- Callbacks
             end
         end
 
+        StageAPI.ActiveTransitionFromExtraRoom = false
+        StageAPI.ActiveTransitionToExtraRoom = false
         StageAPI.RoomRendered = false
     end)
 

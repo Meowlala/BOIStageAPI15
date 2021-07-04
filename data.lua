@@ -150,3 +150,164 @@ do -- Overriden Stages Reimplementation
     StageAPI.UteroTwo:SetReplace(StageAPI.StageOverride.UteroTwo)
     StageAPI.UteroGreed:SetReplace(StageAPI.StageOverride.UteroGreed)
 end
+
+do -- Base Floor Info
+    local settingStage = LevelStage.STAGE1_1
+    StageAPI.SetFloorInfo({
+        Prefix = "01_basement",
+        Backdrop = BackdropType.BASEMENT
+    }, settingStage, StageType.STAGETYPE_ORIGINAL)
+
+    StageAPI.SetFloorInfo({
+        Prefix = "02_cellar",
+        Backdrop = BackdropType.CELLAR
+    }, settingStage, StageType.STAGETYPE_WOTL)
+
+    StageAPI.SetFloorInfo({
+        Prefix = "13_burning_basement",
+        Backdrop = BackdropType.BURNT_BASEMENT,
+        FloorTextColor = Color(0.5,0.5,0.5,1,0,0,0)
+    }, settingStage, StageType.STAGETYPE_AFTERBIRTH)
+
+    StageAPI.SetFloorInfo({
+        Prefix = "01x_downpour",
+        Backdrop = BackdropType.DOWNPOUR
+    }, settingStage, StageType.STAGETYPE_REPENTANCE)
+
+    StageAPI.SetFloorInfo({
+        Prefix = "02x_dross",
+        Backdrop = BackdropType.DROSS
+    }, settingStage, StageType.STAGETYPE_REPENTANCE_B)
+
+    settingStage = LevelStage.STAGE2_1
+    StageAPI.SetFloorInfo({
+        Prefix = "03_caves",
+        Backdrop = BackdropType.CAVES
+    }, settingStage, StageType.STAGETYPE_ORIGINAL)
+
+    StageAPI.SetFloorInfo({
+        Prefix = "04_catacombs",
+        Backdrop = BackdropType.CATACOMBS
+    }, settingStage, StageType.STAGETYPE_WOTL)
+
+    StageAPI.SetFloorInfo({
+        Prefix = "14_drowned_caves",
+        Backdrop = BackdropType.FLOODED_CAVES
+    }, settingStage, StageType.STAGETYPE_AFTERBIRTH)
+
+    StageAPI.SetFloorInfo({
+        Prefix = "03x_mines",
+        Backdrop = BackdropType.MINES
+    }, settingStage, StageType.STAGETYPE_REPENTANCE)
+
+    StageAPI.SetFloorInfo({
+        Prefix = "04x_ashpit",
+        Backdrop = BackdropType.ASHPIT
+    }, settingStage, StageType.STAGETYPE_REPENTANCE_B)
+
+    settingStage = LevelStage.STAGE3_1
+    StageAPI.SetFloorInfo({
+        Prefix = "05_depths",
+        Backdrop = BackdropType.DEPTHS
+    }, settingStage, StageType.STAGETYPE_ORIGINAL)
+
+    StageAPI.SetFloorInfo({
+        Prefix = "06_necropolis",
+        Backdrop = BackdropType.NECROPOLIS
+    }, settingStage, StageType.STAGETYPE_WOTL)
+
+    StageAPI.SetFloorInfo({
+        Prefix = "15_dank_depths",
+        Backdrop = BackdropType.DANK_DEPTHS
+    }, settingStage, StageType.STAGETYPE_AFTERBIRTH)
+
+    StageAPI.SetFloorInfo({
+        Prefix = "05x_mausoleum",
+        Backdrop = BackdropType.MAUSOLEUM
+    }, settingStage, StageType.STAGETYPE_REPENTANCE)
+
+    StageAPI.SetFloorInfo({
+        Prefix = "06x_gehenna",
+        Backdrop = BackdropType.GEHENNA
+    }, settingStage, StageType.STAGETYPE_REPENTANCE_B)
+
+    settingStage = LevelStage.STAGE4_1
+    StageAPI.SetFloorInfo({
+        Prefix = "07_womb",
+        Backdrop = BackdropType.WOMB
+    }, settingStage, StageType.STAGETYPE_ORIGINAL)
+
+    StageAPI.SetFloorInfo({
+        Prefix = "07_womb",
+        Backdrop = BackdropType.UTERO
+    }, settingStage, StageType.STAGETYPE_WOTL)
+
+    StageAPI.SetFloorInfo({
+        Prefix = "16_scarred_womb",
+        Backdrop = BackdropType.SCARRED_WOMB
+    }, settingStage, StageType.STAGETYPE_AFTERBIRTH)
+
+    StageAPI.SetFloorInfo({
+        Prefix = "07x_corpse",
+        Backdrop = BackdropType.CORPSE
+    }, settingStage, StageType.STAGETYPE_REPENTANCE)
+
+    StageAPI.SetFloorInfo({
+        Prefix = "07x_corpse",
+        Backdrop = BackdropType.MORTIS
+    }, settingStage, StageType.STAGETYPE_REPENTANCE_B)
+
+    settingStage = LevelStage.STAGE5
+    StageAPI.SetFloorInfo({
+        Prefix = "09_sheol",
+        Backdrop = BackdropType.SHEOL
+    }, settingStage, StageType.STAGETYPE_ORIGINAL, false)
+
+    StageAPI.SetFloorInfo({
+        Prefix = "10_cathedral",
+        Backdrop = BackdropType.CATHEDRAL
+    }, settingStage, StageType.STAGETYPE_WOTL, false)
+
+    settingStage = LevelStage.STAGE6
+    StageAPI.SetFloorInfo({
+        Prefix = "11_darkroom",
+        Backdrop = BackdropType.DARKROOM
+    }, settingStage, StageType.STAGETYPE_ORIGINAL, false)
+
+    StageAPI.SetFloorInfo({
+        Prefix = "12_chest",
+        Backdrop = BackdropType.CHEST
+    }, settingStage, StageType.STAGETYPE_WOTL, false)
+
+    -- Special Floors
+    StageAPI.SetFloorInfo({
+        Prefix = "17_blue_womb",
+        Backdrop = BackdropType.BLUE_WOMB
+    }, LevelStage.STAGE4_3, true, false)
+
+    StageAPI.SetFloorInfo({
+        Prefix = "19_void",
+        Backdrop = BackdropType.NUM_BACKDROPS
+    }, LevelStage.STAGE7, true, false)
+
+    StageAPI.SetFloorInfo({
+        Prefix = "0ex_dogma",
+        Backdrop = BackdropType.ISAACS_BEDROOM
+    }, LevelStage.STAGE8, true, false)
+
+    -- Greed Floors
+    StageAPI.SetFloorInfo({
+        Prefix = "09_sheol",
+        Backdrop = BackdropType.SHEOL
+    }, LevelStage.STAGE5_GREED, true, true)
+
+    StageAPI.SetFloorInfo({
+        Prefix = "bossspot_18_shop",
+        Backdrop = BackdropType.SHOP
+    }, LevelStage.STAGE6_GREED, true, true)
+
+    StageAPI.SetFloorInfo({
+        Prefix = "bossspot_18_shop",
+        Backdrop = BackdropType.SHOP
+    }, LevelStage.STAGE7_GREED, true, true)
+end
