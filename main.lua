@@ -1464,6 +1464,23 @@ do -- RoomsList
         [DoorSlot.DOWN1] = 1 << 7,
     }
 
+    function StageAPI.ForAllSpawnEntries(data, func)
+        local spawns = data.Spawns
+        for i = 0, spawns.Size do
+            local spawn = spawns:Get(i)
+            if spawn then
+                local sumWeight = spawn.SumWeights
+                local weight = 0
+                for i = 1, spawn.EntryCount do
+                    local entry = spawn:PickEntry(weight)
+                    weight = weight + entry.Weight / sumWeight
+
+                    func(entry, spawn)
+                end
+            end
+        end
+    end
+
     function StageAPI.GenerateRoomLayoutFromData(data) -- converts RoomDescriptor.Data to a StageAPI layout
         local layout = StageAPI.CreateEmptyRoomLayout(data.Shape)
         layout.Name = data.Name
@@ -1478,20 +1495,9 @@ do -- RoomsList
             door.Exists = data.Doors & StageAPI.DoorsBitwise[door.Slot] ~= 0
         end
 
-        local spawns = data.Spawns
-        for i = 0, spawns.Size do
-            local spawn = spawns:Get(i)
-            if spawn then
-                local sumWeight = spawn.SumWeights
-                local weight = 0
-                for i = 1, spawn.EntryCount do
-                    local entry = spawn:PickEntry(weight)
-                    weight = weight + entry.Weight / sumWeight
-
-                    StageAPI.AddObjectToRoomLayout(layout, index, entry.Type, entry.Variant, entry.Subtype, spawn.X, spawn.Y)
-                end
-            end
-        end
+        StageAPI.ForAllSpawnEntries(data, function(entry, spawn)
+            StageAPI.AddObjectToRoomLayout(layout, nil, entry.Type, entry.Variant, entry.Subtype, spawn.X, spawn.Y)
+        end)
 
         return layout
     end
@@ -3194,10 +3200,19 @@ do -- RoomsList
     end
 
     function StageAPI.GetDoorsForRoom()
-        doors = {}
+        local doors = {}
         for i = 0, 7 do
             doors[i] = not not room:GetDoor(i)
         end
+        return doors
+    end
+
+    function StageAPI.GetDoorsForRoomFromData(data)
+        local doors = {}
+        for i = 0, 7 do
+            doors[i] = data.Doors & StageAPI.DoorsBitwise[i] ~= 0
+        end
+
         return doors
     end
 
@@ -5740,19 +5755,41 @@ do -- Custom Stage
         end
     end
 
-    function StageAPI.CustomStage:GenerateRoom(rtype, shape, doors)
+    function StageAPI.CustomStage:GenerateRoom(rtype, shape, doors, isStartingRoom, fromLevelGenerator, roomData)
+        if roomData then
+            rtype = rtype or roomData.Type
+            shape = shape or roomData.Shape
+            doors = doors or StageAPI.GetDoorsForRoomFromData(roomData)
+        end
+
         if StageAPI.CurrentStage.SinRooms and (rtype == RoomType.ROOM_MINIBOSS or rtype == RoomType.ROOM_SECRET or rtype == RoomType.ROOM_SHOP) then
             local usingRoomsList
             local includedSins = {}
-            for _, entity in ipairs(Isaac.GetRoomEntities()) do
-                for i, sin in ipairs(StageAPI.SinsSplitData) do
-                    if entity.Type == sin.Type and (sin.Variant and entity.Variant == sin.Variant) and ((sin.ListName and StageAPI.CurrentStage.SinRooms[sin.ListName]) or (sin.MultipleListName and StageAPI.CurrentStage.SinRooms[sin.MultipleListName])) then
-                        if not includedSins[i] then
-                            includedSins[i] = 0
-                        end
 
-                        includedSins[i] = includedSins[i] + 1
-                        break
+            if roomData then
+                StageAPI.ForAllSpawnEntries(roomData, function(entry, spawn)
+                    for i, sin in ipairs(StageAPI.SinsSplitData) do
+                        if entry.Type == sin.Type and (sin.Variant and entry.Variant == sin.Variant) and ((sin.ListName and StageAPI.CurrentStage.SinRooms[sin.ListName]) or (sin.MultipleListName and StageAPI.CurrentStage.SinRooms[sin.MultipleListName])) then
+                            if not includedSins[i] then
+                                includedSins[i] = 0
+                            end
+
+                            includedSins[i] = includedSins[i] + 1
+                            break
+                        end
+                    end
+                end)
+            else
+                for _, entity in ipairs(Isaac.GetRoomEntities()) do
+                    for i, sin in ipairs(StageAPI.SinsSplitData) do
+                        if entity.Type == sin.Type and (sin.Variant and entity.Variant == sin.Variant) and ((sin.ListName and StageAPI.CurrentStage.SinRooms[sin.ListName]) or (sin.MultipleListName and StageAPI.CurrentStage.SinRooms[sin.MultipleListName])) then
+                            if not includedSins[i] then
+                                includedSins[i] = 0
+                            end
+
+                            includedSins[i] = includedSins[i] + 1
+                            break
+                        end
                     end
                 end
             end
@@ -5783,7 +5820,7 @@ do -- Custom Stage
             end
         end
 
-        if not inStartingRoom and StageAPI.CurrentStage.Rooms and StageAPI.CurrentStage.Rooms[rtype] then
+        if not isStartingRoom and StageAPI.CurrentStage.Rooms and StageAPI.CurrentStage.Rooms[rtype] then
             local newRoom = StageAPI.LevelRoom{
                 RoomsList = StageAPI.CurrentStage.Rooms[rtype],
                 Shape = shape,
@@ -5796,8 +5833,33 @@ do -- Custom Stage
         end
 
         if StageAPI.CurrentStage.Bosses and rtype == RoomType.ROOM_BOSS then
-            local newRoom, boss = StageAPI.GenerateBossRoom(nil, true, StageAPI.CurrentStage.Bosses, StageAPI.CurrentStage.Bosses.HasHorseman, StageAPI.CurrentStage.RequireRoomTypeBoss)
+            local newRoom, boss = StageAPI.GenerateBossRoom(nil, true, StageAPI.CurrentStage.Bosses, StageAPI.CurrentStage.Bosses.HasHorseman, StageAPI.CurrentStage.RequireRoomTypeBoss, fromLevelGenerator)
             return newRoom, boss
+        end
+    end
+
+    function StageAPI.CustomStage:SetPregenerationEnabled(setTo)
+        self.PregenerationEnabled = setTo
+    end
+
+    function StageAPI.CustomStage:GenerateLevel()
+        if not self.PregenerationEnabled then
+            return
+        end
+
+        local startingRoomIndex = level:GetStartingRoomIndex()
+        local roomsList = level:GetRooms()
+        for i = 0, roomsList.Size - 1 do
+            local roomDesc = roomsList:Get(i)
+            if roomDesc then
+                local isStartingRoom = startingRoomIndex == roomDesc.SafeGridIndex
+                local newRoom = self:GenerateRoom(nil, nil, nil, isStartingRoom, true, roomDesc.Data)
+                if newRoom then
+                    local listIndex = roomDesc.ListIndex
+                    newRoom.LevelIndex = listIndex
+                    StageAPI.LevelRooms[listIndex] = newRoom
+                end
+            end
         end
     end
 
@@ -5977,7 +6039,7 @@ do -- Definitions
     end
 
     function StageAPI.GetCurrentListIndex()
-        return level:GetCurrentRoomDesc().SafeGridIndex
+        return level:GetCurrentRoomDesc().ListIndex
     end
 end
 
@@ -6559,7 +6621,6 @@ do -- Transition
         end
 
         if stage.NormalStage then
-            StageAPI.PreReseed = true
             local stageType = stage.StageType
             if not stageType then
                 StageAPI.StageRNG:SetSeed(StageAPI.Seeds:GetStageSeed(stage.Stage), 0)
@@ -7382,9 +7443,7 @@ do -- Callbacks
                     StageAPI.CurrentStage = StageAPI.CurrentStage.XLStage
                 end
 
-                if StageAPI.CurrentStage.GenerateLevel then
-                    StageAPI.CurrentStage:GenerateLevel()
-                end
+                StageAPI.CurrentStage:GenerateLevel()
             end
 
             StageAPI.NextStage = nil
