@@ -4725,7 +4725,7 @@ do -- Custom Doors
         if persistData.DoorDataName and StageAPI.DoorTypes[persistData.DoorDataName] then
             doorData = StageAPI.DoorTypes[persistData.DoorDataName]
         else
-            doorData = StageAPI.DefaultDoor
+            doorData = StageAPI.BaseDoors.Default
         end
 
         local door = Isaac.Spawn(StageAPI.E.Door.T, StageAPI.E.Door.V, 0, room:GetGridPosition(index), zeroVector, nil)
