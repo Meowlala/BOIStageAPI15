@@ -7294,7 +7294,7 @@ do -- Callbacks
     end
 
     function StageAPI.SetCurrentBossRoom(bossID, checkEncountered, bosses, hasHorseman, requireRoomTypeBoss, noPlayBossAnim, unskippableBossAnim)
-        local newRoom, boss = StageAPI.GenerateBossRoom(bossID, checkEncountered, bosses, hasHorseman, requireRoomTypeBoss, noPlayBossAnim)
+        local newRoom, boss = StageAPI.GenerateBossRoom(bossID, checkEncountered, bosses, hasHorseman, requireRoomTypeBoss, noPlayBossAnim, unskippableBossAnim)
         if not newRoom then
             StageAPI.LogErr('Could not generate room for boss: ID: ' .. bossID .. ' List Length: ' .. tostring(bosses and #bosses or 0))
             return nil, nil
