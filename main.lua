@@ -4157,15 +4157,6 @@ do -- Extra Rooms
         StageAPI.RoomTransitionOverlay:Render(StageAPI.GetScreenCenterPosition(), zeroVector, zeroVector)
     end
 
-    StageAPI.TransitionFadeTime = 30
-
-    StageAPI.TransitionTimer = nil
-    StageAPI.TransitioningTo = nil
-    StageAPI.TransitioningFromTo = nil
-    StageAPI.TransitionExitSlot = nil
-    StageAPI.TransitionToExtra = nil
-    StageAPI.SkipExtraRoomTransition = nil
-    StageAPI.ExtraRoomBaseType = "Barren"
     function StageAPI.TransitionToExtraRoom(name, exitSlot, skipTransition, extraRoomBaseType)
         StageAPI.ExtraRoomTransition(name, Direction.NO_DIRECTION, RoomTransitionAnim.FADE, false, nil, exitSlot, nil, extraRoomBaseType)
     end
