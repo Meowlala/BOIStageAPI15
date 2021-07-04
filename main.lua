@@ -3759,6 +3759,7 @@ do -- RoomsList
             self[v] = saveData[v]
         end
 
+        self.Seed = self.AwardSeed -- backwards compatibility
         self.PersistentData = self.PersistentData or {}
 
         if saveData.Doors then
