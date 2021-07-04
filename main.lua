@@ -7872,7 +7872,6 @@ do -- Callbacks
             Doors = doors,
             LevelIndex = levelIndex
         }
-
         newRoom.PersistentData.BossID = bossID
         StageAPI.CallCallbacks("POST_BOSS_ROOM_INIT", false, newRoom, boss, bossID)
 
@@ -7880,7 +7879,7 @@ do -- Callbacks
     end
 
     function StageAPI.SetCurrentBossRoom(bossID, checkEncountered, bosses, hasHorseman, requireRoomTypeBoss, noPlayBossAnim, unskippableBossAnim)
-        local newRoom, boss = StageAPI.GenerateBossRoom(bossID, checkEncountered, bosses, hasHorseman, requireRoomTypeBoss)
+        local newRoom, boss = StageAPI.GenerateBossRoom(bossID, checkEncountered, bosses, hasHorseman, requireRoomTypeBoss, noPlayBossAnim)
         if not newRoom then
             StageAPI.LogErr('Could not generate room for boss: ID: ' .. bossID .. ' List Length: ' .. tostring(bosses and #bosses or 0))
             return nil, nil
@@ -7888,16 +7887,6 @@ do -- Callbacks
 
         StageAPI.SetCurrentRoom(newRoom)
         newRoom:Load()
-
-        if noPlayBossAnim == nil then
-            noPlayBossAnim = boss.IsMiniboss
-        end
-
-        if not noPlayBossAnim then
-            StageAPI.PlayBossAnimation(boss, unskippableBossAnim)
-        elseif noPlayBossAnim ~= 2 then
-            StageAPI.PlayTextStreak(players[1]:GetName() .. " VS " .. boss.Name)
-        end
 
         return newRoom, boss
     end
@@ -8273,6 +8262,13 @@ do -- Callbacks
             else
                 Isaac.ConsoleOutput("Enabled StageAPI global command mode\nslog: Prints any number of args, parses some userdata\ngame, room, level: Correspond to respective objects\nplayer: Corresponds to player 0\ndesc: Current room descriptor, mutable\napiroom: Current StageAPI room, if applicable\nFor use with the lua command!")
                 StageAPI.GlobalCommandMode = true
+            end
+        elseif cmd == "testgotorooms" then
+            StageAPI.TestGotoRoomShapes = {}
+            for _, shape in pairs(RoomShape) do
+                if StageAPI.RoomShapeToGotoID[shape] then
+                    StageAPI.TestGotoRoomShapes[#StageAPI.TestGotoRoomShapes + 1] = shape
+                end
             end
         end
     end)
