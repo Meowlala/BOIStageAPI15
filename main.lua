@@ -5259,21 +5259,47 @@ do -- Backdrop & RoomGfx
             shapeName = shapeName .. "X"
         end
 
-        if mode == 1 or mode == 3 then
-            sprite:Load("stageapi/WallBackdrop.anm2", false)
+        if backdrop.PreLoadFunc then
+            local ret = backdrop.PreLoadFunc(sprite, backdrop, mode, shapeName)
+            if ret then
+                mode = ret
+            end
+        end
 
-            if backdrop.Walls then
+        if mode == 1 or mode == 3 then
+            sprite:Load(backdrop.WallAnm2 or "stageapi/WallBackdrop.anm2", false)
+
+            if backdrop.PreWallSheetFunc then
+                backdrop.PreWallSheetFunc(sprite, backdrop, mode, shapeName)
+            end
+
+            local corners
+            local walls
+            if backdrop.WallVariants then
+                walls = backdrop.WallVariants[StageAPI.Random(1, #backdrop.WallVariants, backdropRNG)]
+                corners = walls.Corners or backdrop.Corners
+            else
+                walls = backdrop.Walls
+                corners = backdrop.Corners
+            end
+
+            if walls then
                 for num = 1, StageAPI.ShapeToWallAnm2Layers[shapeName] do
-                    local wall_to_use = backdrop.Walls[StageAPI.Random(1, #backdrop.Walls, backdropRNG)]
+                    local wall_to_use = walls[StageAPI.Random(1, #walls, backdropRNG)]
                     sprite:ReplaceSpritesheet(num, wall_to_use)
                 end
             end
-            if backdrop.Corners and string.sub(shapeName, 1, 1) == "L" then
-                local corner_to_use = backdrop.Corners[StageAPI.Random(1, #backdrop.Corners, backdropRNG)]
+
+            if corners and string.sub(shapeName, 1, 1) == "L" then
+                local corner_to_use = corners[StageAPI.Random(1, #corners, backdropRNG)]
                 sprite:ReplaceSpritesheet(0, corner_to_use)
             end
-        else
-            sprite:Load("stageapi/FloorBackdrop.anm2", false)
+        elseif mode == 2 then
+            sprite:Load(backdrop.FloorAnm2 or "stageapi/FloorBackdrop.anm2", false)
+
+            if backdrop.PreFloorSheetFunc then
+                backdrop.PreFloorSheetFunc(sprite, backdrop, mode, shapeName)
+            end
 
             local floors
             if backdrop.FloorVariants then
@@ -5283,17 +5309,17 @@ do -- Backdrop & RoomGfx
             end
 
             if floors then
-                local numWalls
+                local numFloors
                 if roomShape == RoomShape.ROOMSHAPE_1x1 then
-                    numWalls = 4
+                    numFloors = 4
                 elseif roomShape == RoomShape.ROOMSHAPE_1x2 or roomShape == RoomShape.ROOMSHAPE_2x1 then
-                    numWalls = 8
+                    numFloors = 8
                 elseif roomShape == RoomShape.ROOMSHAPE_2x2 then
-                    numWalls = 16
+                    numFloors = 16
                 end
 
-                if numWalls then
-                    for i = 0, numWalls - 1 do
+                if numFloors then
+                    for i = 0, numFloors - 1 do
                         sprite:ReplaceSpritesheet(i, floors[StageAPI.Random(1, #floors, backdropRNG)])
                     end
                 end
@@ -7533,6 +7559,27 @@ do -- Callbacks
             end
         elseif cmd == "extraroomexit" then
             StageAPI.TransitionFromExtraRoom(StageAPI.LastNonExtraRoom)
+        elseif cmd == "regroom" then -- Load a registered room
+            if StageAPI.Layouts[params] then
+                local testRoom = StageAPI.LevelRoom{
+                    LayoutName = params,
+                    Shape = StageAPI.Layouts[params].Shape,
+                    RoomType = StageAPI.Layouts[params].Type,
+                    LevelIndex = "StageAPITest"
+                }
+
+                StageAPI.SetExtraRoom("StageAPITest", testRoom)
+                local doors = {}
+                for _, door in ipairs(StageAPI.Layouts[params].Doors) do
+                    if door.Exists then
+                        doors[#doors + 1] = door.Slot
+                    end
+                end
+
+                StageAPI.TransitionToExtraRoom("StageAPITest", doors[StageAPI.Random(1, #doors)])
+            else
+                Isaac.ConsoleOutput(params .. " is not a registered room.\n")
+            end
         elseif cmd == "croom" then
             local paramTable = {}
             for word in params:gmatch("%S+") do paramTable[#paramTable + 1] = word end
@@ -7569,7 +7616,12 @@ do -- Callbacks
 
                 if selectedLayout then
                     StageAPI.RegisterLayout("StageAPITest", selectedLayout)
-                    local testRoom = StageAPI.LevelRoom("StageAPITest", nil, room:GetSpawnSeed(), selectedLayout.Shape, selectedLayout.Variant)
+                    local testRoom = StageAPI.LevelRoom{
+                        LayoutName = "StageAPITest",
+                        Shape = selectedLayout.Shape,
+                        RoomType = selectedLayout.Type,
+                        LevelIndex = "StageAPITest"
+                    }
                     testRoom.RoomType = selectedLayout.Type
                     StageAPI.SetExtraRoom("StageAPITest", testRoom)
                     local doors = {}
@@ -7636,13 +7688,6 @@ do -- Callbacks
             else
                 Isaac.ConsoleOutput("Enabled StageAPI global command mode\nslog: Prints any number of args, parses some userdata\ngame, room, level: Correspond to respective objects\nplayer: Corresponds to player 0\ndesc: Current room descriptor, mutable\napiroom: Current StageAPI room, if applicable\nFor use with the lua command!")
                 StageAPI.GlobalCommandMode = true
-            end
-        elseif cmd == "testgotorooms" then
-            StageAPI.TestGotoRoomShapes = {}
-            for _, shape in pairs(RoomShape) do
-                if StageAPI.RoomShapeToGotoID[shape] then
-                    StageAPI.TestGotoRoomShapes[#StageAPI.TestGotoRoomShapes + 1] = shape
-                end
             end
         end
     end)
@@ -7722,25 +7767,6 @@ do -- Callbacks
 
                     Isaac.RenderScaledText(text, renderX, renderY, 0.5, 0.5, 1, 1, 1, (versionPrintTimer / 60) * 0.5)
                     renderX = renderX + Isaac.GetTextWidth(text) * 0.5
-                end
-            end
-        end
-
-        if StageAPI.TestGotoRoomShapes then
-            if Input.IsButtonTriggered(Keyboard.KEY_N, players[1].ControllerIndex) then
-                local shape = StageAPI.TestGotoRoomShapes[#StageAPI.TestGotoRoomShapes]
-                local layout = StageAPI.CreateEmptyRoomLayout(shape)
-                StageAPI.RegisterLayout("StageAPITest", layout)
-
-                local testRoom = StageAPI.LevelRoom("StageAPITest", nil, room:GetSpawnSeed(), shape, RoomType.ROOM_DEFAULT)
-                StageAPI.SetExtraRoom("StageAPITest", testRoom)
-
-                StageAPI.TransitionToExtraRoom("StageAPITest", layout.Doors[StageAPI.Random(1, #layout.Doors)].Slot, true, "Stage")
-
-                StageAPI.TestGotoRoomShapes[#StageAPI.TestGotoRoomShapes] = nil
-
-                if #StageAPI.TestGotoRoomShapes == 0 then
-                    StageAPI.TestGotoRoomShapes = nil
                 end
             end
         end
@@ -7890,7 +7916,10 @@ do
             end
 
             if roomSaveData.Room then
-                local customRoom = StageAPI.LevelRoom(nil, nil, nil, nil, nil, nil, roomSaveData.Room, nil, nil, nil, lindex)
+                local customRoom = StageAPI.LevelRoom{
+                    FromSave = roomSaveData.Room,
+                    LevelIndex = lindex
+                }
                 retLevelRooms[lindex] = customRoom
             end
         end
