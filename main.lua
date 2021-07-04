@@ -2907,7 +2907,7 @@ do -- RoomsList
                             if shouldSpawnEntity then
                                 local entityData = entityInfo.Data
                                 if doGrids or (entityData.Type > 9 and entityData.Type ~= EntityType.ENTITY_FIREPLACE) then
-                                    local ent = Isaac.Spawn(
+									local ent = Isaac.Spawn(
                                         entityData.Type or 20,
                                         entityData.Variant or 0,
                                         entityData.SubType or 0,
@@ -2919,8 +2919,23 @@ do -- RoomsList
                                     local currentRoom = StageAPI.GetCurrentRoom()
                                     if currentRoom and not currentRoom.IgnoreRoomRules then
                                         if entityData.Type == EntityType.ENTITY_PICKUP and entityData.Variant == PickupVariant.PICKUP_COLLECTIBLE then
-                                            if currentRoom.RoomType == RoomType.ROOM_TREASURE and (currentRoom.Layout.Variant > 0 or string.find(string.lower(currentRoom.Layout.Name), "choice") or string.find(string.lower(currentRoom.Layout.Name), "choose")) then
-                                                ent:ToPickup().OptionsPickupIndex = 1
+                                            if currentRoom.RoomType == RoomType.ROOM_TREASURE then
+                                                if currentRoom.Layout.Variant > 0 or string.find(string.lower(currentRoom.Layout.Name), "choice") or string.find(string.lower(currentRoom.Layout.Name), "choose") then
+                                                    ent:ToPickup().OptionsPickupIndex = 1
+                                                end
+
+                                                local isShopItem
+                                                for _, player in ipairs(players) do
+                                                    if player:GetPlayerType() == PlayerType.PLAYER_KEEPER_B then
+                                                        isShopItem = true
+                                                        break
+                                                    end
+                                                end
+
+                                                if isShopItem then
+                                                    ent:ToPickup().Price = 15
+            										ent:ToPickup().AutoUpdatePrice = true
+                                                end
                                             end
                                         end
                                     end
