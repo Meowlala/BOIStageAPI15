@@ -7370,8 +7370,6 @@ do -- Callbacks
                 end
             end
 
-            StageAPI.CustomGrids = {}
-            StageAPI.LevelRooms = {}
             StageAPI.CurrentStage = nil
             if isNewStage then
                 if not StageAPI.NextStage then
