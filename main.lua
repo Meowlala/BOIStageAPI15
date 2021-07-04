@@ -4100,6 +4100,7 @@ do -- Custom Grid Entities
     end)
 end
 
+StageAPI.LogMinor("Loading Extra Room Handler")
 do -- Extra Rooms
     StageAPI.InExtraRoom = false
     StageAPI.LoadedExtraRoom = false
@@ -4153,24 +4154,11 @@ do -- Extra Rooms
     StageAPI.SkipExtraRoomTransition = nil
     StageAPI.ExtraRoomBaseType = "Barren"
     function StageAPI.TransitionToExtraRoom(name, exitSlot, skipTransition, extraRoomBaseType)
-        --[[
-        StageAPI.TransitionTimer = 0
-        StageAPI.TransitioningTo = name
-        StageAPI.TransitionExitSlot = exitSlot
-        StageAPI.TransitionToExtra = true
-        StageAPI.SkipExtraRoomTransition = skipTransition
-        StageAPI.ExtraRoomBaseType = extraRoomBaseType or "Barren"
-        ]]
-        StageAPI.ExtraRoomTransition(name, Direction.NO_DIRECTION, StageAPI.RoomTransitionType.Fade, false, nil, exitSlot, nil, extraRoomBaseType)
+        StageAPI.ExtraRoomTransition(name, Direction.NO_DIRECTION, RoomTransitionAnim.FADE, false, nil, exitSlot, nil, extraRoomBaseType)
     end
 
     function StageAPI.TransitionFromExtraRoom(toIndex, exitSlot)
-        --[[
-        StageAPI.TransitionTimer = 0
-        StageAPI.TransitioningFromTo = toIndex
-        StageAPI.TransitionExitSlot = exitSlot
-        StageAPI.TransitionToExtra = false]]
-        StageAPI.ExtraRoomTransition(toIndex, Direction.NO_DIRECTION, StageAPI.RoomTransitionType.Fade, false, nil, exitSlot)
+        StageAPI.ExtraRoomTransition(toIndex, Direction.NO_DIRECTION, RoomTransitionAnim.FADE, false, nil, exitSlot)
     end
 
     local gotoPrefixes = {
@@ -4185,13 +4173,6 @@ do -- Extra Rooms
                 Barren = {
                     ID = "70050"
                 }
-            },
-            Stage = {
-                {
-                    Stages = {LevelStage.STAGE1_1, LevelStage.STAGE1_2, LevelStage.STAGE2_1, LevelStage.STAGE2_2, LevelStage.STAGE3_1, LevelStage.STAGE3_2, LevelStage.STAGE4_1, LevelStage.STAGE4_2, LevelStage.STAGE5, LevelStage.STAGE6, LevelStage.STAGE7},
-                    StageTypes = {StageType.STAGETYPE_ORIGINAL, StageType.STAGETYPE_WOTL, StageType.STAGETYPE_AFTERBIRTH},
-                    ID = "0"
-                }
             }
         },
         [RoomShape.ROOMSHAPE_IH] = {
@@ -4199,46 +4180,12 @@ do -- Extra Rooms
                 Barren = {
                     ID = "70051"
                 }
-            },
-            Stage = {
-                {
-                    Stages = {LevelStage.STAGE1_1, LevelStage.STAGE1_2, LevelStage.STAGE7},
-                    StageTypes = {StageType.STAGETYPE_ORIGINAL, StageType.STAGETYPE_WOTL, StageType.STAGETYPE_AFTERBIRTH},
-                    ID = "569"
-                },
-                {
-                    Stages = {LevelStage.STAGE2_1, LevelStage.STAGE2_2, LevelStage.STAGE3_1, LevelStage.STAGE3_2, LevelStage.STAGE4_1, LevelStage.STAGE4_2},
-                    StageTypes = {StageType.STAGETYPE_ORIGINAL, StageType.STAGETYPE_WOTL, StageType.STAGETYPE_AFTERBIRTH},
-                    ID = "616"
-                },
-                {
-                    Stages = {LevelStage.STAGE5, LevelStage.STAGE6},
-                    StageTypes = {StageType.STAGETYPE_ORIGINAL, StageType.STAGETYPE_WOTL, StageType.STAGETYPE_AFTERBIRTH},
-                    ID = "254"
-                }
             }
         },
         [RoomShape.ROOMSHAPE_IV] = {
             Special = {
                 Barren = {
                     ID = "70052"
-                }
-            },
-            Stage = {
-                {
-                    Stages = {LevelStage.STAGE1_1, LevelStage.STAGE1_2, LevelStage.STAGE7},
-                    StageTypes = {StageType.STAGETYPE_ORIGINAL, StageType.STAGETYPE_WOTL, StageType.STAGETYPE_AFTERBIRTH},
-                    ID = "578"
-                },
-                {
-                    Stages = {LevelStage.STAGE2_1, LevelStage.STAGE2_2, LevelStage.STAGE3_1, LevelStage.STAGE3_2, LevelStage.STAGE4_1, LevelStage.STAGE4_2},
-                    StageTypes = {StageType.STAGETYPE_ORIGINAL, StageType.STAGETYPE_WOTL, StageType.STAGETYPE_AFTERBIRTH},
-                    ID = "638"
-                },
-                {
-                    Stages = {LevelStage.STAGE5, LevelStage.STAGE6},
-                    StageTypes = {StageType.STAGETYPE_ORIGINAL, StageType.STAGETYPE_WOTL, StageType.STAGETYPE_AFTERBIRTH},
-                    ID = "270"
                 }
             }
         },
@@ -4248,61 +4195,12 @@ do -- Extra Rooms
                     ID = "70053",
                     Locked = "70062"
                 }
-            },
-            Stage = {
-                {
-                    Stages = {LevelStage.STAGE1_1, LevelStage.STAGE1_2, LevelStage.STAGE7},
-                    StageTypes = {StageType.STAGETYPE_ORIGINAL, StageType.STAGETYPE_WOTL, StageType.STAGETYPE_AFTERBIRTH},
-                    ID = "780"
-                },
-                {
-                    Stages = {LevelStage.STAGE2_1, LevelStage.STAGE2_2},
-                    StageTypes = {StageType.STAGETYPE_ORIGINAL, StageType.STAGETYPE_WOTL, StageType.STAGETYPE_AFTERBIRTH},
-                    ID = "863"
-                },
-                {
-                    Stages = {LevelStage.STAGE3_1, LevelStage.STAGE3_2},
-                    StageTypes = {StageType.STAGETYPE_ORIGINAL, StageType.STAGETYPE_WOTL, StageType.STAGETYPE_AFTERBIRTH},
-                    ID = "775"
-                },
-                {
-                    Stages = {LevelStage.STAGE4_1, LevelStage.STAGE4_2},
-                    StageTypes = {StageType.STAGETYPE_ORIGINAL, StageType.STAGETYPE_WOTL, StageType.STAGETYPE_AFTERBIRTH},
-                    ID = "797"
-                },
-                {
-                    Stages = {LevelStage.STAGE5},
-                    StageTypes = {StageType.STAGETYPE_ORIGINAL, StageType.STAGETYPE_WOTL, StageType.STAGETYPE_AFTERBIRTH},
-                    ID = "346"
-                },
-                {
-                    Stages = {LevelStage.STAGE6},
-                    StageTypes = {StageType.STAGETYPE_ORIGINAL, StageType.STAGETYPE_WOTL, StageType.STAGETYPE_AFTERBIRTH},
-                    ID = "318"
-                }
             }
         },
         [RoomShape.ROOMSHAPE_IIV] = {
             Special = {
                 Barren = {
                     ID = "70054"
-                }
-            },
-            Stage = {
-                {
-                    Stages = {LevelStage.STAGE1_1, LevelStage.STAGE1_2, LevelStage.STAGE7},
-                    StageTypes = {StageType.STAGETYPE_ORIGINAL, StageType.STAGETYPE_WOTL, StageType.STAGETYPE_AFTERBIRTH},
-                    ID = "700"
-                },
-                {
-                    Stages = {LevelStage.STAGE2_1, LevelStage.STAGE2_2, LevelStage.STAGE3_1, LevelStage.STAGE3_2, LevelStage.STAGE4_1, LevelStage.STAGE4_2},
-                    StageTypes = {StageType.STAGETYPE_ORIGINAL, StageType.STAGETYPE_WOTL, StageType.STAGETYPE_AFTERBIRTH},
-                    ID = "654"
-                },
-                {
-                    Stages = {LevelStage.STAGE5, LevelStage.STAGE6},
-                    StageTypes = {StageType.STAGETYPE_ORIGINAL, StageType.STAGETYPE_WOTL, StageType.STAGETYPE_AFTERBIRTH},
-                    ID = "306"
                 }
             }
         },
@@ -4312,61 +4210,12 @@ do -- Extra Rooms
                     ID = "70055",
                     Locked = "70063"
                 }
-            },
-            Stage = {
-                {
-                    Stages = {LevelStage.STAGE1_1, LevelStage.STAGE1_2, LevelStage.STAGE7},
-                    StageTypes = {StageType.STAGETYPE_ORIGINAL, StageType.STAGETYPE_WOTL, StageType.STAGETYPE_AFTERBIRTH},
-                    ID = "785"
-                },
-                {
-                    Stages = {LevelStage.STAGE2_1, LevelStage.STAGE2_2, LevelStage.STAGE3_1, LevelStage.STAGE3_2},
-                    StageTypes = {StageType.STAGETYPE_ORIGINAL, StageType.STAGETYPE_WOTL, StageType.STAGETYPE_AFTERBIRTH},
-                    ID = "729"
-                },
-                {
-                    Stages = {LevelStage.STAGE4_1, LevelStage.STAGE4_2},
-                    StageTypes = {StageType.STAGETYPE_ORIGINAL, StageType.STAGETYPE_WOTL, StageType.STAGETYPE_AFTERBIRTH},
-                    ID = "733"
-                },
-                {
-                    Stages = {LevelStage.STAGE5},
-                    StageTypes = {StageType.STAGETYPE_ORIGINAL},
-                    ID = "180"
-                },
-                {
-                    Stages = {LevelStage.STAGE5},
-                    StageTypes = {StageType.STAGETYPE_WOTL},
-                    ID = "145"
-                },
-                {
-                    Stages = {LevelStage.STAGE6},
-                    StageTypes = {StageType.STAGETYPE_ORIGINAL, StageType.STAGETYPE_WOTL, StageType.STAGETYPE_AFTERBIRTH},
-                    ID = "58"
-                }
             }
         },
         [RoomShape.ROOMSHAPE_IIH] = {
             Special = {
                 Barren = {
                     ID = "70056"
-                }
-            },
-            Stage = {
-                {
-                    Stages = {LevelStage.STAGE1_1, LevelStage.STAGE1_2, LevelStage.STAGE7},
-                    StageTypes = {StageType.STAGETYPE_ORIGINAL, StageType.STAGETYPE_WOTL, StageType.STAGETYPE_AFTERBIRTH},
-                    ID = "712"
-                },
-                {
-                    Stages = {LevelStage.STAGE2_1, LevelStage.STAGE2_2, LevelStage.STAGE3_1, LevelStage.STAGE3_2, LevelStage.STAGE4_1, LevelStage.STAGE4_2},
-                    StageTypes = {StageType.STAGETYPE_ORIGINAL, StageType.STAGETYPE_WOTL, StageType.STAGETYPE_AFTERBIRTH},
-                    ID = "669"
-                },
-                {
-                    Stages = {LevelStage.STAGE5, LevelStage.STAGE6},
-                    StageTypes = {StageType.STAGETYPE_ORIGINAL, StageType.STAGETYPE_WOTL, StageType.STAGETYPE_AFTERBIRTH},
-                    ID = "310"
                 }
             }
         },
@@ -4376,33 +4225,6 @@ do -- Extra Rooms
                     ID = "70057",
                     Locked = "70064"
                 }
-            },
-            Stage = {
-                {
-                    Stages = {LevelStage.STAGE1_1, LevelStage.STAGE1_2, LevelStage.STAGE7},
-                    StageTypes = {StageType.STAGETYPE_ORIGINAL, StageType.STAGETYPE_WOTL, StageType.STAGETYPE_AFTERBIRTH},
-                    ID = "774"
-                },
-                {
-                    Stages = {LevelStage.STAGE2_1, LevelStage.STAGE2_2, LevelStage.STAGE3_1, LevelStage.STAGE3_2, LevelStage.STAGE4_1, LevelStage.STAGE4_2},
-                    StageTypes = {StageType.STAGETYPE_ORIGINAL, StageType.STAGETYPE_WOTL, StageType.STAGETYPE_AFTERBIRTH},
-                    ID = "730"
-                },
-                {
-                    Stages = {LevelStage.STAGE5},
-                    StageTypes = {StageType.STAGETYPE_ORIGINAL},
-                    ID = "223"
-                },
-                {
-                    Stages = {LevelStage.STAGE5},
-                    StageTypes = {StageType.STAGETYPE_WOTL},
-                    ID = "172"
-                },
-                {
-                    Stages = {LevelStage.STAGE6},
-                    StageTypes = {StageType.STAGETYPE_ORIGINAL, StageType.STAGETYPE_WOTL, StageType.STAGETYPE_AFTERBIRTH},
-                    ID = "77"
-                }
             }
         },
         [RoomShape.ROOMSHAPE_LTL] = {
@@ -4410,28 +4232,6 @@ do -- Extra Rooms
                 Barren = {
                     ID = "70058",
                     Locked = "70065"
-                }
-            },
-            Stage = {
-                {
-                    Stages = {LevelStage.STAGE1_1, LevelStage.STAGE1_2, LevelStage.STAGE7},
-                    StageTypes = {StageType.STAGETYPE_ORIGINAL, StageType.STAGETYPE_WOTL, StageType.STAGETYPE_AFTERBIRTH},
-                    ID = "814"
-                },
-                {
-                    Stages = {LevelStage.STAGE2_1, LevelStage.STAGE2_2, LevelStage.STAGE3_1, LevelStage.STAGE3_2, LevelStage.STAGE4_1, LevelStage.STAGE4_2},
-                    StageTypes = {StageType.STAGETYPE_ORIGINAL, StageType.STAGETYPE_WOTL, StageType.STAGETYPE_AFTERBIRTH},
-                    ID = "751"
-                },
-                {
-                    Stages = {LevelStage.STAGE5, LevelStage.STAGE6},
-                    StageTypes = {StageType.STAGETYPE_ORIGINAL},
-                    ID = "295"
-                },
-                {
-                    Stages = {LevelStage.STAGE5, LevelStage.STAGE6},
-                    StageTypes = {StageType.STAGETYPE_WOTL},
-                    ID = "296"
                 }
             }
         },
@@ -4441,28 +4241,6 @@ do -- Extra Rooms
                     ID = "70059",
                     Locked = "70066"
                 }
-            },
-            Stage = {
-                {
-                    Stages = {LevelStage.STAGE1_1, LevelStage.STAGE1_2, LevelStage.STAGE7},
-                    StageTypes = {StageType.STAGETYPE_ORIGINAL, StageType.STAGETYPE_WOTL, StageType.STAGETYPE_AFTERBIRTH},
-                    ID = "820"
-                },
-                {
-                    Stages = {LevelStage.STAGE2_1, LevelStage.STAGE2_2, LevelStage.STAGE3_1, LevelStage.STAGE3_2, LevelStage.STAGE4_1, LevelStage.STAGE4_2},
-                    StageTypes = {StageType.STAGETYPE_ORIGINAL, StageType.STAGETYPE_WOTL, StageType.STAGETYPE_AFTERBIRTH},
-                    ID = "757"
-                },
-                {
-                    Stages = {LevelStage.STAGE5, LevelStage.STAGE6},
-                    StageTypes = {StageType.STAGETYPE_ORIGINAL},
-                    ID = "299"
-                },
-                {
-                    Stages = {LevelStage.STAGE5, LevelStage.STAGE6},
-                    StageTypes = {StageType.STAGETYPE_WOTL},
-                    ID = "297"
-                }
             }
         },
         [RoomShape.ROOMSHAPE_LBL] = {
@@ -4471,23 +4249,6 @@ do -- Extra Rooms
                     ID = "70060",
                     Locked = "70067"
                 }
-            },
-            Stage = {
-                {
-                    Stages = {LevelStage.STAGE1_1, LevelStage.STAGE1_2, LevelStage.STAGE7},
-                    StageTypes = {StageType.STAGETYPE_ORIGINAL, StageType.STAGETYPE_WOTL, StageType.STAGETYPE_AFTERBIRTH},
-                    ID = "828"
-                },
-                {
-                    Stages = {LevelStage.STAGE2_1, LevelStage.STAGE2_2, LevelStage.STAGE3_1, LevelStage.STAGE3_2, LevelStage.STAGE4_1, LevelStage.STAGE4_2},
-                    StageTypes = {StageType.STAGETYPE_ORIGINAL, StageType.STAGETYPE_WOTL, StageType.STAGETYPE_AFTERBIRTH},
-                    ID = "763"
-                },
-                {
-                    Stages = {LevelStage.STAGE5, LevelStage.STAGE6},
-                    StageTypes = {StageType.STAGETYPE_ORIGINAL, StageType.STAGETYPE_WOTL, StageType.STAGETYPE_AFTERBIRTH},
-                    ID = "300"
-                }
             }
         },
         [RoomShape.ROOMSHAPE_LBR] = {
@@ -4495,23 +4256,6 @@ do -- Extra Rooms
                 Barren = {
                     ID = "70061",
                     Locked = "70068"
-                }
-            },
-            Stage = {
-                {
-                    Stages = {LevelStage.STAGE1_1, LevelStage.STAGE1_2, LevelStage.STAGE7},
-                    StageTypes = {StageType.STAGETYPE_ORIGINAL, StageType.STAGETYPE_WOTL, StageType.STAGETYPE_AFTERBIRTH},
-                    ID = "830"
-                },
-                {
-                    Stages = {LevelStage.STAGE2_1, LevelStage.STAGE2_2, LevelStage.STAGE3_1, LevelStage.STAGE3_2, LevelStage.STAGE4_1, LevelStage.STAGE4_2},
-                    StageTypes = {StageType.STAGETYPE_ORIGINAL, StageType.STAGETYPE_WOTL, StageType.STAGETYPE_AFTERBIRTH},
-                    ID = "769"
-                },
-                {
-                    Stages = {LevelStage.STAGE5, LevelStage.STAGE6},
-                    StageTypes = {StageType.STAGETYPE_ORIGINAL, StageType.STAGETYPE_WOTL, StageType.STAGETYPE_AFTERBIRTH},
-                    ID = "303"
                 }
             }
         }
@@ -4575,27 +4319,6 @@ do -- Extra Rooms
         end
     end)
 
-    function StageAPI.GetGotoIDForStage(shape, stage, stagetype)
-        local stagesets = StageAPI.RoomShapeToGotoID[shape].Stage
-        for _, stageset in ipairs(stagesets) do
-            local isIn
-            for _, lvlstage in ipairs(stageset.Stages) do
-                if stage == lvlstage then
-                    isIn = true
-                    break
-                end
-            end
-
-            if isIn then
-                for _, stgtype in ipairs(stageset.StageTypes) do
-                    if stagetype == stgtype then
-                        return stageset.ID
-                    end
-                end
-            end
-        end
-    end
-
     local shadowSprite = Sprite()
     shadowSprite:Load("stageapi/stage_shadow.anm2", false)
     shadowSprite:Play("1x1", true)
@@ -4639,18 +4362,10 @@ do -- Extra Rooms
         [DoorSlot.DOWN1] = Direction.DOWN
     }
 
-    StageAPI.RoomTransitionType = {
-        Default = 0,
-        Fade = 1,
-        Pixelate = 2,
-        Teleport = 3,
-        Instant = 4
-    }
-
     function StageAPI.ExtraRoomTransition(name, direction, transitionType, isCustomMap, leaveDoor, enterDoor, setPlayerPosition, extraRoomBaseType)
         leaveDoor = leaveDoor or -1
         enterDoor = enterDoor or -1
-        transitionType = transitionType or 0
+        transitionType = transitionType or RoomTransitionAnim.WALK
         direction = direction or Direction.NO_DIRECTION
         StageAPI.ForcePlayerNewRoomPosition = setPlayerPosition
 
@@ -4673,7 +4388,7 @@ do -- Extra Rooms
         end
 
         if transitionTo == GridRooms.ROOM_DEBUG_IDX then
-            StageAPI.EnsureDebugRoomExists()
+            -- StageAPI.EnsureDebugRoomExists(true)
         end
 
         if transitionFrom ~= GridRooms.ROOM_DEBUG_IDX then
@@ -4804,8 +4519,8 @@ do -- Extra Rooms
         level.LeaveDoor = leaveDoor
         level.EnterDoor = enterDoor
 
-        if transitionType == StageAPI.RoomTransitionType.Instant then
-            StageAPI.ForcePlayerDoorSlot = enterDoor
+        if transitionType == -1 then -- StageAPI special, instant transition
+            StageAPI.ForcePlayerDoorSlot = (enterDoor == -1 and nil) or enterDoor
             level:ChangeRoom(transitionTo)
         else
             game:StartRoomTransition(transitionTo, direction, transitionType)
@@ -4815,54 +4530,6 @@ do -- Extra Rooms
     mod:AddCallback(ModCallbacks.MC_POST_RENDER, function()
         if not game:IsPaused() then
             StageAPI.StoredExtraRoomThisPause = false
-            --[[
-            if StageAPI.TransitioningTo or StageAPI.TransitioningFromTo then
-                StageAPI.TransitionTimer = StageAPI.TransitionTimer + 1
-                if StageAPI.TransitionTimer == StageAPI.TransitionFadeTime or StageAPI.SkipExtraRoomTransition then
-                    if StageAPI.CurrentExtraRoom then
-                        StageAPI.CurrentExtraRoom:SaveGridInformation()
-                        StageAPI.CurrentExtraRoom:SavePersistentEntities()
-                    end
-
-                    if StageAPI.TransitioningTo then
-                        if not StageAPI.InExtraRoom then
-                            StageAPI.LastNonExtraRoom = level:GetCurrentRoomIndex()
-                        end
-
-                        local extraRoom = StageAPI.GetExtraRoom(StageAPI.TransitioningTo)
-                        StageAPI.InExtraRoom = true
-                        StageAPI.CurrentExtraRoom = extraRoom
-                        StageAPI.CurrentExtraRoomName = StageAPI.TransitioningTo
-                        StageAPI.TransitioningTo = nil
-
-                        if StageAPI.ExtraRoomBaseType == "Barren" then
-                            local id = StageAPI.RoomShapeToGotoID[extraRoom.Shape].Barren
-                            Isaac.ExecuteCommand("goto s.barren." .. id)
-                        elseif StageAPI.ExtraRoomBaseType == "Stage" then
-                            local id = StageAPI.GetGotoIDForStage(extraRoom.Shape, level:GetStage(), level:GetStageType())
-                            Isaac.ExecuteCommand("goto d." .. id)
-                        elseif StageAPI.ExtraRoomBaseType == "Boss" then
-                            local id = StageAPI.RoomShapeToGotoID[extraRoom.Shape].Boss
-                            Isaac.ExecuteCommand("goto s.boss." .. id)
-                        end
-                    elseif StageAPI.TransitioningFromTo then
-                        StageAPI.InExtraRoom = nil
-                        StageAPI.CurrentExtraRoom = nil
-                        StageAPI.CurrentExtraRoomName = nil
-                        game:StartRoomTransition(StageAPI.TransitioningFromTo, Direction.NO_DIRECTION, 0)
-                        StageAPI.TransitioningFromTo = nil
-                    end
-
-                    StageAPI.LoadedExtraRoom = false
-                end
-            elseif StageAPI.TransitionTimer then
-                StageAPI.TransitionTimer = StageAPI.TransitionTimer - 1
-                if StageAPI.TransitionTimer <= 0 or StageAPI.SkipExtraRoomTransition then
-                    StageAPI.TransitionTimer = nil
-                    StageAPI.TransitionToExtra = nil
-                    StageAPI.SkipExtraRoomTransition = nil
-                end
-            end]]
         elseif StageAPI.LoadedExtraRoom and not StageAPI.StoredExtraRoomThisPause then
             StageAPI.StoredExtraRoomThisPause = true
             StageAPI.CurrentExtraRoom:SaveGridInformation()
@@ -4902,15 +4569,11 @@ do -- Extra Rooms
         end
 
         StageAPI.CallCallbacks("PRE_TRANSITION_RENDER")
-        if StageAPI.TransitionTimer then
-            for _, player in ipairs(players) do
-                player.ControlsCooldown = 2
-            end
-
-            StageAPI.RenderBlackScreen(StageAPI.TransitionTimer / StageAPI.TransitionFadeTime)
-        end
     end)
+end
 
+StageAPI.LogMinor("Loading Custom Door Handler")
+do -- Custom Doors
     StageAPI.DoorToDirection = {
         [DoorSlot.DOWN0] = Direction.DOWN,
         [DoorSlot.DOWN1] = Direction.DOWN,
@@ -5445,10 +5108,10 @@ do -- Extra Rooms
                 if leadsTo then
                     if data.DoorGridData.IsCustomMap then
                         transitionStarted = true
-                        StageAPI.ExtraRoomTransition(leadsTo, StageAPI.DoorSlotToDirection[data.DoorGridData.Slot], StageAPI.RoomTransitionType.Default, true, data.DoorGridData.Slot, data.DoorGridData.ExitSlot)
+                        StageAPI.ExtraRoomTransition(leadsTo, StageAPI.DoorSlotToDirection[data.DoorGridData.Slot], RoomTransitionAnim.WALK, true, data.DoorGridData.Slot, data.DoorGridData.ExitSlot)
                     else
                         transitionStarted = true
-                        StageAPI.ExtraRoomTransition(leadsTo, StageAPI.DoorSlotToDirection[data.DoorGridData.Slot], StageAPI.RoomTransitionType.Default, false, data.DoorGridData.Slot, data.DoorGridData.ExitSlot)
+                        StageAPI.ExtraRoomTransition(leadsTo, StageAPI.DoorSlotToDirection[data.DoorGridData.Slot], RoomTransitionAnim.WALK, false, data.DoorGridData.Slot, data.DoorGridData.ExitSlot)
                     end
                 end
             end
@@ -9828,7 +9491,7 @@ do -- Custom Floor Generation
                 end
             end
 
-            StageAPI.ExtraRoomTransition(levelStartRoom, Direction.NO_DIRECTION, StageAPI.RoomTransitionType.INSTANT, true)
+            StageAPI.ExtraRoomTransition(levelStartRoom, Direction.NO_DIRECTION, -1, true)
         end
     end
 
