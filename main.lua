@@ -8198,7 +8198,6 @@ do -- Callbacks
                         RoomType = selectedLayout.Type,
                         LevelIndex = "StageAPITest"
                     }
-                    testRoom.RoomType = selectedLayout.Type
                     StageAPI.SetExtraRoom("StageAPITest", testRoom)
                     local doors = {}
                     for _, door in ipairs(selectedLayout.Doors) do
