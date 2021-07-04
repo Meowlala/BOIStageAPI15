@@ -5858,8 +5858,8 @@ do -- Backdrop & RoomGfx
                 end
             end
 
-            if backdrop.Corners and string.sub(shapeName, 1, 1) == "L" then
-                local corner_to_use = backdrop.Corners[StageAPI.Random(1, #backdrop.Corners, backdropRNG)]
+            if corners and string.sub(shapeName, 1, 1) == "L" then
+                local corner_to_use = corners[StageAPI.Random(1, #corners, backdropRNG)]
                 sprite:ReplaceSpritesheet(0, corner_to_use)
             end
         elseif mode == 2 then
@@ -7879,7 +7879,7 @@ do -- Callbacks
     end
 
     function StageAPI.SetCurrentBossRoom(bossID, checkEncountered, bosses, hasHorseman, requireRoomTypeBoss, noPlayBossAnim, unskippableBossAnim)
-        local newRoom, boss = StageAPI.GenerateBossRoom(bossID, checkEncountered, bosses, hasHorseman, requireRoomTypeBoss, noPlayBossAnim)
+        local newRoom, boss = StageAPI.GenerateBossRoom(bossID, checkEncountered, bosses, hasHorseman, requireRoomTypeBoss, noPlayBossAnim, unskippableBossAnim)
         if not newRoom then
             StageAPI.LogErr('Could not generate room for boss: ID: ' .. bossID .. ' List Length: ' .. tostring(bosses and #bosses or 0))
             return nil, nil
@@ -8135,7 +8135,7 @@ do -- Callbacks
             end
         elseif cmd == "extraroomexit" then
             StageAPI.TransitionFromExtraRoom(StageAPI.LastNonExtraRoom)
-        elseif cmd == "regroom" then
+        elseif cmd == "regroom" then -- Load a registered room
             if StageAPI.Layouts[params] then
                 local testRoom = StageAPI.LevelRoom{
                     LayoutName = params,
@@ -8153,6 +8153,8 @@ do -- Callbacks
                 end
 
                 StageAPI.TransitionToExtraRoom("StageAPITest", doors[StageAPI.Random(1, #doors)])
+            else
+                Isaac.ConsoleOutput(params .. " is not a registered room.\n")
             end
         elseif cmd == "croom" then
             local paramTable = {}
@@ -8196,7 +8198,7 @@ do -- Callbacks
                         RoomType = selectedLayout.Type,
                         LevelIndex = "StageAPITest"
                     }
-
+                    testRoom.RoomType = selectedLayout.Type
                     StageAPI.SetExtraRoom("StageAPITest", testRoom)
                     local doors = {}
                     for _, door in ipairs(selectedLayout.Doors) do
@@ -8262,13 +8264,6 @@ do -- Callbacks
             else
                 Isaac.ConsoleOutput("Enabled StageAPI global command mode\nslog: Prints any number of args, parses some userdata\ngame, room, level: Correspond to respective objects\nplayer: Corresponds to player 0\ndesc: Current room descriptor, mutable\napiroom: Current StageAPI room, if applicable\nFor use with the lua command!")
                 StageAPI.GlobalCommandMode = true
-            end
-        elseif cmd == "testgotorooms" then
-            StageAPI.TestGotoRoomShapes = {}
-            for _, shape in pairs(RoomShape) do
-                if StageAPI.RoomShapeToGotoID[shape] then
-                    StageAPI.TestGotoRoomShapes[#StageAPI.TestGotoRoomShapes + 1] = shape
-                end
             end
         end
     end)
@@ -8501,7 +8496,6 @@ do
                     FromSave = roomSaveData.Room,
                     LevelIndex = lindex
                 }
-
                 retLevelRooms[lindex] = customRoom
             end
         end
