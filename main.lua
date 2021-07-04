@@ -5207,17 +5207,6 @@ do -- GridGfx
 
     -- No SetPoop, do GridGfx:SetGrid(filename, GridEntityType.GRID_POOP, StageAPI.PoopVariant.Normal)
 
-    StageAPI.RockAnimationMap = {
-        "normal",
-        "black",
-        "tinted",
-        "alt",
-        "bombrock",
-        "big",
-        "superspecial",
-        "ss_broken"
-    }
-
     StageAPI.GridGfxRNG = RNG()
 
     function StageAPI.ChangeRock(rock, filename)
