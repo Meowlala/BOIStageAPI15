@@ -2972,7 +2972,7 @@ do -- RoomsList
                             if shouldSpawnEntity then
                                 local entityData = entityInfo.Data
                                 if doGrids or (entityData.Type > 9 and entityData.Type ~= EntityType.ENTITY_FIREPLACE) then
-                                    local ent = Isaac.Spawn(
+									local ent = Isaac.Spawn(
                                         entityData.Type or 20,
                                         entityData.Variant or 0,
                                         entityData.SubType or 0,
@@ -2984,8 +2984,23 @@ do -- RoomsList
                                     local currentRoom = StageAPI.GetCurrentRoom()
                                     if currentRoom and not currentRoom.IgnoreRoomRules then
                                         if entityData.Type == EntityType.ENTITY_PICKUP and entityData.Variant == PickupVariant.PICKUP_COLLECTIBLE then
-                                            if currentRoom.RoomType == RoomType.ROOM_TREASURE and (currentRoom.Layout.Variant > 0 or string.find(string.lower(currentRoom.Layout.Name), "choice") or string.find(string.lower(currentRoom.Layout.Name), "choose")) then
-                                                ent:ToPickup().OptionsPickupIndex = 1
+                                            if currentRoom.RoomType == RoomType.ROOM_TREASURE then
+                                                if currentRoom.Layout.Variant > 0 or string.find(string.lower(currentRoom.Layout.Name), "choice") or string.find(string.lower(currentRoom.Layout.Name), "choose") then
+                                                    ent:ToPickup().OptionsPickupIndex = 1
+                                                end
+
+                                                local isShopItem
+                                                for _, player in ipairs(players) do
+                                                    if player:GetPlayerType() == PlayerType.PLAYER_KEEPER_B then
+                                                        isShopItem = true
+                                                        break
+                                                    end
+                                                end
+
+                                                if isShopItem then
+                                                    ent:ToPickup().Price = 15
+            										ent:ToPickup().AutoUpdatePrice = true
+                                                end
                                             end
                                         end
                                     end
@@ -6412,14 +6427,19 @@ do -- Backdrop & RoomGfx
             if not p1 then return end
 
             local gfxData = StageAPI.TryGetPlayerGraphicsInfo(p1)
-            local controls = gfxData.Controls or 'stageapi/controls.png'
+			local controls = gfxData.Controls or 'stageapi/controls.png'
+            local controlsFrame = gfxData.ControlsFrame or 0
             local controlsOffset = gfxData.ControlsOffset or StageAPI.ZeroVector
+
 
             local eff = StageAPI.SpawnFloorEffect(room:GetCenterPos() + controlsOffset, StageAPI.ZeroVector, nil, 'stageapi/controls.anm2', true)
             local sprite = eff:GetSprite()
-            sprite:Play("Idle")
 		    sprite:ReplaceSpritesheet(0, controls)
             sprite:LoadGraphics()
+			sprite:Play("Controls")
+			sprite:SetLayerFrame(0, controlsFrame)
+			sprite:Stop()
+
             local color = StageAPI.GetStageFloorTextColor()
             if color then
                 sprite.Color = color
@@ -6549,6 +6569,7 @@ do -- Custom Stage
 
     function StageAPI.CustomStage:SetTransitionMusic(music)
         self.TransitionMusic = music
+        StageAPI.StopOverridingMusic(music)
     end
 
     function StageAPI.CustomStage:SetBossMusic(music, clearedMusic, intro, outro)
@@ -6712,7 +6733,7 @@ do -- Custom Stage
                     musicID = newMusicID
                 end
 
-                if musicID and id ~= self.TransitionMusic then
+                if musicID then
                     return musicID, not room:IsClear()
                 end
             end
@@ -6859,7 +6880,13 @@ do -- Bosses
             },
             [StageType.STAGETYPE_GREEDMODE] = {
                 Prefix = "01_basement",
-            }
+            },
+            [StageType.STAGETYPE_REPENTANCE] = {
+                Prefix = "01x_downpour",
+            },
+            [StageType.STAGETYPE_REPENTANCE_B] = {
+                Prefix = "02x_dross",
+            },
         },
         [LevelStage.STAGE2_1] = {
             [StageType.STAGETYPE_ORIGINAL] = {
@@ -6873,6 +6900,12 @@ do -- Bosses
             },
             [StageType.STAGETYPE_GREEDMODE] = {
                 Prefix = "03_caves",
+            },
+            [StageType.STAGETYPE_REPENTANCE] = {
+                Prefix = "03x_mines",
+            },
+            [StageType.STAGETYPE_REPENTANCE_B] = {
+                Prefix = "04x_ashpit",
             },
         },
         [LevelStage.STAGE3_1] = {
@@ -6888,6 +6921,12 @@ do -- Bosses
             [StageType.STAGETYPE_GREEDMODE] = {
                 Prefix = "05_depths",
             },
+            [StageType.STAGETYPE_REPENTANCE] = {
+                Prefix = "05x_mausoleum",
+            },
+            [StageType.STAGETYPE_REPENTANCE_B] = {
+                Prefix = "06x_gehenna",
+            },
         },
         [LevelStage.STAGE4_1] = {
             [StageType.STAGETYPE_ORIGINAL] = {
@@ -6901,6 +6940,12 @@ do -- Bosses
             },
             [StageType.STAGETYPE_GREEDMODE] = {
                 Prefix = "07_womb",
+            },
+            [StageType.STAGETYPE_REPENTANCE] = {
+                Prefix = "07x_corpse",
+            },
+            [StageType.STAGETYPE_REPENTANCE_B] = {
+                Prefix = "07x_corpse",
             },
         },
         [LevelStage.STAGE4_3] = {
@@ -6981,7 +7026,10 @@ do -- Bosses
         keeper = "14",
         apollyon = "15",
         theforgotten = "16",
-        thesoul = "16"
+        thesoul = "16",
+		bethany = "18",
+		jacob = "19",
+		esau = "19"
     }
 
     for k, v in pairs(StageAPI.PlayerBossInfo) do
@@ -7019,8 +7067,10 @@ do -- Bosses
     StageAPI.PlayerBossInfo.keeper.NoShake = true
     StageAPI.PlayerBossInfo.theforgotten.NoShake = true
     StageAPI.PlayerBossInfo.thesoul.NoShake = true
-    StageAPI.PlayerBossInfo.theforgotten.Controls = "stageapi/controls_forgotten.png"
-    StageAPI.PlayerBossInfo.thesoul.Controls = "stageapi/controls_forgotten.png"
+    StageAPI.PlayerBossInfo.theforgotten.ControlsFrame = 1
+    StageAPI.PlayerBossInfo.thesoul.ControlsFrame = 1
+	StageAPI.PlayerBossInfo.jacob.ControlsFrame = 2
+    StageAPI.PlayerBossInfo.esau.ControlsFrame = 2
     StageAPI.PlayerBossInfo.thelost.NoShake = true
 
     function StageAPI.AddPlayerGraphicsInfo(name, portrait, namefile, portraitbig, noshake)
@@ -7031,7 +7081,8 @@ do -- Bosses
                 Name = namefile,
                 PortraitBig = portraitbig,
                 NoShake = noshake,
-                Controls = nil,
+				Controls = nil,
+                ControlsFrame = 0,
                 ControlsOffset = nil,
             }
         end
@@ -7327,13 +7378,17 @@ do -- Transition
     StageAPI.StageTypeToString = {
         [StageType.STAGETYPE_ORIGINAL] = "",
         [StageType.STAGETYPE_WOTL] = "a",
-        [StageType.STAGETYPE_AFTERBIRTH] = "b"
+        [StageType.STAGETYPE_AFTERBIRTH] = "b",
+		[StageType.STAGETYPE_REPENTANCE] = "c",
+		[StageType.STAGETYPE_REPENTANCE_B] = "d"
     }
 
     StageAPI.StageTypes = {
         StageType.STAGETYPE_ORIGINAL,
         StageType.STAGETYPE_WOTL,
-        StageType.STAGETYPE_AFTERBIRTH
+        StageType.STAGETYPE_AFTERBIRTH,
+		StageType.STAGETYPE_REPENTANCE,
+		StageType.STAGETYPE_REPENTANCE_B
     }
 
     StageAPI.TransitionAnimation = Sprite()
@@ -7807,7 +7862,7 @@ end
 StageAPI.LogMinor("Loading Core Callbacks")
 do -- Callbacks
     StageAPI.NonOverrideMusic = {
-        Music.MUSIC_GAME_OVER,
+        {Music.MUSIC_GAME_OVER, false, true},
         Music.MUSIC_JINGLE_GAME_OVER,
         Music.MUSIC_JINGLE_SECRETROOM_FIND,
         {Music.MUSIC_JINGLE_NIGHTMARE, true},
@@ -7820,12 +7875,21 @@ do -- Callbacks
         Music.MUSIC_JINGLE_TREASUREROOM_ENTRY_0,
         Music.MUSIC_JINGLE_TREASUREROOM_ENTRY_1,
         Music.MUSIC_JINGLE_TREASUREROOM_ENTRY_2,
-        Music.MUSIC_JINGLE_TREASUREROOM_ENTRY_3
+        Music.MUSIC_JINGLE_TREASUREROOM_ENTRY_3,
+
+        -- Rep
+        Music.MUSIC_JINGLE_BOSS_RUSH_OUTRO,
+        Music.MUSIC_JINGLE_BOSS_OVER3,
+        Music.MUSIC_JINGLE_MOTHER_OVER,
+        Music.MUSIC_JINGLE_DOGMA_OVER,
+        Music.MUSIC_JINGLE_BEAST_OVER,
+        Music.MUSIC_JINGLE_CHALLENGE_ENTRY,
+        Music.MUSIC_JINGLE_CHALLENGE_OUTRO
     }
 
-    function StageAPI.StopOverridingMusic(music, allowOverrideQueue)
-        if allowOverrideQueue ~= nil then
-            StageAPI.NonOverrideMusic[#StageAPI.NonOverrideMusic + 1] = {music, allowOverrideQueue}
+    function StageAPI.StopOverridingMusic(music, allowOverrideQueue, neverOverrideQueue)
+        if allowOverrideQueue ~= nil or neverOverrideQueue ~= nil then
+            StageAPI.NonOverrideMusic[#StageAPI.NonOverrideMusic + 1] = {music, allowOverrideQueue, neverOverrideQueue}
         else
             StageAPI.NonOverrideMusic[#StageAPI.NonOverrideMusic + 1] = music
         end
@@ -7839,7 +7903,7 @@ do -- Callbacks
                 end
             else
                 if music == id[1] then
-                    return false, id[2]
+                    return false, id[2], id[3]
                 end
             end
         end
@@ -7974,7 +8038,7 @@ do -- Callbacks
             currentRoom = StageAPI.GetCurrentRoom()
         end
 
-        if currentRoom or StageAPI.InExtraRoom or (not inStartingRoom and StageAPI.InNewStage() and (room:GetType() == RoomType.ROOM_DEFAULT or (StageAPI.CurrentStage.Bosses and room:GetType() == RoomType.ROOM_BOSS))) then
+        if currentRoom or StageAPI.InExtraRoom or (not inStartingRoom and StageAPI.InNewStage() and ((StageAPI.CurrentStage.Rooms and StageAPI.CurrentStage.Rooms[room:GetType()]) or (StageAPI.CurrentStage.Bosses and room:GetType() == RoomType.ROOM_BOSS))) then
             return true
         end
     end
@@ -7993,8 +8057,14 @@ do -- Callbacks
         end
     end)
 
+    StageAPI.NonOverrideTrapdoors = {
+        ["gfx/grid/trapdoor_downpour.anm2"] = true,
+        ["gfx/grid/trapdoor_mines.anm2"] = true,
+        ["gfx/grid/trapdoor_mausoleum.anm2"] = true,
+    }
+
     function StageAPI.CheckStageTrapdoor(grid, index)
-        if not (grid.Desc.Type == GridEntityType.GRID_TRAPDOOR and grid.State == 1) then
+        if not (grid.Desc.Type == GridEntityType.GRID_TRAPDOOR and grid.State == 1) or StageAPI.NonOverrideTrapdoors[grid:GetSprite():GetFilename()] then
             return
         end
 
@@ -8098,8 +8168,13 @@ do -- Callbacks
                 end
 
                 local queuedID = StageAPI.Music:GetQueuedMusicID()
-                local canOverride, canOverrideQueue = StageAPI.CanOverrideMusic(queuedID)
-                if queuedID ~= shouldQueue and (canOverride or canOverrideQueue or disregardNonOverride) then
+                local canOverride, canOverrideQueue, neverOverrideQueue = StageAPI.CanOverrideMusic(queuedID)
+                local shouldOverrideQueue = shouldQueue and (canOverride or canOverrideQueue or disregardNonOverride)
+                if not neverOverrideQueue and shouldQueue then
+                    shouldOverrideQueue = shouldOverrideQueue or (id == queuedID)
+                end
+
+                if queuedID ~= shouldQueue and shouldOverrideQueue then
                     StageAPI.Music:Queue(shouldQueue)
                 end
 
@@ -9914,7 +9989,42 @@ do -- Mod Compatibility
                 REVEL.AddedStageAPIChangelogs = true
             end
 
-            TryAddChangelog("v1.89", [[- Updated StageAPI to
+            TryAddChangelog("v1.92 - 93", [[- Fixed bridges not
+functioning in Catacombs,
+Necropolis, and Utero
+
+- Fixed Downpour, Mines,
+and Mausoleum trapdoors
+being overridden in
+custom stages
+
+- Updated StageAPI Utero
+backdrop to match new version
+in Repentance
+
+- StageAPI now enables sprite
+suffix replacements for
+all base game floors
+
+- StageAPI now loads before
+most or all other mods
+
+- Updated StageAPI.FloorInfo for
+Repentance stages
+
+- Fixed ShouldOverrideRoom returning
+true for default room types
+on custom stages without
+any default rooms defined
+
+- Fix starting room controls for
+Repentance, although they don't
+have keys due to the inability
+to tell what the game keybinds
+are set to
+]])
+
+            TryAddChangelog("v1.89 - 91", [[- Updated StageAPI to
 function with Repentance.
 Note that it is still
 a work in progress, and
@@ -9941,6 +10051,16 @@ a new argument to CustomGrid()
 overridden RoomGfx not
 using the correct GridGfx
 on custom stages
+
+- Fixed the base game's
+black market crawlspace
+leading to an error room
+
+- StageAPI no longer
+overrides music.xml, which
+should allow for considerably
+more compatibility with
+music replacing mods
 ]])
 
             TryAddChangelog("v1.86 - 88", [[- Added functions
@@ -10337,7 +10457,7 @@ other than a door
 end
 
 StageAPI.LogMinor("[StageAPI] Fully Loaded, loading dependent mods.")
-StageAPI.MarkLoaded("StageAPI", "1.88", true, true)
+StageAPI.MarkLoaded("StageAPI", "1.94", true, true)
 
 StageAPI.Loaded = true
 if StageAPI.ToCall then
