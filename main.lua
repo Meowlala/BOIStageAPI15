@@ -487,9 +487,20 @@ do -- Core Definitions
         [4500]=GridEntityType.GRID_PRESSURE_PLATE,
         [5000]=GridEntityType.GRID_STATUE,
         [5001]={Type = GridEntityType.GRID_STATUE, Variant = 1},
+        [6100]=GridEntityType.GRID_TELEPORTER,
         [9000]=GridEntityType.GRID_TRAPDOOR,
         [9100]=GridEntityType.GRID_STAIRS,
         [10000]=GridEntityType.GRID_GRAVITY
+    }
+
+    StageAPI.UnsupportedTypes = {
+        [970] = true, -- room darkness, water flow, water disabler, lava disabler, quest door
+        [969] = true, -- events
+        [1009] = true, -- event rock
+        [3009] = true, -- event pit
+        [3002] = true, -- button rail
+        [6000] = true, -- rail
+        [6001] = true, -- rail over pit
     }
 
     StageAPI.E = {
@@ -1291,6 +1302,8 @@ do -- RoomsList
             end
 
             layout.GridEntitiesByIndex[gridData.Index][#layout.GridEntitiesByIndex[gridData.Index] + 1] = gridData
+        elseif StageAPI.UnsupportedTypes[objtype] then
+            StageAPI.LogErr("Error in " .. layout.Name .. "! Entities with type " .. tostring(objtype) .. " are unsupported in StageAPI layouts!")
         elseif objtype ~= 0 then
             local entData = {
                 Type = objtype,
