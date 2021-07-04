@@ -2211,6 +2211,17 @@ do -- RoomsList
         EntityType.ENTITY_FIREPLACE,
         EntityType.ENTITY_ETERNALFLY,
     }
+
+    StageAPI.ChestVariants = {
+        PickupVariant.PICKUP_CHEST,
+        PickupVariant.PICKUP_LOCKEDCHEST,
+        PickupVariant.PICKUP_BOMBCHEST,
+        PickupVariant.PICKUP_ETERNALCHEST,
+        PickupVariant.PICKUP_MIMICCHEST,
+        PickupVariant.PICKUP_SPIKEDCHEST,
+        PickupVariant.PICKUP_REDCHEST
+    }
+
     StageAPI.AddPersistenceCheck(function(entData)
         local isDynamicPersistent = false
         for _, type in ipairs(StageAPI.DynamicPersistentTypes) do
@@ -2222,12 +2233,26 @@ do -- RoomsList
                 AutoPersists = true,
                 UpdatePosition = true,
                 RemoveOnRemove = true,
+                UpdateType = true,
+                UpdateVariant = true,
+                UpdateSubType = true,
                 StoreCheck = function(entity)
                     if entity.Type == EntityType.ENTITY_PICKUP then
                         local variant = entity.Variant
                         if variant == PickupVariant.PICKUP_COLLECTIBLE then
                             return entity.SubType == 0
                         else
+                            local isChest
+                            for _, var in ipairs(StageAPI.ChestVariants) do
+                                if variant == var then
+                                    isChest = true
+                                end
+                            end
+
+                            if isChest then
+                                return entity.SubType == 0
+                            end
+
                             local sprite = entity:GetSprite()
                             if sprite:IsPlaying("Open") or sprite:IsPlaying("Opened") or sprite:IsPlaying("Collect") or sprite:IsFinished("Open") or sprite:IsFinished("Opened") or sprite:IsFinished("Collect") then
                                 return true
@@ -2894,10 +2919,12 @@ do -- RoomsList
         return StageAPI.ActiveEntityPersistenceData[GetPtrHash(entity)]
     end
 
-    function StageAPI.SetEntityPersistenceData(entity, persistentIndex, persistentData)
+    function StageAPI.SetEntityPersistenceData(entity, persistentIndex, persistentData, spawnData, spawnInfo)
         StageAPI.ActiveEntityPersistenceData[GetPtrHash(entity)] = {
             PersistentIndex = persistentIndex,
-            PersistenceData = persistentData
+            PersistenceData = persistentData,
+            SpawnData = spawnData,
+            SpawnInfo = spawnInfo
         }
     end
 
@@ -3010,7 +3037,7 @@ do -- RoomsList
                                     ent:GetData().StageAPIEntityListIndex = index
 
                                     if entityInfo.Persistent then
-                                        StageAPI.SetEntityPersistenceData(ent, entityInfo.PersistentIndex, entityInfo.PersistenceData)
+                                        StageAPI.SetEntityPersistenceData(ent, entityInfo.PersistentIndex, entityInfo.PersistenceData, entityData, entityInfo)
                                     end
 
                                     if not loadingWave and ent:CanShutDoors() then
@@ -3501,52 +3528,57 @@ do -- RoomsList
     end
 
     function StageAPI.LevelRoom:SavePersistentEntities()
-        for index, spawns in pairs(self.ExtraSpawn) do
-            for _, spawn in ipairs(spawns) do
-                if spawn.PersistenceData.RemoveOnRemove then
-                    local hasMatch = false
-                    local matching = Isaac.FindByType(spawn.Data.Type, spawn.Data.Variant, spawn.Data.SubType, false, false)
-                    for _, match in ipairs(matching) do
-                        if not spawn.PersistenceData.StoreCheck or not spawn.PersistenceData.StoreCheck(match, match:GetData()) then
-                            hasMatch = true
-                        end
-                    end
-
-                    if not hasMatch then
-                        self.AvoidSpawning[spawn.PersistentIndex] = true
-                    end
-                end
-            end
-        end
-
-        for index, spawns in pairs(self.SpawnEntities) do
-            for _, spawn in ipairs(spawns) do
-                if spawn.PersistenceData and spawn.PersistenceData.RemoveOnRemove then
-                    local hasMatch = false
-                    local matching = Isaac.FindByType(spawn.Data.Type, spawn.Data.Variant, spawn.Data.SubType, false, false)
-                    for _, match in ipairs(matching) do
-                        if not spawn.PersistenceData.StoreCheck or not spawn.PersistenceData.StoreCheck(match, match:GetData()) then
-                            hasMatch = true
-                        end
-                    end
-
-                    if not hasMatch then
-                        self.AvoidSpawning[spawn.PersistentIndex] = true
-                    end
-                end
+        local checkExistenceOf = {}
+        for hash, entityPersistData in pairs(StageAPI.ActiveEntityPersistenceData) do
+            if entityPersistData.PersistenceData.RemoveOnRemove then
+                checkExistenceOf[hash] = entityPersistData
             end
         end
 
         for _, entity in ipairs(Isaac.GetRoomEntities()) do
+            checkExistenceOf[GetPtrHash(entity)] = nil
+
             local data = entity:GetData()
             local entityPersistData = StageAPI.GetEntityPersistenceData(entity)
             if entityPersistData then
+                local changedSpawn
+                if entityPersistData.PersistenceData.UpdateType then
+                    if entity.Type ~= entityPersistData.SpawnData.Type then
+                        entityPersistData.SpawnData.Type = entity.Type
+                        changedSpawn = true
+                    end
+                end
+
+                if entityPersistData.PersistenceData.UpdateVariant then
+                    if entity.Variant ~= entityPersistData.SpawnData.Variant then
+                        entityPersistData.SpawnData.Variant = entity.Variant
+                        changedSpawn = true
+                    end
+                end
+
+                if entityPersistData.PersistenceData.UpdateSubType then
+                    if entity.SubType ~= entityPersistData.SpawnData.SubType then
+                        entityPersistData.SpawnData.SubType = entity.SubType
+                        changedSpawn = true
+                    end
+                end
+
                 if entityPersistData.PersistenceData.UpdatePosition then
                     self.PersistentPositions[entityPersistData.PersistentIndex] = {X = entity.Position.X, Y = entity.Position.Y}
                 end
 
                 if entityPersistData.PersistenceData.StoreCheck and entityPersistData.PersistenceData.StoreCheck(entity, data) then
                     self.AvoidSpawning[entityPersistData.PersistentIndex] = true
+                end
+
+                if changedSpawn then
+                    local persistentData = StageAPI.CheckPersistence(entity.Type, entity.Variant, entity.SubType)
+                    if not persistentData then
+                        StageAPI.RemovePersistentEntity(entity)
+                    else
+                        entityPersistData.SpawnInfo.PersistenceData = persistentData
+                        entityPersistData.PersistenceData = persistentData
+                    end
                 end
             else
                 local persistentData = StageAPI.CheckPersistence(entity.Type, entity.Variant, entity.SubType)
@@ -3559,26 +3591,34 @@ do -- RoomsList
                             self.ExtraSpawn[grindex] = {}
                         end
 
-                        self.ExtraSpawn[grindex][#self.ExtraSpawn[grindex] + 1] = {
-                            Data = {
-                                Type = entity.Type,
-                                Variant = entity.Variant,
-                                SubType = entity.SubType,
-                                Index = grindex
-                            },
+                        local spawnData = {
+                            Type = entity.Type,
+                            Variant = entity.Variant,
+                            SubType = entity.SubType,
+                            Index = grindex
+                        }
+
+                        local spawnInfo = {
+                            Data = spawnData,
                             Persistent = true,
                             PersistentIndex = index,
                             PersistenceData = persistentData
                         }
 
+                        self.ExtraSpawn[grindex][#self.ExtraSpawn[grindex] + 1] = spawnInfo
+
                         if persistentData.UpdatePosition then
                             self.PersistentPositions[index] = {X = entity.Position.X, Y = entity.Position.Y}
                         end
 
-                        StageAPI.SetEntityPersistenceData(entity, index, persistentData)
+                        StageAPI.SetEntityPersistenceData(entity, index, persistentData, spawnData, spawnInfo)
                     end
                 end
             end
+        end
+
+        for hash, entityPersistData in pairs(checkExistenceOf) do
+            self.AvoidSpawning[entityPersistData.PersistentIndex] = true
         end
     end
 
@@ -4068,6 +4108,7 @@ do -- Custom Grid Entities
     end)
 end
 
+StageAPI.LogMinor("Loading Extra Room Handler")
 do -- Extra Rooms
     StageAPI.InExtraRoom = false
     StageAPI.LoadedExtraRoom = false
@@ -4694,7 +4735,7 @@ do -- Custom Doors
         if hadFrameWithoutDoorData then
             hadFrameWithoutDoorData = false
         elseif framesWithoutDoorData > 0 then
-            StageAPI.Log("Had no door data for " .. tostring(framesWithoutDoorData) .. " frames")
+            StageAPI.LogErr("Had no door data for " .. tostring(framesWithoutDoorData) .. " frames")
             framesWithoutDoorData = 0
         end
     end)
@@ -7048,6 +7089,8 @@ do -- Callbacks
         end
     end
 
+    StageAPI.GlobalCommandMode = false
+
     StageAPI.Music = MusicManager()
     StageAPI.MusicRNG = RNG()
     mod:AddCallback(ModCallbacks.MC_POST_RENDER, function()
@@ -7179,6 +7222,16 @@ do -- Callbacks
             Isaac.RenderScaledText(custom, 60, 35, scale, scale, 255, 255, 255, 0.75)
             Isaac.RenderScaledText(base, 60, 45, scale, scale, 255, 255, 255, 0.75)
         end
+
+        if StageAPI.GlobalCommandMode then
+            _G.slog = StageAPI.Log
+            _G.game = game
+            _G.level = level
+            _G.room = room
+            _G.desc = level:GetRoomByIdx(level:GetCurrentRoomIndex())
+            _G.apiroom = StageAPI.GetCurrentRoom()
+            _G.player = players[1]
+        end
     end)
 
     function StageAPI.SetCurrentBossRoomInPlace(bossID, room)
@@ -7192,7 +7245,7 @@ do -- Callbacks
         StageAPI.CallCallbacks("POST_BOSS_ROOM_INIT", false, room, boss, bossID)
     end
 
-    function StageAPI.GenerateBossRoom(bossID, checkEncountered, bosses, hasHorseman, requireRoomTypeBoss, noPlayBossAnim, unskippableBossAnim, isExtraRoom, shape, ignoreDoors)
+    function StageAPI.GenerateBossRoom(bossID, checkEncountered, bosses, hasHorseman, requireRoomTypeBoss, noPlayBossAnim, unskippableBossAnim, isExtraRoom, shape, ignoreDoors, doors, roomType)
         if not bossID then
             bossID = StageAPI.SelectBoss(bosses, hasHorseman)
         elseif checkEncountered then
@@ -7214,7 +7267,16 @@ do -- Callbacks
         end
 
         local levelIndex = StageAPI.GetCurrentRoomID()
-        local newRoom = StageAPI.LevelRoom(nil, boss.Rooms, nil, shape, nil, isExtraRoom, nil, requireRoomTypeBoss, ignoreDoors, nil, levelIndex)
+        local newRoom = StageAPI.LevelRoom{
+            RoomsList = boss.Rooms,
+            RoomType = roomType,
+            Shape = shape,
+            IsExtraRoom = isExtraRoom,
+            RequireRoomType = requireRoomTypeBoss,
+            IgnoreDoors = ignoreDoors,
+            Doors = doors,
+            LevelIndex = levelIndex
+        }
         newRoom.PersistentData.BossID = bossID
         StageAPI.CallCallbacks("POST_BOSS_ROOM_INIT", false, newRoom, boss, bossID)
 
@@ -7231,12 +7293,13 @@ do -- Callbacks
         return newRoom, boss
     end
 
-    function StageAPI.SetCurrentBossRoom(bossID, checkEncountered, bosses, hasHorseman, requireRoomTypeBoss, noPlayBossAnim)
+    function StageAPI.SetCurrentBossRoom(bossID, checkEncountered, bosses, hasHorseman, requireRoomTypeBoss, noPlayBossAnim, unskippableBossAnim)
         local newRoom, boss = StageAPI.GenerateBossRoom(bossID, checkEncountered, bosses, hasHorseman, requireRoomTypeBoss, noPlayBossAnim)
         if not newRoom then
             StageAPI.LogErr('Could not generate room for boss: ID: ' .. bossID .. ' List Length: ' .. tostring(bosses and #bosses or 0))
             return nil, nil
         end
+
         StageAPI.SetCurrentRoom(newRoom)
         newRoom:Load()
 
@@ -7559,6 +7622,21 @@ do -- Callbacks
             StageAPI.ClearRoomLayout(false, true, true, true, nil, true, true)
         elseif cmd == "crashit" then
             game:ShowHallucination(0, 0)
+        elseif cmd == "commandglobals" then
+            if StageAPI.GlobalCommandMode then
+                Isaac.ConsoleOutput("Disabled StageAPI global command mode")
+                _G.slog = nil
+                _G.game = nil
+                _G.room = nil
+                _G.desc = nil
+                _G.apiroom = nil
+                _G.level = nil
+                _G.player = nil
+                StageAPI.GlobalCommandMode = nil
+            else
+                Isaac.ConsoleOutput("Enabled StageAPI global command mode\nslog: Prints any number of args, parses some userdata\ngame, room, level: Correspond to respective objects\nplayer: Corresponds to player 0\ndesc: Current room descriptor, mutable\napiroom: Current StageAPI room, if applicable\nFor use with the lua command!")
+                StageAPI.GlobalCommandMode = true
+            end
         elseif cmd == "testgotorooms" then
             StageAPI.TestGotoRoomShapes = {}
             for _, shape in pairs(RoomShape) do
