@@ -613,9 +613,22 @@ do -- Core Functions
         return rng:Next()
     end
 
+    function StageAPI.RandomFloat(a, b, rng)
+        rng = rng or StageAPI.RandomRNG
+        local rand = rng:RandomFloat()
+        if a and b then
+            return (rand * (b - a)) + a
+        elseif a then
+            return rand * a
+        end
+
+        return rand
+    end
+
     function StageAPI.WeightedRNG(args, rng, key, preCalculatedWeight) -- takes tables {{obj, weight}, {"pie", 3}, {555, 0}}
         local weight_value = preCalculatedWeight or 0
         local iterated_weight = 1
+        local floatWeights
         if not preCalculatedWeight then
             for _, potentialObject in ipairs(args) do
                 if key then
@@ -623,11 +636,21 @@ do -- Core Functions
                 else
                     weight_value = weight_value + potentialObject[2]
                 end
+
+                if weight_value % 1 ~= 0 then -- if any weight is a float, use float RNG
+                    floatWeights = true
+                end
             end
         end
 
         rng = rng or StageAPI.RandomRNG
-        local random_chance = StageAPI.Random(1, weight_value, rng)
+        local random_chance
+        if weight_value % 1 == 0 and not floatWeights then
+            random_chance = StageAPI.Random(1, weight_value, rng)
+        else
+            random_chance = StageAPI.RandomFloat(1, weight_value, rng)
+        end
+
         for i, potentialObject in ipairs(args) do
             if key then
                 iterated_weight = iterated_weight + potentialObject[key]
@@ -803,7 +826,7 @@ do -- Core Functions
         [2] = Vector(2.2,0.52),  [3] = Vector(1.8,0.68),
         [4] = Vector(1.4,0.84),  [5] = Vector(0.95,1.05),
         [6] = Vector(0.97,1.03), [7] = Vector(0.98,1.02),
--- frame 8 is the hold frame
+        -- frame 8 is the hold frame
         [9] = Vector(0.99,1.03), [10] = Vector(0.98,1.05),
         [11] = Vector(0.96,1.08), [12] = Vector(0.95,1.1),
         [13] = Vector(1.36,0.92), [14] = Vector(1.77,0.74),
@@ -6110,6 +6133,52 @@ do -- Bosses
     StageAPI.FloorInfo[LevelStage.STAGE3_2] = StageAPI.FloorInfo[LevelStage.STAGE3_1]
     StageAPI.FloorInfo[LevelStage.STAGE4_2] = StageAPI.FloorInfo[LevelStage.STAGE4_1]
 
+    StageAPI.FloorInfoGreed = {
+        [LevelStage.STAGE1_GREED] = StageAPI.FloorInfo[LevelStage.STAGE1_1],
+        [LevelStage.STAGE2_GREED] = StageAPI.FloorInfo[LevelStage.STAGE2_1],
+        [LevelStage.STAGE3_GREED] = StageAPI.FloorInfo[LevelStage.STAGE3_1],
+        [LevelStage.STAGE4_GREED] = StageAPI.FloorInfo[LevelStage.STAGE4_1],
+        [LevelStage.STAGE5_GREED] = {
+            [StageType.STAGETYPE_ORIGINAL] = {
+                Prefix = "09_sheol",
+            },
+            [StageType.STAGETYPE_WOTL] = {
+                Prefix = "09_sheol",
+            },
+            [StageType.STAGETYPE_AFTERBIRTH] = {
+                Prefix = "09_sheol",
+            },
+            [StageType.STAGETYPE_GREEDMODE] = {
+                Prefix = "09_sheol",
+            },
+        },
+        [LevelStage.STAGE6_GREED] = {
+            [StageType.STAGETYPE_ORIGINAL] = {
+                Prefix = "18_shop",
+            },
+            [StageType.STAGETYPE_WOTL] = {
+                Prefix = "18_shop",
+            },
+            [StageType.STAGETYPE_AFTERBIRTH] = {
+                Prefix = "18_shop",
+            },
+            [StageType.STAGETYPE_GREEDMODE] = {
+                Prefix = "18_shop",
+            },
+        },
+    }
+
+    StageAPI.FloorInfoGreed[LevelStage.STAGE7_GREED] = StageAPI.FloorInfoGreed[LevelStage.STAGE6_GREED]
+
+    function StageAPI.GetBaseFloorInfo()
+        local stage, stageType = level:GetStage(), level:GetStageType()
+        if game:IsGreedMode() then
+            return StageAPI.FloorInfoGreed[stage][stageType]
+        else
+            return StageAPI.FloorInfo[stage][stageType]
+        end
+    end
+
     StageAPI.PlayerBossInfo = {
         isaac = "01",
         magdalene = "02",
@@ -6197,8 +6266,7 @@ do -- Bosses
         if StageAPI.InNewStage() then
             return StageAPI.CurrentStage.BossSpot or "gfx/ui/boss/bossspot.png", StageAPI.CurrentStage.PlayerSpot or "gfx/ui/boss/playerspot.png"
         else
-            local stage, stype = level:GetStage(), level:GetStageType()
-            local spot = StageAPI.FloorInfo[stage][stype].Prefix
+            local spot = StageAPI.GetBaseFloorInfo().Prefix
             return "gfx/ui/boss/bossspot_" .. spot .. ".png", "gfx/ui/boss/playerspot_" .. spot .. ".png"
         end
     end
@@ -6216,8 +6284,7 @@ do -- Bosses
         if StageAPI.InNewStage() then
             return StageAPI.CurrentStage.FloorTextColor
         else
-            local stage, stype = level:GetStage(), level:GetStageType()
-            return StageAPI.FloorInfo[stage][stype].FloorTextColor
+            return StageAPI.GetBaseFloorInfo().FloorTextColor
         end
     end
 
@@ -6366,7 +6433,6 @@ do -- Bosses
         return StageAPI.Bosses[id]
     end
 
-    StageAPI.DummyBoss = {}
     function StageAPI.PlayBossAnimation(boss, unskippable)
         local bSpot, pSpot = StageAPI.GetStageSpot()
         local gfxData = StageAPI.TryGetPlayerGraphicsInfo(StageAPI.Players[1])
@@ -6568,7 +6634,7 @@ do -- Transition
     end, EffectVariant.MOM_FOOT_STOMP)
 
     function StageAPI.GetLevelTransitionIcon(stage, stype)
-        local base = StageAPI.FloorInfo[stage][stype].Prefix
+        local base = StageAPI.GetBaseFloorInfo().Prefix
         if base == "07_womb" and stype == StageType.STAGETYPE_WOTL then
             base = "utero"
         end
