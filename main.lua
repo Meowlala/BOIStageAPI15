@@ -3630,26 +3630,36 @@ do -- RoomsList
         self:SaveGridInformation()
     end
 
+    local saveDataCopyDirectly = {
+        "IsClear","WasClearAtStart","RoomsListName","LayoutName","SpawnSeed","AwardSeed","DecorationSeed",
+        "FirstLoad","Shape","RoomType","TypeOverride","PersistentData","IsExtraRoom","LastPersistentIndex",
+        "RequireRoomType", "IgnoreRoomRules", "VisitCount", "ClearCount", "LevelIndex","HasWaterPits","ChallengeDone",
+        "SurpriseMiniboss"
+    }
+
     function StageAPI.LevelRoom:GetSaveData(isExtraRoom)
         if isExtraRoom == nil then
             isExtraRoom = self.IsExtraRoom
         end
 
         local saveData = {}
-        saveData.IsClear = self.IsClear
-        saveData.WasClearAtStart = self.WasClearAtStart
-        saveData.RoomsListName = self.RoomsListName
-        saveData.LayoutName = self.LayoutName
-        saveData.SpawnSeed = self.SpawnSeed
-        saveData.FirstLoad = self.FirstLoad
-        saveData.Shape = self.Shape
-        saveData.RoomType = self.RoomType
-        saveData.TypeOverride = self.TypeOverride
-        saveData.PersistentData = self.PersistentData
-        saveData.IsExtraRoom = isExtraRoom
-        saveData.LastPersistentIndex = self.LastPersistentIndex
-        saveData.RequireRoomType = self.RequireRoomType
-        saveData.IgnoreRoomRules = self.IgnoreRoomRules
+
+        for _, v in ipairs(saveDataCopyDirectly) do
+            saveData[v] = self[v]
+        end
+
+        if isExtraRoom ~= nil then
+            saveData.IsExtraRoom = isExtraRoom
+        end
+
+        if self.Doors then
+            saveData.Doors = {}
+            for i = 0, 7 do
+                if self.Doors[i] then
+                    saveData.Doors[#saveData.Doors + 1] = i
+                end
+            end
+        end
 
         if self.GridInformation then
             for index, gridInfo in pairs(self.GridInformation) do
@@ -3692,25 +3702,27 @@ do -- RoomsList
 
     function StageAPI.LevelRoom:LoadSaveData(saveData)
         self.Data = {}
-        self.PersistentData = saveData.PersistentData or {}
         self.AvoidSpawning = {}
         self.PersistentPositions = {}
         self.ExtraSpawn = {}
 
-        self.RoomsListName = saveData.RoomsListName
-        self.LayoutName = saveData.LayoutName
-        self.SpawnSeed = saveData.SpawnSeed
-        self.Seed = self.SpawnSeed
-        self.Shape = saveData.Shape
-        self.RoomType = saveData.RoomType
-        self.RequireRoomType = saveData.RequireRoomType
-        self.TypeOverride = saveData.TypeOverride
-        self.IgnoreRoomRules = saveData.IgnoreRoomRules
+        for _, v in ipairs(saveDataCopyDirectly) do
+            self[v] = saveData[v]
+        end
+
+        self.Seed = self.AwardSeed -- backwards compatibility
+        self.PersistentData = self.PersistentData or {}
 
         if saveData.Doors then
             self.Doors = {}
             for _, door in ipairs(saveData.Doors) do
                 self.Doors[door] = true
+            end
+
+            for i = 0, 7 do
+                if not self.Doors[i] then
+                    self.Doors[i] = false
+                end
             end
         end
 
@@ -3726,19 +3738,15 @@ do -- RoomsList
                 if retLayout then
                     layout = retLayout
                 else
-                    layout = StageAPI.ChooseRoomLayout(roomsList, self.Seed, self.Shape, self.RoomType, self.RequireRoomType, false, self.Doors)
+                    layout = StageAPI.ChooseRoomLayout(roomsList, self.SpawnSeed, self.Shape, self.RoomType, self.RequireRoomType, false, self.Doors)
                 end
             end
         end
 
         self.Layout = layout
-        self:PostGetLayout(self.Seed)
+        self:PostGetLayout(self.SpawnSeed)
 
-        self.LastPersistentIndex = saveData.LastPersistentIndex or self.LastPersistentIndex
-        self.IsClear = saveData.IsClear
-        self.WasClearAtStart = saveData.WasClearAtStart
-        self.FirstLoad = saveData.FirstLoad
-        self.IsExtraRoom = saveData.IsExtraRoom
+        self.LastPersistentIndex = self.LastPersistentIndex or self.LastPersistentIndex
 
         if saveData.GridInformation then
             for strindex, gridInfo in pairs(saveData.GridInformation) do
