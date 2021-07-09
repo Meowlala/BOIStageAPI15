@@ -100,7 +100,7 @@ Callback List:
 - POST_CUSTOM_DOOR_UPDATE(door, data, sprite, CustomDoor, persistData)
 -- Takes CustomDoorName as first callback parameter, and will only run if parameter not supplied or matches current door.
 
-- PRE_SELECT_BOSS(bosses, allowHorseman, rng)
+- PRE_BOSS_SELECT(bosses, allowHorseman, rng)
 -- If a boss is returned, uses it instead.
 
 - POST_OVERRIDDEN_GRID_BREAK(grindex, grid, justBrokenGridSpawns)
@@ -666,10 +666,9 @@ do -- Core Functions
         return rand
     end
 
-    function StageAPI.WeightedRNG(args, rng, key, preCalculatedWeight) -- takes tables {{obj, weight}, {"pie", 3}, {555, 0}}
+    function StageAPI.WeightedRNG(args, rng, key, preCalculatedWeight, floatWeights) -- takes tables {{obj, weight}, {"pie", 3}, {555, 0}}
         local weight_value = preCalculatedWeight or 0
         local iterated_weight = 1
-        local floatWeights
         if not preCalculatedWeight then
             for _, potentialObject in ipairs(args) do
                 if key then
@@ -819,6 +818,25 @@ do -- Core Functions
         for k, v in pairs(tbl) do
             t[k] = v
         end
+        return t
+    end
+
+    function StageAPI.Merged(...)
+        local t = {}
+        for _, tbl in ipairs({...}) do
+            local orderedIndices = {}
+            for i, v in ipairs(tbl) do
+                orderedIndices[i] = true
+                t[#t + 1] = v
+            end
+
+            for k, v in pairs(tbl) do
+                if not orderedIndices[k] then
+                    t[k] = v
+                end
+            end
+        end
+
         return t
     end
 
@@ -1468,6 +1486,7 @@ do -- RoomsList
         local spawns = data.Spawns
         for i = 0, spawns.Size do
             local spawn = spawns:Get(i)
+            local shouldBreak
             if spawn then
                 local sumWeight = spawn.SumWeights
                 local weight = 0
@@ -1475,8 +1494,15 @@ do -- RoomsList
                     local entry = spawn:PickEntry(weight)
                     weight = weight + entry.Weight / sumWeight
 
-                    func(entry, spawn)
+                    shouldBreak = func(entry, spawn)
+                    if shouldBreak then
+                        break
+                    end
                 end
+            end
+
+            if shouldBreak then
+                break
             end
         end
     end
@@ -2070,10 +2096,12 @@ do -- RoomsList
     -- returns list of rooms, error message if no rooms valid
     function StageAPI.GetValidRoomsForLayout(args)
         local roomList = args.RoomList
-        local shape = args.Shape or room:GetRoomShape()
+        local roomDesc = args.RoomDescriptor or level:GetCurrentRoomDesc()
+        local shape = args.Shape or roomDesc.Data.Shape
 
         local callbacks = StageAPI.GetCallbacks("POST_CHECK_VALID_ROOM")
         local validRooms = {}
+        local validRoomWeights = 0
 
         local possibleRooms
         if shape == -1 then
@@ -2083,22 +2111,16 @@ do -- RoomsList
         end
 
         if not possibleRooms then
-            return {}, "No rooms for shape!"
+            return {}, nil, "No rooms for shape!"
         end
 
         local requireRoomType = args.RequireRoomType
-        local rtype
-        if requireRoomType then
-            rtype = args.RoomType or room:GetType()
-        end
+        local rtype = args.RoomType or roomDesc.Data.Type
 
         local ignoreDoors = args.IgnoreDoors
-        local doors = args.Doors
-        if not doors then
-            doors = StageAPI.GetDoorsForRoom()
-        end
+        local doors = args.Doors or StageAPI.GetDoorsForRoomFromData(roomDesc.Data)
 
-        local seed = args.Seed or room:GetSpawnSeed()
+        local seed = args.Seed or roomDesc.SpawnSeed
         local disallowIDs = args.DisallowIDs
 
         for _, layout in ipairs(possibleRooms) do
@@ -2147,31 +2169,33 @@ do -- RoomsList
 
             if isValid then
                 validRooms[#validRooms + 1] = {layout, weight}
+                validRoomWeights = validRoomWeights + weight
             end
         end
 
-        return validRooms, nil
+        return validRooms, validRoomWeights, nil
     end
 
     StageAPI.RoomChooseRNG = RNG()
     function StageAPI.ChooseRoomLayout(roomList, seed, shape, rtype, requireRoomType, ignoreDoors, doors, disallowIDs)
-        local validRooms, err = StageAPI.GetValidRoomsForLayout({
-            RoomList = roomList,
-            Seed = seed,
-            Shape = shape,
-            RoomType = rtype,
-            RequireRoomType = requireRoomType,
-            IgnoreDoors = ignoreDoors,
-            Doors = doors,
-            DisallowIDs = disallowIDs
-        })
-        if err then StageAPI.LogErr(err) end
-
-        local totalWeight = 0
-        for _, layout in ipairs(validRooms) do
-            local weight = layout[2]
-            totalWeight = totalWeight + weight
+        local args
+        if roomList.Type ~= "RoomsList" then
+            args = roomList
+        else
+            args = {
+                RoomList = roomList,
+                Seed = seed,
+                Shape = shape,
+                RoomType = rtype,
+                RequireRoomType = requireRoomType,
+                IgnoreDoors = ignoreDoors,
+                Doors = doors,
+                DisallowIDs = disallowIDs
+            }
         end
+
+        local validRooms, totalWeight, err = StageAPI.GetValidRoomsForLayout(args)
+        if err then StageAPI.LogErr(err) end
 
         if #validRooms > 0 then
             StageAPI.RoomChooseRNG:SetSeed(seed, 0)
@@ -2468,7 +2492,7 @@ do -- RoomsList
 
     mod:AddCallback(ModCallbacks.MC_NPC_UPDATE, function(_, npc)
         if npc.Variant ~= StageAPI.E.DeleteMeNPC.Variant then
-            print("Something is wrong! A StageAPI metadata entity has spawned when it should have been removed.")
+            StageAPI.LogErr("Something is wrong! A StageAPI metadata entity has spawned when it should have been removed.")
         end
     end, StageAPI.E.MetaEntity.T)
 
@@ -3233,7 +3257,7 @@ do -- RoomsList
         }
     end
 
-    local levelRoomCopyFromArgs = {"IsExtraRoom","LevelIndex","Doors","Shape","RoomType","SpawnSeed","LayoutName","RequireRoomType","IgnoreRoomRules","DecorationSeed","AwardSeed","VisitCount","IsClear","ClearCount","IsPersistentRoom","HasWaterPits","ChallengeDone"}
+    local levelRoomCopyFromArgs = {"IsExtraRoom","LevelIndex","Doors","Shape","RoomType","SpawnSeed","LayoutName","RequireRoomType","IgnoreRoomRules","DecorationSeed","AwardSeed","VisitCount","IsClear","ClearCount","IsPersistentRoom","HasWaterPits","ChallengeDone","FromData"}
 
     StageAPI.LevelRoom = StageAPI.Class("LevelRoom")
     StageAPI.NextUniqueRoomIdentifier = 0
@@ -3254,15 +3278,17 @@ do -- RoomsList
         else
             StageAPI.LogMinor("Generating room")
 
-            args.RoomType = args.RoomType or room:GetType()
-            args.Shape = args.Shape or room:GetRoomShape()
-            args.SpawnSeed = args.SpawnSeed or room:GetSpawnSeed()
-            args.DecorationSeed = args.DecorationSeed or room:GetDecorationSeed()
-            args.AwardSeed = args.AwardSeed or room:GetAwardSeed()
-            args.SurpriseMiniboss = args.SurpriseMiniboss or level:GetCurrentRoomDesc().SurpriseMiniboss
-            args.Doors = args.Doors or StageAPI.GetDoorsForRoom()
-            args.VisitCount = args.VisitCount or 0
-            args.ClearCount = args.ClearCount or 0
+            local roomDesc = args.RoomDescriptor or level:GetCurrentRoomDesc()
+
+            args.RoomType = args.RoomType or roomDesc.Data.Type
+            args.Shape = args.Shape or roomDesc.Data.Shape
+            args.SpawnSeed = args.SpawnSeed or roomDesc.SpawnSeed
+            args.DecorationSeed = args.DecorationSeed or roomDesc.DecorationSeed
+            args.AwardSeed = args.AwardSeed or roomDesc.AwardSeed
+            args.SurpriseMiniboss = args.SurpriseMiniboss or roomDesc.SurpriseMiniboss
+            args.Doors = args.Doors or StageAPI.GetDoorsForRoomFromData(roomDesc.Data)
+            args.VisitCount = args.VisitCount or roomDesc.VisitedCount
+            args.ClearCount = args.ClearCount or roomDesc.ClearCount
 
             self.Data = {}
             self.PersistentData = {}
@@ -3278,21 +3304,28 @@ do -- RoomsList
             -- backwards compatibility
             self.Seed = self.SpawnSeed
 
-            local replaceLayoutName = StageAPI.CallCallbacks("PRE_ROOM_LAYOUT_CHOOSE", true, self)
-            if replaceLayoutName then
-                StageAPI.LogMinor("Layout replaced")
-                self.LayoutName = replaceLayoutName
-            end
-
             local layout
-            if self.LayoutName then
-                layout = StageAPI.Layouts[self.LayoutName]
-            end
+            if args.FromData then
+                local roomDesc = level:GetRooms():Get(args.FromData)
+                if roomDesc then
+                    layout = StageAPI.GenerateRoomLayoutFromData(roomDesc.Data)
+                end
+            else
+                local replaceLayoutName = StageAPI.CallCallbacks("PRE_ROOM_LAYOUT_CHOOSE", true, self)
+                if replaceLayoutName then
+                    StageAPI.LogMinor("Layout replaced")
+                    self.LayoutName = replaceLayoutName
+                end
 
-            if not layout then
-                local roomsList = StageAPI.CallCallbacks("PRE_ROOMS_LIST_USE", true, self) or args.RoomsList
-                self.RoomsListName = roomsList.Name
-                layout = StageAPI.ChooseRoomLayout(roomsList, self.SpawnSeed, self.Shape, self.RoomType, self.RequireRoomType, self.IgnoreDoors, self.Doors)
+                if self.LayoutName then
+                    layout = StageAPI.Layouts[self.LayoutName]
+                end
+
+                if not layout then
+                    local roomsList = StageAPI.CallCallbacks("PRE_ROOMS_LIST_USE", true, self) or args.RoomsList
+                    self.RoomsListName = roomsList.Name
+                    layout = StageAPI.ChooseRoomLayout(roomsList, self.SpawnSeed, self.Shape, self.RoomType, self.RequireRoomType, self.IgnoreDoors, self.Doors)
+                end
             end
 
             self.Layout = layout
@@ -3698,7 +3731,7 @@ do -- RoomsList
         "IsClear","WasClearAtStart","RoomsListName","LayoutName","SpawnSeed","AwardSeed","DecorationSeed",
         "FirstLoad","Shape","RoomType","TypeOverride","PersistentData","IsExtraRoom","LastPersistentIndex",
         "RequireRoomType", "IgnoreRoomRules", "VisitCount", "ClearCount", "LevelIndex","HasWaterPits","ChallengeDone",
-        "SurpriseMiniboss"
+        "SurpriseMiniboss", "FromData"
     }
 
     function StageAPI.LevelRoom:GetSaveData(isExtraRoom)
@@ -3791,7 +3824,14 @@ do -- RoomsList
         end
 
         local layout
-        if self.LayoutName then
+        if self.FromData and not layout then
+            local roomDesc = level:GetRooms():Get(self.FromData)
+            if roomDesc then
+                layout = StageAPI.GenerateRoomLayoutFromData(roomDesc.Data)
+            end
+        end
+
+        if self.LayoutName and not layout then
             layout = StageAPI.Layouts[layoutName]
         end
 
@@ -5744,15 +5784,13 @@ do -- Custom Stage
     end
 
     function StageAPI.CustomStage:SetBosses(bosses)
-        for _, bossID in ipairs(bosses) do
-            local boss = StageAPI.GetBossData(bossID)
-
-            if boss.Horseman then
-                bosses.HasHorseman = true
-            end
+        if bosses.Pool then
+            self.Bosses = bosses
+        else
+            self.Bosses = {
+                Pool = bosses
+            }
         end
-
-        self.Bosses = bosses
     end
 
     function StageAPI.CustomStage:SetSinRooms(sins)
@@ -5766,11 +5804,13 @@ do -- Custom Stage
         end
     end
 
-    function StageAPI.CustomStage:GenerateRoom(rtype, shape, doors, isStartingRoom, fromLevelGenerator, roomData)
-        if roomData then
+    function StageAPI.CustomStage:GenerateRoom(rtype, shape, doors, isStartingRoom, fromLevelGenerator, roomDescriptor)
+        local roomData
+        if roomDescriptor then
+            roomData = roomDescriptor.Data
             rtype = rtype or roomData.Type
             shape = shape or roomData.Shape
-            doors = doors or StageAPI.GetDoorsForRoomFromData(roomData)
+            doors = doors or StageAPI.GetDoorsForRoomFromData(roomDescriptor.Data)
         end
 
         if StageAPI.CurrentStage.SinRooms and (rtype == RoomType.ROOM_MINIBOSS or rtype == RoomType.ROOM_SECRET or rtype == RoomType.ROOM_SHOP) then
@@ -5823,7 +5863,8 @@ do -- Custom Stage
                         Shape = shape,
                         RoomType = rtype,
                         RequireRoomType = StageAPI.CurrentStage.RequireRoomTypeSin,
-                        Doors = doors
+                        Doors = doors,
+                        RoomDesciptor = roomDescriptor
                     }
 
                     return newRoom
@@ -5837,14 +5878,23 @@ do -- Custom Stage
                 Shape = shape,
                 RoomType = rtype,
                 RequireRoomType = StageAPI.CurrentStage.RequireRoomTypeMatching,
-                Doors = doors
+                Doors = doors,
+                RoomDesciptor = roomDescriptor
             }
 
             return newRoom
         end
 
         if StageAPI.CurrentStage.Bosses and rtype == RoomType.ROOM_BOSS then
-            local newRoom, boss = StageAPI.GenerateBossRoom(nil, true, StageAPI.CurrentStage.Bosses, StageAPI.CurrentStage.Bosses.HasHorseman, StageAPI.CurrentStage.RequireRoomTypeBoss, fromLevelGenerator)
+            local newRoom, boss = StageAPI.GenerateBossRoom({
+                Bosses = StageAPI.CurrentStage.Bosses,
+                CheckEncountered = true,
+                NoPlayBossAnim = fromLevelGenerator
+            }, {
+                RequireRoomType = StageAPI.CurrentStage.RequireRoomTypeBoss,
+                RoomDescriptor = roomDescriptor
+            })
+
             return newRoom, boss
         end
     end
@@ -5864,7 +5914,7 @@ do -- Custom Stage
             local roomDesc = roomsList:Get(i)
             if roomDesc then
                 local isStartingRoom = startingRoomIndex == roomDesc.SafeGridIndex
-                local newRoom = self:GenerateRoom(nil, nil, nil, isStartingRoom, true, roomDesc.Data)
+                local newRoom = self:GenerateRoom(nil, nil, nil, isStartingRoom, true, roomDesc)
                 if newRoom then
                     local listIndex = roomDesc.ListIndex
                     newRoom.LevelIndex = listIndex
@@ -6081,12 +6131,17 @@ do -- Bosses
         StageType.STAGETYPE_REPENTANCE_B
     }
 
+    local noBossStages = {
+        [LevelStage.STAGE3_2] = true,
+        [LevelStage.STAGE4_2] = true
+    }
+
     -- if doGreed is false, will not add to greed at all, if true, will only add to greed. nil for both.
     -- if stagetype is true, will set floorinfo for all stagetypes
     function StageAPI.SetFloorInfo(info, stage, stagetype, doGreed)
         if stagetype == true then
             for _, stype in ipairs(StageAPI.StageTypes) do
-                StageAPI.SetFloorInfo(info, stage, stype, doGreed)
+                StageAPI.SetFloorInfo(StageAPI.Copy(info), stage, stype, doGreed)
             end
 
             return
@@ -6099,7 +6154,13 @@ do -- Bosses
             local stageTwo = stageToSecondStage[stage]
             if stageTwo then
                 StageAPI.FloorInfo[stageTwo] = StageAPI.FloorInfo[stageTwo] or {}
-                StageAPI.FloorInfo[stageTwo][stagetype] = info
+
+                local stageTwoInfo = StageAPI.Copy(info)
+                if noBossStages[stageTwo] then
+                    stageTwoInfo.Bosses = nil
+                end
+
+                StageAPI.FloorInfo[stageTwo][stagetype] = stageTwoInfo
             end
         end
 
@@ -6109,8 +6170,11 @@ do -- Bosses
                 greedStage = stageToGreed[stage] or stage
             end
 
+            local greedInfo = StageAPI.Copy(info)
+            greedInfo.Bosses = nil
+
             StageAPI.FloorInfoGreed[greedStage] = StageAPI.FloorInfoGreed[greedStage] or {}
-            StageAPI.FloorInfoGreed[greedStage][stagetype] = info
+            StageAPI.FloorInfoGreed[greedStage][stagetype] = greedInfo
         end
     end
 
@@ -6359,11 +6423,8 @@ do -- Bosses
     function StageAPI.AddBossData(id, bossData)
         StageAPI.Bosses[id] = bossData
 
-        if not bossData.Shapes then
-            bossData.Shapes = {}
-            for shape, rooms in pairs(bossData.Rooms.ByShape) do
-                bossData.Shapes[#bossData.Shapes + 1] = shape
-            end
+        if not bossData.Name then
+            bossData.Name = id
         end
 
         if not bossData.Weight then
@@ -6393,12 +6454,13 @@ do -- Bosses
         })
     end
 
-    local horsemanTypes = {
-        EntityType.ENTITY_WAR,
-        EntityType.ENTITY_FAMINE,
-        EntityType.ENTITY_DEATH,
-        EntityType.ENTITY_HEADLESS_HORSEMAN,
-        EntityType.ENTITY_PESTILENCE
+    local horsemanRoomSubtypes = {
+        9, -- Famine
+        10, -- Pestilence
+        11, -- War
+        12, -- Death
+        22, -- Headless Horseman
+        38 -- Conquest
     }
 
     StageAPI.EncounteredBosses = {}
@@ -6421,33 +6483,71 @@ do -- Bosses
     end)
 
     StageAPI.BossSelectRNG = RNG()
-    function StageAPI.SelectBoss(bosses, allowHorseman, rng)
-        local bossID = StageAPI.CallCallbacks("PRE_BOSS_SELECT", true, bosses, allowHorseman, rng)
-        if not bossID then
-            local forceHorseman = false
-            if allowHorseman then
-                for _, t in ipairs(horsemanTypes) do
-                    if #Isaac.FindByType(t, -1, -1, false, false) > 0 then
-                        forceHorseman = true
-                    end
-                end
-            end
+    function StageAPI.SelectBoss(bosses, rng, roomDesc, ignoreNoOptions)
+        local bossID = StageAPI.CallCallbacks("PRE_BOSS_SELECT", true, bosses, rng, roomData)
+        if type(bossID) == "table" then
+            bosses = bossID
+            bossID = nil
+        end
 
+        if not bossID then
+            roomDesc = roomDesc or level:GetCurrentRoomDesc()
+            local isHorsemanRoom = StageAPI.IsIn(horsemanRoomSubtypes, roomDesc.Data.Subtype)
+
+            local floatWeights
             local totalUnencounteredWeight = 0
             local totalValidWeight = 0
+            local totalForcedWeight = 0
             local unencounteredBosses = {}
             local validBosses = {}
-            for _, potentialBossID in ipairs(bosses) do
-                local potentialBoss = StageAPI.GetBossData(potentialBossID)
-                if StageAPI.IsIn(potentialBoss.Shapes, room:GetRoomShape()) then
-                    local encountered = StageAPI.GetBossEncountered(potentialBoss.Name)
-                    if not encountered and potentialBoss.NameTwo then
-                        encountered = StageAPI.GetBossEncountered(potentialBoss.NameTwo)
-                    end
+            local forcedBosses = {}
+            for _, potentialBossID in ipairs(bosses.Pool) do
+                local poolEntry
+                if type(potentialBossID) == "table" then
+                    poolEntry = potentialBossID
+                    potentialBossID = poolEntry.BossID
+                else
+                    poolEntry = {
+                        BossID = potentialBossID
+                    }
+                end
 
-                    local weight = potentialBoss.Weight or 1
-                    if forceHorseman and potentialBoss.Horseman then
-                        weight = weight + 100
+                local potentialBoss = StageAPI.GetBossData(potentialBossID)
+                local encountered = StageAPI.GetBossEncountered(potentialBoss.Name)
+                if not encountered and potentialBoss.NameTwo then
+                    encountered = StageAPI.GetBossEncountered(potentialBoss.NameTwo)
+                end
+
+                local weight = poolEntry.Weight or potentialBoss.Weight or 1
+                local forced
+                local invalid
+                if potentialBoss.Rooms then
+                    local validRooms, validRoomWeights = StageAPI.GetValidRoomsForLayout{
+                        RoomList = potentialBoss.Rooms,
+                        RoomDescriptor = roomDesc
+                    }
+
+                    if #validRooms == 0 or validRoomWeights == 0 then
+                        invalid = true
+                    end
+                end
+
+                if not invalid then
+                    if isHorsemanRoom then
+                        if poolEntry.AlwaysReplaceHorsemen or potentialBoss.AlwaysReplaceHorsemen then
+                            forced = true
+                        elseif not (poolEntry.Horseman or potentialBoss.Horseman) then
+                            invalid = true
+                        end
+                    elseif poolEntry.OnlyReplaceHorsemen or potentialBoss.OnlyReplaceHorsemen then
+                        invalid = true
+                    end
+                end
+
+                if not invalid then
+                    if forced then
+                        totalForcedWeight = totalForcedWeight + weight
+                        forcedBosses[#forcedBosses + 1] = {potentialBossID, weight}
                     end
 
                     if not encountered then
@@ -6458,18 +6558,24 @@ do -- Bosses
                     totalValidWeight = totalValidWeight + weight
                     validBosses[#validBosses + 1] = {potentialBossID, weight}
                 end
+
+                if weight % 1 ~= 0 then
+                    floatWeights = true
+                end
             end
 
             if not rng then
                 rng = StageAPI.BossSelectRNG
-                rng:SetSeed(room:GetSpawnSeed(), 0)
+                rng:SetSeed(roomDesc.SpawnSeed, 0)
             end
 
-            if #unencounteredBosses > 0 then
-                bossID = StageAPI.WeightedRNG(unencounteredBosses, rng, nil, totalUnencounteredWeight)
+            if #forcedBosses > 0 then
+                bossID = StageAPI.WeightedRNG(forcedBosses, rng, nil, totalForcedWeight, floatWeights)
+            elseif #unencounteredBosses > 0 then
+                bossID = StageAPI.WeightedRNG(unencounteredBosses, rng, nil, totalUnencounteredWeight, floatWeights)
             elseif #validBosses > 0 then
-                bossID = StageAPI.WeightedRNG(validBosses, rng, nil, totalValidWeight)
-            else
+                bossID = StageAPI.WeightedRNG(validBosses, rng, nil, totalValidWeight, floatWeights)
+            elseif not ignoreNoOptions then
                 local err = "Trying to select boss, but none are valid! Options were:\n"
                 for _, potentialBossID in ipairs(bosses) do
                     err = err .. potentialBossID .. "\n"
@@ -6480,6 +6586,33 @@ do -- Bosses
         end
 
         return bossID
+    end
+
+    function StageAPI.AddBossToBaseFloorPool(poolEntry, stage, stageType, noStageTwo)
+        if not poolEntry or type(poolEntry) ~= "table" or not poolEntry.BossID then
+            StageAPI.LogErr("AddBossToBaseFloorPool requires a PoolEntry table with BossID set")
+            return
+        end
+
+        if not StageAPI.GetBossData(poolEntry.BossID) then
+            StageAPI.LogErr("Attempting to add invalid boss id " .. poolEntry.BossID .. " to pool")
+            return
+        end
+
+        local floorInfo = StageAPI.GetBaseFloorInfo(stage, stageType, false)
+        floorInfo.HasCustomBosses = true
+        if not floorInfo.Bosses then
+            floorInfo.Bosses = {Pool = {}}
+        end
+
+        floorInfo.Bosses.Pool[#floorInfo.Bosses.Pool + 1] = poolEntry
+
+        if not noStageTwo then
+            local stageTwo = stageToSecondStage[stage]
+            if stageTwo and not noBossStages[stageTwo] then
+                StageAPI.AddBossToBaseFloorPool(poolEntry, stageTwo, stageType, true)
+            end
+        end
     end
 end
 
@@ -7364,8 +7497,32 @@ do -- Callbacks
     end
 
     function StageAPI.GenerateBossRoom(bossID, checkEncountered, bosses, hasHorseman, requireRoomTypeBoss, noPlayBossAnim, unskippableBossAnim, isExtraRoom, shape, ignoreDoors, doors, roomType)
+        local args = bossID
+        local roomArgs = checkEncountered
+        if type(args) ~= "table" then
+            args = {
+                BossID = bossID,
+                CheckEncountered = checkEncountered,
+                Bosses = bosses,
+                NoPlayBossAnim = noPlayBossAnim,
+                UnskippableBossAnim = unskippableBossAnim,
+            }
+        end
+
+        if type(roomArgs) ~= "table" then
+            roomArgs = {
+                IsExtraRoom = isExtraRoom,
+                Shape = shape,
+                IgnoreDoors = ignoreDoors,
+                Doors = doors,
+                RoomType = roomType,
+                RequireRoomType = requireRoomTypeBoss
+            }
+        end
+
+        local bossID = args.BossID
         if not bossID then
-            bossID = StageAPI.SelectBoss(bosses, hasHorseman)
+            bossID = StageAPI.SelectBoss(args.Bosses)
         elseif checkEncountered then
             if StageAPI.GetBossEncountered(bossID) then
                 StageAPI.LogErr("Trying to generate boss room for encountered boss: " .. tostring(bossID))
@@ -7385,34 +7542,24 @@ do -- Callbacks
         end
 
         local levelIndex = StageAPI.GetCurrentRoomID()
-        local newRoom = StageAPI.LevelRoom{
-            RoomsList = boss.Rooms,
-            RoomType = roomType,
-            Shape = shape,
-            IsExtraRoom = isExtraRoom,
-            RequireRoomType = requireRoomTypeBoss,
-            IgnoreDoors = ignoreDoors,
-            Doors = doors,
-            LevelIndex = levelIndex
-        }
+        local newRoom = StageAPI.LevelRoom(StageAPI.Merged({RoomsList = boss.Rooms}, roomArgs))
         newRoom.PersistentData.BossID = bossID
         StageAPI.CallCallbacks("POST_BOSS_ROOM_INIT", false, newRoom, boss, bossID)
 
-        if noPlayBossAnim == nil then
-            noPlayBossAnim = boss.IsMiniboss
-        end
-
-        if not noPlayBossAnim then
-            StageAPI.PlayBossAnimation(boss, unskippableBossAnim)
-        elseif noPlayBossAnim ~= 2 then
-            StageAPI.PlayTextStreak(players[1]:GetName() .. " VS " .. boss.Name)
+        if not args.NoPlayBossAnim then
+            local playTextStreak = args.PlayTextStreak or (args.IsMiniboss and args.PlayTextStreak ~= false)
+            if not playTextStreak then
+                StageAPI.PlayBossAnimation(boss, args.UnskippableBossAnim)
+            else
+                StageAPI.PlayTextStreak(players[1]:GetName() .. " VS " .. boss.Name)
+            end
         end
 
         return newRoom, boss
     end
 
-    function StageAPI.SetCurrentBossRoom(bossID, checkEncountered, bosses, hasHorseman, requireRoomTypeBoss, noPlayBossAnim, unskippableBossAnim)
-        local newRoom, boss = StageAPI.GenerateBossRoom(bossID, checkEncountered, bosses, hasHorseman, requireRoomTypeBoss, noPlayBossAnim, unskippableBossAnim)
+    function StageAPI.SetCurrentBossRoom(...)
+        local newRoom, boss = StageAPI.GenerateBossRoom(...)
         if not newRoom then
             StageAPI.LogErr('Could not generate room for boss: ID: ' .. bossID .. ' List Length: ' .. tostring(bosses and #bosses or 0))
             return nil, nil
@@ -7423,6 +7570,95 @@ do -- Callbacks
 
         return newRoom, boss
     end
+
+    function StageAPI.GenerateBaseLevel()
+        local baseFloorInfo = StageAPI.GetBaseFloorInfo()
+        local startingRoomIndex = level:GetStartingRoomIndex()
+        local backwards = game:GetStateFlag(GameStateFlag.STATE_BACKWARDS_PATH_INIT) or game:GetStateFlag(GameStateFlag.STATE_BACKWARDS_PATH)
+        local roomsList = level:GetRooms()
+        for i = 0, roomsList.Size - 1 do
+            local roomDesc = roomsList:Get(i)
+            if roomDesc then
+                local newRoom
+                if baseFloorInfo and baseFloorInfo.HasCustomBosses and roomDesc.Data.Type == RoomType.ROOM_BOSS and not backwards then
+                    local bossID = StageAPI.SelectBoss(baseFloorInfo.Bosses, nil, roomDesc, true)
+                    if bossID then
+                        local bossData = StageAPI.GetBossData(bossID)
+                        if bossData and not bossData.BaseGameBoss and bossData.Rooms then
+                            newRoom = StageAPI.GenerateBossRoom({
+                                BossID = bossID,
+                                NoPlayBossAnim = true
+                            }, {
+                                RoomDescriptor = roomDesc
+                            })
+
+                            StageAPI.LogMinor("Switched Base Floor Boss Room, new boss is " .. bossID)
+                        end
+                    end
+                end
+
+                if not newRoom then
+                    local hasMetadataEntity
+                    StageAPI.ForAllSpawnEntries(roomDesc.Data, function(entry, spawn)
+                        if StageAPI.IsMetadataEntity(entry.Type, entry.Variant) then
+                            hasMetadataEntity = true
+                            return true
+                        end
+                    end)
+
+                    if hasMetadataEntity then
+                        newRoom = StageAPI.LevelRoom{
+                            FromData = roomDesc.ListIndex,
+                            RoomDescriptor = roomDesc
+                        }
+
+                        StageAPI.LogMinor("Switched Base Floor Room With Metadata")
+                    end
+                end
+
+                if newRoom then
+                    local listIndex = roomDesc.ListIndex
+                    newRoom.LevelIndex = listIndex
+                    StageAPI.LevelRooms[listIndex] = newRoom
+                end
+            end
+        end
+    end
+
+    local uniqueBossDropRoomSubtypes = {
+        19, -- Gish
+        20, -- Steven
+        21, -- Chad
+        23, -- The Fallen
+        42 -- Triachnid
+    }
+
+    -- Re-randomize fixed boss drops in StageAPI boss rooms
+    StageAPI.AddCallback("StageAPI", "POST_ROOM_CLEAR", 0, function()
+        if room:GetType() == RoomType.ROOM_BOSS then
+            local currentRoom = StageAPI.GetCurrentRoom()
+            local collectibles = Isaac.FindByType(5, 100, -1)
+            local spawnedFromBoss = {}
+            for _, collectible in ipairs(collectibles) do
+                if not collectible.SpawnerEntity and not collectible.Parent and collectible.FrameCount <= 1 then
+                    spawnedFromBoss[#spawnedFromBoss + 1] = collectible
+                end
+            end
+
+            if #spawnedFromBoss > 0 then
+                for _, collectible in ipairs(spawnedFromBoss) do
+                    local pickup = collectible:ToPickup()
+                    local alreadyChanged = StageAPI.CallCallbacks("PRE_STAGEAPI_SELECT_BOSS_ITEM", true, pickup, currentRoom)
+                    if not alreadyChanged then
+                        local roomData = level:GetCurrentRoomDesc().Data
+                        if StageAPI.IsIn(uniqueBossDropRoomSubtypes, roomData.Subtype) then
+                            pickup:Morph(collectible.Type, collectible.Variant, 0, false, true, false)
+                        end
+                    end
+                end
+            end
+        end
+    end)
 
     mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, function()
         StageAPI.CallCallbacks("PRE_STAGEAPI_NEW_ROOM", false)
@@ -7465,6 +7701,8 @@ do -- Callbacks
                 end
 
                 StageAPI.CurrentStage:GenerateLevel()
+            else
+                StageAPI.GenerateBaseLevel()
             end
 
             StageAPI.NextStage = nil
@@ -8536,6 +8774,7 @@ do -- BR Compatibility
 end
 
 do -- Mod Compatibility
+    local addedChangelogs
     local latestChangelog
     local function TryAddChangelog(ver, log)
         if not latestChangelog then
@@ -8555,7 +8794,13 @@ do -- Mod Compatibility
     end
 
     mod:AddCallback(ModCallbacks.MC_POST_GAME_STARTED, function()
+        if addedChangelogs then
+            return
+        end
+
         if (DeadSeaScrollsMenu and DeadSeaScrollsMenu.AddChangelog) or (REVEL and REVEL.AddChangelog and not REVEL.AddedStageAPIChangelogs) then
+            addedChangelogs = true
+
             if not (DeadSeaScrollsMenu and DeadSeaScrollsMenu.AddChangelog) then
                 REVEL.AddedStageAPIChangelogs = true
             end
