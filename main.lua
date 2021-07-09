@@ -5696,7 +5696,18 @@ do -- Custom Stage
     end
 
     function StageAPI.CustomStage:SetStageMusic(music)
-        self:SetMusic(music, {RoomType.ROOM_DEFAULT, RoomType.ROOM_TREASURE})
+        self:SetMusic(music, {
+            RoomType.ROOM_DEFAULT,
+            RoomType.ROOM_TREASURE,
+            RoomType.ROOM_CURSE,
+            RoomType.ROOM_CHALLENGE,
+            RoomType.ROOM_BARREN,
+            RoomType.ROOM_ISAACS,
+            RoomType.ROOM_SACRIFICE,
+            RoomType.ROOM_DICE,
+            RoomType.ROOM_CHEST,
+            RoomType.ROOM_DUNGEON
+        })
     end
 
     function StageAPI.CustomStage:SetTransitionMusic(music)
@@ -5903,7 +5914,7 @@ do -- Custom Stage
                     return musicID, not room:IsClear(), queue, disregardNonOverride
                 end
             end
-        else
+        elseif roomType ~= RoomType.ROOM_CHALLENGE or not room:IsAmbushActive() then
             local music = self.Music
             if music then
                 local musicID = music[roomType]
@@ -6546,7 +6557,17 @@ do -- Transition
     end)
 
     function StageAPI.IsHUDAnimationPlaying(spriteOnly)
-        return StageAPI.TransitionAnimation:IsPlaying("Scene") or StageAPI.TransitionAnimation:IsPlaying("SceneNoShake") or StageAPI.BossSprite:IsPlaying("Scene") or StageAPI.BossSprite:IsPlaying("DoubleTrouble") or (room:GetType() == RoomType.ROOM_BOSS and room:GetFrameCount() <= 0 and game:IsPaused() and not spriteOnly)
+        return StageAPI.TransitionAnimation:IsPlaying("Scene")
+        or StageAPI.TransitionAnimation:IsPlaying("SceneNoShake")
+        or StageAPI.BossSprite:IsPlaying("Scene")
+        or StageAPI.BossSprite:IsPlaying("DoubleTrouble")
+        or (
+            room:GetType() == RoomType.ROOM_BOSS
+            and room:GetFrameCount() <= 0
+            and not room:IsClear()
+            and game:IsPaused()
+            and not spriteOnly
+        )
     end
 
     mod:AddCallback(ModCallbacks.MC_PRE_USE_ITEM, function()
