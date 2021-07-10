@@ -2056,8 +2056,11 @@ do -- RoomsList
         if doGrids then
             if not skipIndexedGrids then
                 local lindex = StageAPI.GetCurrentRoomID()
-                StageAPI.CustomGrids[lindex] = {}
-                StageAPI.RoomGrids[lindex] = {}
+                local customGrids = StageAPI.GetTableIndexedByDimension(StageAPI.CustomGrids, true)
+                customGrids[lindex] = {}
+
+                local roomGrids = StageAPI.GetTableIndexedByDimension(StageAPI.RoomGrids, true)
+                roomGrids[lindex] = {}
             end
 
             for i = 0, room:GetGridSize() do
@@ -3192,13 +3195,51 @@ do -- RoomsList
     end
 
     StageAPI.LevelRooms = {}
+    function StageAPI.GetDimension(roomDesc)
+        roomDesc = roomDesc or level:GetCurrentRoomDesc()
+        if roomDesc.GridIndex < 0 then -- Off-grid rooms
+            return -2
+        end
+
+        local hash = GetPtrHash(roomDesc)
+        for dimension = 0, 2 do
+            local dimensionDesc = level:GetRoomByIdx(roomDesc.SafeGridIndex, dimension)
+            if GetPtrHash(dimensionDesc) == hash then
+                return dimension
+            end
+        end
+    end
+
+    function StageAPI.GetTableIndexedByDimension(tbl, setIfNot)
+        local dimension = StageAPI.GetDimension()
+        if setIfNot and not tbl[dimension] then
+            tbl[dimension] = {}
+        end
+
+        return tbl[dimension]
+    end
+
+    function StageAPI.GetLevelRoom(roomID, dimension)
+        dimension = dimension or StageAPI.GetDimension()
+        return StageAPI.LevelRooms[dimension] and StageAPI.LevelRooms[dimension][roomID]
+    end
+
+    function StageAPI.SetLevelRoom(levelRoom, roomID, dimension)
+        dimension = dimension or StageAPI.GetDimension()
+        if not StageAPI.LevelRooms[dimension] then
+            StageAPI.LevelRooms[dimension] = {}
+        end
+
+        StageAPI.LevelRooms[dimension][roomID] = levelRoom
+    end
+
     function StageAPI.SetCurrentRoom(room)
         StageAPI.ActiveEntityPersistenceData = {}
-        StageAPI.LevelRooms[StageAPI.GetCurrentRoomID()] = room
+        StageAPI.SetLevelRoom(room, StageAPI.GetCurrentRoomID())
     end
 
     function StageAPI.GetCurrentRoom()
-        return StageAPI.LevelRooms[StageAPI.GetCurrentRoomID()]
+        return StageAPI.GetLevelRoom(StageAPI.GetCurrentRoomID())
     end
 
     function StageAPI.GetCurrentRoomType()
@@ -3973,7 +4014,18 @@ do -- Custom Grid Entities
     }
 
     StageAPI.CustomGrids = {}
-    StageAPI.CustomGridIndices = {}
+    function StageAPI.SetCustomGrid(grindex, gridName, persistData, roomID, dimension)
+        roomID = roomID or StageAPI.GetCurrentRoomID()
+        dimension = dimension or StageAPI.GetDimension()
+
+        StageAPI.CustomGrids[dimension] = StageAPI.CustomGrids[dimension] or {}
+        StageAPI.CustomGrids[dimension][roomID] = StageAPI.CustomGrids[dimension][roomID] or {}
+        StageAPI.CustomGrids[dimension][roomID][gridName] = StageAPI.CustomGrids[dimension][roomID][gridName] or {}
+        StageAPI.CustomGrids[dimension][roomID][gridName][grindex] = persistData or {}
+
+        return StageAPI.CustomGrids[dimension][roomID][gridName][grindex]
+    end
+
     function StageAPI.CustomGrid:Spawn(grindex, force, reSpawning, startPersistData)
         local grid
         if self.BaseType then
@@ -4011,121 +4063,106 @@ do -- Custom Grid Entities
             end
         end
 
-        local lindex = StageAPI.GetCurrentRoomID()
-        if not StageAPI.CustomGrids[lindex] then
-            StageAPI.CustomGrids[lindex] = {}
+        local gridData = StageAPI.GetCustomGrid(grindex, self.Name)
+        local persistData
+        if not gridData then
+            persistData = StageAPI.SetCustomGrid(grindex, self.Name, startPersistData)
+        else
+            persistData = gridData.PersistData
         end
-
-        if not StageAPI.CustomGrids[lindex][self.Name] then
-            StageAPI.CustomGrids[lindex][self.Name] = {}
-        end
-
-        if not StageAPI.CustomGrids[lindex][self.Name][grindex] then
-            StageAPI.CustomGrids[lindex][self.Name][grindex] = startPersistData or {}
-        end
-
-        StageAPI.CustomGridIndices[grindex] = true
 
         for _, callback in ipairs(StageAPI.GetCallbacks("POST_SPAWN_CUSTOM_GRID")) do
             if not callback.Params[1] or callback.Params[1] == self.Name then
-                callback.Function(grindex, force, reSpawning, grid, StageAPI.CustomGrids[lindex][self.Name][grindex], self)
+                callback.Function(grindex, force, reSpawning, grid, persistData, self)
             end
         end
 
         return grid
     end
 
-    function StageAPI.GetCustomGridIndicesByName(name)
+    function StageAPI.GetCustomGrids(index, name)
+        local dimension = StageAPI.GetDimension()
         local lindex = StageAPI.GetCurrentRoomID()
-        if StageAPI.CustomGrids[lindex] and StageAPI.CustomGrids[lindex][name] then
+        if StageAPI.CustomGrids[dimension] and StageAPI.CustomGrids[dimension][lindex] then
+            local customGrids = StageAPI.CustomGrids[dimension][lindex]
             local ret = {}
-            for grindex, exists in pairs(StageAPI.CustomGrids[lindex][name]) do
-                ret[#ret + 1] = grindex
+            if name then
+                local grindices = customGrids[name]
+                if grindices then
+                    if index then
+                        local persistData = grindices[index]
+                        if persistData then
+                            return {
+                                Name = name,
+                                PersistData = persistData,
+                                Data = StageAPI.CustomGridTypes[name],
+                                Index = index
+                            }
+                        else
+                            return
+                        end
+                    else
+                        for grindex, persistData in pairs(grindices) do
+                            ret[#ret + 1] = {
+                                Name = name,
+                                PersistData = persistData,
+                                Data = StageAPI.CustomGridTypes[name],
+                                Index = grindex
+                            }
+                        end
+                    end
+                elseif index then
+                    return
+                end
+            else
+                for name, grindices in pairs(customGrids) do
+                    for grindex, persistData in pairs(grindices) do
+                        if not index or grindex == index then
+                            ret[#ret + 1] = {
+                                Name = name,
+                                PersistData = persistData,
+                                Data = StageAPI.CustomGridTypes[name],
+                                Index = grindex
+                            }
+                        end
+                    end
+                end
             end
 
             return ret
+        elseif index and name then
+            return
         end
 
         return {}
     end
 
     function StageAPI.GetCustomGridsByName(name)
-        local lindex = StageAPI.GetCurrentRoomID()
-        if StageAPI.CustomGrids[lindex] and StageAPI.CustomGrids[lindex][name] then
-            local ret = {}
-            for grindex, persistData in pairs(StageAPI.CustomGrids[lindex][name]) do
-                ret[#ret + 1] = {
-                    Name = name,
-                    PersistData = persistData,
-                    Data = StageAPI.CustomGridTypes[name],
-                    Index = grindex
-                }
-            end
-
-            return ret
-        end
-
-        return {}
+        return StageAPI.GetCustomGrids(name)
     end
 
-    function StageAPI.GetCustomGrids()
-        local lindex = StageAPI.GetCurrentRoomID()
-        if StageAPI.CustomGrids[lindex] then
-            local ret = {}
-            for name, grindices in pairs(StageAPI.CustomGrids[lindex]) do
-                for grindex, persistData in pairs(grindices) do
-                    ret[#ret + 1] = {
-                        Name = name,
-                        PersistData = persistData,
-                        Data = StageAPI.CustomGridTypes[name],
-                        Index = grindex
-                    }
-                end
-            end
-
-            return ret
+    function StageAPI.GetCustomGridIndicesByName(name)
+        local ret = {}
+        for _, grid in ipairs(StageAPI.GetCustomGrids(name)) do
+            ret[#ret + 1] = grid.Index
         end
 
-        return {}
+        return ret
     end
 
     function StageAPI.GetCustomGrid(index, name)
-        local lindex = StageAPI.GetCurrentRoomID()
-        if StageAPI.CustomGrids[lindex] and StageAPI.CustomGrids[lindex][name] and StageAPI.CustomGrids[lindex][name][index] then
-            return {
-                Name = name,
-                PersistData = StageAPI.CustomGrids[lindex][name][index],
-                Data = StageAPI.CustomGridTypes[name],
-                Index = index
-            }
-        end
+        return StageAPI.GetCustomGrids(index, name)
     end
 
     function StageAPI.GetCustomGridsAtIndex(index)
-        local lindex = StageAPI.GetCurrentRoomID()
-        local grids = {}
-        if StageAPI.CustomGrids[lindex] then
-            for k, v in pairs(StageAPI.CustomGrids[lindex]) do
-                if v[index] then
-                    grids[#grids + 1] = {
-                        Name = k,
-                        PersistData = v[index],
-                        Data = StageAPI.CustomGridTypes[k],
-                        Index = index
-                    }
-                end
-            end
-        end
-
-        return grids
+        return StageAPI.GetCustomGrids(index)
     end
 
     function StageAPI.RemoveCustomGrid(index, name, keepVanillaGrid)
         local lindex = StageAPI.GetCurrentRoomID()
-        if StageAPI.CustomGrids[lindex] and StageAPI.CustomGrids[lindex][name] and StageAPI.CustomGrids[lindex][name][index] then
-            local persistData = StageAPI.CustomGrids[lindex][name][index]
-            StageAPI.CustomGrids[lindex][name][index] = nil
-            StageAPI.CustomGridIndices[index] = nil
+        local gridDat = StageAPI.GetCustomGrid(index, name)
+        if gridDat then
+            StageAPI.SetCustomGrid(index, name, nil)
 
             if not keepVanillaGrid then
                 room:RemoveGridEntity(index, 0, false)
@@ -4134,37 +4171,32 @@ do -- Custom Grid Entities
             local callbacks = StageAPI.GetCallbacks("POST_CUSTOM_GRID_REMOVE")
             for _, callback in ipairs(callbacks) do
                 if not callback.Params[1] or callback.Params[1] == name then
-                    callback.Function(grindex, persistData, StageAPI.CustomGridTypes[name], name)
+                    callback.Function(index, gridDat.PersistData, StageAPI.CustomGridTypes[name], name)
                 end
             end
         end
     end
 
     function StageAPI.IsCustomGrid(index, name)
-        if not name then
-            return StageAPI.CustomGridIndices[index]
+        if name then
+            return not not StageAPI.GetCustomGrid(index, name)
         else
-            local lindex = StageAPI.GetCurrentRoomID()
-            return StageAPI.CustomGrids[lindex] and StageAPI.CustomGrids[lindex][name] and not not StageAPI.CustomGrids[lindex][name][index]
+            return #StageAPI.GetCustomGridsAtIndex(index) > 0
         end
     end
 
     mod:AddCallback(ModCallbacks.MC_POST_UPDATE, function()
-        local lindex = StageAPI.GetCurrentRoomID()
-        if StageAPI.CustomGrids[lindex] then
-            for name, grindices in pairs(StageAPI.CustomGrids[lindex]) do
-                local customGridType = StageAPI.CustomGridTypes[name]
-                for grindex, persistData in pairs(grindices) do
-                    local grid = room:GetGridEntity(grindex)
-                    if not grid and customGridType.BaseType then
-                        StageAPI.RemoveCustomGrid(grindex, name, true)
-                    else
-                        local callbacks = StageAPI.GetCallbacks("POST_CUSTOM_GRID_UPDATE")
-                        for _, callback in ipairs(callbacks) do
-                            if not callback.Params[1] or callback.Params[1] == name then
-                                callback.Function(grid, grindex, persistData, StageAPI.CustomGridTypes[name], name)
-                            end
-                        end
+        local customGrids = StageAPI.GetCustomGrids()
+        for _, customGrid in ipairs(customGrids) do
+            local customGridType = customGrid.Data
+            local grid = room:GetGridEntity(customGrid.Index)
+            if not grid and customGridType.BaseType then
+                StageAPI.RemoveCustomGrid(customGrid.Index, customGrid.Name, true)
+            else
+                local callbacks = StageAPI.GetCallbacks("POST_CUSTOM_GRID_UPDATE")
+                for _, callback in ipairs(callbacks) do
+                    if not callback.Params[1] or callback.Params[1] == customGrid.Name then
+                        callback.Function(grid, customGrid.Index, customGrid.PersistData, customGridType, customGrid.Name)
                     end
                 end
             end
@@ -4179,11 +4211,11 @@ do -- Extra Rooms
     StageAPI.CurrentExtraRoom = nil
     StageAPI.CurrentExtraRoomName = nil
     function StageAPI.SetExtraRoom(name, room)
-        StageAPI.LevelRooms[name] = room
+        StageAPI.SetLevelRoom(room, name, -2)
     end
 
     function StageAPI.GetExtraRoom(name)
-        return StageAPI.LevelRooms[name]
+        return StageAPI.GetLevelRoom(name, -2)
     end
 
     StageAPI.ActiveTransitionToExtraRoom = nil
@@ -5918,7 +5950,7 @@ do -- Custom Stage
                 if newRoom then
                     local listIndex = roomDesc.ListIndex
                     newRoom.LevelIndex = listIndex
-                    StageAPI.LevelRooms[listIndex] = newRoom
+                    StageAPI.SetLevelRoom(newRoom, listIndex)
                 end
             end
         end
@@ -7180,7 +7212,8 @@ do -- Callbacks
     StageAPI.RoomGrids = {}
 
     function StageAPI.PreventRoomGridRegrowth()
-        StageAPI.RoomGrids[StageAPI.GetCurrentRoomID()] = {}
+        local roomGrids = StageAPI.GetTableIndexedByDimension(StageAPI.RoomGrids, true)
+        roomGrids[StageAPI.GetCurrentRoomID()] = {}
     end
 
     function StageAPI.StoreRoomGrids()
@@ -7193,7 +7226,8 @@ do -- Callbacks
             end
         end
 
-        StageAPI.RoomGrids[roomIndex] = grids
+        local roomGrids = StageAPI.GetTableIndexedByDimension(StageAPI.RoomGrids, true)
+        roomGrids[roomIndex] = grids
     end
 
     function StageAPI.RemoveExtraGrids(grids)
@@ -7372,7 +7406,8 @@ do -- Callbacks
             local gridCallbacks = StageAPI.CallCallbacks("POST_GRID_UPDATE")
 
             updatedGrids = true
-            if StageAPI.RoomGrids[currentListIndex] then
+            local roomGrids = StageAPI.GetTableIndexedByDimension(StageAPI.RoomGrids, true)
+            if roomGrids[currentListIndex] then
                 StageAPI.StoreRoomGrids()
             end
 
@@ -7448,7 +7483,7 @@ do -- Callbacks
         end
 
         if StageAPI.RoomNamesEnabled then
-            local currentRoom = StageAPI.LevelRooms[currentListIndex]
+            local currentRoom = StageAPI.GetCurrentRoom()
             local roomDescriptorData = level:GetCurrentRoomDesc().Data
             local scale = 0.5
             local base, custom
@@ -7619,7 +7654,7 @@ do -- Callbacks
                 if newRoom then
                     local listIndex = roomDesc.ListIndex
                     newRoom.LevelIndex = listIndex
-                    StageAPI.LevelRooms[listIndex] = newRoom
+                    StageAPI.SetLevelRoom(newRoom, listIndex, StageAPI.GetDimension(roomDesc))
                 end
             end
         end
@@ -7674,17 +7709,22 @@ do -- Callbacks
 
         if inStartingRoom and room:IsFirstVisit() then
             local maintainGrids = {}
-            for index, room in pairs(StageAPI.LevelRooms) do
-                if not (room and room.IsPersistentRoom) then
-                    StageAPI.LevelRooms[index] = nil
-                else
-                    maintainGrids[index] = true
+            for dimension, rooms in pairs(StageAPI.LevelRooms) do
+                maintainGrids[dimension] = {}
+                for roomId, levelRoom in pairs(rooms) do
+                    if not (levelRoom and levelRoom.IsPersistentRoom) then
+                        StageAPI.SetLevelRoom(nil, roomId, dimension)
+                    else
+                        maintainGrids[dimension][index] = true
+                    end
                 end
             end
 
-            for index, grids in pairs(StageAPI.CustomGrids) do
-                if not maintainGrids[index] then
-                    StageAPI.CustomGrids[index] = nil
+            for dimension, roomCustomGrids in pairs(StageAPI.CustomGrids) do
+                for index, grids in pairs(roomCustomGrids) do
+                    if not maintainGrids[dimension] or not maintainGrids[dimension][index] then
+                        roomCustomGrids[index] = nil
+                    end
                 end
             end
 
@@ -7788,12 +7828,10 @@ do -- Callbacks
         end
 
         if not justGenerated then
-            if StageAPI.CustomGrids[currentListIndex] then
-                for name, grindices in pairs(StageAPI.CustomGrids[currentListIndex]) do
-                    for grindex, exists in pairs(grindices) do
-                        StageAPI.CustomGridTypes[name]:Spawn(grindex, nil, true)
-                        StageAPI.CustomGridIndices[grindex] = true
-                    end
+            local customGrids = StageAPI.GetCustomGrids()
+            if #customGrids > 0 then
+                for _, customGrid in ipairs(customGrids) do
+                    customGrid.Data:Spawn(customGrid.Index, nil, true)
                 end
             end
         end
@@ -8049,11 +8087,12 @@ do -- Callbacks
     mod:AddCallback(ModCallbacks.MC_PRE_ROOM_ENTITY_SPAWN, function(_, t, v, s, index, seed)
         if StageAPI.ShouldOverrideRoom() and (t >= 1000 or gridBlacklist[t] or StageAPI.IsMetadataEntity(t, v)) and not StageAPI.InExtraRoom then
             local shouldReturn
-            if room:IsFirstVisit() then
+            if room:IsFirstVisit() or StageAPI.IsMetadataEntity(t, v) then
                 shouldReturn = true
             else
                 local currentListIndex = StageAPI.GetCurrentRoomID()
-                if StageAPI.RoomGrids[currentListIndex] and not StageAPI.RoomGrids[currentListIndex][index] then
+                local roomGrids = StageAPI.GetTableIndexedByDimension(StageAPI.RoomGrids, true)
+                if roomGrids[currentListIndex] and not roomGrids[currentListIndex][index] then
                     shouldReturn = true
                 end
             end
@@ -8135,55 +8174,78 @@ do
     StageAPI.json = require("json")
     function StageAPI.GetSaveString()
         local levelSaveData = {}
-        for index, roomGrids in pairs(StageAPI.RoomGrids) do
-            local strindex = tostring(index)
-            if not levelSaveData[strindex] then
-                levelSaveData[strindex] = {}
+        for dimension, rooms in pairs(StageAPI.RoomGrids) do
+            local strDimension = tostring(dimension)
+            if not levelSaveData[strDimension] then
+                levelSaveData[strDimension] = {}
             end
 
-            for grindex, exists in pairs(roomGrids) do
-                if exists then
-                    if not levelSaveData[strindex].Grids then
-                        levelSaveData[strindex].Grids = {}
-                    end
-
-                    levelSaveData[strindex].Grids[#levelSaveData[strindex].Grids + 1] = grindex
+            for index, roomGrids in pairs(StageAPI.RoomGrids) do
+                local strindex = tostring(index)
+                if not levelSaveData[strDimension][strindex] then
+                    levelSaveData[strDimension][strindex] = {}
                 end
-            end
-        end
 
-        for lindex, customGrids in pairs(StageAPI.CustomGrids) do
-            local strindex = tostring(lindex)
-            if not levelSaveData[strindex] then
-                levelSaveData[strindex] = {}
-            end
+                local roomDat = levelSaveData[strDimension][strindex]
+                for grindex, exists in pairs(roomGrids) do
+                    if exists then
+                        if not roomDat.Grids then
+                            roomDat.Grids = {}
+                        end
 
-            for name, indices in pairs(customGrids) do
-                for index, value in pairs(indices) do
-                    if not levelSaveData[strindex].CustomGrids then
-                        levelSaveData[strindex].CustomGrids = {}
-                    end
-
-                    if not levelSaveData[strindex].CustomGrids[name] then
-                        levelSaveData[strindex].CustomGrids[name] = {}
-                    end
-
-                    if value == true then
-                        levelSaveData[strindex].CustomGrids[name][#levelSaveData[strindex].CustomGrids[name] + 1] = index
-                    else
-                        levelSaveData[strindex].CustomGrids[name][#levelSaveData[strindex].CustomGrids[name] + 1] = {index, value}
+                        roomDat.Grids[#roomDat.Grids + 1] = grindex
                     end
                 end
             end
         end
 
-        for index, customRoom in pairs(StageAPI.LevelRooms) do
-            local strindex = tostring(index)
-            if not levelSaveData[strindex] then
-                levelSaveData[strindex] = {}
+        for dimension, rooms in pairs(StageAPI.CustomGrids) do
+            local strDimension = tostring(dimension)
+            if not levelSaveData[strDimension] then
+                levelSaveData[strDimension] = {}
             end
 
-            levelSaveData[strindex].Room = customRoom:GetSaveData()
+            for lindex, customGrids in pairs(StageAPI.CustomGrids) do
+                local strindex = tostring(lindex)
+                if not levelSaveData[strDimension][strindex] then
+                    levelSaveData[strDimension][strindex] = {}
+                end
+
+                local roomDat = levelSaveData[strDimension][strindex]
+                for name, indices in pairs(customGrids) do
+                    for index, value in pairs(indices) do
+                        if not roomDat.CustomGrids then
+                            roomDat.CustomGrids = {}
+                        end
+
+                        if not roomDat.CustomGrids[name] then
+                            roomDat.CustomGrids[name] = {}
+                        end
+
+                        if value == true then
+                            roomDat.CustomGrids[name][#roomDat.CustomGrids[name] + 1] = index
+                        else
+                            roomDat.CustomGrids[name][#roomDat.CustomGrids[name] + 1] = {index, value}
+                        end
+                    end
+                end
+            end
+        end
+
+        for dimension, rooms in pairs(StageAPI.LevelRooms) do
+            local strDimension = tostring(dimension)
+            if not levelSaveData[strDimension] then
+                levelSaveData[strDimension] = {}
+            end
+
+            for index, customRoom in pairs(rooms) do
+                local strindex = tostring(index)
+                if not levelSaveData[strDimension][strindex] then
+                    levelSaveData[strDimension][strindex] = {}
+                end
+
+                levelSaveData[strDimension][strindex].Room = customRoom:GetSaveData()
+            end
         end
 
         local stage = StageAPI.CurrentStage
@@ -8234,38 +8296,45 @@ do
             end
         end
 
-        for strindex, roomSaveData in pairs(decoded.LevelInfo) do
-            local lindex = tonumber(strindex) or strindex
-            if roomSaveData.Grids then
-                retRoomGrids[lindex] = {}
-                for _, grindex in ipairs(roomSaveData.Grids) do
-                    retRoomGrids[lindex][grindex] = true
+        for strDimension, rooms in pairs(decoded.LevelInfo) do
+            local dimension = tonumber(strDimension)
+            retLevelRooms[dimension] = {}
+            retRoomGrids[dimension] = {}
+            retCustomGrids[dimension] = {}
+
+            for strindex, roomSaveData in pairs(rooms) do
+                local lindex = tonumber(strindex) or strindex
+                if roomSaveData.Grids then
+                    retRoomGrids[dimension][lindex] = {}
+                    for _, grindex in ipairs(roomSaveData.Grids) do
+                        retRoomGrids[dimension][lindex][grindex] = true
+                    end
                 end
-            end
 
-            if roomSaveData.CustomGrids then
-                retCustomGrids[lindex] = {}
-                for name, indices in pairs(roomSaveData.CustomGrids) do
-                    for _, index in ipairs(indices) do
-                        if not retCustomGrids[lindex][name] then
-                            retCustomGrids[lindex][name] = {}
-                        end
+                if roomSaveData.CustomGrids then
+                    retCustomGrids[dimension][lindex] = {}
+                    for name, indices in pairs(roomSaveData.CustomGrids) do
+                        for _, index in ipairs(indices) do
+                            if not retCustomGrids[dimension][lindex][name] then
+                                retCustomGrids[dimension][lindex][name] = {}
+                            end
 
-                        if type(index) == "table" then
-                            retCustomGrids[lindex][name][index[1]] = index[2]
-                        else
-                            retCustomGrids[lindex][name][index] = true
+                            if type(index) == "table" then
+                                retCustomGrids[dimension][lindex][name][index[1]] = index[2]
+                            else
+                                retCustomGrids[dimension][lindex][name][index] = true
+                            end
                         end
                     end
                 end
-            end
 
-            if roomSaveData.Room then
-                local customRoom = StageAPI.LevelRoom{
-                    FromSave = roomSaveData.Room,
-                    LevelIndex = lindex
-                }
-                retLevelRooms[lindex] = customRoom
+                if roomSaveData.Room then
+                    local customRoom = StageAPI.LevelRoom{
+                        FromSave = roomSaveData.Room,
+                        LevelIndex = lindex
+                    }
+                    retLevelRooms[lindex] = customRoom
+                end
             end
         end
 
