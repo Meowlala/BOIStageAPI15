@@ -3231,6 +3231,11 @@ do -- RoomsList
         end
 
         StageAPI.LevelRooms[dimension][roomID] = levelRoom
+
+        if levelRoom then
+            levelRoom.LevelIndex = roomID
+            levelRoom.Dimension = dimension
+        end
     end
 
     function StageAPI.SetCurrentRoom(room)
@@ -3298,7 +3303,7 @@ do -- RoomsList
         }
     end
 
-    local levelRoomCopyFromArgs = {"IsExtraRoom","LevelIndex","Doors","Shape","RoomType","SpawnSeed","LayoutName","RequireRoomType","IgnoreRoomRules","DecorationSeed","AwardSeed","VisitCount","IsClear","ClearCount","IsPersistentRoom","HasWaterPits","ChallengeDone","FromData"}
+    local levelRoomCopyFromArgs = {"IsExtraRoom","LevelIndex","Doors","Shape","RoomType","SpawnSeed","LayoutName","RequireRoomType","IgnoreRoomRules","DecorationSeed","AwardSeed","VisitCount","IsClear","ClearCount","IsPersistentRoom","HasWaterPits","ChallengeDone","FromData","Dimension"}
 
     StageAPI.LevelRoom = StageAPI.Class("LevelRoom")
     StageAPI.NextUniqueRoomIdentifier = 0
@@ -3315,6 +3320,7 @@ do -- RoomsList
         if args.FromSave then
             StageAPI.LogMinor("Loading from save data")
             self.LevelIndex = args.LevelIndex
+            self.Dimension = args.Dimension
             self:LoadSaveData(args.FromSave)
         else
             StageAPI.LogMinor("Generating room")
@@ -3341,6 +3347,8 @@ do -- RoomsList
             for _, v in ipairs(levelRoomCopyFromArgs) do
                 self[v] = args[v]
             end
+
+            self.Dimension = self.Dimension or StageAPI.GetDimension(roomDesc)
 
             -- backwards compatibility
             self.Seed = self.SpawnSeed
@@ -5949,7 +5957,6 @@ do -- Custom Stage
                 local newRoom = self:GenerateRoom(nil, nil, nil, isStartingRoom, true, roomDesc)
                 if newRoom then
                     local listIndex = roomDesc.ListIndex
-                    newRoom.LevelIndex = listIndex
                     StageAPI.SetLevelRoom(newRoom, listIndex)
                 end
             end
@@ -7576,7 +7583,6 @@ do -- Callbacks
             StageAPI.SetBossEncountered(boss.NameTwo)
         end
 
-        local levelIndex = StageAPI.GetCurrentRoomID()
         local newRoom = StageAPI.LevelRoom(StageAPI.Merged({RoomsList = boss.Rooms}, roomArgs))
         newRoom.PersistentData.BossID = bossID
         StageAPI.CallCallbacks("POST_BOSS_ROOM_INIT", false, newRoom, boss, bossID)
@@ -7653,7 +7659,6 @@ do -- Callbacks
 
                 if newRoom then
                     local listIndex = roomDesc.ListIndex
-                    newRoom.LevelIndex = listIndex
                     StageAPI.SetLevelRoom(newRoom, listIndex, StageAPI.GetDimension(roomDesc))
                 end
             end
@@ -7791,7 +7796,6 @@ do -- Callbacks
             if not currentRoom and not inStartingRoom and StageAPI.CurrentStage.GenerateRoom then
                 local newRoom, newBoss = StageAPI.CurrentStage:GenerateRoom(room:GetType())
                 if newRoom then
-                    newRoom.LevelIndex = currentListIndex
                     StageAPI.SetCurrentRoom(newRoom)
                     newRoom:Load()
                     currentRoom = newRoom
@@ -7949,7 +7953,6 @@ do -- Callbacks
                     LayoutName = params,
                     Shape = StageAPI.Layouts[params].Shape,
                     RoomType = StageAPI.Layouts[params].Type,
-                    LevelIndex = "StageAPITest"
                 }
 
                 StageAPI.SetExtraRoom("StageAPITest", testRoom)
@@ -8003,8 +8006,7 @@ do -- Callbacks
                     local testRoom = StageAPI.LevelRoom{
                         LayoutName = "StageAPITest",
                         Shape = selectedLayout.Shape,
-                        RoomType = selectedLayout.Type,
-                        LevelIndex = "StageAPITest"
+                        RoomType = selectedLayout.Type
                     }
                     StageAPI.SetExtraRoom("StageAPITest", testRoom)
                     local doors = {}
@@ -8296,6 +8298,7 @@ do
             end
         end
 
+        StageAPI.LevelRooms = {}
         for strDimension, rooms in pairs(decoded.LevelInfo) do
             local dimension = tonumber(strDimension)
             retLevelRooms[dimension] = {}
@@ -8329,11 +8332,8 @@ do
                 end
 
                 if roomSaveData.Room then
-                    local customRoom = StageAPI.LevelRoom{
-                        FromSave = roomSaveData.Room,
-                        LevelIndex = lindex
-                    }
-                    retLevelRooms[lindex] = customRoom
+                    local customRoom = StageAPI.LevelRoom{FromSave = roomSaveData.Room}
+                    StageAPI.SetLevelRoom(customRoom, lindex, dimension)
                 end
             end
         end
@@ -8345,7 +8345,6 @@ do
         end
 
         StageAPI.RoomGrids = retRoomGrids
-        StageAPI.LevelRooms = retLevelRooms
         StageAPI.CustomGrids = retCustomGrids
         StageAPI.CallCallbacks("POST_STAGEAPI_LOAD_SAVE", false)
     end
