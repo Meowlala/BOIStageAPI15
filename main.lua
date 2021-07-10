@@ -821,6 +821,19 @@ do -- Core Functions
         return t
     end
 
+    function StageAPI.DeepCopy(tbl)
+        local t = {}
+        for k, v in pairs(tbl) do
+            if type(v) == "table" then
+                t[k] = StageAPI.DeepCopy(v)
+            else
+                t[k] = v
+            end
+        end
+
+        return t
+    end
+
     function StageAPI.Merged(...)
         local t = {}
         for _, tbl in ipairs({...}) do
@@ -3224,6 +3237,17 @@ do -- RoomsList
         return StageAPI.LevelRooms[dimension] and StageAPI.LevelRooms[dimension][roomID]
     end
 
+    function StageAPI.GetAllLevelRooms()
+        local levelRooms = {}
+        for dimension, rooms in pairs(StageAPI.LevelRooms) do
+            for index, levelRoom in pairs(rooms) do
+                levelRooms[#levelRooms + 1] = levelRoom
+            end
+        end
+
+        return levelRooms
+    end
+
     function StageAPI.SetLevelRoom(levelRoom, roomID, dimension)
         dimension = dimension or StageAPI.GetDimension()
         if not StageAPI.LevelRooms[dimension] then
@@ -3319,23 +3343,11 @@ do -- RoomsList
 
         if args.FromSave then
             StageAPI.LogMinor("Loading from save data")
-            self.LevelIndex = args.LevelIndex
-            self.Dimension = args.Dimension
             self:LoadSaveData(args.FromSave)
         else
             StageAPI.LogMinor("Generating room")
 
             local roomDesc = args.RoomDescriptor or level:GetCurrentRoomDesc()
-
-            args.RoomType = args.RoomType or roomDesc.Data.Type
-            args.Shape = args.Shape or roomDesc.Data.Shape
-            args.SpawnSeed = args.SpawnSeed or roomDesc.SpawnSeed
-            args.DecorationSeed = args.DecorationSeed or roomDesc.DecorationSeed
-            args.AwardSeed = args.AwardSeed or roomDesc.AwardSeed
-            args.SurpriseMiniboss = args.SurpriseMiniboss or roomDesc.SurpriseMiniboss
-            args.Doors = args.Doors or StageAPI.GetDoorsForRoomFromData(roomDesc.Data)
-            args.VisitCount = args.VisitCount or roomDesc.VisitedCount
-            args.ClearCount = args.ClearCount or roomDesc.ClearCount
 
             self.Data = {}
             self.PersistentData = {}
@@ -3345,21 +3357,33 @@ do -- RoomsList
             self.FirstLoad = true
 
             for _, v in ipairs(levelRoomCopyFromArgs) do
-                self[v] = args[v]
+                if args[v] ~= nil then
+                    self[v] = args[v]
+                end
             end
+
+            self.RoomType = self.RoomType or roomDesc.Data.Type
+            self.Shape = self.Shape or roomDesc.Data.Shape
+            self.SpawnSeed = self.SpawnSeed or roomDesc.SpawnSeed
+            self.DecorationSeed = self.DecorationSeed or roomDesc.DecorationSeed
+            self.AwardSeed = self.AwardSeed or roomDesc.AwardSeed
+            self.SurpriseMiniboss = self.SurpriseMiniboss or roomDesc.SurpriseMiniboss
+            self.Doors = self.Doors or StageAPI.GetDoorsForRoomFromData(roomDesc.Data)
+            self.VisitCount = self.VisitCount or roomDesc.VisitedCount
+            self.ClearCount = self.ClearCount or roomDesc.ClearCount
 
             self.Dimension = self.Dimension or StageAPI.GetDimension(roomDesc)
 
             -- backwards compatibility
             self.Seed = self.SpawnSeed
 
-            local layout
+            local layout = args.Layout
             if args.FromData then
                 local roomDesc = level:GetRooms():Get(args.FromData)
                 if roomDesc then
                     layout = StageAPI.GenerateRoomLayoutFromData(roomDesc.Data)
                 end
-            else
+            elseif not layout then
                 local replaceLayoutName = StageAPI.CallCallbacks("PRE_ROOM_LAYOUT_CHOOSE", true, self)
                 if replaceLayoutName then
                     StageAPI.LogMinor("Layout replaced")
@@ -3383,6 +3407,25 @@ do -- RoomsList
 
         StageAPI.CallCallbacks("POST_ROOM_INIT", false, self, not not fromSaveData, fromSaveData)
         StageAPI.CurrentlyInitializing = nil
+    end
+
+    function StageAPI.LevelRoom:Copy(roomDesc)
+        local args = {
+            RoomDescriptor = roomDesc,
+            Layout = self.Layout,
+            LayoutName = self.LayoutName,
+            RoomsListName = self.RoomsListName
+        }
+
+        for _, v in ipairs(levelRoomCopyFromArgs) do
+            args[v] = args[v] or self[v]
+        end
+
+        local newLevelRoom = StageAPI.LevelRoom(args)
+        newLevelRoom.PersistentData = StageAPI.DeepCopy(self.PersistentData)
+        newLevelRoom.Data = StageAPI.DeepCopy(self.Data)
+
+        return newLevelRoom
     end
 
     function StageAPI.LevelRoom:PostGetLayout(seed)
@@ -7620,8 +7663,9 @@ do -- Callbacks
         for i = 0, roomsList.Size - 1 do
             local roomDesc = roomsList:Get(i)
             if roomDesc then
+                local dimension = StageAPI.GetDimension(roomDesc)
                 local newRoom
-                if baseFloorInfo and baseFloorInfo.HasCustomBosses and roomDesc.Data.Type == RoomType.ROOM_BOSS and not backwards then
+                if baseFloorInfo and baseFloorInfo.HasCustomBosses and roomDesc.Data.Type == RoomType.ROOM_BOSS and dimension == 0 and not backwards then
                     local bossID = StageAPI.SelectBoss(baseFloorInfo.Bosses, nil, roomDesc, true)
                     if bossID then
                         local bossData = StageAPI.GetBossData(bossID)
@@ -7659,7 +7703,13 @@ do -- Callbacks
 
                 if newRoom then
                     local listIndex = roomDesc.ListIndex
-                    StageAPI.SetLevelRoom(newRoom, listIndex, StageAPI.GetDimension(roomDesc))
+                    StageAPI.SetLevelRoom(newRoom, listIndex, dimension)
+                    if roomDesc.Data.Type == RoomType.ROOM_BOSS and baseFloorInfo.HasMirrorLevel and dimension == 0 then
+                        StageAPI.Log("Mirroring!")
+                        local mirroredRoom = newRoom:Copy(roomDesc)
+                        local mirroredDesc = level:GetRoomByIdx(roomDesc.SafeGridIndex, 1)
+                        StageAPI.SetLevelRoom(mirroredRoom, mirroredDesc.ListIndex, 1)
+                    end
                 end
             end
         end
@@ -7708,11 +7758,11 @@ do -- Callbacks
         StageAPI.CustomGridIndices = {}
 
         -- Only a room the player is actively in can be "Loaded"
-        for index, room in pairs(StageAPI.LevelRooms) do
-            room.Loaded = false
+        for _, levelRoom in ipairs(StageAPI.GetAllLevelRooms()) do
+            levelRoom.Loaded = false
         end
 
-        if inStartingRoom and room:IsFirstVisit() then
+        if inStartingRoom and StageAPI.GetDimension() == 0 and room:IsFirstVisit() then
             local maintainGrids = {}
             for dimension, rooms in pairs(StageAPI.LevelRooms) do
                 maintainGrids[dimension] = {}

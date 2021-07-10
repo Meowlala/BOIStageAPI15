@@ -367,6 +367,9 @@ do -- Base Floor Info
         }
     }, settingStage, StageType.STAGETYPE_REPENTANCE)
 
+    local downpourTwo = StageAPI.GetBaseFloorInfo(settingStage + 1, StageType.STAGETYPE_REPENTANCE, false)
+    downpourTwo.HasMirrorLevel = true
+
     StageAPI.SetFloorInfo({
         Prefix = "02x_dross",
         Backdrop = BackdropType.DROSS,
@@ -378,6 +381,9 @@ do -- Base Floor Info
             {BossID = "Turdlet"}
         }
     }, settingStage, StageType.STAGETYPE_REPENTANCE_B)
+
+    local downpourTwo = StageAPI.GetBaseFloorInfo(settingStage + 1, StageType.STAGETYPE_REPENTANCE_B, false)
+    downpourTwo.HasMirrorLevel = true
 
     settingStage = LevelStage.STAGE2_1
     StageAPI.SetFloorInfo({
