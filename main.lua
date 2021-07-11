@@ -4531,10 +4531,6 @@ do -- Extra Rooms
             else
                 extraRoomName = name
             end
-        else
-            if transitionFrom == GridRooms.ROOM_DEBUG_IDX then
-                transitionTo = StageAPI.CustomLevelReplaceRoom
-            end
         end
 
         if not (fromExtraRoom or StageAPI.InCustomMap) then
@@ -4549,63 +4545,46 @@ do -- Extra Rooms
             end
         end
 
+        local targetLevelRoom
         local setDataForShape, setVisitCount, setClear, setClearCount, setDecoSeed, setSpawnSeed, setAwardSeed, setWater, setChallengeDone
         if isCustomMap then
             local targetRoomData = StageAPI.CurrentLevelMap[name]
-
-            if targetRoomData.ExtraRoomName then
-                extraRoomName = targetRoomData.ExtraRoomName
-            end
-
-            setDataForShape = setDataForShape or targetRoomData.Shape
-            extraRoomBaseType = extraRoomBaseType or targetRoomData.RoomType
-            setVisitCount = setVisitCount or targetRoomData.VisitCount
-            setClearCount = setClearCount or targetRoomData.ClearCount
-            setDecoSeed = setDecoSeed or targetRoomData.DecorationSeed
-            setSpawnSeed = setSpawnSeed or targetRoomData.SpawnSeed
-            setAwardSeed = setAwardSeed or targetRoomData.AwardSeed
-            setWater = setWater or targetRoomData.HasWaterPits
-            setChallengeDone = setChallengeDone or targetRoomData.ChallengeDone
-
-            if setClear == nil then
-                setClear = targetRoomData.IsClear
-            end
-
+            extraRoomName = targetRoomData.ExtraRoomName
             StageAPI.CurrentCustomMapRoomID = name
-        elseif extraRoomName then
-            local extraRoom = StageAPI.GetExtraRoom(extraRoomName)
+        end
+
+        if extraRoomName then
+            targetLevelRoom = StageAPI.GetExtraRoom(extraRoomName)
             StageAPI.InExtraRoom = true
-            StageAPI.CurrentExtraRoom = extraRoom
+            StageAPI.CurrentExtraRoom = targetLevelRoom
             StageAPI.CurrentExtraRoomName = extraRoomName
-
             StageAPI.ActiveTransitionToExtraRoom = true
+            StageAPI.LoadedExtraRoom = false
+        end
 
-            extraRoomBaseType = extraRoomBaseType or extraRoom.RoomType
-            setDataForShape = setDataForShape or extraRoom.Shape
-            setSpawnSeed = setSpawnSeed or extraRoom.SpawnSeed
-            setDecoSeed = setDecoSeed or extraRoom.DecorationSeed
-            setAwardSeed = setAwardSeed or extraRoom.AwardSeed
-            setVisitCount = setVisitCount or extraRoom.VisitCount or 0
-            setClearCount = setClearCount or extraRoom.ClearCount or 0
-            setWater = setWater or extraRoom.HasWaterPits
-            setChallengeDone = setChallengeDone or extraRoom.ChallengeDone
+        if targetLevelRoom then
+            extraRoomBaseType = extraRoomBaseType or targetLevelRoom.RoomType
+            setDataForShape = setDataForShape or targetLevelRoom.Shape
+            setSpawnSeed = setSpawnSeed or targetLevelRoom.SpawnSeed
+            setDecoSeed = setDecoSeed or targetLevelRoom.DecorationSeed
+            setAwardSeed = setAwardSeed or targetLevelRoom.AwardSeed
+            setVisitCount = setVisitCount or targetLevelRoom.VisitCount or 0
+            setClearCount = setClearCount or targetLevelRoom.ClearCount or 0
 
             if setWater == nil then
-                setWater = false or extraRoom.HasWaterPits
+                setWater = false or targetLevelRoom.HasWaterPits
             end
 
             if setChallengeDone == nil then
-                setChallengeDone = false or extraRoom.ChallengeDone
+                setChallengeDone = false or targetLevelRoom.ChallengeDone
             end
 
             if setClear == nil then
                 setClear = true
-                if extraRoom.IsClear ~= nil then
-                    setClear = extraRoom.IsClear
+                if targetLevelRoom.IsClear ~= nil then
+                    setClear = targetLevelRoom.IsClear
                 end
             end
-
-            StageAPI.LoadedExtraRoom = false
         end
 
         local targetRoomDesc = level:GetRoomByIdx(transitionTo)
@@ -9776,20 +9755,6 @@ do -- Custom Floor Generation
     end)
 
     function StageAPI.InitCustomLevel(levelStartRoom)
-        level:AddCurse(LevelCurse.CURSE_OF_THE_LOST)
-
-        local startRoom = level:GetStartingRoomIndex()
-        local roomsList = level:GetRooms()
-        for i = 0, roomsList.Size do
-            local roomDesc = roomsList:Get(i)
-            if roomDesc then
-                if roomDesc.SafeGridIndex ~= startRoom and roomDesc.Data.Type == RoomType.ROOM_DEFAULT then
-                    StageAPI.CustomLevelReplaceRoom = roomDesc.SafeGridIndex
-                    break
-                end
-            end
-        end
-
         if levelStartRoom then
             StageAPI.InCustomMap = true
 
@@ -9802,17 +9767,6 @@ do -- Custom Floor Generation
             end
 
             StageAPI.ExtraRoomTransition(levelStartRoom, Direction.NO_DIRECTION, -1, true)
-        end
-    end
-
-    function StageAPI.EnsureDebugRoomExists(noTransition)
-        local debugRoom = level:GetRoomByIdx(GridRooms.ROOM_DEBUG_IDX)
-        if not debugRoom or not debugRoom.Data then
-            local currentIndex = level:GetCurrentRoomIndex()
-            Isaac.ExecuteCommand("goto s.barren." .. StageAPI.RoomShapeToGotoID[RoomShape.ROOMSHAPE_1x1].Special.Barren.ID)
-            if not noTransition then
-                game:StartRoomTransition(currentIndex, Direction.NO_DIRECTION, 0)
-            end
         end
     end
 
