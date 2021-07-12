@@ -3155,11 +3155,63 @@ do -- RoomsList
                         end
                     end
 
-                    grids_spawned[#grids_spawned + 1] = grid
-                end
+                    local sprite = grid:GetSprite()
+                    if grid:ToPoop() then
+                        if grid.State == 1000 then
+                            sprite:Play("State5", true)
+                        elseif grid.State > 666 then
+                            sprite:Play("State4", true)
+                        elseif grid.State > 333 then
+                            sprite:Play("State3", true)
+                        elseif grid.State > 0 then
+                            sprite:Play("State2", true)
+                        else
+                            sprite:Play("State1", true)
+                        end
 
-                if gridData.Type == GridEntityType.GRID_PRESSURE_PLATE and gridData.Variant == 0 then
-                    StageAPI.Room:SetClear(false)
+                        sprite:SetLastFrame()
+                    elseif grid:ToTNT() then
+                        if grid.State == 0 then
+                            sprite:Play("Idle", true)
+                        elseif grid.State < 3 then
+                            sprite:Play("IdleMedium", true)
+                        elseif grid.State == 3 then
+                            sprite:Play("ReadyToExplode", true)
+                        else
+                            sprite:Play("Blown", true)
+                        end
+
+                        sprite:SetLastFrame()
+                    elseif grid:ToPressurePlate() then
+                        if grid.State == 1 then
+                            local anim = sprite:GetAnimation()
+                            if anim == "OffSkull" then
+                                sprite:Play("OnSkull", true)
+                            elseif anim == "OffPentagram" then
+                                sprite:Play("OnPentagram", true)
+                            else
+                                sprite:Play("On", true)
+                            end
+                        end
+                    elseif grid:ToSpikes() then
+                        if grid.State == 1 then
+                            local anim = sprite:GetAnimation()
+                            local firstLetters = string.sub(anim, 1, 4)
+                            if anim == "Summon" or firstLetters ~= "Womb" then
+                                sprite:Play("Unsummon", true)
+                                sprite:SetLastFrame()
+                            else
+                                sprite:Play("UnsummonWomb", true)
+                                sprite:SetLastFrame()
+                            end
+                        end
+                    end
+
+                    if gridData.Type == GridEntityType.GRID_PRESSURE_PLATE and gridData.Variant == 0 and grid.State ~= 1 then
+                        StageAPI.Room:SetClear(false)
+                    end
+
+                    grids_spawned[#grids_spawned + 1] = grid
                 end
             end
         end
