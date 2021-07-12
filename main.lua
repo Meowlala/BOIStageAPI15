@@ -9908,20 +9908,19 @@ do -- Custom Floor Generation
         end
     end)
 
-    local chestTestNextFrame
+    local testingStage
     mod:AddCallback(ModCallbacks.MC_EXECUTE_CMD, function(_, cmd, params)
-        if cmd == "chesttest" then
-            chestTestNextFrame = true
+        if cmd == "teststage" then
+            testingStage = params
         end
     end)
 
     mod:AddCallback(ModCallbacks.MC_POST_RENDER, function()
-        if chestTestNextFrame then
-            chestTestNextFrame = nil
+        if testingStage then
             local baseStage = level:GetStage()
             local baseStageType = level:GetStageType()
-            --StageAPI.CreateMapForShapeStringTable(heart)
-            Isaac.ExecuteCommand("stage 5a")
+            Isaac.ExecuteCommand("stage " .. testingStage)
+            testingStage = nil
             StageAPI.CopyCurrentLevelMap()
             Isaac.ExecuteCommand("stage " .. tostring(baseStage) .. StageAPI.StageTypeToString[baseStageType])
             StageAPI.InitCustomLevel(true)
