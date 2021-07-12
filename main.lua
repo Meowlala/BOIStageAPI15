@@ -4307,154 +4307,243 @@ do -- Extra Rooms
         StageAPI.ExtraRoomTransition(toIndex, Direction.NO_DIRECTION, RoomTransitionAnim.FADE, false, nil, exitSlot)
     end
 
-    local gotoPrefixes = {
-        Barren = "s.barren.",
-        Boss = "s.boss.",
-        Default = "d."
+    if not RoomType.ROOM_SECRET_EXIT then
+        RoomType.ROOM_SECRET_EXIT = 27
+    end
+
+    if not RoomType.ROOM_BLUE then
+        RoomType.ROOM_BLUE = 28
+    end
+
+    StageAPI.RoomTypeToGotoPrefix = {
+        [RoomType.ROOM_DEFAULT] = "d.",
+        [RoomType.ROOM_SHOP] = "s.shop.",
+        [RoomType.ROOM_ERROR] = "s.error.",
+        [RoomType.ROOM_TREASURE] = "s.treasure.",
+        [RoomType.ROOM_BOSS] = "s.boss.",
+        [RoomType.ROOM_MINIBOSS] = "s.miniboss.",
+        [RoomType.ROOM_SECRET] = "s.secret.",
+        [RoomType.ROOM_SUPERSECRET] = "s.supersecret.",
+        [RoomType.ROOM_ARCADE] = "s.arcade.",
+        [RoomType.ROOM_CURSE] = "s.curse.",
+        [RoomType.ROOM_CHALLENGE] = "s.challenge.",
+        [RoomType.ROOM_LIBRARY] = "s.library.",
+        [RoomType.ROOM_SACRIFICE] = "s.sacrifice.",
+        [RoomType.ROOM_DEVIL] = "s.devil.",
+        [RoomType.ROOM_ANGEL] = "s.angel.",
+        [RoomType.ROOM_DUNGEON] = "s.itemdungeon.",
+        [RoomType.ROOM_BOSSRUSH] = "s.bossrush.",
+        [RoomType.ROOM_ISAACS] = "s.isaacs.",
+        [RoomType.ROOM_BARREN] = "s.barren.",
+        [RoomType.ROOM_CHEST] = "s.chest.",
+        [RoomType.ROOM_DICE] = "s.dice.",
+        [RoomType.ROOM_BLACK_MARKET] = "s.blackmarket.",
+        [RoomType.ROOM_GREED_EXIT] = "s.greedexit.",
+        [RoomType.ROOM_PLANETARIUM] = "s.planetarium.",
+        [RoomType.ROOM_TELEPORTER] = "s.teleporter.",
+        [RoomType.ROOM_TELEPORTER_EXIT] = "s.teleporterexit.",
+        [RoomType.ROOM_SECRET_EXIT] = "s.secretexit.",
+        [RoomType.ROOM_BLUE] = "s.blue.",
+        [RoomType.ROOM_ULTRASECRET] = "s.ultrasecret.",
     }
 
-    StageAPI.RoomShapeToGotoID = {
+    StageAPI.RoomShapeToGotoData = {
         [RoomShape.ROOMSHAPE_1x1] = {
-            Special = {
-                Barren = {
-                    ID = "70050"
-                }
-            }
+            ID = "70050"
         },
         [RoomShape.ROOMSHAPE_IH] = {
-            Special = {
-                Barren = {
-                    ID = "70051"
-                }
-            }
+            ID = "70051"
         },
         [RoomShape.ROOMSHAPE_IV] = {
-            Special = {
-                Barren = {
-                    ID = "70052"
-                }
-            }
+            ID = "70052"
         },
         [RoomShape.ROOMSHAPE_1x2] = {
-            Special = {
-                Barren = {
-                    ID = "70053",
-                    Locked = "70062"
-                }
-            }
+            ID = "70053",
+            Locked = "70062"
         },
         [RoomShape.ROOMSHAPE_IIV] = {
-            Special = {
-                Barren = {
-                    ID = "70054"
-                }
-            }
+            ID = "70054"
         },
         [RoomShape.ROOMSHAPE_2x1] = {
-            Special = {
-                Barren = {
-                    ID = "70055",
-                    Locked = "70063"
-                }
-            }
+            ID = "70055",
+            Locked = "70063"
         },
         [RoomShape.ROOMSHAPE_IIH] = {
-            Special = {
-                Barren = {
-                    ID = "70056"
-                }
-            }
+            ID = "70056"
         },
         [RoomShape.ROOMSHAPE_2x2] = {
-            Special = {
-                Barren = {
-                    ID = "70057",
-                    Locked = "70064"
-                }
-            }
+            ID = "70057",
+            Locked = "70064"
         },
         [RoomShape.ROOMSHAPE_LTL] = {
-            Special = {
-                Barren = {
-                    ID = "70058",
-                    Locked = "70065"
-                }
-            }
+            ID = "70058",
+            Locked = "70065"
         },
         [RoomShape.ROOMSHAPE_LTR] = {
-            Special = {
-                Barren = {
-                    ID = "70059",
-                    Locked = "70066"
-                }
-            }
+            ID = "70059",
+            Locked = "70066"
         },
         [RoomShape.ROOMSHAPE_LBL] = {
-            Special = {
-                Barren = {
-                    ID = "70060",
-                    Locked = "70067"
-                }
-            }
+            ID = "70060",
+            Locked = "70067"
         },
         [RoomShape.ROOMSHAPE_LBR] = {
-            Special = {
-                Barren = {
-                    ID = "70061",
-                    Locked = "70068"
-                }
-            }
+            ID = "70061",
+            Locked = "70068"
         }
     }
 
-    for shape, gotoIds in pairs(StageAPI.RoomShapeToGotoID) do
-        for label, prefix in pairs(gotoPrefixes) do
-            if not gotoIds.Special[label] then
-                gotoIds.Special[label] = {}
-            end
-
-            if not gotoIds.Special[label].ID then
-                gotoIds.Special[label].ID = gotoIds.Special.Barren.ID
-            end
-
-            if not gotoIds.Special[label].Locked and gotoIds.Special.Barren.Locked then
-                gotoIds.Special[label].Locked = gotoIds.Special.Barren.Locked
-            end
-
-            gotoIds.Special[label].Prefix = prefix
+    for shape, gotoData in pairs(StageAPI.RoomShapeToGotoData) do
+        gotoData.Data = {}
+        if gotoData.Locked then
+            gotoData.LockedData = {}
         end
     end
 
-    StageAPI.LoadedGotoData = false
-    StageAPI.DataLoadNeedsRestart = false
-    mod:AddCallback(ModCallbacks.MC_POST_GAME_STARTED, function()
-        if not StageAPI.LoadedGotoData and (game.Difficulty == Difficulty.DIFFICULTY_NORMAL or game.Difficulty == Difficulty.DIFFICULTY_HARD) and not StageAPI.InTestMode then
-            local resetRun
-            local currentIndex = level:GetCurrentRoomIndex()
-            if currentIndex == level:GetStartingRoomIndex() and room:IsFirstVisit() and level:GetStage() == LevelStage.STAGE1_1 then
-                resetRun = true
+    StageAPI.PreloadedGotoData = {}
+    function StageAPI.PreloadGotoRooms(roomTypes, roomShapes)
+        if not roomShapes then
+            roomShapes = {}
+            for shape = 1, RoomShape.NUM_ROOMSHAPES - 1 do
+                roomShapes[#roomShapes + 1] = shape
+            end
+        end
+
+        for _, roomType in ipairs(roomTypes) do
+            local shapes = StageAPI.PreloadedGotoData[roomType]
+            if not shapes then
+                shapes = {}
+                StageAPI.PreloadedGotoData[roomType] = shapes
             end
 
-            for shape, gotoIds in pairs(StageAPI.RoomShapeToGotoID) do
-                for label, specialGoto in pairs(gotoIds.Special) do
-                    Isaac.ExecuteCommand("goto " .. specialGoto.Prefix .. specialGoto.ID)
-                    local desc = level:GetRoomByIdx(GridRooms.ROOM_DEBUG_IDX)
-                    specialGoto.Data = desc.Data
-                    if specialGoto.Locked then
-                        Isaac.ExecuteCommand("goto " .. specialGoto.Prefix .. specialGoto.Locked)
-                        local desc = level:GetRoomByIdx(GridRooms.ROOM_DEBUG_IDX)
-                        specialGoto.LockedData = desc.Data
+            for _, roomShape in ipairs(roomShapes) do
+                if not shapes[roomShape] then
+                    shapes[roomShape] = false
+                end
+            end
+        end
+    end
+
+    local defaultSpecialRoomShapes = {
+        RoomShape.ROOMSHAPE_1x1,
+        RoomShape.ROOMSHAPE_IH,
+        RoomShape.ROOMSHAPE_IV,
+    }
+
+    local defaultBossRoomShapes = {
+        RoomShape.ROOMSHAPE_1x1,
+        RoomShape.ROOMSHAPE_IH,
+        RoomShape.ROOMSHAPE_IV,
+        RoomShape.ROOMSHAPE_2x2,
+        RoomShape.ROOMSHAPE_1x2,
+        RoomShape.ROOMSHAPE_2x1,
+    }
+
+    local validDungeonShapes = {
+        RoomShape.ROOMSHAPE_1x1,
+        RoomShape.ROOMSHAPE_1x2,
+        RoomShape.ROOMSHAPE_2x1,
+        RoomShape.ROOMSHAPE_2x2,
+    }
+
+    local defaultBlueRoomShapes = {
+        RoomShape.ROOMSHAPE_2x1,
+        RoomShape.ROOMSHAPE_1x2,
+        RoomShape.ROOMSHAPE_IIH,
+        RoomShape.ROOMSHAPE_IIV,
+    }
+
+    local defaultShopRoomShapes = {
+        RoomShape.ROOMSHAPE_1x1,
+        RoomShape.ROOMSHAPE_IH,
+        RoomShape.ROOMSHAPE_IV,
+        RoomShape.ROOMSHAPE_2x1,
+    }
+
+    StageAPI.PreloadGotoRooms({RoomType.ROOM_DEFAULT})
+    StageAPI.PreloadGotoRooms({RoomType.ROOM_BOSS}, defaultBossRoomShapes)
+    StageAPI.PreloadGotoRooms({RoomType.ROOM_DUNGEON}, validDungeonShapes)
+    StageAPI.PreloadGotoRooms({RoomType.ROOM_BLACK_MARKET}, {RoomShape.ROOMSHAPE_2x1})
+    StageAPI.PreloadGotoRooms({RoomType.ROOM_BOSSRUSH}, {RoomShape.ROOMSHAPE_2x2})
+    StageAPI.PreloadGotoRooms({RoomType.ROOM_BLUE}, defaultBlueRoomShapes)
+    StageAPI.PreloadGotoRooms({RoomType.ROOM_SHOP}, defaultShopRoomShapes)
+    StageAPI.PreloadGotoRooms({
+        RoomType.ROOM_SECRET,
+        RoomType.ROOM_SUPERSECRET,
+        RoomType.ROOM_ULTRASECRET,
+        RoomType.ROOM_GREED_EXIT,
+    }, {RoomShape.ROOMSHAPE_1x1})
+    StageAPI.PreloadGotoRooms({
+        RoomType.ROOM_ERROR,
+        RoomType.ROOM_TREASURE,
+        RoomType.ROOM_MINIBOSS,
+        RoomType.ROOM_ARCADE,
+        RoomType.ROOM_CURSE,
+        RoomType.ROOM_CHALLENGE,
+        RoomType.ROOM_LIBRARY,
+        RoomType.ROOM_SACRIFICE,
+        RoomType.ROOM_DEVIL,
+        RoomType.ROOM_ANGEL,
+        RoomType.ROOM_ISAACS,
+        RoomType.ROOM_BARREN,
+        RoomType.ROOM_CHEST,
+        RoomType.ROOM_DICE,
+        RoomType.ROOM_SECRET_EXIT,
+        RoomType.ROOM_PLANETARIUM,
+    }, defaultSpecialRoomShapes)
+
+    StageAPI.DataLoadNeedsRestart = false
+    mod:AddCallback(ModCallbacks.MC_POST_GAME_STARTED, function()
+        if not StageAPI.InTestMode then
+            local needsToLoad
+            for roomType, roomShapes in pairs(StageAPI.PreloadedGotoData) do
+                for roomShape, loaded in pairs(roomShapes) do
+                    if not loaded then
+                        if not needsToLoad then
+                            needsToLoad = {}
+                        end
+
+                        if not needsToLoad[roomType] then
+                            needsToLoad[roomType] = {}
+                        end
+
+                        needsToLoad[roomType][#needsToLoad[roomType] + 1] = roomShape
                     end
                 end
             end
 
-            if resetRun then
-                StageAPI.DataLoadNeedsRestart = true
+            if needsToLoad then
+                local resetRun
+                local currentIndex = level:GetCurrentRoomIndex()
+                if currentIndex == level:GetStartingRoomIndex() and room:IsFirstVisit() and level:GetStage() == LevelStage.STAGE1_1 then
+                    resetRun = true
+                end
+
+                for roomType, roomShapes in pairs(needsToLoad) do
+                    for _, shape in ipairs(roomShapes) do
+                        local cmd, lockedCmd = StageAPI.GetGotoCommandForTypeShape(roomType, shape, true)
+                        Isaac.ExecuteCommand(cmd)
+                        local desc = level:GetRoomByIdx(GridRooms.ROOM_DEBUG_IDX)
+
+                        local shapeData = StageAPI.RoomShapeToGotoData[shape]
+                        shapeData.Data[roomType] = desc.Data
+
+                        if lockedCmd and shapeData.LockedData then
+                            Isaac.ExecuteCommand(lockedCmd)
+                            local desc = level:GetRoomByIdx(GridRooms.ROOM_DEBUG_IDX)
+                            shapeData.LockedData[roomType] = desc.Data
+                        end
+
+                        StageAPI.PreloadedGotoData[roomType][shape] = true
+                    end
+                end
+
+                if resetRun then
+                    StageAPI.DataLoadNeedsRestart = true
+                end
+
+                game:StartRoomTransition(currentIndex, Direction.NO_DIRECTION, 0)
             end
-
-            game:StartRoomTransition(currentIndex, Direction.NO_DIRECTION, 0)
-
-            StageAPI.LoadedGotoData = true
         end
     end)
 
@@ -4472,21 +4561,22 @@ do -- Extra Rooms
 
     StageAPI.StoredExtraRoomThisPause = false
 
-    function StageAPI.GetGotoDataForTypeShape(roomType, roomShape)
-        if type(roomType) ~= "string" then
-            if roomType == RoomType.ROOM_DEFAULT then
-                roomType = "Default"
-            elseif roomType == RoomType.ROOM_BOSS then
-                roomType = "Boss"
-            else
-                roomType = "Barren"
-            end
-        end
-
-        if StageAPI.RoomShapeToGotoID[roomShape].Special[roomType] then
-            return StageAPI.RoomShapeToGotoID[roomShape].Special[roomType]
+    function StageAPI.GetGotoCommandForTypeShape(roomType, roomShape, ignoreMissingData)
+        local shapeData = StageAPI.RoomShapeToGotoData[roomShape]
+        local prefix = "goto " .. StageAPI.RoomTypeToGotoPrefix[roomType]
+        if shapeData.Data[roomType] or ignoreMissingData then
+            return prefix .. shapeData.ID, (shapeData.Locked and (prefix .. shapeData.Locked))
         else
-            return StageAPI.RoomShapeToGotoID[roomShape].Special["Barren"]
+            return StageAPI.GetGotoCommandForTypeShape(RoomType.ROOM_DEFAULT, roomShape, true)
+        end
+    end
+
+    function StageAPI.GetGotoDataForTypeShape(roomType, roomShape)
+        local shapeData = StageAPI.RoomShapeToGotoData[roomShape]
+        if shapeData.Data[roomType] then
+            return shapeData.Data[roomType], (shapeData.LockedData and shapeData.LockedData[roomType])
+        else
+            return StageAPI.GetGotoDataForTypeShape(RoomType.ROOM_DEFAULT, roomShape)
         end
     end
 
@@ -4537,11 +4627,11 @@ do -- Extra Rooms
             StageAPI.LastNonExtraRoom = transitionFrom
         else
             local currentRoomDesc = level:GetRoomByIdx(transitionFrom)
-            local currentGotoSet = StageAPI.GetGotoDataForTypeShape(room:GetType(), room:GetRoomShape())
-            if currentGotoSet.LockedData and StageAPI.DoorOneSlots[leaveDoor] then
-                currentRoomDesc.Data = currentGotoSet.LockedData
+            local currentGotoData, currentGotoLockedData = StageAPI.GetGotoDataForTypeShape(room:GetType(), room:GetRoomShape())
+            if currentGotoLockedData and StageAPI.DoorOneSlots[leaveDoor] then
+                currentRoomDesc.Data = currentGotoLockedData
             else
-                currentRoomDesc.Data = currentGotoSet.Data
+                currentRoomDesc.Data = currentGotoData
             end
         end
 
@@ -4590,11 +4680,11 @@ do -- Extra Rooms
         local targetRoomDesc = level:GetRoomByIdx(transitionTo)
 
         if setDataForShape then
-            local targetGotoSet = StageAPI.GetGotoDataForTypeShape(extraRoomBaseType, setDataForShape)
-            if targetGotoSet.LockedData and StageAPI.DoorOneSlots[enterDoor] then
-                targetRoomDesc.Data = targetGotoSet.LockedData
+            local targetGotoData, targetGotoLockedData = StageAPI.GetGotoDataForTypeShape(extraRoomBaseType, setDataForShape)
+            if targetGotoLockedData and StageAPI.DoorOneSlots[enterDoor] then
+                targetRoomDesc.Data = targetGotoLockedData
             else
-                targetRoomDesc.Data = targetGotoSet.Data
+                targetRoomDesc.Data = targetGotoData
             end
         end
 
