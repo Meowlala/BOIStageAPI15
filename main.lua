@@ -4189,12 +4189,12 @@ do -- Custom Grid Entities
     end
 
     function StageAPI.GetCustomGridsByName(name)
-        return StageAPI.GetCustomGrids(name)
+        return StageAPI.GetCustomGrids(nil, name)
     end
 
     function StageAPI.GetCustomGridIndicesByName(name)
         local ret = {}
-        for _, grid in ipairs(StageAPI.GetCustomGrids(name)) do
+        for _, grid in ipairs(StageAPI.GetCustomGrids(nil, name)) do
             ret[#ret + 1] = grid.Index
         end
 
@@ -4614,7 +4614,12 @@ do -- Extra Rooms
 
         local transitionFrom = level:GetCurrentRoomIndex()
         local transitionTo = GridRooms.ROOM_DEBUG_IDX
-        local fromExtraRoom = transitionFrom == GridRooms.ROOM_DEBUG_IDX
+        local fromExtraRoom = (transitionFrom == GridRooms.ROOM_DEBUG_IDX or transitionFrom == GridRooms.ROOM_GENESIS_IDX)
+
+        -- alternating between two off-grid rooms makes transitions between certain room types and shapes cleaner
+        if transitionTo == GridRooms.ROOM_DEBUG_IDX and transitionFrom == transitionTo then
+            transitionTo = GridRooms.ROOM_GENESIS_IDX
+        end
 
         local extraRoomName
         if type(name) ~= "string" then
@@ -4723,6 +4728,12 @@ do -- Extra Rooms
             StageAPI.ForcePlayerDoorSlot = (enterDoor == -1 and nil) or enterDoor
             level:ChangeRoom(transitionTo)
         else
+            if enterDoor ~= -1 then
+                StageAPI.ForcePlayerDoorSlot = enterDoor
+            else
+                StageAPI.ForcePlayerDoorSlot = nil
+            end
+
             game:StartRoomTransition(transitionTo, direction, transitionType)
         end
     end
@@ -7986,6 +7997,10 @@ do -- Callbacks
                 player.Position = pos
             end
 
+            if StageAPI.ForcePlayerDoorSlot then
+                level.EnterDoor = StageAPI.ForcePlayerDoorSlot
+            end
+
             StageAPI.ForcePlayerDoorSlot = nil
             StageAPI.ForcePlayerNewRoomPosition = nil
         elseif currentRoom then
@@ -8003,8 +8018,9 @@ do -- Callbacks
 
             if invalidEntrance and #validDoors > 0 and not currentRoom.Data.PreventDoorFix then
                 local changeEntrance = validDoors[StageAPI.Random(1, #validDoors)]
+                level.EnterDoor = changeEntrance
                 for _, player in ipairs(players) do
-                    player.Position = room:GetDoorSlotPosition(changeEntrance)
+                    player.Position = room:GetClampedPosition(room:GetDoorSlotPosition(changeEntrance), 16)
                 end
             end
         end
