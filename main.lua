@@ -4598,6 +4598,19 @@ do -- Extra Rooms
         [DoorSlot.DOWN1] = Direction.DOWN
     }
 
+    function StageAPI.GetExtraRoomBaseGridRooms()
+        local default, alternate = GridRooms.ROOM_MEGA_SATAN_IDX, GridRooms.ROOM_BOSSRUSH_IDX
+        if level:GetStage() == LevelStage.STAGE6 and not game:IsGreedMode() then
+            default = GridRooms.ROOM_BLUE_WOOM_IDX
+        end
+
+        if level:GetStage() == LevelStage.STAGE3_2 and not game:IsGreedMode() then
+            alternate = GridRooms.ROOM_BLUE_WOOM_IDX
+        end
+
+        return default, alternate
+    end
+
     function StageAPI.ExtraRoomTransition(name, direction, transitionType, isCustomMap, leaveDoor, enterDoor, setPlayerPosition, extraRoomBaseType)
         leaveDoor = leaveDoor or -1
         enterDoor = enterDoor or -1
@@ -4612,12 +4625,13 @@ do -- Extra Rooms
         end
 
         local transitionFrom = level:GetCurrentRoomIndex()
-        local transitionTo = GridRooms.ROOM_DEBUG_IDX
-        local fromExtraRoom = (transitionFrom == GridRooms.ROOM_DEBUG_IDX or transitionFrom == GridRooms.ROOM_GENESIS_IDX)
+        local defaultGridRoom, alternateGridRoom = StageAPI.GetExtraRoomBaseGridRooms()
+        local transitionTo = defaultGridRoom
+        local fromExtraRoom = (transitionFrom == defaultGridRoom or transitionFrom == alternateGridRoom)
 
         -- alternating between two off-grid rooms makes transitions between certain room types and shapes cleaner
-        if transitionTo == GridRooms.ROOM_DEBUG_IDX and transitionFrom == transitionTo then
-            transitionTo = GridRooms.ROOM_GENESIS_IDX
+        if transitionTo == defaultGridRoom and transitionFrom == transitionTo then
+            transitionTo = alternateGridRoom
         end
 
         local extraRoomName
