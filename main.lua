@@ -3661,7 +3661,7 @@ do -- RoomsList
         end]]
     end
 
-    -- Deprecated functions, prefer to use LevelRoom.Metadata:<Search/Has/Etc>
+    --[[ Deprecated functions, prefer to use LevelRoom.Metadata:<Search/Has/Etc>
     function StageAPI.LevelRoom:SetEntityMetadata(index, name)
         self.Metadata:AddMetadataEntity(index, nil, name)
     end
@@ -3748,7 +3748,7 @@ do -- RoomsList
             Group = group,
             Name = name
         })
-    end
+    end]]
 
     function StageAPI.LevelRoom:IsGridIndexFree(index, ignoreEntities, ignoreGrids)
         return (ignoreEntities or not self.EntityTakenIndices[index]) and (ignoreGrids or not self.GridTakenIndices[index])
