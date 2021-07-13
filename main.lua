@@ -2577,24 +2577,33 @@ do -- RoomsList
         return self.LastGroupID
     end
 
-    function StageAPI.RoomMetadata:AddMetadataEntity(index, entity, name)
+    function StageAPI.RoomMetadata:AddMetadataEntity(index, entity) -- also accepts a name rather than an entity
         if not self.IndexMetadata[index] then
             self.IndexMetadata[index] = {}
         end
 
         local metadata
-        if entity then
+        if entity and type(entity) ~= "string" then
             metadata = StageAPI.IsMetadataEntity(entity)
         else
+            if entity then
+                name = entity
+                entity = nil
+            end
+
             metadata = StageAPI.MetadataEntitiesByName[name]
         end
 
-        self.IndexMetadata[index][#self.IndexMetadata[index] + 1] = {
+        local metaEntity = {
             Name = metadata.Name,
             Metadata = metadata,
             Entity = entity or {Type = metadata.Type, Variant = metadata.Variant},
             Index = index
         }
+
+        self.IndexMetadata[index][#self.IndexMetadata[index] + 1] = metaEntity
+
+        return metaEntity
     end
 
     --[[
@@ -3663,7 +3672,7 @@ do -- RoomsList
 
     --[[ Deprecated functions, prefer to use LevelRoom.Metadata:<Search/Has/Etc>
     function StageAPI.LevelRoom:SetEntityMetadata(index, name)
-        self.Metadata:AddMetadataEntity(index, nil, name)
+        self.Metadata:AddMetadataEntity(index, name)
     end
 
     function StageAPI.LevelRoom:HasEntityMetadata(index, name)
