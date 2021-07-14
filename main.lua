@@ -61,12 +61,12 @@ Callback List:
 -- Usually StageAPI will pick one entity from the EntityList to add to the AddEntities table at random, but that can be changed with this callback.
 -- If StillAddRandom is true, StageAPI will still add a random entity from the entitylist to addentities, alongside ones you returned.
 
-- PRE_SPAWN_ENTITY_LIST(entityList, spawnIndex, doGrids, doPersistentOnly, doAutoPersistent, avoidSpawning, persistentPositions)
+- PRE_SPAWN_ENTITY_LIST(entityList, spawnIndex, doGrids, doPersistentOnly, doAutoPersistent, avoidSpawning, persistenceData)
 -- Takes 1 return value. If false, cancels spawning the entity list. If a table, uses it as the entity list. Any return value breaks out of future callbacks.
 -- Every entity in the final entity list is spawned.
 -- Note that this entity list contains EntityInfo tables rather than EntityData, which contain persistent room-specific data. Both detailed below.
 
-- PRE_SPAWN_ENTITY(entityInfo, entityList, index, doGrids, doPersistentOnly, doAutoPersistent, avoidSpawning, persistentPositions, shouldSpawnEntity)
+- PRE_SPAWN_ENTITY(entityInfo, entityList, index, doGrids, doPersistentOnly, doAutoPersistent, avoidSpawning, persistenceData, shouldSpawnEntity)
 -- Takes 1 return value. If false, cancels spawning the entity info. If a table, uses it as the entity info. Any return value breaks out of future callbacks.
 
 - PRE_SPAWN_GRID(gridData, gridInformation, entities, gridSpawnRNG)
@@ -2245,6 +2245,15 @@ do -- RoomsList
     StageAPI.AddEntityPersistenceData({Type = EntityType.ENTITY_BRIMSTONE_HEAD})
     StageAPI.AddEntityPersistenceData({Type = EntityType.ENTITY_WALL_HUGGER})
     StageAPI.AddEntityPersistenceData({Type = EntityType.ENTITY_POKY, Variant = 1})
+    StageAPI.AddEntityPersistenceData({
+        Type = EntityType.ENTITY_FIREPLACE,
+        AutoPersists = true,
+        RemoveOnRemove = true,
+        UpdateType = true,
+        UpdateVariant = true,
+        UpdateSubType = true,
+        UpdateHealth = true,
+    })
 
     StageAPI.PersistenceChecks = {}
     function StageAPI.AddPersistenceCheck(fn)
@@ -2258,7 +2267,6 @@ do -- RoomsList
         EntityType.ENTITY_MOVABLE_TNT,
         EntityType.ENTITY_SHOPKEEPER,
         EntityType.ENTITY_PITFALL,
-        EntityType.ENTITY_FIREPLACE,
         EntityType.ENTITY_ETERNALFLY,
     }
 
@@ -2269,7 +2277,12 @@ do -- RoomsList
         PickupVariant.PICKUP_ETERNALCHEST,
         PickupVariant.PICKUP_MIMICCHEST,
         PickupVariant.PICKUP_SPIKEDCHEST,
-        PickupVariant.PICKUP_REDCHEST
+        PickupVariant.PICKUP_REDCHEST,
+        PickupVariant.PICKUP_OLDCHEST,
+        PickupVariant.PICKUP_WOODENCHEST,
+        PickupVariant.PICKUP_MEGACHEST,
+        PickupVariant.PICKUP_HAUNTEDCHEST,
+        PickupVariant.PICKUP_MOMSCHEST,
     }
 
     StageAPI.AddPersistenceCheck(function(entData)
@@ -2312,8 +2325,6 @@ do -- RoomsList
                                 return true
                             end
                         end
-                    elseif entity.Type == EntityType.ENTITY_FIREPLACE then
-                        return entity.HitPoints <= 2
                     elseif entity.Type == EntityType.ENTITY_SLOT then
                         return entity:GetSprite():IsPlaying("Death") or entity:GetSprite():IsPlaying("Broken") or entity:GetSprite():IsFinished("Death") or entity:GetSprite():IsFinished("Broken")
                     end
@@ -2986,8 +2997,7 @@ do -- RoomsList
         tbl[#tbl + 1] = {
             Data = entData,
             PersistentIndex = persistentIndex,
-            Persistent = not not persistentData,
-            PersistenceData = persistentData
+            Persistent = not not persistentData
         }
 
         return persistentIndex
@@ -3038,16 +3048,6 @@ do -- RoomsList
 
                     for _, entData in ipairs(addEntities) do
                         persistentIndex = StageAPI.AddEntityToSpawnList(entitiesToSpawn[index], entData, persistentIndex)
-
-                        --[[
-                        persistentIndex = persistentIndex + 1
-                        local persistentData = StageAPI.CheckPersistence(entData.Type, entData.Variant, entData.SubType)
-                        entitiesToSpawn[index][#entitiesToSpawn[index] + 1] = {
-                            Data = entData,
-                            PersistentIndex = persistentIndex,
-                            Persistent = not not persistentData,
-                            PersistenceData = persistentData
-                        }]]
                     end
                 end
             end
@@ -3120,19 +3120,20 @@ do -- RoomsList
     end)
 
     function StageAPI.GetEntityPersistenceData(entity)
-        return StageAPI.ActiveEntityPersistenceData[GetPtrHash(entity)]
+        local ent = StageAPI.ActiveEntityPersistenceData[GetPtrHash(entity)]
+        if ent then
+            return ent.Index, ent.Data
+        end
     end
 
-    function StageAPI.SetEntityPersistenceData(entity, persistentIndex, persistentData, spawnData, spawnInfo)
+    function StageAPI.SetEntityPersistenceData(entity, persistentIndex, persistenceData)
         StageAPI.ActiveEntityPersistenceData[GetPtrHash(entity)] = {
-            PersistentIndex = persistentIndex,
-            PersistenceData = persistentData,
-            SpawnData = spawnData,
-            SpawnInfo = spawnInfo
+            Index = persistentIndex,
+            Data = persistenceData
         }
     end
 
-    function StageAPI.LoadEntitiesFromEntitySets(entitysets, doGrids, doPersistentOnly, doAutoPersistent, avoidSpawning, persistentPositions, loadingWave)
+    function StageAPI.LoadEntitiesFromEntitySets(entitysets, doGrids, doPersistentOnly, doAutoPersistent, avoidSpawning, persistenceData, loadingWave)
         local ents_spawned = {}
         local listCallbacks = StageAPI.GetCallbacks("PRE_SPAWN_ENTITY_LIST")
         local entCallbacks = StageAPI.GetCallbacks("PRE_SPAWN_ENTITY")
@@ -3145,7 +3146,7 @@ do -- RoomsList
                 if #entityList > 0 then
                     local shouldSpawn = true
                     for _, callback in ipairs(listCallbacks) do
-                        local ret = callback.Function(entityList, index, doGrids, doPersistentOnly, doAutoPersistent, avoidSpawning, persistentPositions)
+                        local ret = callback.Function(entityList, index, doGrids, doPersistentOnly, doAutoPersistent, avoidSpawning, persistenceData)
                         if ret == false then
                             shouldSpawn = false
                             break
@@ -3164,16 +3165,30 @@ do -- RoomsList
                                 shouldSpawnEntity = false
                             end
 
-                            if shouldSpawnEntity and doPersistentOnly and not entityInfo.PersistenceData then
+                            local entityPersistData, persistData
+                            if entityInfo.Persistent then
+                                if entityInfo.PersistentIndex then
+                                    entityPersistData = persistenceData[entityInfo.PersistentIndex]
+                                    if entityPersistData then
+                                        entityInfo.Data.Type = entityPersistData.Type or entityInfo.Data.Type
+                                        entityInfo.Data.Variant = entityPersistData.Variant or entityInfo.Data.Variant
+                                        entityInfo.Data.SubType = entityPersistData.SubType or entityInfo.Data.SubType
+
+                                        if entityPersistData.Position then
+                                            entityInfo.Position = Vector(entityPersistData.Position.X, entityPersistData.Position.Y)
+                                        end
+                                    end
+                                end
+
+                                persistData = StageAPI.CheckPersistence(entityInfo.Data.Type, entityInfo.Data.Variant, entityInfo.Data.SubType)
+                            end
+
+                            if shouldSpawnEntity and doPersistentOnly and not persistData then
                                 shouldSpawnEntity = false
                             end
 
-                            if shouldSpawnEntity and entityInfo.Persistent and entityInfo.PersistenceData.AutoPersists and not doAutoPersistent then
+                            if shouldSpawnEntity and persistData and persistData.AutoPersists and not doAutoPersistent then
                                 shouldSpawnEntity = false
-                            end
-
-                            if entityInfo.PersistentIndex and persistentPositions and persistentPositions[entityInfo.PersistentIndex] then
-                                entityInfo.Position = Vector(persistentPositions[entityInfo.PersistentIndex].X, persistentPositions[entityInfo.PersistentIndex].Y)
                             end
 
                             if not entityInfo.Position then
@@ -3184,7 +3199,7 @@ do -- RoomsList
                                 if not callback.Params[1] or (entityInfo.Data.Type and callback.Params[1] == entityInfo.Data.Type)
                                 and not callback.Params[2] or (entityInfo.Data.Variant and callback.Params[2] == entityInfo.Data.Variant)
                                 and not callback.Params[3] or (entityInfo.Data.SubType and callback.Params[3] == entityInfo.Data.SubType) then
-                                    local ret = callback.Function(entityInfo, entityList, index, doGrids, doPersistentOnly, doAutoPersistent, avoidSpawning, persistentPositions, shouldSpawnEntity)
+                                    local ret = callback.Function(entityInfo, entityList, index, doGrids, doPersistentOnly, doAutoPersistent, avoidSpawning, persistenceData, shouldSpawnEntity)
                                     if ret == false or ret == true then
                                         shouldSpawnEntity = ret
                                         break
@@ -3212,6 +3227,10 @@ do -- RoomsList
                                         StageAPI.ZeroVector,
                                         nil
                                     )
+
+                                    if entityPersistData and entityPersistData.Health then
+                                        ent.HitPoints = entityPersistData.Health
+                                    end
 
                                     local currentRoom = StageAPI.GetCurrentRoom()
                                     if currentRoom and not currentRoom.IgnoreRoomRules then
@@ -3241,14 +3260,14 @@ do -- RoomsList
                                     ent:GetData().StageAPIEntityListIndex = index
 
                                     if entityInfo.Persistent then
-                                        StageAPI.SetEntityPersistenceData(ent, entityInfo.PersistentIndex, entityInfo.PersistenceData, entityData, entityInfo)
+                                        StageAPI.SetEntityPersistenceData(ent, entityInfo.PersistentIndex, persistData)
                                     end
 
                                     if not loadingWave and ent:CanShutDoors() then
                                         StageAPI.Room:SetClear(false)
                                     end
 
-                                    StageAPI.CallCallbacks("POST_SPAWN_ENTITY", false, ent, entityInfo, entityList, index, doGrids, doPersistentOnly, doAutoPersistent, avoidSpawning, persistentPositions, shouldSpawnEntity)
+                                    StageAPI.CallCallbacks("POST_SPAWN_ENTITY", false, ent, entityInfo, entityList, index, doGrids, doPersistentOnly, doAutoPersistent, avoidSpawning, persistenceData, shouldSpawnEntity)
 
                                     ents_spawned[#ents_spawned + 1] = ent
                                 end
@@ -3389,7 +3408,7 @@ do -- RoomsList
         return gridInformation
     end
 
-    function StageAPI.LoadRoomLayout(grids, entities, doGrids, doEntities, doPersistentOnly, doAutoPersistent, gridData, avoidSpawning, persistentPositions, loadingWave)
+    function StageAPI.LoadRoomLayout(grids, entities, doGrids, doEntities, doPersistentOnly, doAutoPersistent, gridData, avoidSpawning, persistenceData, loadingWave)
         local grids_spawned = {}
         local ents_spawned = {}
 
@@ -3398,7 +3417,7 @@ do -- RoomsList
         end
 
         if entities and doEntities then
-            ents_spawned = StageAPI.LoadEntitiesFromEntitySets(entities, doGrids, doPersistentOnly, doAutoPersistent, avoidSpawning, persistentPositions, loadingWave)
+            ents_spawned = StageAPI.LoadEntitiesFromEntitySets(entities, doGrids, doPersistentOnly, doAutoPersistent, avoidSpawning, persistenceData, loadingWave)
         end
 
         StageAPI.CallGridPostInit()
@@ -3560,7 +3579,7 @@ do -- RoomsList
             self.PersistentData = {}
             self.AvoidSpawning = {}
             self.ExtraSpawn = {}
-            self.PersistentPositions = {}
+            self.PersistenceData = {}
             self.FirstLoad = true
 
             for _, v in ipairs(levelRoomCopyFromArgs) do
@@ -3767,10 +3786,24 @@ do -- RoomsList
         self.GridInformation = StageAPI.GetGridInformation()
     end
 
+    function StageAPI.LevelRoom:GetPersistenceData(index, setIfNot)
+        if type(index) ~= "number" then
+            index = StageAPI.GetEntityPersistenceData(index)
+        end
+
+        if index then
+            if setIfNot and not self.PersistenceData[index] then
+                self.PersistenceData[index] = {}
+            end
+
+            return self.PersistenceData[index]
+        end
+    end
+
     function StageAPI.LevelRoom:SavePersistentEntities()
         local checkExistenceOf = {}
         for hash, entityPersistData in pairs(StageAPI.ActiveEntityPersistenceData) do
-            if entityPersistData.PersistenceData.RemoveOnRemove then
+            if entityPersistData.Data.RemoveOnRemove then
                 checkExistenceOf[hash] = entityPersistData
             end
         end
@@ -3779,51 +3812,57 @@ do -- RoomsList
             checkExistenceOf[GetPtrHash(entity)] = nil
 
             local data = entity:GetData()
-            local entityPersistData = StageAPI.GetEntityPersistenceData(entity)
-            if entityPersistData then
+            local persistentIndex, persistData = StageAPI.GetEntityPersistenceData(entity)
+            if persistentIndex then
                 local changedSpawn
-                if entityPersistData.PersistenceData.UpdateType then
-                    if entity.Type ~= entityPersistData.SpawnData.Type then
-                        entityPersistData.SpawnData.Type = entity.Type
+                local entityPersistData = self:GetPersistenceData(persistentIndex, true)
+                if persistData.UpdateType then
+                    if entity.Type ~= entityPersistData.Type then
+                        entityPersistData.Type = entity.Type
                         changedSpawn = true
                     end
                 end
 
-                if entityPersistData.PersistenceData.UpdateVariant then
-                    if entity.Variant ~= entityPersistData.SpawnData.Variant then
-                        entityPersistData.SpawnData.Variant = entity.Variant
+                if persistData.UpdateVariant then
+                    if entity.Variant ~= entityPersistData.Variant then
+                        entityPersistData.Variant = entity.Variant
                         changedSpawn = true
                     end
                 end
 
-                if entityPersistData.PersistenceData.UpdateSubType then
-                    if entity.SubType ~= entityPersistData.SpawnData.SubType then
-                        entityPersistData.SpawnData.SubType = entity.SubType
+                if persistData.UpdateSubType then
+                    if entity.SubType ~= entityPersistData.SubType then
+                        entityPersistData.SubType = entity.SubType
                         changedSpawn = true
                     end
                 end
 
-                if entityPersistData.PersistenceData.UpdatePosition then
-                    self.PersistentPositions[entityPersistData.PersistentIndex] = {X = entity.Position.X, Y = entity.Position.Y}
+                if persistData.UpdateHealth then
+                    if entity.HitPoints ~= entityPersistData.Health then
+                        entityPersistData.Health = entity.HitPoints
+                    end
                 end
 
-                if entityPersistData.PersistenceData.StoreCheck and entityPersistData.PersistenceData.StoreCheck(entity, data) then
-                    self.AvoidSpawning[entityPersistData.PersistentIndex] = true
+                if persistData.UpdatePosition then
+                    entityPersistData.Position = {X = entity.Position.X, Y = entity.Position.Y}
+                end
+
+                if persistData.StoreCheck and persistData.StoreCheck(entity, data) then
+                    self.AvoidSpawning[persistentIndex] = true
                 end
 
                 if changedSpawn then
-                    local persistentData = StageAPI.CheckPersistence(entity.Type, entity.Variant, entity.SubType)
-                    if not persistentData then
+                    local newPersistData = StageAPI.CheckPersistence(entity.Type, entity.Variant, entity.SubType)
+                    if not newPersistData then
                         StageAPI.RemovePersistentEntity(entity)
                     else
-                        entityPersistData.SpawnInfo.PersistenceData = persistentData
-                        entityPersistData.PersistenceData = persistentData
+                        StageAPI.SetEntityPersistenceData(entity, persistentIndex, newPersistData)
                     end
                 end
             else
-                local persistentData = StageAPI.CheckPersistence(entity.Type, entity.Variant, entity.SubType)
-                if persistentData then
-                    if not persistentData.StoreCheck or not persistentData.StoreCheck(entity, data) then
+                local persistData = StageAPI.CheckPersistence(entity.Type, entity.Variant, entity.SubType)
+                if persistData then
+                    if not persistData.StoreCheck or not persistData.StoreCheck(entity, data) then
                         local index = self.LastPersistentIndex + 1
                         self.LastPersistentIndex = index
                         local grindex = room:GetGridIndex(entity.Position)
@@ -3841,24 +3880,28 @@ do -- RoomsList
                         local spawnInfo = {
                             Data = spawnData,
                             Persistent = true,
-                            PersistentIndex = index,
-                            PersistenceData = persistentData
+                            PersistentIndex = index
                         }
 
                         self.ExtraSpawn[grindex][#self.ExtraSpawn[grindex] + 1] = spawnInfo
 
-                        if persistentData.UpdatePosition then
-                            self.PersistentPositions[index] = {X = entity.Position.X, Y = entity.Position.Y}
+                        local entityPersistData = self:GetPersistenceData(index, true)
+                        if persistData.UpdateHealth then
+                            entityPersistData.Health = entity.HitPoints
                         end
 
-                        StageAPI.SetEntityPersistenceData(entity, index, persistentData, spawnData, spawnInfo)
+                        if persistData.UpdatePosition then
+                            entityPersistData.Position = {X = entity.Position.X, Y = entity.Position.Y}
+                        end
+
+                        StageAPI.SetEntityPersistenceData(entity, index, persistData)
                     end
                 end
             end
         end
 
         for hash, entityPersistData in pairs(checkExistenceOf) do
-            self.AvoidSpawning[entityPersistData.PersistentIndex] = true
+            self.AvoidSpawning[entityPersistData.Index] = true
         end
     end
 
@@ -3867,9 +3910,9 @@ do -- RoomsList
     end
 
     function StageAPI.LevelRoom:RemovePersistentEntity(entity)
-        local data = StageAPI.GetEntityPersistenceData(entity)
-        if data and data.PersistenceData then
-            self:RemovePersistentIndex(data.PersistentIndex)
+        local index, data = StageAPI.GetEntityPersistenceData(entity)
+        if index and data then
+            self:RemovePersistentIndex(index)
         end
     end
 
@@ -3888,13 +3931,13 @@ do -- RoomsList
         local wasFirstLoad = self.FirstLoad
         StageAPI.ClearRoomLayout(false, self.FirstLoad or isExtraRoom, true, self.FirstLoad or isExtraRoom, self.GridTakenIndices, nil, nil, not self.FirstLoad)
         if self.FirstLoad then
-            StageAPI.LoadRoomLayout(self.SpawnGrids, {self.SpawnEntities, self.ExtraSpawn}, true, true, self.IsClear, true, self.GridInformation, self.AvoidSpawning, self.PersistentPositions)
+            StageAPI.LoadRoomLayout(self.SpawnGrids, {self.SpawnEntities, self.ExtraSpawn}, true, true, self.IsClear, true, self.GridInformation, self.AvoidSpawning, self.PersistenceData)
             self.WasClearAtStart = room:IsClear()
             self.IsClear = self.WasClearAtStart
             self.FirstLoad = false
             self.HasEnemies = room:GetAliveEnemiesCount() > 0
         else
-            StageAPI.LoadRoomLayout(self.SpawnGrids, {self.SpawnEntities, self.ExtraSpawn}, isExtraRoom, true, self.IsClear, isExtraRoom, self.GridInformation, self.AvoidSpawning, self.PersistentPositions)
+            StageAPI.LoadRoomLayout(self.SpawnGrids, {self.SpawnEntities, self.ExtraSpawn}, isExtraRoom, true, self.IsClear, isExtraRoom, self.GridInformation, self.AvoidSpawning, self.PersistenceData)
             self.IsClear = room:IsClear()
         end
 
@@ -3967,12 +4010,12 @@ do -- RoomsList
             end
         end
 
-        for pindex, position in pairs(self.PersistentPositions) do
-            if not saveData.PersistentPositions then
-                saveData.PersistentPositions = {}
+        for pindex, persistData in pairs(self.PersistenceData) do
+            if not saveData.PersistenceData then
+                saveData.PersistenceData = {}
             end
 
-            saveData.PersistentPositions[tostring(pindex)] = position
+            saveData.PersistenceData[tostring(pindex)] = persistData
         end
 
         for index, entities in pairs(self.ExtraSpawn) do
@@ -3989,7 +4032,7 @@ do -- RoomsList
     function StageAPI.LevelRoom:LoadSaveData(saveData)
         self.Data = {}
         self.AvoidSpawning = {}
-        self.PersistentPositions = {}
+        self.PersistenceData = {}
         self.ExtraSpawn = {}
 
         for _, v in ipairs(saveDataCopyDirectly) do
@@ -4057,9 +4100,9 @@ do -- RoomsList
             end
         end
 
-        if saveData.PersistentPositions then
-            for strindex, position in pairs(saveData.PersistentPositions) do
-                self.PersistentPositions[tonumber(strindex)] = position
+        if saveData.PersistenceData then
+            for pindex, persistData in pairs(saveData.PersistenceData) do
+                self.PersistenceData[tonumber(strindex)] = persistData
             end
         end
 
@@ -4086,16 +4129,16 @@ do -- RoomsList
     end
 
     mod:AddCallback(ModCallbacks.MC_POST_ENTITY_REMOVE, function(_, ent)
-        local data = StageAPI.GetEntityPersistenceData(ent)
+        local index, data = StageAPI.GetEntityPersistenceData(ent)
         -- Entities are removed whenever you exit the room, in this time the game is paused, which we can use to stop removing persistent entities on room exit.
-        if data and data.PersistenceData and data.PersistenceData.RemoveOnRemove and not game:IsPaused() then
+        if data and data.RemoveOnRemove and not game:IsPaused() then
             StageAPI.RemovePersistentEntity(ent)
         end
     end)
 
     mod:AddCallback(ModCallbacks.MC_POST_ENTITY_KILL, function(_, ent)
-        local data = StageAPI.GetEntityPersistenceData(ent)
-        if data and data.PersistenceData and data.PersistenceData.RemoveOnDeath then
+        local index, data = StageAPI.GetEntityPersistenceData(ent)
+        if data and data.RemoveOnDeath then
             StageAPI.RemovePersistentEntity(ent)
         end
     end)
