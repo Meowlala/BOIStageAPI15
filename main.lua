@@ -3407,7 +3407,7 @@ do -- RoomsList
     end
 
     function StageAPI.GetCurrentRoomID()
-        if StageAPI.InExtraRoom then
+        if (StageAPI.ActiveTransitionToExtraRoom or StageAPI.LoadedExtraRoom) then
             return StageAPI.CurrentExtraRoomName
         else
             return StageAPI.GetCurrentListIndex()
@@ -3430,8 +3430,8 @@ do -- RoomsList
         end
     end
 
-    function StageAPI.GetTableIndexedByDimension(tbl, setIfNot)
-        local dimension = StageAPI.GetDimension()
+    function StageAPI.GetTableIndexedByDimension(tbl, setIfNot, dimension)
+        dimension = dimension or StageAPI.GetDimension()
         if setIfNot and not tbl[dimension] then
             tbl[dimension] = {}
         end
@@ -4164,14 +4164,14 @@ do -- Custom Grid Entities
     StageAPI.CustomGrids = {}
     function StageAPI.SetCustomGrid(grindex, gridName, persistData, roomID, dimension)
         roomID = roomID or StageAPI.GetCurrentRoomID()
-        dimension = dimension or StageAPI.GetDimension()
 
-        StageAPI.CustomGrids[dimension] = StageAPI.CustomGrids[dimension] or {}
-        StageAPI.CustomGrids[dimension][roomID] = StageAPI.CustomGrids[dimension][roomID] or {}
-        StageAPI.CustomGrids[dimension][roomID][gridName] = StageAPI.CustomGrids[dimension][roomID][gridName] or {}
-        StageAPI.CustomGrids[dimension][roomID][gridName][grindex] = persistData or {}
+        local customGrids = StageAPI.GetTableIndexedByDimension(StageAPI.CustomGrids, true, dimension)
 
-        return StageAPI.CustomGrids[dimension][roomID][gridName][grindex]
+        customGrids[roomID] = customGrids[roomID] or {}
+        customGrids[roomID][gridName] = customGrids[roomID][gridName] or {}
+        customGrids[roomID][gridName][grindex] = persistData or {}
+
+        return customGrids[roomID][gridName][grindex]
     end
 
     function StageAPI.CustomGrid:Spawn(grindex, force, reSpawning, startPersistData)
@@ -4310,7 +4310,8 @@ do -- Custom Grid Entities
         local lindex = StageAPI.GetCurrentRoomID()
         local gridDat = StageAPI.GetCustomGrid(index, name)
         if gridDat then
-            StageAPI.SetCustomGrid(index, name, nil)
+            local customGrids = StageAPI.GetTableIndexedByDimension(StageAPI.CustomGrids, true)
+            customGrids[lindex][name][index] = nil
 
             if not keepVanillaGrid then
                 room:RemoveGridEntity(index, 0, false)
@@ -4709,7 +4710,7 @@ do -- Extra Rooms
     end
 
     function StageAPI.ExtraRoomTransition(name, direction, transitionType, isCustomMap, leaveDoor, enterDoor, setPlayerPosition, extraRoomBaseType)
-        leaveDoor = leaveDoor or -1
+        leaveDoor = -1
         enterDoor = enterDoor or -1
         transitionType = transitionType or RoomTransitionAnim.WALK
         direction = direction or Direction.NO_DIRECTION
@@ -4767,7 +4768,14 @@ do -- Extra Rooms
             StageAPI.CurrentExtraRoomName = extraRoomName
             StageAPI.ActiveTransitionToExtraRoom = true
             StageAPI.LoadedExtraRoom = false
+        else
+            StageAPI.InExtraRoom = false
+            StageAPI.CurrentExtraRoom = nil
+            StageAPI.CurrentExtraRoomName = nil
+            StageAPI.ActiveTransitionToExtraRoom = false
         end
+
+        StageAPI.LoadedExtraRoom = false
 
         if targetLevelRoom then
             extraRoomBaseType = extraRoomBaseType or targetLevelRoom.RoomType
@@ -6639,6 +6647,8 @@ do -- Custom Stage
     end
 
     function StageAPI.CustomStage:GenerateRoom(rtype, shape, doors, isStartingRoom, fromLevelGenerator, roomDescriptor)
+        StageAPI.LogMinor("Generating room for stage " .. self:GetDisplayName())
+
         local roomData
         if roomDescriptor then
             roomData = roomDescriptor.Data
@@ -7334,7 +7344,8 @@ do -- Bosses
             local unencounteredBosses = {}
             local validBosses = {}
             local forcedBosses = {}
-            for _, potentialBossID in ipairs(bosses.Pool) do
+            local pool = bosses.Pool or bosses
+            for _, potentialBossID in ipairs(pool) do
                 local poolEntry
                 if type(potentialBossID) == "table" then
                     poolEntry = potentialBossID
@@ -8125,7 +8136,7 @@ do -- Callbacks
             currentRoom = StageAPI.GetCurrentRoom()
         end
 
-        if currentRoom or StageAPI.InExtraRoom or (not inStartingRoom and StageAPI.InNewStage() and ((StageAPI.CurrentStage.Rooms and StageAPI.CurrentStage.Rooms[room:GetType()]) or (StageAPI.CurrentStage.Bosses and room:GetType() == RoomType.ROOM_BOSS))) then
+        if currentRoom or (StageAPI.ActiveTransitionToExtraRoom or StageAPI.LoadedExtraRoom) or (not inStartingRoom and StageAPI.InNewStage() and ((StageAPI.CurrentStage.Rooms and StageAPI.CurrentStage.Rooms[room:GetType()]) or (StageAPI.CurrentStage.Bosses and room:GetType() == RoomType.ROOM_BOSS))) then
             return true
         end
     end
@@ -8380,15 +8391,6 @@ do -- Callbacks
         local newRoom = StageAPI.LevelRoom(StageAPI.Merged({RoomsList = boss.Rooms}, roomArgs))
         newRoom.PersistentData.BossID = bossID
         StageAPI.CallCallbacks("POST_BOSS_ROOM_INIT", false, newRoom, boss, bossID)
-
-        if not args.NoPlayBossAnim then
-            local playTextStreak = args.PlayTextStreak or (args.IsMiniboss and args.PlayTextStreak ~= false)
-            if not playTextStreak then
-                StageAPI.PlayBossAnimation(boss, args.UnskippableBossAnim)
-            else
-                StageAPI.PlayTextStreak(players[1]:GetName() .. " VS " .. boss.Name)
-            end
-        end
 
         return newRoom, boss
     end
@@ -8893,7 +8895,7 @@ do -- Callbacks
     }
 
     mod:AddCallback(ModCallbacks.MC_PRE_ROOM_ENTITY_SPAWN, function(_, t, v, s, index, seed)
-        if StageAPI.ShouldOverrideRoom() and (t >= 1000 or gridBlacklist[t] or StageAPI.IsMetadataEntity(t, v)) and not StageAPI.InExtraRoom then
+        if StageAPI.ShouldOverrideRoom() and (t >= 1000 or gridBlacklist[t] or StageAPI.IsMetadataEntity(t, v)) and not StageAPI.ActiveTransitionToExtraRoom then
             local shouldReturn
             if room:IsFirstVisit() or StageAPI.IsMetadataEntity(t, v) then
                 shouldReturn = true
