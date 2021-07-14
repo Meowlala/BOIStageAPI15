@@ -2933,7 +2933,7 @@ do -- RoomsList
             local canSwapWith = {}
             local groupedWith = roomMetadata:GroupsWithIndex(index)
             for _, groupID in ipairs(groupedWith) do
-                local indices = metadataGroups[groupID]
+                local indices = roomMetadata.Groups[groupID]
                 for _, index2 in ipairs(indices) do
                     if swapperIndices[index2] and not alreadyInSwap[index2] then
                         canSwapWith[#canSwapWith + 1] = index2
