@@ -3370,7 +3370,7 @@ do -- RoomsList
 
                         sprite:SetLastFrame()
                     elseif grid:ToPressurePlate() then
-                        if grid.State == 1 then
+                        if grid.State == 3 then
                             local anim = sprite:GetAnimation()
                             if anim == "OffSkull" then
                                 sprite:Play("OnSkull", true)
@@ -5504,7 +5504,12 @@ do -- Custom Doors
                         StageAPI.ExtraRoomTransition(leadsTo, StageAPI.DoorSlotToDirection[data.DoorGridData.Slot], RoomTransitionAnim.WALK, true, data.DoorGridData.Slot, data.DoorGridData.ExitSlot)
                     else
                         transitionStarted = true
-                        StageAPI.ExtraRoomTransition(leadsTo, StageAPI.DoorSlotToDirection[data.DoorGridData.Slot], RoomTransitionAnim.WALK, false, data.DoorGridData.Slot, data.DoorGridData.ExitSlot)
+                        local leaveDoor = data.DoorGridData.ExitSlot
+                        if type(leadsTo) ~= "string" then
+                            leaveDoor = nil
+                        end
+
+                        StageAPI.ExtraRoomTransition(leadsTo, StageAPI.DoorSlotToDirection[data.DoorGridData.Slot], RoomTransitionAnim.WALK, false, data.DoorGridData.Slot, leaveDoor)
                     end
                 end
             end
@@ -9470,7 +9475,7 @@ do
                         local adjDetonators = currentRoom.Metadata:Search({Indices = adjacent, Name = "Detonator"}, metadataEntities)
                         for _, detonator in ipairs(adjDetonators) do
                             if not detonator.RecentlyTriggered and room:GetGridCollision(detonator.Index) == 0 then
-                                local grid = room:GetGridEntity(index2)
+                                local grid = room:GetGridEntity(detonator.Index)
                                 if grid then
                                     destroySelf = true
                                 end
