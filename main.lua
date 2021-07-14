@@ -894,6 +894,16 @@ do -- Core Functions
     	return first * (1 - percent) + second * percent
     end
 
+    function StageAPI.FillBits(count)
+        return (1 << count) - 1
+    end
+
+    function StageAPI.GetBits(bits, startBit, count)
+        bits = bits >> startBit
+        bits = bits & StageAPI.FillBits(count)
+        return bits
+    end
+
     local TextStreakScales = {
         [0] = Vector(3,0.2),     [1] = Vector(2.6,0.36),
         [2] = Vector(2.2,0.52),  [3] = Vector(1.8,0.68),
@@ -2413,6 +2423,9 @@ do -- RoomsList
             [29] = {
                 Name = "ButtonTrigger",
                 OptionalGroupIDSubType = true
+            },
+            [40] = {
+                Name = "Room"
             }
         }
     }
@@ -9693,6 +9706,144 @@ do -- Custom Floor Generation
         StageAPI.UpdateLevelMap(outRooms)
     end
 
+    function StageAPI.CreateMapFromRoomsList(roomsList)
+        local startingRoom
+        local mapLayouts = {}
+        local nonMapLayouts = {}
+        for _, layout in ipairs(roomsList.All) do
+            local hasRoomEnt
+            for _, ent in ipairs(layout.Entities) do
+                local metadata = StageAPI.IsMetadataEntity(ent.Type, ent.Variant)
+                if metadata and metadata.Name == "Room" then
+                    hasRoomEnt = true
+                    if StageAPI.GetBits(ent.SubType, 0, 1) == 1 then
+                        startingRoom = layout.Variant
+                    end
+                end
+            end
+
+            if hasRoomEnt then
+                mapLayouts[layout.Variant] = layout
+            else
+                nonMapLayouts[layout.Variant] = layout
+            end
+        end
+
+        if startingRoom then
+            local mapLayout = mapLayouts[startingRoom]
+            local roomsByID = {}
+            for _, ent in ipairs(mapLayout.Entities) do
+                local metadata = StageAPI.IsMetadataEntity(ent.Type, ent.Variant)
+                if metadata and metadata.Name == "Room" then
+                    local isStartingRoom = StageAPI.GetBits(ent.SubType, 0, 1) == 1
+                    local isPersistentRoom = StageAPI.GetBits(ent.SubType, 1, 1) == 1
+                    local roomID = StageAPI.GetBits(ent.SubType, 2, 14)
+                    print(roomID)
+                    if ent.GridX and ent.GridY and nonMapLayouts[roomID] then
+                        print("Valid room ID " .. tostring(roomID) .. " " .. tostring(isStartingRoom))
+                        if not roomsByID[roomID] then
+                            roomsByID[roomID] = {}
+                        end
+
+                        roomsByID[roomID][#roomsByID[roomID] + 1] = {
+                            StartingRoom = isStartingRoom,
+                            Persistent = isPersistentRoom,
+                            RoomID = roomID,
+                            GridX = ent.GridX,
+                            GridY = ent.GridY
+                        }
+                    end
+                end
+            end
+
+            local outRooms = {}
+            for roomID, roomPositions in pairs(roomsByID) do
+                local roomLayout = nonMapLayouts[roomID]
+                local shape = roomLayout.Shape
+                while #roomPositions > 0 do
+                    local gridIndices = {}
+                    local onMap = {}
+                    for i, position in ipairs(roomPositions) do
+                        if not onMap[position.GridX] then
+                            onMap[position.GridX] = {}
+                        end
+
+                        onMap[position.GridX][position.GridY] = i
+
+                        for x = position.GridX - 1, position.GridX do
+                            for y = position.GridY - 1, position.GridY do
+                                gridIndices[#gridIndices + 1] = {X = x, Y = y}
+                            end
+                        end
+                    end
+
+                    local setRoom
+                    for _, gridIndex in ipairs(gridIndices) do
+                        local mapSegs = StageAPI.GetRoomMapSegments(gridIndex.X, gridIndex.Y, shape)
+                        local invalid
+                        for _, seg in ipairs(mapSegs) do
+                            if not onMap[seg.X] or not onMap[seg.X][seg.Y] then
+                                invalid = true
+                            end
+                        end
+
+                        if not invalid then
+                            setRoom = {X = gridIndex.X, Y = gridIndex.Y, Segments = mapSegs}
+                            break
+                        end
+                    end
+
+                    if setRoom then
+                        local isStartingRoom, isPersistent
+                        for i, position in StageAPI.ReverseIterate(roomPositions) do
+                            local shouldRemove
+                            for _, seg in ipairs(setRoom.Segments) do
+                                if seg.X == position.GridX and seg.Y == position.GridY then
+                                    shouldRemove = true
+                                    break
+                                end
+                            end
+
+                            if shouldRemove then
+                                isStartingRoom = isStartingRoom or position.StartingRoom
+                                isPersistent = isPersistent or position.Persistent
+                                table.remove(roomPositions, i)
+                            end
+                        end
+
+                        local id = "CL" .. tostring(setRoom.X) .. "." .. tostring(setRoom.Y) .. "." .. tostring(shape)
+                        StageAPI.RegisterLayout(id, roomLayout)
+
+                        local newRoom = StageAPI.LevelRoom{
+                            LayoutName = id,
+                            SpawnSeed = Random(),
+                            AwardSeed = Random(),
+                            DecorationSeed = Random(),
+                            Shape = shape,
+                            RoomType = roomLayout.Type,
+                            IsPersistentRoom = true,
+                            IsExtraRoom = true,
+                            LevelIndex = id
+                        }
+
+                        StageAPI.SetExtraRoom(id, newRoom)
+
+                        outRooms[#outRooms + 1] = {
+                            X = setRoom.X,
+                            Y = setRoom.Y,
+                            Shape = shape,
+                            StartingRoom = isStartingRoom,
+                            Persistent = isPersistent,
+                            ExtraRoomName = id
+                        }
+                    end
+                end
+            end
+
+            StageAPI.UpdateLevelMap(outRooms, nil, true)
+        end
+    end
+
     function StageAPI.PrintCustomLevelMap()
         local mapStr = ""
         for y = StageAPI.CurrentLevelMap2D.LowY, StageAPI.CurrentLevelMap2D.HighY do
@@ -10031,7 +10182,7 @@ do -- Custom Floor Generation
                 end
             end
 
-            StageAPI.ExtraRoomTransition(levelStartRoom, Direction.NO_DIRECTION, -1, true)
+            StageAPI.ExtraRoomTransition(levelStartRoom, Direction.NO_DIRECTION, -1, true, nil, nil, Vector(320, 380))
         end
     end
 
@@ -10067,9 +10218,14 @@ do -- Custom Floor Generation
     end)
 
     local testingStage
+    local testingRoomsList
+    local testSuite = include("resources.stageapi.luarooms.testsuite")
+    local mapLayoutTestRoomsList = StageAPI.RoomsList("MapLayoutTest", testSuite)
     mod:AddCallback(ModCallbacks.MC_EXECUTE_CMD, function(_, cmd, params)
         if cmd == "teststage" then
             testingStage = params
+        elseif cmd == "loadtestsuite" then
+            testingRoomsList = mapLayoutTestRoomsList
         end
     end)
 
@@ -10081,6 +10237,10 @@ do -- Custom Floor Generation
             testingStage = nil
             StageAPI.CopyCurrentLevelMap()
             Isaac.ExecuteCommand("stage " .. tostring(baseStage) .. StageAPI.StageTypeToString[baseStageType])
+            StageAPI.InitCustomLevel(true)
+        elseif testingRoomsList then
+            StageAPI.CreateMapFromRoomsList(testingRoomsList)
+            testingRoomsList = nil
             StageAPI.InitCustomLevel(true)
         end
     end)

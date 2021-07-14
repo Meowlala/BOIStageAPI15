@@ -68,6 +68,19 @@
 		</bitfield>
 	</entity>
 
+	<entity Metadata="1" Group="StageAPI Utilities" ID="199" Image="stageapi/room.png" Kind="Stage" Name="Room" Subtype="0" Variant="40" >
+		<bitfield Key="Subtype">
+			<checkbox Name="Starting Room" Length="1"/>
+			<checkbox Name="Do not Persist" Length="1">
+				<tooltip>If set, the room is reset when re-entered</tooltip>
+			</checkbox>
+			<spinner Name="Room ID" Length="14">
+				<tooltip>Determines which room from this file is placed at a position on the map
+If used with the Room ID of another map layout, merges the two maps based on overlap.</tooltip>
+			</spinner>
+		</bitfield>
+	</entity>
+
 
 	<!-- Pre-parameters system for groups / directions -->
 	<entity Metadata="1" Group="z StageAPI Deprecated" ID="199" Image="stageapi/group_1.png" Kind="Stage" Name="Group 1" Subtype="1" Variant="0" />
