@@ -5079,12 +5079,12 @@ do -- Custom Doors
                 local leadsTo = data.DoorGridData.LeadsTo
                 if leadsTo then
                     transitionStarted = true
-                    local leaveDoor = data.DoorGridData.ExitSlot
+                    local leaveDoor = data.DoorGridData.Slot
                     if type(leadsTo) ~= "string" then
                         leaveDoor = nil
                     end
 
-                    StageAPI.ExtraRoomTransition(leadsTo, StageAPI.DoorSlotToDirection[data.DoorGridData.Slot], RoomTransitionAnim.WALK, false, data.DoorGridData.Slot, leaveDoor)
+                    StageAPI.ExtraRoomTransition(leadsTo, StageAPI.DoorSlotToDirection[data.DoorGridData.Slot], RoomTransitionAnim.WALK, false, leaveDoor, data.DoorGridData.ExitSlot)
                 end
             end
         end
