@@ -399,6 +399,10 @@ do -- Core Definitions
         StageAPI = {}
     end
 
+    if not include then
+        include = require
+    end
+
     function StageAPI.LogConcat(prefix, ...)
         local str = prefix
         local args = {...}
@@ -8609,7 +8613,7 @@ do
         end
 
         if StageAPI.CurrentExtraRoomName then
-            StageAPI.CurrentExtraRoom = retLevelRooms[StageAPI.CurrentExtraRoomName]
+            StageAPI.CurrentExtraRoom = retLevelRooms[-2][StageAPI.CurrentExtraRoomName]
             StageAPI.InExtraRoom = true
             StageAPI.LoadingExtraRoomFromSave = true
         end
