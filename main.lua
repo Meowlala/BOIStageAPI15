@@ -4665,7 +4665,7 @@ do -- Extra Rooms
 
     -- isCustomMap is unused currently, but will be used if custom floor gen is added
     function StageAPI.ExtraRoomTransition(name, direction, transitionType, isCustomMap, leaveDoor, enterDoor, setPlayerPosition, extraRoomBaseType)
-        leaveDoor = leaveDoor or -1
+        leaveDoor = -1
         enterDoor = enterDoor or -1
         transitionType = transitionType or RoomTransitionAnim.WALK
         direction = direction or Direction.NO_DIRECTION
@@ -6060,6 +6060,8 @@ do -- Custom Stage
     end
 
     function StageAPI.CustomStage:GenerateRoom(rtype, shape, doors, isStartingRoom, fromLevelGenerator, roomDescriptor)
+        StageAPI.LogMinor("Generating room for stage " .. self:GetDisplayName())
+
         local roomData
         if roomDescriptor then
             roomData = roomDescriptor.Data
@@ -6755,7 +6757,8 @@ do -- Bosses
             local unencounteredBosses = {}
             local validBosses = {}
             local forcedBosses = {}
-            for _, potentialBossID in ipairs(bosses.Pool) do
+            local pool = bosses.Pool or bosses
+            for _, potentialBossID in ipairs(pool) do
                 local poolEntry
                 if type(potentialBossID) == "table" then
                     poolEntry = potentialBossID
@@ -7801,15 +7804,6 @@ do -- Callbacks
         local newRoom = StageAPI.LevelRoom(StageAPI.Merged({RoomsList = boss.Rooms}, roomArgs))
         newRoom.PersistentData.BossID = bossID
         StageAPI.CallCallbacks("POST_BOSS_ROOM_INIT", false, newRoom, boss, bossID)
-
-        if not args.NoPlayBossAnim then
-            local playTextStreak = args.PlayTextStreak or (args.IsMiniboss and args.PlayTextStreak ~= false)
-            if not playTextStreak then
-                StageAPI.PlayBossAnimation(boss, args.UnskippableBossAnim)
-            else
-                StageAPI.PlayTextStreak(players[1]:GetName() .. " VS " .. boss.Name)
-            end
-        end
 
         return newRoom, boss
     end
