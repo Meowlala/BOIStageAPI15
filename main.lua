@@ -3202,7 +3202,7 @@ do -- RoomsList
 
                         sprite:SetLastFrame()
                     elseif grid:ToPressurePlate() then
-                        if grid.State == 1 then
+                        if grid.State == 3 then
                             local anim = sprite:GetAnimation()
                             if anim == "OffSkull" then
                                 sprite:Play("OnSkull", true)
@@ -4709,7 +4709,7 @@ do -- Extra Rooms
 
     -- isCustomMap is unused currently, but will be used if custom floor gen is added
     function StageAPI.ExtraRoomTransition(name, direction, transitionType, isCustomMap, leaveDoor, enterDoor, setPlayerPosition, extraRoomBaseType)
-        leaveDoor = -1
+        leaveDoor = leaveDoor or -1
         enterDoor = enterDoor or -1
         transitionType = transitionType or RoomTransitionAnim.WALK
         direction = direction or Direction.NO_DIRECTION
@@ -5075,7 +5075,12 @@ do -- Custom Doors
                 local leadsTo = data.DoorGridData.LeadsTo
                 if leadsTo then
                     transitionStarted = true
-                    StageAPI.ExtraRoomTransition(leadsTo, StageAPI.DoorSlotToDirection[data.DoorGridData.Slot], RoomTransitionAnim.WALK, false, data.DoorGridData.Slot, data.DoorGridData.ExitSlot)
+                    local leaveDoor = data.DoorGridData.ExitSlot
+                    if type(leadsTo) ~= "string" then
+                        leaveDoor = nil
+                    end
+
+                    StageAPI.ExtraRoomTransition(leadsTo, StageAPI.DoorSlotToDirection[data.DoorGridData.Slot], RoomTransitionAnim.WALK, false, data.DoorGridData.Slot, leaveDoor)
                 end
             end
         end
