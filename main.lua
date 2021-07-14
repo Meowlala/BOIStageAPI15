@@ -8916,7 +8916,7 @@ do
                         local adjDetonators = currentRoom.Metadata:Search({Indices = adjacent, Name = "Detonator"}, metadataEntities)
                         for _, detonator in ipairs(adjDetonators) do
                             if not detonator.RecentlyTriggered and room:GetGridCollision(detonator.Index) == 0 then
-                                local grid = room:GetGridEntity(index2)
+                                local grid = room:GetGridEntity(detonator.Index)
                                 if grid then
                                     destroySelf = true
                                 end
