@@ -3252,7 +3252,7 @@ do -- RoomsList
     end
 
     function StageAPI.GetCurrentRoomID()
-        if StageAPI.InExtraRoom then
+        if (StageAPI.ActiveTransitionToExtraRoom or StageAPI.LoadedExtraRoom) then
             return StageAPI.CurrentExtraRoomName
         else
             return StageAPI.GetCurrentListIndex()
@@ -4740,9 +4740,14 @@ do -- Extra Rooms
                     setClear = extraRoom.IsClear
                 end
             end
-
-            StageAPI.LoadedExtraRoom = false
+        else
+            StageAPI.InExtraRoom = false
+            StageAPI.CurrentExtraRoom = nil
+            StageAPI.CurrentExtraRoomName = nil
+            StageAPI.ActiveTransitionToExtraRoom = false
         end
+
+        StageAPI.LoadedExtraRoom = false
 
         local targetRoomDesc = level:GetRoomByIdx(transitionTo)
 
@@ -7541,7 +7546,7 @@ do -- Callbacks
             currentRoom = StageAPI.GetCurrentRoom()
         end
 
-        if currentRoom or StageAPI.InExtraRoom or (not inStartingRoom and StageAPI.InNewStage() and ((StageAPI.CurrentStage.Rooms and StageAPI.CurrentStage.Rooms[room:GetType()]) or (StageAPI.CurrentStage.Bosses and room:GetType() == RoomType.ROOM_BOSS))) then
+        if currentRoom or (StageAPI.ActiveTransitionToExtraRoom or StageAPI.LoadedExtraRoom) or (not inStartingRoom and StageAPI.InNewStage() and ((StageAPI.CurrentStage.Rooms and StageAPI.CurrentStage.Rooms[room:GetType()]) or (StageAPI.CurrentStage.Bosses and room:GetType() == RoomType.ROOM_BOSS))) then
             return true
         end
     end
@@ -8316,7 +8321,7 @@ do -- Callbacks
             else
                 local currentListIndex = StageAPI.GetCurrentRoomID()
                 local roomGrids = StageAPI.GetTableIndexedByDimension(StageAPI.RoomGrids, true)
-                if not roomGrids[currentListIndex] or not roomGrids[currentListIndex][index] then
+                if roomGrids[currentListIndex] and not roomGrids[currentListIndex][index] then
                     shouldReturn = true
                 end
             end
