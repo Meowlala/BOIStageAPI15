@@ -4766,7 +4766,7 @@ do -- Extra Rooms
     end
 
     function StageAPI.ExtraRoomTransition(name, direction, transitionType, isCustomMap, leaveDoor, enterDoor, setPlayerPosition, extraRoomBaseType)
-        leaveDoor = -1
+        leaveDoor = leaveDoor or -1
         enterDoor = enterDoor or -1
         transitionType = transitionType or RoomTransitionAnim.WALK
         direction = direction or Direction.NO_DIRECTION
@@ -9749,7 +9749,7 @@ do -- Custom Floor Generation
         StageAPI.UpdateLevelMap(outRooms)
     end
 
-    function StageAPI.CreateMapFromRoomsList(roomsList)
+    function StageAPI.CreateMapFromRoomsList(roomsList, useMapID)
         local startingRoom
         local mapLayouts = {}
         local nonMapLayouts = {}
@@ -9759,7 +9759,7 @@ do -- Custom Floor Generation
                 local metadata = StageAPI.IsMetadataEntity(ent.Type, ent.Variant)
                 if metadata and metadata.Name == "Room" then
                     hasRoomEnt = true
-                    if StageAPI.GetBits(ent.SubType, 0, 1) == 1 then
+                    if not startingRoom and StageAPI.GetBits(ent.SubType, 0, 1) == 1 then
                         startingRoom = layout.Variant
                     end
                 end
@@ -9772,8 +9772,8 @@ do -- Custom Floor Generation
             end
         end
 
-        if startingRoom then
-            local mapLayout = mapLayouts[startingRoom]
+        if useMapID or startingRoom then
+            local mapLayout = mapLayouts[useMapID or startingRoom]
             local roomsByID = {}
             for _, ent in ipairs(mapLayout.Entities) do
                 local metadata = StageAPI.IsMetadataEntity(ent.Type, ent.Variant)
@@ -9781,9 +9781,7 @@ do -- Custom Floor Generation
                     local isStartingRoom = StageAPI.GetBits(ent.SubType, 0, 1) == 1
                     local isPersistentRoom = StageAPI.GetBits(ent.SubType, 1, 1) == 1
                     local roomID = StageAPI.GetBits(ent.SubType, 2, 14)
-                    print(roomID)
                     if ent.GridX and ent.GridY and nonMapLayouts[roomID] then
-                        print("Valid room ID " .. tostring(roomID) .. " " .. tostring(isStartingRoom))
                         if not roomsByID[roomID] then
                             roomsByID[roomID] = {}
                         end
@@ -10268,7 +10266,10 @@ do -- Custom Floor Generation
         if cmd == "teststage" then
             testingStage = params
         elseif cmd == "loadtestsuite" then
-            testingRoomsList = mapLayoutTestRoomsList
+            testingRoomsList = tonumber(params)
+            if not testingRoomsList then
+                testingRoomsList = true
+            end
         end
     end)
 
@@ -10282,7 +10283,12 @@ do -- Custom Floor Generation
             Isaac.ExecuteCommand("stage " .. tostring(baseStage) .. StageAPI.StageTypeToString[baseStageType])
             StageAPI.InitCustomLevel(true)
         elseif testingRoomsList then
-            StageAPI.CreateMapFromRoomsList(testingRoomsList)
+            if testingRoomsList == true then
+                StageAPI.CreateMapFromRoomsList(mapLayoutTestRoomsList)
+            else
+                StageAPI.CreateMapFromRoomsList(mapLayoutTestRoomsList, testingRoomsList)
+            end
+
             testingRoomsList = nil
             StageAPI.InitCustomLevel(true)
         end
