@@ -8316,7 +8316,7 @@ do -- Callbacks
             else
                 local currentListIndex = StageAPI.GetCurrentRoomID()
                 local roomGrids = StageAPI.GetTableIndexedByDimension(StageAPI.RoomGrids, true)
-                if roomGrids[currentListIndex] and not roomGrids[currentListIndex][index] then
+                if not roomGrids[currentListIndex] or not roomGrids[currentListIndex][index] then
                     shouldReturn = true
                 end
             end
