@@ -3275,8 +3275,8 @@ do -- RoomsList
         end
     end
 
-    function StageAPI.GetTableIndexedByDimension(tbl, setIfNot)
-        local dimension = StageAPI.GetDimension()
+    function StageAPI.GetTableIndexedByDimension(tbl, setIfNot, dimension)
+        dimension = dimension or StageAPI.GetDimension()
         if setIfNot and not tbl[dimension] then
             tbl[dimension] = {}
         end
@@ -4119,14 +4119,14 @@ do -- Custom Grid Entities
     StageAPI.CustomGrids = {}
     function StageAPI.SetCustomGrid(grindex, gridName, persistData, roomID, dimension)
         roomID = roomID or StageAPI.GetCurrentRoomID()
-        dimension = dimension or StageAPI.GetDimension()
 
-        StageAPI.CustomGrids[dimension] = StageAPI.CustomGrids[dimension] or {}
-        StageAPI.CustomGrids[dimension][roomID] = StageAPI.CustomGrids[dimension][roomID] or {}
-        StageAPI.CustomGrids[dimension][roomID][gridName] = StageAPI.CustomGrids[dimension][roomID][gridName] or {}
-        StageAPI.CustomGrids[dimension][roomID][gridName][grindex] = persistData or {}
+        local customGrids = StageAPI.GetTableIndexedByDimension(StageAPI.CustomGrids, true, dimension)
 
-        return StageAPI.CustomGrids[dimension][roomID][gridName][grindex]
+        customGrids[roomID] = customGrids[roomID] or {}
+        customGrids[roomID][gridName] = customGrids[roomID][gridName] or {}
+        customGrids[roomID][gridName][grindex] = persistData or {}
+
+        return customGrids[roomID][gridName][grindex]
     end
 
     function StageAPI.CustomGrid:Spawn(grindex, force, reSpawning, startPersistData)
@@ -4265,7 +4265,8 @@ do -- Custom Grid Entities
         local lindex = StageAPI.GetCurrentRoomID()
         local gridDat = StageAPI.GetCustomGrid(index, name)
         if gridDat then
-            StageAPI.SetCustomGrid(index, name, nil)
+            local customGrids = StageAPI.GetTableIndexedByDimension(StageAPI.CustomGrids, true)
+            customGrids[lindex][name][index] = nil
 
             if not keepVanillaGrid then
                 room:RemoveGridEntity(index, 0, false)
