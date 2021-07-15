@@ -5009,7 +5009,7 @@ do -- Custom Doors
 
         door.RenderZOffset = -10000
         sprite.Rotation = persistData.Slot * 90 - 90
-        sprite.Offset = StageAPI.DoorOffsetsByDirection[StageAPI.DoorToDirection[persistData.Slot]]
+        door.PositionOffset = StageAPI.DoorOffsetsByDirection[StageAPI.DoorToDirection[persistData.Slot]]
 
         if not doorData.NoAutoHandling then
             if doorData.AlwaysOpen then
