@@ -5318,6 +5318,10 @@ do -- Custom Doors
                     end
                 end
 
+                if stateData.Triggers.EnteredThrough and level.EnterDoor == data.DoorGridData.Slot then
+                    trigger = stateData.Triggers.EnteredThrough
+                end
+
                 if stateData.Triggers.Unclear and not room:IsClear() then
                     trigger = stateData.Triggers.Unclear
                 end

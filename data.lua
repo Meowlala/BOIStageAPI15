@@ -42,6 +42,10 @@ StageAPI.SpecialDoorClosedState = {
 StageAPI.SecretDoorHiddenState = {
     Anim = "Hidden",
     Triggers = {
+        EnteredThrough = {
+            State = "Opened",
+            Anim = "Opened"
+        },
         Bomb = {
             State = "Opened",
             Anim = "Opened",
