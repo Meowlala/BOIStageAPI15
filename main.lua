@@ -10243,30 +10243,6 @@ do -- Custom Floor Generation
         end
     end)
 
-    local minimapRenderStart = Vector(300, 100)
-    local minimapRenderWidth = Vector(8, 0)
-    local minimapRenderHeight = Vector(0, 7)
-
-    local minimap = Sprite()
-    minimap:Load("gfx/ui/minimap1.anm2", true)
-
-    mod:AddCallback(ModCallbacks.MC_POST_RENDER, function()
-        if StageAPI.InCustomMap then
-            for i, room in ipairs(StageAPI.CurrentLevelMap) do
-                local x, y = room.X, room.Y
-                local frame = room.Shape - 1
-
-                if StageAPI.CurrentCustomMapRoomID == i then
-                    minimap:SetFrame("RoomCurrent", frame)
-                else
-                    minimap:SetFrame("RoomUnvisited", frame)
-                end
-
-                minimap:Render(minimapRenderStart + minimapRenderWidth * x + minimapRenderHeight * y, zeroVector, zeroVector)
-            end
-        end
-    end)
-
     local testingStage
     local testingRoomsList
     local testSuite = include("resources.stageapi.luarooms.testsuite")
