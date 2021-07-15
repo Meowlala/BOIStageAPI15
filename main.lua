@@ -3401,7 +3401,7 @@ do -- RoomsList
                         end
                     end
 
-                    if gridData.Type == GridEntityType.GRID_PRESSURE_PLATE and gridData.Variant == 0 and grid.State ~= 1 then
+                    if gridData.Type == GridEntityType.GRID_PRESSURE_PLATE and gridData.Variant == 0 and grid.State ~= 3 then
                         StageAPI.Room:SetClear(false)
                     end
 
