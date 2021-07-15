@@ -5153,9 +5153,9 @@ do -- Custom Doors
         sprite.Rotation = persistData.Slot * 90 - 90
 
         if doorData.DirectionOffsets then
-            sprite.Offset = doorData.DirectionOffsets[StageAPI.DoorToDirection[persistData.Slot]]
+            door.PositionOffset = doorData.DirectionOffsets[StageAPI.DoorToDirection[persistData.Slot]]
         else
-            sprite.Offset = StageAPI.DoorOffsetsByDirection[StageAPI.DoorToDirection[persistData.Slot]]
+            door.PositionOffset = StageAPI.DoorOffsetsByDirection[StageAPI.DoorToDirection[persistData.Slot]]
         end
 
         local opened
