@@ -9966,14 +9966,16 @@ do -- Custom Floor Generation
         local mapLayouts = {}
         local nonMapLayouts = {}
         for _, layout in ipairs(roomsList.All) do
-            local hasRoomEnt
             local stageIndices = {}
             local roomIndices = {}
+            local roomEntities = {}
             for _, ent in ipairs(layout.Entities) do
                 local metadata = StageAPI.IsMetadataEntity(ent.Type, ent.Variant)
                 if metadata then
                     if metadata.Name == "Room" then
-                        hasRoomEnt = true
+                        local roomID = StageAPI.GetBits(ent.SubType, 2, 14)
+
+                        roomEntities[#roomEntities + 1] = {Entity = ent, GridX = ent.GridX, GridY = ent.GridY, RoomID = roomID, FromMap = layout.Variant}
                         if not startingRoom and StageAPI.GetBits(ent.SubType, 0, 1) == 1 then
                             startingRoom = layout.Variant
                         end
@@ -9985,7 +9987,7 @@ do -- Custom Floor Generation
                 end
             end
 
-            if hasRoomEnt then
+            if #roomEntities > 0 then
                 local globalStage
                 local roomToStage = {}
                 for index, stageDat in pairs(stageIndices) do
@@ -10002,43 +10004,76 @@ do -- Custom Floor Generation
                     end
                 end
 
-                mapLayouts[layout.Variant] = {Layout = layout, GlobalStage = globalStage, RoomToStage = roomToStage}
+                mapLayouts[layout.Variant] = {Layout = layout, GlobalStage = globalStage, RoomToStage = roomToStage, RoomEntities = roomEntities}
             else
                 nonMapLayouts[layout.Variant] = layout
             end
         end
 
+        for variant, mapLayout in pairs(mapLayouts) do
+            mapLayout.MapMergePoints = {}
+            for i, roomEnt in StageAPI.ReverseIterate(mapLayout.RoomEntities) do
+                if mapLayouts[roomEnt.RoomID] then
+                    mapLayout.MapMergePoints[roomEnt.RoomID] = {X = roomEnt.Entity.GridX, Y = roomEnt.Entity.GridY, MapID = variant}
+                    table.remove(mapLayout.RoomEntities, i)
+                end
+            end
+        end
+
         if useMapID or startingRoom then
             local mapLayout = mapLayouts[useMapID or startingRoom]
-            local globalStage = mapLayout.GlobalStage
-            local roomToStage = mapLayout.RoomToStage
             local roomsByID = {}
-            for _, ent in ipairs(mapLayout.Layout.Entities) do
-                local metadata = StageAPI.IsMetadataEntity(ent.Type, ent.Variant)
-                if metadata and metadata.Name == "Room" then
-                    local isStartingRoom = StageAPI.GetBits(ent.SubType, 0, 1) == 1
-                    local isPersistentRoom = StageAPI.GetBits(ent.SubType, 1, 1) == 1
-                    local roomID = StageAPI.GetBits(ent.SubType, 2, 14)
-                    if ent.GridX and ent.GridY and nonMapLayouts[roomID] then
-                        if not roomsByID[roomID] then
-                            roomsByID[roomID] = {}
+
+            while next(mapLayout.MapMergePoints) do
+                local mergeID, mergePos = next(mapLayout.MapMergePoints)
+                local mergeDat = mapLayouts[mergeID]
+                if mergeDat then
+                    local mergingPos = mergeDat.MapMergePoints[mergePos.MapID]
+                    if mergingPos then
+                        local relativeX, relativeY = mergePos.X - mergingPos.X, mergePos.Y - mergingPos.Y
+                        for _, roomEnt in ipairs(mergeDat.RoomEntities) do
+                            roomEnt = StageAPI.DeepCopy(roomEnt)
+                            roomEnt.GridX = roomEnt.GridX + relativeX
+                            roomEnt.GridY = roomEnt.GridY + relativeY
+                            mapLayout.RoomEntities[#mapLayout.RoomEntities + 1] = roomEnt
                         end
 
-                        local roomPosition = {
-                            StartingRoom = isStartingRoom,
-                            Persistent = isPersistentRoom,
-                            RoomID = roomID,
-                            GridX = ent.GridX,
-                            GridY = ent.GridY
-                        }
-
-                        if roomToStage[ent.Index] then
-                            roomPosition.Stage = roomToStage[ent.Index]
+                        for mergeID2, mergePos2 in pairs(mergeDat.MapMergePoints) do
+                            if mergeID2 ~= mergePos.MapID then
+                                mapLayout.MapMergePoints[mergeID2] = {X = mergePos2.X + relativeX, Y = mergePos2.Y + relativeY, MapID = mergeID}
+                            end
                         end
-
-                        roomsByID[roomID][#roomsByID[roomID] + 1] = roomPosition
                     end
                 end
+
+                mapLayout.MapMergePoints[mergeID] = nil
+            end
+
+            for _, roomEnt in ipairs(mapLayout.RoomEntities) do
+                local isStartingRoom = StageAPI.GetBits(roomEnt.Entity.SubType, 0, 1) == 1
+                local isPersistentRoom = StageAPI.GetBits(roomEnt.Entity.SubType, 1, 1) == 1
+                local roomID = roomEnt.RoomID
+
+                local roomPosition = {
+                    StartingRoom = isStartingRoom,
+                    Persistent = isPersistentRoom,
+                    RoomID = roomID,
+                    GridX = roomEnt.GridX,
+                    GridY = roomEnt.GridY
+                }
+
+                local entMap = mapLayouts[roomEnt.FromMap]
+                if entMap.RoomToStage[roomEnt.Entity.Index] then
+                    roomPosition.Stage = entMap.RoomToStage[roomEnt.Entity.Index]
+                elseif entMap.GlobalStage then
+                    roomPosition.Stage = entMap.GlobalStage
+                end
+
+                if not roomsByID[roomID] then
+                    roomsByID[roomID] = {}
+                end
+
+                roomsByID[roomID][#roomsByID[roomID] + 1] = roomPosition
             end
 
             local outRooms = {}
@@ -10079,7 +10114,7 @@ do -- Custom Floor Generation
                     end
 
                     if setRoom then
-                        local stage = globalStage
+                        local stage = mapLayout.GlobalStage
                         local isStartingRoom, isPersistent
                         for i, position in StageAPI.ReverseIterate(roomPositions) do
                             local shouldRemove
