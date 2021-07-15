@@ -1087,9 +1087,27 @@ do -- Core Functions
         S = 12545
     }
 
-    function StageAPI.SpawnFloorEffect(pos, velocity, spawner, anm2, loadGraphics, variant)
-        local eff = Isaac.Spawn(StageAPI.E.FloorEffectCreep.T, StageAPI.E.FloorEffectCreep.V, StageAPI.E.FloorEffectCreep.S, pos or zeroVector, velocity or zeroVector, spawner)
-        eff.Variant = variant or StageAPI.E.FloorEffect.V
+    StageAPI.E.FloorEffectWaterCreep = {
+        T = EntityType.ENTITY_EFFECT,
+        V = EffectVariant.COLOSTOMIA_PUDDLE,
+        S = 12545
+    }
+
+    function StageAPI.SpawnFloorEffect(pos, velocity, spawner, anm2, loadGraphics, variant, aboveWater)
+        local creep = StageAPI.E.FloorEffectCreep
+        if aboveWater then
+            creep = StageAPI.E.FloorEffectWaterCreep
+        end
+
+        local eff = Isaac.Spawn(creep.T, creep.V, creep.S, pos or zeroVector, velocity or zeroVector, spawner)
+
+        if aboveWater then
+            eff.CollisionDamage = 0
+            eff:ToEffect().Timeout = 0
+        else
+            eff.Variant = variant or StageAPI.E.FloorEffect.V
+        end
+
         if anm2 then
             eff:GetSprite():Load(anm2, loadGraphics)
         end
@@ -5852,17 +5870,19 @@ do -- Backdrop & RoomGfx
     local shadingIvOffset = Vector(-240,-80)
     function StageAPI.ChangeShading(name, prefix)
         prefix = prefix or "stageapi/shading/shading"
-        local shading = Isaac.FindByType(StageAPI.E.Shading.T, StageAPI.E.Shading.V, -1, false, false)
+        local shading = Isaac.FindByType(StageAPI.E.FloorEffectWaterCreep.T, StageAPI.E.FloorEffectWaterCreep.V, StageAPI.E.FloorEffectWaterCreep.S, false, false)
         for _, e in ipairs(shading) do
-            e:Remove()
+            if e:GetData().StageAPIShading then
+                e:Remove()
+            end
         end
 
-        local shadingEntity = Isaac.Spawn(StageAPI.E.Shading.T, StageAPI.E.Shading.V, 0, Vector(0, 1), zeroVector, nil)
         local roomShape = room:GetRoomShape()
 
         local topLeft = room:GetTopLeftPos()
         local renderPos = topLeft + shadingDefaultOffset
         local sheet
+        local lFrame
 
         if roomShape == RoomShape.ROOMSHAPE_1x1 then sheet = ""
         elseif roomShape == RoomShape.ROOMSHAPE_1x2 then sheet = "_1x2"
@@ -5880,23 +5900,56 @@ do -- Backdrop & RoomGfx
         elseif roomShape == RoomShape.ROOMSHAPE_IIV then
             sheet = "_iiv"
             renderPos = topLeft + shadingIvOffset
-        elseif roomShape == RoomShape.ROOMSHAPE_LBL then sheet = "_lbl"
-        elseif roomShape == RoomShape.ROOMSHAPE_LBR then sheet = "_lbr"
-        elseif roomShape == RoomShape.ROOMSHAPE_LTL then sheet = "_ltl"
-        elseif roomShape == RoomShape.ROOMSHAPE_LTR then sheet = "_ltr"
+        elseif roomShape == RoomShape.ROOMSHAPE_LTL then
+            sheet = "_ltl"
+            lFrame = 0
+        elseif roomShape == RoomShape.ROOMSHAPE_LTR then
+            sheet = "_ltr"
+            lFrame = 1
+        elseif roomShape == RoomShape.ROOMSHAPE_LBL then
+            sheet = "_lbl"
+            lFrame = 2
+        elseif roomShape == RoomShape.ROOMSHAPE_LBR then
+            sheet = "_lbr"
+            lFrame = 3
         end
 
         sheet = prefix .. sheet .. name .. ".png"
 
-        local sprite = shadingEntity:GetSprite()
-        sprite:Load("stageapi/Shading.anm2", false)
-        sprite:ReplaceSpritesheet(0, sheet)
-        sprite:LoadGraphics()
-        sprite:Play("Default", true)
+        for i = 0, 1 do
+            local shadingEntity
+            if i == 0 then
+                shadingEntity = Isaac.Spawn(StageAPI.E.Shading.T, StageAPI.E.Shading.V, 0, Vector(0, 1), zeroVector, nil)
+            elseif i == 1 then
+                shadingEntity = StageAPI.SpawnFloorEffect(Vector(0, 1), zeroVector, nil, nil, false, nil, true)
+                shadingEntity:GetData().StageAPIShading = true
+            end
 
-        shadingEntity:GetData().Sheet = sheet
-        shadingEntity.SpriteOffset = ((renderPos - shadingEntity.Position) / 40) * 26
-        shadingEntity:AddEntityFlags(EntityFlag.FLAG_RENDER_WALL | EntityFlag.FLAG_RENDER_FLOOR)
+            local sprite = shadingEntity:GetSprite()
+            sprite:Load("stageapi/Shading.anm2", false)
+            for i = 0, 4 do
+                sprite:ReplaceSpritesheet(i, sheet)
+            end
+
+            sprite:LoadGraphics()
+
+            if lFrame then
+                if i == 0 then
+                    sprite:SetFrame("Walls", lFrame)
+                else
+                    sprite:SetFrame("Floors", lFrame)
+                end
+            else
+                sprite:Play("Default", true)
+            end
+
+            shadingEntity:GetData().Sheet = sheet
+            shadingEntity.SpriteOffset = ((renderPos - shadingEntity.Position) / 40) * 26
+
+            if i == 0 then
+                shadingEntity:AddEntityFlags(EntityFlag.FLAG_RENDER_WALL)
+            end
+        end
     end
 
     function StageAPI.ChangeRoomGfx(roomgfx)
