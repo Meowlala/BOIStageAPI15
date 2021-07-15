@@ -2441,6 +2441,9 @@ do -- RoomsList
             },
             [40] = {
                 Name = "Room"
+            },
+            [41] = {
+                Name = "Stage"
             }
         }
     }
@@ -4818,6 +4821,13 @@ do -- Extra Rooms
         if isCustomMap then
             local targetRoomData = StageAPI.CurrentLevelMap[name]
             extraRoomName = targetRoomData.ExtraRoomName
+
+            local curStage, currentStageType = level:GetStage(), level:GetStageType()
+            local stage, stageType = targetRoomData.Stage or curStage, targetRoomData.StageType or currentStageType
+            if stage ~= curStage or stageType ~= currentStageType then
+                level:SetStage(stage, stageType)
+            end
+
             StageAPI.CurrentCustomMapRoomID = name
         end
 
@@ -9768,18 +9778,42 @@ do -- Custom Floor Generation
         local nonMapLayouts = {}
         for _, layout in ipairs(roomsList.All) do
             local hasRoomEnt
+            local stageIndices = {}
+            local roomIndices = {}
             for _, ent in ipairs(layout.Entities) do
                 local metadata = StageAPI.IsMetadataEntity(ent.Type, ent.Variant)
-                if metadata and metadata.Name == "Room" then
-                    hasRoomEnt = true
-                    if not startingRoom and StageAPI.GetBits(ent.SubType, 0, 1) == 1 then
-                        startingRoom = layout.Variant
+                if metadata then
+                    if metadata.Name == "Room" then
+                        hasRoomEnt = true
+                        if not startingRoom and StageAPI.GetBits(ent.SubType, 0, 1) == 1 then
+                            startingRoom = layout.Variant
+                        end
+
+                        roomIndices[ent.Index] = true
+                    elseif metadata.Name == "Stage" then
+                        stageIndices[ent.Index] = {Entity = ent, Metadata = metadata}
                     end
                 end
             end
 
             if hasRoomEnt then
-                mapLayouts[layout.Variant] = layout
+                local globalStage
+                local roomToStage = {}
+                for index, stageDat in pairs(stageIndices) do
+                    local stage = StageAPI.GetBits(stageDat.Entity.SubType, 0, 4) + 1
+                    local stageType = StageAPI.GetBits(stageDat.Entity.SubType, 4, 3)
+                    if stageType >= StageType.STAGETYPE_GREEDMODE then
+                        stageType = stageType + 1
+                    end
+
+                    if roomIndices[index] then
+                        roomToStage[index] = {Stage = stage, StageType = stageType}
+                    else
+                        globalStage = {Stage = stage, StageType = stageType}
+                    end
+                end
+
+                mapLayouts[layout.Variant] = {Layout = layout, GlobalStage = globalStage, RoomToStage = roomToStage}
             else
                 nonMapLayouts[layout.Variant] = layout
             end
@@ -9787,8 +9821,10 @@ do -- Custom Floor Generation
 
         if useMapID or startingRoom then
             local mapLayout = mapLayouts[useMapID or startingRoom]
+            local globalStage = mapLayout.GlobalStage
+            local roomToStage = mapLayout.RoomToStage
             local roomsByID = {}
-            for _, ent in ipairs(mapLayout.Entities) do
+            for _, ent in ipairs(mapLayout.Layout.Entities) do
                 local metadata = StageAPI.IsMetadataEntity(ent.Type, ent.Variant)
                 if metadata and metadata.Name == "Room" then
                     local isStartingRoom = StageAPI.GetBits(ent.SubType, 0, 1) == 1
@@ -9799,13 +9835,19 @@ do -- Custom Floor Generation
                             roomsByID[roomID] = {}
                         end
 
-                        roomsByID[roomID][#roomsByID[roomID] + 1] = {
+                        local roomPosition = {
                             StartingRoom = isStartingRoom,
                             Persistent = isPersistentRoom,
                             RoomID = roomID,
                             GridX = ent.GridX,
                             GridY = ent.GridY
                         }
+
+                        if roomToStage[ent.Index] then
+                            roomPosition.Stage = roomToStage[ent.Index]
+                        end
+
+                        roomsByID[roomID][#roomsByID[roomID] + 1] = roomPosition
                     end
                 end
             end
@@ -9848,6 +9890,7 @@ do -- Custom Floor Generation
                     end
 
                     if setRoom then
+                        local stage = globalStage
                         local isStartingRoom, isPersistent
                         for i, position in StageAPI.ReverseIterate(roomPositions) do
                             local shouldRemove
@@ -9859,6 +9902,10 @@ do -- Custom Floor Generation
                             end
 
                             if shouldRemove then
+                                if position.Stage then
+                                    stage = position.Stage
+                                end
+
                                 isStartingRoom = isStartingRoom or position.StartingRoom
                                 isPersistent = isPersistent or position.Persistent
                                 table.remove(roomPositions, i)
@@ -9882,7 +9929,7 @@ do -- Custom Floor Generation
 
                         StageAPI.SetExtraRoom(id, newRoom)
 
-                        outRooms[#outRooms + 1] = {
+                        local outRoom = {
                             X = setRoom.X,
                             Y = setRoom.Y,
                             Shape = shape,
@@ -9890,6 +9937,13 @@ do -- Custom Floor Generation
                             Persistent = isPersistent,
                             ExtraRoomName = id
                         }
+
+                        if stage then
+                            outRoom.Stage = stage.Stage
+                            outRoom.StageType = stage.StageType
+                        end
+
+                        outRooms[#outRooms + 1] = outRoom
                     end
                 end
             end

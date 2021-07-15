@@ -80,6 +80,12 @@ If used with the Room ID of another map layout, merges the two maps based on ove
 			</spinner>
 		</bitfield>
 	</entity>
+	<entity Metadata="1" Group="StageAPI Utilities" ID="199" Image="stageapi/stage.png" Kind="Stage" Name="Stage" Subtype="0" Variant="41" >
+		<bitfield Key="Subtype">
+			<spinner Name="Stage" Length="4" Minimum="0" Maximum="12" ValueOffset="1"/>
+			<spinner Name="Stage Type" Length="3" Minimum="0" Maximum="4"/>
+		</bitfield>
+	</entity>
 
 
 	<!-- Pre-parameters system for groups / directions -->
