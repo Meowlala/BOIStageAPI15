@@ -10298,7 +10298,9 @@ do -- Custom Floor Generation
                 doors = {}
                 for _, pair in ipairs(adjacentSegments) do
                     local seg, seg2, adjType = pair[1], pair[2], pair[3]
-                    doors[seg.Doors[adjType]] = seg2.Doors[directionStringSwap[adjType]]
+                    if seg.Doors[adjType] and seg2.Doors[directionStringSwap[adjType]] then
+                        doors[seg.Doors[adjType]] = seg2.Doors[directionStringSwap[adjType]]
+                    end
                 end
 
                 if getSegs then
