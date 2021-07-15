@@ -7981,23 +7981,25 @@ do -- Callbacks
             levelRoom.Loaded = false
         end
 
-        if inStartingRoom and StageAPI.GetDimension() == 0 and room:IsFirstVisit() then
-            local maintainGrids = {}
-            for dimension, rooms in pairs(StageAPI.LevelRooms) do
-                maintainGrids[dimension] = {}
-                for roomId, levelRoom in pairs(rooms) do
-                    if not (levelRoom and levelRoom.IsPersistentRoom) then
-                        StageAPI.SetLevelRoom(nil, roomId, dimension)
-                    else
-                        maintainGrids[dimension][index] = true
+        if (inStartingRoom and StageAPI.GetDimension() == 0 and room:IsFirstVisit()) or (isNewStage and not StageAPI.CurrentStage) then
+            if inStartingRoom then
+                local maintainGrids = {}
+                for dimension, rooms in pairs(StageAPI.LevelRooms) do
+                    maintainGrids[dimension] = {}
+                    for roomId, levelRoom in pairs(rooms) do
+                        if not (levelRoom and levelRoom.IsPersistentRoom) then
+                            StageAPI.SetLevelRoom(nil, roomId, dimension)
+                        else
+                            maintainGrids[dimension][index] = true
+                        end
                     end
                 end
-            end
 
-            for dimension, roomCustomGrids in pairs(StageAPI.CustomGrids) do
-                for index, grids in pairs(roomCustomGrids) do
-                    if not maintainGrids[dimension] or not maintainGrids[dimension][index] then
-                        roomCustomGrids[index] = nil
+                for dimension, roomCustomGrids in pairs(StageAPI.CustomGrids) do
+                    for index, grids in pairs(roomCustomGrids) do
+                        if not maintainGrids[dimension] or not maintainGrids[dimension][index] then
+                            roomCustomGrids[index] = nil
+                        end
                     end
                 end
             end
@@ -8055,8 +8057,6 @@ do -- Callbacks
             StageAPI.CurrentExtraRoom:Load(true)
             StageAPI.LoadedExtraRoom = true
             justGenerated = StageAPI.CurrentExtraRoom.FirstLoad
-
-            StageAPI.ChangeBackdrop(StageAPI.GetBaseFloorInfo().Backdrop)
         else
             StageAPI.LoadedExtraRoom = false
         end
