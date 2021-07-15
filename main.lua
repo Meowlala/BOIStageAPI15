@@ -3228,6 +3228,11 @@ do -- RoomsList
                                 sprite:SetLastFrame()
                             end
                         end
+                    elseif grid.Desc.Type == GridEntityType.GRID_LOCK then
+                        if grid.State == 1 then
+                            sprite:Play("Broken", true)
+                            grid.CollisionClass = GridCollisionClass.COLLISION_NONE
+                        end
                     end
 
                     if gridData.Type == GridEntityType.GRID_PRESSURE_PLATE and gridData.Variant == 0 and grid.State ~= 3 then
