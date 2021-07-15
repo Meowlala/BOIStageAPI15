@@ -4782,17 +4782,136 @@ do -- Extra Rooms
         [DoorSlot.DOWN1] = Direction.DOWN
     }
 
-    function StageAPI.GetExtraRoomBaseGridRooms()
-        local default, alternate = GridRooms.ROOM_MEGA_SATAN_IDX, GridRooms.ROOM_BOSSRUSH_IDX
-        if level:GetStage() == LevelStage.STAGE6 and not game:IsGreedMode() then
-            default = GridRooms.ROOM_BLUE_WOOM_IDX
+    StageAPI.LRoomShapes = {
+        [RoomShape.ROOMSHAPE_LTL] = true,
+        [RoomShape.ROOMSHAPE_LTR] = true,
+        [RoomShape.ROOMSHAPE_LBL] = true,
+        [RoomShape.ROOMSHAPE_LBR] = true
+    }
+
+    local function anyPlayerHas(id, trinket)
+        for _, player in ipairs(players) do
+            if trinket then
+                if player:HasTrinket(id) then
+                    return true
+                end
+            elseif player:HasCollectible(id) then
+                return true
+            end
         end
 
-        if level:GetStage() == LevelStage.STAGE3_2 and not game:IsGreedMode() then
-            alternate = GridRooms.ROOM_BLUE_WOOM_IDX
+        return false
+    end
+
+    StageAPI.BaseGridRoomPriority = {
+        GridRooms.ROOM_MEGA_SATAN_IDX,
+        GridRooms.ROOM_BOSSRUSH_IDX,
+        GridRooms.ROOM_THE_VOID_IDX,
+        GridRooms.ROOM_ROTGUT_DUNGEON1_IDX,
+    }
+
+    StageAPI.BaseLGridRoomPriority = {
+        GridRooms.ROOM_ANGEL_SHOP_IDX,
+        GridRooms.ROOM_BLACK_MARKET_IDX,
+        GridRooms.ROOM_DEBUG_IDX,
+        GridRooms.ROOM_ROTGUT_DUNGEON2_IDX,
+        GridRooms.ROOM_SECRET_SHOP_IDX,
+        GridRooms.ROOM_ERROR_IDX
+    }
+
+    function StageAPI.GetNextFreeBaseGridRoom(priorityList, taken, nextIsBoss)
+        local outIdx
+        local stage = level:GetStage()
+        for _, idx in ipairs(priorityList) do
+            if not StageAPI.IsIn(taken, idx) then
+                if idx == GridRooms.ROOM_MEGA_SATAN_IDX then
+                    if stage ~= LevelStage.STAGE6 or game:IsGreedMode() then
+                        outIdx = idx
+                        break
+                    end
+                elseif idx == GridRooms.ROOM_BOSSRUSH_IDX then
+                    if stage ~= LevelStage.STAGE3_2 or game:IsGreedMode() then
+                        outIdx = idx
+                        break
+                    end
+                elseif idx == GridRooms.ROOM_ROTGUT_DUNGEON1_IDX or idx == GridRooms.ROOM_ROTGUT_DUNGEON2_IDX then
+                    local rooms = level:GetRooms()
+                    local hasRotgutRoom
+                    for i = 0, rooms.Size do
+                        local desc = rooms:Get(i)
+                        if desc and desc.Data.Type == RoomType.ROOM_BOSS and desc.Data.Subtype == 87 then
+                            hasRotgutRoom = true
+                            break
+                        end
+                    end
+
+                    if not hasRotgutRoom then
+                        local rotgutRoomSpawned = level:GetRoomByIdx(GridRooms.ROOM_ROTGUT_DUNGEON1_IDX).SpawnSeed ~= 0
+                        if not rotgutRoomSpawned then
+                            local rotgut = Isaac.Spawn(EntityType.ENTITY_ROTGUT, 0, 0, Vector.Zero, Vector.Zero, nil)
+                            rotgut:Update()
+                            rotgut:Remove()
+                        end
+
+                        outIdx = idx
+                        break
+                    end
+                elseif idx == GridRooms.ROOM_SECRET_SHOP_IDX then
+                    if not anyPlayerHas(CollectibleType.COLLECTIBLE_MEMBER_CARD)
+                    or not (
+                        stage <= LevelStage.STAGE3_2
+                        or stage == LevelStage.STAGE4_3
+                        or (anyPlayerHas(TrinketType.TRINKET_SILVER_DOLLAR) and stage <= LevelStage.STAGE4_2)
+                    ) then
+                        outIdx = idx
+                        break
+                    end
+                elseif idx == GridRooms.ROOM_ANGEL_SHOP_IDX then
+                    if not anyPlayerHas(CollectibleType.COLLECTIBLE_STAIRWAY)
+                    or (
+                        level:GetStartingRoomIndex() ~= level:GetCurrentRoomIndex()
+                        and level:GetRoomByIdx(level:GetStartingRoomIndex()).VisitedCount > 0
+                    )  then
+                        outIdx = idx
+                        break
+                    end
+                elseif idx == GridRooms.ROOM_BLACK_MARKET_IDX then
+                    local dungeonRoom = level:GetRoomByIdx(GridRooms.ROOM_DUNGEON_IDX)
+                    if not dungeonRoom or dungeonRoom.Data.Doors & StageAPI.DoorsBitwise[DoorSlot.RIGHT0] == 0 then
+                        outIdx = idx
+                        break
+                    end
+                elseif idx ~= GridRooms.ROOM_ERROR_IDX then
+                    if not nextIsBoss then
+                        if idx == GridRooms.ROOM_THE_VOID_IDX then
+                            if level:GetStage() ~= LevelStage.STAGE3_4 or game:IsGreedMode() then
+                                outIdx = idx
+                                break
+                            end
+                        else
+                            outIdx = idx
+                            break
+                        end
+                    end
+                else
+                    outIdx = idx
+                    break
+                end
+            end
         end
 
-        return default, alternate
+        taken[#taken + 1] = outIdx
+        return outIdx
+    end
+
+    function StageAPI.GetExtraRoomBaseGridRooms(nextIsBoss)
+        local taken = {}
+        local default = StageAPI.GetNextFreeBaseGridRoom(StageAPI.BaseGridRoomPriority, taken, nextIsBoss)
+        local alternate = StageAPI.GetNextFreeBaseGridRoom(StageAPI.BaseGridRoomPriority, taken, nextIsBoss)
+        local lDefault = StageAPI.GetNextFreeBaseGridRoom(StageAPI.BaseLGridRoomPriority, taken, nextIsBoss)
+        local lAlternate = StageAPI.GetNextFreeBaseGridRoom(StageAPI.BaseLGridRoomPriority, taken, nextIsBoss)
+
+        return default, alternate, lDefault, lAlternate
     end
 
     function StageAPI.ExtraRoomTransition(name, direction, transitionType, isCustomMap, leaveDoor, enterDoor, setPlayerPosition, extraRoomBaseType)
@@ -4809,15 +4928,7 @@ do -- Extra Rooms
         end
 
         local transitionFrom = level:GetCurrentRoomIndex()
-        local defaultGridRoom, alternateGridRoom = StageAPI.GetExtraRoomBaseGridRooms()
-        local transitionTo = defaultGridRoom
-        local fromExtraRoom = (transitionFrom == defaultGridRoom or transitionFrom == alternateGridRoom)
-
-        -- alternating between two off-grid rooms makes transitions between certain room types and shapes cleaner
-        if transitionTo == defaultGridRoom and transitionFrom == transitionTo then
-            transitionTo = alternateGridRoom
-        end
-
+        local transitionTo
         local extraRoomName
         if not isCustomMap then
             if type(name) ~= "string" then
@@ -4827,7 +4938,7 @@ do -- Extra Rooms
             end
         end
 
-        if not (fromExtraRoom or StageAPI.InCustomMap) then
+        if transitionFrom >= 0 then
             StageAPI.LastNonExtraRoom = transitionFrom
         else
             local currentRoomDesc = level:GetRoomByIdx(transitionFrom)
@@ -4891,6 +5002,25 @@ do -- Extra Rooms
                 setClear = true
                 if targetLevelRoom.IsClear ~= nil then
                     setClear = targetLevelRoom.IsClear
+                end
+            end
+        end
+
+        if not transitionTo then
+            local defaultGridRoom, alternateGridRoom, defaultLGridRoom, alternateLGridRoom = StageAPI.GetExtraRoomBaseGridRooms(extraRoomBaseType == RoomType.ROOM_BOSS)
+
+            transitionTo = defaultGridRoom
+
+            if setDataForShape and StageAPI.LRoomShapes[setDataForShape] then
+                transitionTo = defaultLGridRoom
+            end
+
+            -- alternating between two off-grid rooms makes transitions between certain room types and shapes cleaner
+            if transitionFrom < 0 and transitionFrom == transitionTo then
+                if transitionTo == defaultGridRoom then
+                    transitionTo = alternateGridRoom
+                elseif transitionTo == defaultLGridRoom then
+                    transitionTo = alternateLGridRoom
                 end
             end
         end
@@ -6201,16 +6331,6 @@ do -- Backdrop & RoomGfx
     StageAPI.BackdropRNG = RNG()
     local backdropDefaultOffset = Vector(260,0)
     local backdropIvOffset = Vector(113,0)
-    local lRooms = {
-        RoomShape.ROOMSHAPE_LTL,
-        RoomShape.ROOMSHAPE_LTR,
-        RoomShape.ROOMSHAPE_LBL,
-        RoomShape.ROOMSHAPE_LBR
-    }
-
-    for _, roomsh in ipairs(lRooms) do
-        lRooms[roomsh] = true
-    end
 
     StageAPI.ShapeToWallAnm2Layers = {
         ["1x2"] = 58,
