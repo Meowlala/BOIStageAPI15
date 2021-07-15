@@ -399,6 +399,10 @@ do -- Core Definitions
         StageAPI = {}
     end
 
+    if not include then
+        include = require
+    end
+
     function StageAPI.LogConcat(prefix, ...)
         local str = prefix
         local args = {...}
@@ -5120,12 +5124,12 @@ do -- Custom Doors
                 local leadsTo = data.DoorGridData.LeadsTo
                 if leadsTo then
                     transitionStarted = true
-                    local leaveDoor = data.DoorGridData.ExitSlot
+                    local leaveDoor = data.DoorGridData.Slot
                     if type(leadsTo) ~= "string" then
                         leaveDoor = nil
                     end
 
-                    StageAPI.ExtraRoomTransition(leadsTo, StageAPI.DoorSlotToDirection[data.DoorGridData.Slot], RoomTransitionAnim.WALK, false, data.DoorGridData.Slot, leaveDoor)
+                    StageAPI.ExtraRoomTransition(leadsTo, StageAPI.DoorSlotToDirection[data.DoorGridData.Slot], RoomTransitionAnim.WALK, false, leaveDoor, data.DoorGridData.ExitSlot)
                 end
             end
         end
@@ -8654,7 +8658,7 @@ do
         end
 
         if StageAPI.CurrentExtraRoomName then
-            StageAPI.CurrentExtraRoom = retLevelRooms[StageAPI.CurrentExtraRoomName]
+            StageAPI.CurrentExtraRoom = retLevelRooms[-2][StageAPI.CurrentExtraRoomName]
             StageAPI.InExtraRoom = true
             StageAPI.LoadingExtraRoomFromSave = true
         end
