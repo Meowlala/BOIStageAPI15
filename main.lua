@@ -4998,10 +4998,10 @@ do -- Custom Doors
     }
 
     StageAPI.DoorOffsetsByDirection = {
-        [Direction.DOWN] = Vector(0, -15),
-        [Direction.UP] = Vector(0, 15),
-        [Direction.LEFT] = Vector(15, 0),
-        [Direction.RIGHT] = Vector(-15, 0)
+        [Direction.DOWN] = Vector(0, -23),
+        [Direction.UP] = Vector(0, 23),
+        [Direction.LEFT] = Vector(23, 0),
+        [Direction.RIGHT] = Vector(-23, 0)
     }
 
     StageAPI.SecretDoorOffsetsByDirection = {
@@ -5128,7 +5128,6 @@ do -- Custom Doors
         end
 
         local door = Isaac.Spawn(StageAPI.E.Door.T, StageAPI.E.Door.V, 0, room:GetGridPosition(index), zeroVector, nil)
-        door.Visible = false
         local data, sprite = door:GetData(), door:GetSprite()
         sprite:Load(doorData.Anm2, true)
 
@@ -5219,17 +5218,13 @@ do -- Custom Doors
         end
     end, "CustomDoor")
 
-    StageAPI.AddCallback("StageAPI", "PRE_SHADING_RENDER", 0, function(shading)
-        for _, door in ipairs(Isaac.FindByType(StageAPI.E.Door.T, StageAPI.E.Door.V, -1, false, false)) do
-            local sprite, data = door:GetSprite(), door:GetData()
+    mod:AddCallback(ModCallbacks.MC_POST_EFFECT_RENDER, function(_, door)
+        local data = door:GetData()
+        if data.OverlaySprite and data.RenderOverlay then
             local rpos = Isaac.WorldToRenderPosition(door.Position) + room:GetRenderScrollOffset()
-            sprite:Render(rpos, zeroVector, zeroVector)
-
-            if data.OverlaySprite and data.RenderOverlay then
-                data.OverlaySprite:Render(rpos, zeroVector, zeroVector)
-            end
+            data.OverlaySprite:Render(rpos, zeroVector, zeroVector)
         end
-    end)
+    end, StageAPI.E.Door.V)
 
     function StageAPI.SetDoorOpen(open, door)
         local grid = room:GetGridEntityFromPos(door.Position)
@@ -6340,7 +6335,7 @@ do -- Backdrop & RoomGfx
         return renderPos, needsExtra, sprite
     end
 
-    function StageAPI.ChangeBackdrop(backdrop, justWalls, storeBackdropEnts)
+    function StageAPI.ChangeBackdrop(backdrop, justWalls, storeBackdropEnts, shading)
         if type(backdrop) == "number" then
             game:ShowHallucination(0, backdrop)
             sfx:Stop(SoundEffect.SOUND_DEATH_CARD)
@@ -6369,7 +6364,7 @@ do -- Backdrop & RoomGfx
             local renderPos
             renderPos, needsExtra = StageAPI.LoadBackdropSprite(sprite, backdrop, i)
 
-            backdropEntity.Position = renderPos
+            backdropEntity.SpriteOffset = (renderPos / 40) * 26
             if i == 1 or i == 3 then
                 backdropEntity:AddEntityFlags(EntityFlag.FLAG_RENDER_WALL)
             else
@@ -6379,6 +6374,12 @@ do -- Backdrop & RoomGfx
             if storeBackdropEnts then
                 backdropEnts[#backdropEnts + 1] = backdropEntity
             end
+        end
+
+        if shading and shading.Name then
+            StageAPI.ChangeShading(shading.Name, shading.Prefix)
+        else
+            StageAPI.ChangeShading("_default")
         end
 
         return backdropEnts
@@ -6426,7 +6427,7 @@ do -- Backdrop & RoomGfx
             e:Remove()
         end
 
-        local shadingEntity = Isaac.Spawn(StageAPI.E.Shading.T, StageAPI.E.Shading.V, 0, zeroVector, zeroVector, nil)
+        local shadingEntity = Isaac.Spawn(StageAPI.E.Shading.T, StageAPI.E.Shading.V, 0, Vector(0, 1), zeroVector, nil)
         local roomShape = room:GetRoomShape()
 
         local topLeft = room:GetTopLeftPos()
@@ -6457,42 +6458,23 @@ do -- Backdrop & RoomGfx
 
         sheet = prefix .. sheet .. name .. ".png"
 
-        --[[
         local sprite = shadingEntity:GetSprite()
         sprite:Load("stageapi/Shading.anm2", false)
         sprite:ReplaceSpritesheet(0, sheet)
         sprite:LoadGraphics()
-        sprite:Play("Default", true)]]
+        sprite:Play("Default", true)
 
         shadingEntity:GetData().Sheet = sheet
-        shadingEntity.Position = renderPos
-        shadingEntity:AddEntityFlags(EntityFlag.FLAG_DONT_OVERWRITE)
+        shadingEntity.SpriteOffset = ((renderPos - shadingEntity.Position) / 40) * 26
+        shadingEntity:AddEntityFlags(EntityFlag.FLAG_RENDER_WALL | EntityFlag.FLAG_RENDER_FLOOR)
     end
-
-    local shadingSprite = Sprite()
-    shadingSprite:Load("stageapi/Shading.anm2", false)
-    shadingSprite:Play("Default", true)
-    local lastUsedShadingSpritesheet
-    mod:AddCallback(ModCallbacks.MC_POST_EFFECT_RENDER, function(_, eff)
-        StageAPI.CallCallbacks("PRE_SHADING_RENDER", false, eff)
-
-        local sheet = eff:GetData().Sheet
-        if sheet and sheet ~= lastUsedShadingSpritesheet then
-            shadingSprite:ReplaceSpritesheet(0, sheet)
-            shadingSprite:LoadGraphics()
-            lastUsedShadingSpritesheet = sheet
-        end
-
-        shadingSprite:Render(Isaac.WorldToRenderPosition(eff.Position) + room:GetRenderScrollOffset(), zeroVector, zeroVector)
-        StageAPI.CallCallbacks("POST_SHADING_RENDER", false, eff)
-    end, StageAPI.E.Shading.V)
 
     function StageAPI.ChangeRoomGfx(roomgfx)
         StageAPI.BackdropRNG:SetSeed(room:GetDecorationSeed(), 0)
         if roomgfx.Backdrops then
             if #roomgfx.Backdrops > 0 then
                 local backdrop = StageAPI.Random(1, #roomgfx.Backdrops, StageAPI.BackdropRNG)
-                StageAPI.ChangeBackdrop(roomgfx.Backdrops[backdrop])
+                StageAPI.ChangeBackdrop(roomgfx.Backdrops[backdrop], nil, nil, roomgfx.Shading)
             else
                 StageAPI.ChangeBackdrop(roomgfx.Backdrops)
             end
@@ -6500,10 +6482,6 @@ do -- Backdrop & RoomGfx
 
         if roomgfx.Grids then
             StageAPI.ChangeGrids(roomgfx.Grids)
-        end
-
-        if roomgfx.Shading and roomgfx.Shading.Name then
-            StageAPI.ChangeShading(roomgfx.Shading.Name, roomgfx.Shading.Prefix)
         end
     end
 
@@ -8271,7 +8249,7 @@ do -- Callbacks
     end
 
     StageAPI.GlobalCommandMode = false
-
+    StageAPI.LastBackdropType = nil
     StageAPI.Music = MusicManager()
     StageAPI.MusicRNG = RNG()
     mod:AddCallback(ModCallbacks.MC_POST_RENDER, function()
@@ -8376,6 +8354,38 @@ do -- Callbacks
             end
 
             StageAPI.RoomRendered = true
+        end
+
+        local backdropType = room:GetBackdropType()
+        if StageAPI.LastBackdropType ~= backdropType then
+            local currentRoom = StageAPI.GetCurrentRoom()
+            local usingGfx
+            local callbacks = StageAPI.GetCallbacks("PRE_CHANGE_ROOM_GFX")
+            for _, callback in ipairs(callbacks) do
+                local ret = callback.Function(currentRoom, usingGfx, true)
+                if ret ~= nil then
+                    usingGfx = ret
+                end
+            end
+
+            if usingGfx then
+                StageAPI.ChangeRoomGfx(usingGfx)
+                if currentRoom then
+                    currentRoom.Data.RoomGfx = usingGfx
+                end
+            else
+                if backdropType ~= 16 and room:GetType() ~= RoomType.ROOM_DUNGEON then
+                    if backdropType == BackdropType.UTERO then
+                        StageAPI.ChangeShading("_utero")
+                    else
+                        StageAPI.ChangeShading("_default")
+                    end
+                end
+            end
+
+            StageAPI.CallCallbacks("POST_CHANGE_ROOM_GFX", false, currentRoom, usingGfx, true)
+
+            StageAPI.LastBackdropType = backdropType
         end
 
         if StageAPI.RoomNamesEnabled then
@@ -8782,31 +8792,32 @@ do -- Callbacks
             usingGfx = StageAPI.CurrentStage.RoomGfx[rtype]
         end
 
+        local callbacks = StageAPI.GetCallbacks("PRE_CHANGE_ROOM_GFX")
+        for _, callback in ipairs(callbacks) do
+            local ret = callback.Function(currentRoom, usingGfx, false)
+            if ret ~= nil then
+                usingGfx = ret
+            end
+        end
+
         if usingGfx then
-            local callbacks = StageAPI.GetCallbacks("PRE_CHANGE_ROOM_GFX")
-            for _, callback in ipairs(callbacks) do
-                local ret = callback.Function(currentRoom, usingGfx)
-                if ret ~= nil then
-                    usingGfx = ret
-                end
-            end
-
-            if usingGfx then
-                StageAPI.ChangeRoomGfx(usingGfx)
-                if currentRoom then
-                    currentRoom.Data.RoomGfx = usingGfx
-                end
-            end
-
-            local callbacks = StageAPI.GetCallbacks("POST_CHANGE_ROOM_GFX")
-            for _, callback in ipairs(callbacks) do
-                callback.Function()
+            StageAPI.ChangeRoomGfx(usingGfx)
+            if currentRoom then
+                currentRoom.Data.RoomGfx = usingGfx
             end
         else
             if room:GetType() ~= RoomType.ROOM_DUNGEON and room:GetBackdropType() ~= 16 then
-                StageAPI.ChangeShading("_default")
+                if backdropType == BackdropType.UTERO then
+                    StageAPI.ChangeShading("_utero")
+                else
+                    StageAPI.ChangeShading("_default")
+                end
             end
         end
+
+        StageAPI.CallCallbacks("POST_CHANGE_ROOM_GFX", false, currentRoom, usingGfx, false)
+
+        StageAPI.LastBackdropType = room:GetBackdropType()
 
         StageAPI.ActiveTransitionFromExtraRoom = false
         StageAPI.ActiveTransitionToExtraRoom = false
