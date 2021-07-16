@@ -9558,7 +9558,7 @@ do
     StageAPI.AddCallback("StageAPI", "POST_PARSE_METADATA", 0, function(roomMetadata, outEntities, outGrids, rng)
         local swapperIndices = {}
         local swappers = roomMetadata:Search({Name = "Swapper"})
-        for _, feature in ipairs(swappers) do
+        for _, swapper in ipairs(swappers) do
             swapperIndices[swapper.Index] = true
         end
 
