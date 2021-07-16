@@ -6947,7 +6947,7 @@ do -- Bosses
 
     StageAPI.BossSelectRNG = RNG()
     function StageAPI.SelectBoss(bosses, rng, roomDesc, ignoreNoOptions)
-        local bossID = StageAPI.CallCallbacks("PRE_BOSS_SELECT", true, bosses, rng, roomData)
+        local bossID = StageAPI.CallCallbacks("PRE_BOSS_SELECT", true, bosses, rng, roomDesc, ignoreNoOptions)
         if type(bossID) == "table" then
             bosses = bossID
             bossID = nil
