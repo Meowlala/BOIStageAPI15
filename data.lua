@@ -455,6 +455,7 @@ do -- Base Floor Info
     StageAPI.SetFloorInfo({
         Prefix = "03x_mines",
         Backdrop = BackdropType.MINES,
+        LavaLoopPits = true,
         Bosses = poolWrap{
             {BossID = "Reap Creep"},
             {BossID = "Tuff Twins"},
@@ -511,6 +512,7 @@ do -- Base Floor Info
     StageAPI.SetFloorInfo({
         Prefix = "15_dank_depths",
         Backdrop = BackdropType.DANK_DEPTHS,
+        TarLoopPits = true,
         Bosses = poolWrap{
             {BossID = "The Cage"},
             {BossID = "Monstro 2"},
