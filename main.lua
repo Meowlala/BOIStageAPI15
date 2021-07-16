@@ -3403,7 +3403,10 @@ do -- RoomsList
         local grids_spawned = {}
         StageAPI.GridSpawnRNG:SetSeed(room:GetSpawnSeed(), 0)
         local callbacks = StageAPI.GetCallbacks("PRE_SPAWN_GRID")
-        for index, gridData in pairs(grids) do
+
+        local iterList = gridInformation or grids
+
+        for index, gridData in pairs(iterList) do
             local shouldSpawn = true
             for _, callback in ipairs(callbacks) do
                 local ret = callback.Function(gridData, gridInformation, entities, StageAPI.GridSpawnRNG)
@@ -3430,6 +3433,10 @@ do -- RoomsList
 
                         if grinformation.VarData ~= nil then
                             grid.VarData = grinformation.VarData
+                        end
+
+                        if grid:ToRock() and grinformation.Frame then
+                            grid:ToRock():SetBigRockFrame(grinformation.Frame)
                         end
                     end
 
@@ -3506,11 +3513,17 @@ do -- RoomsList
         local gridInformation = {}
         for i = 0, room:GetGridSize() do
             local grid = room:GetGridEntity(i)
-            if grid then
+            if grid and grid.Desc.Type ~= GridEntityType.GRID_DOOR and (grid.Desc.Type ~= GridEntityType.GRID_WALL or room:IsPositionInRoom(grid.Position, 0)) then
                 gridInformation[i] = {
                     State = grid.State,
-                    VarData = grid.VarData
+                    VarData = grid.VarData,
+                    Type = grid.Desc.Type,
+                    Variant = grid.Desc.Variant
                 }
+
+                if grid:ToRock() then
+                    gridInformation[i].Frame = grid:ToRock():GetBigRockFrame()
+                end
             end
         end
 
@@ -3636,6 +3649,11 @@ do -- RoomsList
         return doors
     end
 
+    StageAPI.AllDoorsOpen = {}
+    for i = 0, 7 do
+        StageAPI.AllDoorsOpen[i] = true
+    end
+
     function StageAPI.GetDoorsForRoomFromData(data)
         local doors = {}
         for i = 0, 7 do
@@ -3682,7 +3700,7 @@ do -- RoomsList
         else
             StageAPI.LogMinor("Generating room")
 
-            local roomDesc = args.RoomDescriptor or level:GetCurrentRoomDesc()
+            local roomDesc = args.RoomDescriptor
 
             self.Data = {}
             self.PersistentData = {}
@@ -3697,15 +3715,15 @@ do -- RoomsList
                 end
             end
 
-            self.RoomType = self.RoomType or roomDesc.Data.Type
-            self.Shape = self.Shape or roomDesc.Data.Shape
-            self.SpawnSeed = self.SpawnSeed or roomDesc.SpawnSeed
-            self.DecorationSeed = self.DecorationSeed or roomDesc.DecorationSeed
-            self.AwardSeed = self.AwardSeed or roomDesc.AwardSeed
-            self.SurpriseMiniboss = self.SurpriseMiniboss or roomDesc.SurpriseMiniboss
-            self.Doors = self.Doors or StageAPI.GetDoorsForRoomFromData(roomDesc.Data)
-            self.VisitCount = self.VisitCount or roomDesc.VisitedCount
-            self.ClearCount = self.ClearCount or roomDesc.ClearCount
+            self.RoomType = self.RoomType or (roomDesc and roomDesc.Data.Type) or RoomType.ROOM_DEFAULT
+            self.Shape = self.Shape or (roomDesc and roomDesc.Data.Shape) or RoomShape.ROOMSHAPE_1x1
+            self.SpawnSeed = self.SpawnSeed or (roomDesc and roomDesc.SpawnSeed) or Random()
+            self.DecorationSeed = self.DecorationSeed or (roomDesc and roomDesc.DecorationSeed) or Random()
+            self.AwardSeed = self.AwardSeed or (roomDesc and roomDesc.AwardSeed) or Random()
+            self.SurpriseMiniboss = self.SurpriseMiniboss or (roomDesc and roomDesc.SurpriseMiniboss) or false
+            self.Doors = self.Doors or (roomDesc and StageAPI.GetDoorsForRoomFromData(roomDesc.Data)) or StageAPI.Copy(StageAPI.AllDoorsOpen)
+            self.VisitCount = self.VisitCount or (roomDesc and roomDesc.VisitedCount) or 0
+            self.ClearCount = self.ClearCount or (roomDesc and roomDesc.ClearCount) or 0
 
             self.Dimension = self.Dimension or StageAPI.GetDimension(roomDesc)
 
@@ -4476,6 +4494,11 @@ do -- Custom Grid Entities
     end
 
     mod:AddCallback(ModCallbacks.MC_POST_UPDATE, function()
+        local currentRoom = StageAPI.GetCurrentRoom()
+        if room:GetFrameCount() <= 0 or (currentRoom and not currentRoom.Loaded) then
+            return
+        end
+
         local customGrids = StageAPI.GetCustomGrids()
         for _, customGrid in ipairs(customGrids) do
             local customGridType = customGrid.Data
