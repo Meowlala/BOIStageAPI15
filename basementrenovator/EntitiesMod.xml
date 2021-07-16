@@ -15,6 +15,34 @@
 	</entity>
 	<entity Metadata="1" Group="StageAPI Utilities" ID="199" Image="stageapi/prevent_direction_conflict.png" Kind="Stage" Name="Prevent Direction Conflict" Subtype="0" Variant="3" />
 
+
+	<entity Metadata="1" Group="StageAPI Utilities" ID="199" Image="stageapi/entered_from_trigger.png" NoBlockDoors="1" Kind="Stage" Name="Entered From Trigger" Subtype="0" Variant="10" >
+		<bitfield Key="Subtype">
+			<spinner Name="Group ID" Length="16" ValueOffset="-1">
+				<tooltip>Groups entities with the same Group ID in the room together, off by default</tooltip>
+			</spinner>
+		</bitfield>
+	</entity>
+	<entity Metadata="1" Group="StageAPI Utilities" ID="199" Image="stageapi/shop_item.png" Kind="Stage" Name="Shop Item Modifier" Subtype="0" Variant="11" >
+		<bitfield Key="Subtype">
+			<spinner Name="Price" Length="7" ValueOffset="-5" Minimum="-5" Maximum="99">
+				<tooltip>Prices above 0 are in cents, prices below 0 match PickupPrice:
+-1 is one heart container
+-2 is two heart containers
+-3 is three soul hearts
+-4 is one heart container and two soul hearts
+-5 is spikes</tooltip>
+			</spinner>
+		</bitfield>
+	</entity>
+	<entity Metadata="1" Group="StageAPI Utilities" ID="199" Image="stageapi/options_pickup.png" Kind="Stage" Name="Options Pickup Modifier" Subtype="0" Variant="12" >
+		<bitfield Key="Subtype">
+			<spinner Name="Option Group" Length="16" ValueOffset="1">
+				<tooltip>Pickups with the same option group will be removed when one is picked up</tooltip>
+			</spinner>
+		</bitfield>
+	</entity>
+	<entity Metadata="1" Group="StageAPI Utilities" ID="199" Image="stageapi/cancel_clear_award.png" Kind="Stage" Name="Cancel Clear Award" Subtype="0" Variant="13"/>
 	<entity Metadata="1" Group="StageAPI Utilities" ID="199" Image="stageapi/swap.png" Kind="Stage" Name="Swapper" Subtype="0" Variant="20" >
 		<bitfield Key="Subtype">
 			<spinner Name="Group ID" Length="16" ValueOffset="-1">
@@ -38,7 +66,13 @@
 	</entity>
 	<entity Metadata="1" Group="StageAPI Utilities" ID="199" Image="stageapi/spawn.png" Kind="Stage" Name="Spawn When Triggered" Subtype="0" Variant="23" >
 		<bitfield Key="Subtype">
-			<spinner Name="Group ID" Length="16" ValueOffset="-1">
+			<checkbox Name="Spawn All" Length="1" Offset="14">
+				<tooltip>Spawns all entities blocked at its position, rather than just one at random.</tooltip>
+			</checkbox>
+			<checkbox Name="Single Activation" Length="1" Offset="15">
+				<tooltip>If checked, can only be triggered once ever.</tooltip>
+			</checkbox>
+			<spinner Name="Group ID" Length="14" Offset="0" ValueOffset="-1">
 				<tooltip>Groups entities with the same Group ID in the room together, off by default</tooltip>
 			</spinner>
 		</bitfield>
