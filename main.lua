@@ -9311,7 +9311,7 @@ do
                             checking:ToPit():MakeBridge(checking)
                         end
                         Isaac.Spawn(EntityType.ENTITY_EFFECT, EffectVariant.POOF01, 0, room:GetGridPosition(index), zeroVector, nil)
-                        metadataEntity.RecentlyTriggered = 5
+                        metadataEntity.RecentlyTriggered = 4
                     end
 
                     metadataEntity.Triggered = nil
