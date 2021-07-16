@@ -2,7 +2,4 @@
 	<sound name="StageAPI Boss Intro">
 		<sample weight="1" path="stageapi/castleportcullis.wav" />
 	</sound>
-	<sound name="StageAPI Tar Loop">
-		<sample weight="1" path="stageapi/tar_loop.wav" />
-	</sound>
 </sounds>
