@@ -67,7 +67,7 @@
 			</spinner>
 		</bitfield>
 	</entity>
-
+	<entity Metadata="1" Group="StageAPI Utilities" ID="199" Image="stageapi/boss_identifier.png" Kind="Stage" Name="Boss Identifier" Subtype="0" Variant="30" />
 
 	<!-- Pre-parameters system for groups / directions -->
 	<entity Metadata="1" Group="z StageAPI Deprecated" ID="199" Image="stageapi/group_1.png" Kind="Stage" Name="Group 1" Subtype="1" Variant="0" />

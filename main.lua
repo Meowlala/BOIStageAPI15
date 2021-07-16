@@ -2446,7 +2446,10 @@ do -- RoomsList
             [29] = {
                 Name = "ButtonTrigger",
                 OptionalGroupIDSubType = true
-            }
+            },
+            [30] = {
+                Name = "BossIdentifier"
+            },
         }
     }
 
@@ -3699,21 +3702,6 @@ do -- RoomsList
         end
 
         self.SpawnEntities, self.SpawnGrids, self.EntityTakenIndices, self.GridTakenIndices, self.LastPersistentIndex, self.Metadata = StageAPI.ObtainSpawnObjects(self.Layout, seed)
-
-        --[[
-        self.SpawnEntities, self.LastPersistentIndex = StageAPI.SelectSpawnEntities(self.Layout.EntitiesByIndex, seed)
-        self.SpawnGrids = StageAPI.SelectSpawnGrids(self.Layout.GridEntitiesByIndex, seed)
-
-        self.GridTakenIndices = {}
-        self.EntityTakenIndices = {}
-
-        for index, entity in pairs(self.SpawnEntities) do
-            self.EntityTakenIndices[index] = true
-        end
-
-        for _, grid in ipairs(self.SpawnGrids) do
-            self.GridTakenIndices[grid.Index] = true
-        end]]
     end
 
     --[[ Deprecated functions, prefer to use LevelRoom.Metadata:<Search/Has/Etc>
@@ -8979,6 +8967,49 @@ do
     mod:AddCallback(ModCallbacks.MC_USE_ITEM, function()
         d12Used = true
     end, CollectibleType.COLLECTIBLE_D12)
+
+    StageAPI.AddCallback("StageAPI", "POST_ROOM_INIT", 0, function(currentRoom, firstLoad)
+        if not currentRoom.PersistentData.BossID then
+            local bossIdentifiers = currentRoom.Metadata:Search({Name = "BossIdentifier"})
+            for _, bossIdentifier in ipairs(bossIdentifiers) do
+                local checkEnts = {}
+                if currentRoom.Metadata.BlockedEntities[bossIdentifier.Index] then
+                    for _, ent in ipairs(currentRoom.Metadata.BlockedEntities[bossIdentifier.Index]) do
+                        checkEnts[#checkEnts + 1] = ent
+                    end
+                end
+
+                if currentRoom.SpawnEntities[bossIdentifier.Index] then
+                    for _, ent in ipairs(currentRoom.SpawnEntities[bossIdentifier.Index]) do
+                        checkEnts[#checkEnts + 1] = ent.Data
+                    end
+                end
+
+                local matchingBossID
+                for _, ent in ipairs(checkEnts) do
+                    for bossID, bossData in pairs(StageAPI.Bosses) do
+                        if bossData.Entity then
+                            if (not bossData.Entity.Type or ent.Type == bossData.Entity.Type)
+                            and (not bossData.Entity.Variant or ent.Variant == bossData.Entity.Variant)
+                            and (not bossData.Entity.SubType or ent.SubType == bossData.Entity.SubType) then
+                                matchingBossID = bossID
+                                break
+                            end
+                        end
+                    end
+
+                    if matchingBossID then
+                        break
+                    end
+                end
+
+                if matchingBossID then
+                    currentRoom.PersistentData.BossID = matchingBossID
+                    break
+                end
+            end
+        end
+    end)
 
     StageAPI.CustomButtonGrid = StageAPI.CustomGrid("CustomButton")
 
