@@ -525,7 +525,8 @@ do -- Core Definitions
     }
 
     StageAPI.S = {
-        BossIntro = Isaac.GetSoundIdByName("StageAPI Boss Intro")
+        BossIntro = Isaac.GetSoundIdByName("StageAPI Boss Intro"),
+        TarLoop = Isaac.GetSoundIdByName("StageAPI Tar Loop")
     }
 
     StageAPI.Game = Game()
