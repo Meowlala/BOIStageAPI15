@@ -3435,7 +3435,7 @@ do -- RoomsList
                             grid.VarData = grinformation.VarData
                         end
 
-                        if grid:ToRock() and grinformation.Frame then
+                        if grid.Desc.Type == GridEntityType.GRID_ROCK and grinformation.Frame then
                             grid:ToRock():SetBigRockFrame(grinformation.Frame)
                         end
                     end
@@ -3521,7 +3521,7 @@ do -- RoomsList
                     Variant = grid.Desc.Variant
                 }
 
-                if grid:ToRock() then
+                if grid.Desc.Type == GridEntityType.GRID_ROCK then
                     gridInformation[i].Frame = grid:ToRock():GetBigRockFrame()
                 end
             end
