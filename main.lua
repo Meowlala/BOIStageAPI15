@@ -10379,6 +10379,8 @@ do -- Custom Floor Generation
                 roomsByID[roomID][#roomsByID[roomID] + 1] = roomPosition
             end
 
+            StageAPI.StageRNG:SetSeed(StageAPI.Seeds:GetStageSeed(level:GetStage()), 32)
+
             local outRooms = {}
             for roomID, roomPositions in pairs(roomsByID) do
                 local roomLayout = nonMapLayouts[roomID]
@@ -10444,9 +10446,9 @@ do -- Custom Floor Generation
 
                         local newRoom = StageAPI.LevelRoom{
                             LayoutName = id,
-                            SpawnSeed = Random(),
-                            AwardSeed = Random(),
-                            DecorationSeed = Random(),
+                            SpawnSeed = StageAPI.StageRNG:Next(),
+                            AwardSeed = StageAPI.StageRNG:Next(),
+                            DecorationSeed = StageAPI.StageRNG:Next(),
                             Shape = shape,
                             RoomType = roomLayout.Type,
                             IsPersistentRoom = true,
@@ -10535,6 +10537,16 @@ do -- Custom Floor Generation
 
                         checkedRooms[room1] = true
                     end
+                end
+            end
+        end
+
+        for _, roomData in ipairs(levelMap) do
+            if roomData.Doors then
+                local levelRoom = StageAPI.GetExtraRoom(roomData.ExtraRoomName)
+                levelRoom.Doors = {}
+                for slot, _ in pairs(roomData.Doors) do
+                    levelRoom.Doors[slot] = true
                 end
             end
         end
