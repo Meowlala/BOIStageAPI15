@@ -510,7 +510,7 @@
 		<door exists="True" x="6" y="-1"/>
 		<door exists="True" x="6" y="7"/>
 	</room>
-	<room variant="113" name="Editor Feature Tests" type="1" subtype="0" shape="1" width="13" height="7" difficulty="1" weight="1.0">
+	<room variant="113" name="Editor Feature Tests" type="1" subtype="0" shape="1" width="13" height="7" difficulty="1" weight="1.0" lastTestTime="2021-07-16T04:12+00:00">
 		<door exists="True" x="-1" y="3"/>
 		<door exists="True" x="6" y="-1"/>
 		<door exists="True" x="6" y="7"/>
@@ -525,27 +525,23 @@
 		<spawn x="1" y="1">
 			<entity type="199" variant="13" subtype="0" weight="1.0"/>
 		</spawn>
-		<spawn x="3" y="3">
+		<spawn x="3" y="2">
 			<entity type="199" variant="22" subtype="3" weight="1.0"/>
 		</spawn>
-		<spawn x="5" y="3">
-			<entity type="5" variant="40" subtype="1" weight="1.0"/>
+		<spawn x="5" y="2">
 			<entity type="199" variant="23" subtype="2" weight="1.0"/>
+			<entity type="5" variant="40" subtype="1" weight="1.0"/>
 		</spawn>
-		<spawn x="7" y="3">
+		<spawn x="7" y="2">
 			<entity type="5" variant="40" subtype="1" weight="1.0"/>
 			<entity type="199" variant="23" subtype="3" weight="1.0"/>
 		</spawn>
 		<spawn x="1" y="5">
 			<entity type="199" variant="29" subtype="1" weight="1.0"/>
 		</spawn>
-		<spawn x="2" y="5">
-			<entity type="1000" variant="0" subtype="0" weight="1.0"/>
-			<entity type="199" variant="21" subtype="1" weight="1.0"/>
-		</spawn>
 		<spawn x="3" y="5">
 			<entity type="1000" variant="0" subtype="0" weight="1.0"/>
-			<entity type="199" variant="21" subtype="0" weight="1.0"/>
+			<entity type="199" variant="21" subtype="1" weight="1.0"/>
 		</spawn>
 		<spawn x="4" y="5">
 			<entity type="1000" variant="0" subtype="0" weight="1.0"/>
