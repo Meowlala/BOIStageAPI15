@@ -14,6 +14,12 @@
 		<spawn x="7" y="3">
 			<entity type="199" variant="40" subtype="404" weight="1.0"/>
 		</spawn>
+		<spawn x="6" y="4">
+			<entity type="199" variant="40" subtype="456" weight="1.0"/>
+		</spawn>
+		<spawn x="6" y="5">
+			<entity type="199" variant="40" subtype="400" weight="1.0"/>
+		</spawn>
 	</room>
 	<room variant="1" name="Room Shapes Map" type="1" subtype="0" shape="1" width="13" height="7" difficulty="1" weight="1.0">
 		<door exists="True" x="-1" y="3"/>
@@ -516,6 +522,9 @@
 			<entity type="199" variant="20" subtype="0" weight="1.0"/>
 			<entity type="13" variant="0" subtype="0" weight="1.0"/>
 		</spawn>
+		<spawn x="1" y="1">
+			<entity type="199" variant="13" subtype="0" weight="1.0"/>
+		</spawn>
 		<spawn x="3" y="3">
 			<entity type="199" variant="22" subtype="3" weight="1.0"/>
 		</spawn>
@@ -576,6 +585,62 @@
 		</spawn>
 		<spawn x="12" y="6">
 			<entity type="199" variant="20" subtype="0" weight="1.0"/>
+		</spawn>
+	</room>
+	<room variant="114" name="Editor Feature Tests 2" type="1" subtype="0" shape="1" width="13" height="7" difficulty="1" weight="1.0">
+		<door exists="False" x="-1" y="3"/>
+		<door exists="True" x="6" y="-1"/>
+		<door exists="True" x="6" y="7"/>
+		<door exists="False" x="13" y="3"/>
+		<spawn x="6" y="0">
+			<entity type="199" variant="10" subtype="1" weight="1.0"/>
+		</spawn>
+		<spawn x="1" y="1">
+			<entity type="5" variant="100" subtype="331" weight="1.0"/>
+			<entity type="199" variant="11" subtype="80" weight="1.0"/>
+		</spawn>
+		<spawn x="6" y="1">
+			<entity type="199" variant="23" subtype="2" weight="1.0"/>
+			<entity type="10" variant="1" subtype="0" weight="1.0"/>
+		</spawn>
+		<spawn x="9" y="1">
+			<entity type="199" variant="12" subtype="0" weight="1.0"/>
+			<entity type="199" variant="23" subtype="32771" weight="1.0"/>
+			<entity type="5" variant="100" subtype="0" weight="1.0"/>
+		</spawn>
+		<spawn x="11" y="1">
+			<entity type="5" variant="100" subtype="0" weight="1.0"/>
+			<entity type="199" variant="23" subtype="32771" weight="1.0"/>
+			<entity type="199" variant="12" subtype="0" weight="1.0"/>
+		</spawn>
+		<spawn x="0" y="3">
+			<entity type="13" variant="0" subtype="0" weight="1.0"/>
+		</spawn>
+		<spawn x="3" y="3">
+			<entity type="199" variant="22" subtype="3" weight="1.0"/>
+		</spawn>
+		<spawn x="9" y="3">
+			<entity type="5" variant="100" subtype="0" weight="1.0"/>
+			<entity type="199" variant="12" subtype="0" weight="1.0"/>
+			<entity type="199" variant="23" subtype="32771" weight="1.0"/>
+		</spawn>
+		<spawn x="11" y="3">
+			<entity type="199" variant="23" subtype="32771" weight="1.0"/>
+			<entity type="5" variant="100" subtype="0" weight="1.0"/>
+			<entity type="199" variant="12" subtype="0" weight="1.0"/>
+		</spawn>
+		<spawn x="1" y="5">
+			<entity type="199" variant="13" subtype="0" weight="1.0"/>
+		</spawn>
+		<spawn x="6" y="5">
+			<entity type="10" variant="1" subtype="0" weight="1.0"/>
+			<entity type="199" variant="23" subtype="1" weight="1.0"/>
+		</spawn>
+		<spawn x="6" y="6">
+			<entity type="199" variant="10" subtype="2" weight="1.0"/>
+		</spawn>
+		<spawn x="10" y="6">
+			<entity type="199" variant="29" subtype="3" weight="1.0"/>
 		</spawn>
 	</room>
 </rooms>
