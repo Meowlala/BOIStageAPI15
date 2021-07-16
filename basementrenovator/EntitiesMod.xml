@@ -43,9 +43,17 @@
 		</bitfield>
 	</entity>
 	<entity Metadata="1" Group="StageAPI Utilities" ID="199" Image="stageapi/cancel_clear_award.png" Kind="Stage" Name="Cancel Clear Award" Subtype="0" Variant="13"/>
+	<entity Metadata="1" Group="StageAPI Utilities" ID="199" Image="stageapi/player_position.png" Kind="Stage" Name="Set Player Position" Subtype="0" Variant="14" >
+		<bitfield Key="Subtype">
+			<checkbox Name="Only when Uncleared" Length="1">
+				<tooltip>If checked, only teleports the player when the room is uncleared or on the very first load</tooltip>
+			</checkbox>
+		</bitfield>
+	</entity>
 	<entity Metadata="1" Group="StageAPI Utilities" ID="199" Image="stageapi/swap.png" Kind="Stage" Name="Swapper" Subtype="0" Variant="20" >
 		<bitfield Key="Subtype">
-			<spinner Name="Group ID" Length="16" ValueOffset="-1">
+			<checkbox Name="Don't Swap Metadata" Length="1" Offset = "15"/>
+			<spinner Name="Group ID" Length="15" Offset="0" ValueOffset="-1">
 				<tooltip>Groups entities with the same Group ID in the room together, off by default</tooltip>
 			</spinner>
 		</bitfield>

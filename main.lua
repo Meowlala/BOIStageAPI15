@@ -2398,7 +2398,9 @@ do -- RoomsList
                 Tags = "Group",
                 ConflictTag = "Group",
                 OnlyConflictWith = "RandomizeGroup",
-                GroupIDSubType = true,
+                BitValues = {
+                    GroupID = {Offset = 0, Length = 16}
+                },
             },
             [1] = {
                 Name = "RandomizeGroup"
@@ -2415,40 +2417,66 @@ do -- RoomsList
             [10] = {
                 Name = "EnteredFromTrigger",
                 Tag = "StageAPILoadEditorFeature",
-                OptionalGroupIDSubType = true
+                BitValues = {
+                    GroupID = {Offset = 0, Length = 16, ValueOffset = -1}
+                }
             },
             [11] = {
                 Name = "ShopItem",
-                Tag = "StageAPIPickupEditorFeature"
+                Tag = "StageAPIPickupEditorFeature",
+                BitValues = {
+                    Price = {Offset = 0, Length = 7, ValueOffset = -5}
+                }
             },
             [12] = {
                 Name = "OptionsPickup",
-                Tag = "StageAPIPickupEditorFeature"
+                Tag = "StageAPIPickupEditorFeature",
+                BitValues = {
+                    OptionsIndex = {Offset = 0, Length = 16, ValueOffset = 100}
+                }
             },
             [13] = {
                 Name = "CancelClearAward"
             },
+            [14] = {
+                Name = "SetPlayerPosition",
+                Tag = "StageAPILoadEditorFeature",
+                BitValues = {
+                    UnclearedOnly = {Offset = 0, Length = 1}
+                }
+            },
             [20] = {
                 Name = "Swapper",
                 GroupIDIfUngrouped = "Swapper",
-                OptionalGroupIDSubType = true
+                BitValues = {
+                    GroupID = {Offset = 0, Length = 15, ValueOffset = -1},
+                    NoMetadata = {Offset = 15, Length = 1}
+                }
             },
             [21] = {
                 Name = "Detonator",
                 Tags = {"StageAPIEditorFeature", "Triggerable"},
-                OptionalGroupIDSubType = true
+                BitValues = {
+                    GroupID = {Offset = 0, Length = 16, ValueOffset = -1}
+                }
             },
             [22] = {
                 Name = "RoomClearTrigger",
                 Tag = "StageAPIEditorFeature",
-                OptionalGroupIDSubType = true
+                BitValues = {
+                    GroupID = {Offset = 0, Length = 16, ValueOffset = -1}
+                }
             },
             [23] = {
                 Name = "Spawner",
                 Tags = {"StageAPIEditorFeature", "Triggerable"},
                 BlockEntities = true,
                 HasPersistentData = true,
-                OptionalGroupIDSubType = {Length = 15, Offset = 0}
+                BitValues = {
+                    GroupID = {Offset = 0, Length = 14, ValueOffset = -1},
+                    SpawnAll = {Offset = 14, Length = 1},
+                    SingleActivation = {Offset = 15, Length = 1}
+                }
             },
             [24] = {
                 Name = "PreventRandomization"
@@ -2460,7 +2488,9 @@ do -- RoomsList
             [26] = {
                 Name = "DetonatorTrigger",
                 Tag = "StageAPIEditorFeature",
-                OptionalGroupIDSubType = true
+                BitValues = {
+                    GroupID = {Offset = 0, Length = 16, ValueOffset = -1}
+                }
             },
             [27] = {
                 Name = "DoorLocker"
@@ -2468,12 +2498,16 @@ do -- RoomsList
             [28] = {
                 Name = "GridDestroyer",
                 Tags = {"StageAPIEditorFeature", "Triggerable"},
-                OptionalGroupIDSubType = true
+                BitValues = {
+                    GroupID = {Offset = 0, Length = 16, ValueOffset = -1}
+                }
             },
             [29] = {
                 Name = "ButtonTrigger",
                 Tag = "StageAPILoadEditorFeature",
-                OptionalGroupIDSubType = true
+                BitValues = {
+                    GroupID = {Offset = 0, Length = 16, ValueOffset = -1}
+                }
             },
             [30] = {
                 Name = "BossIdentifier"
@@ -2703,6 +2737,19 @@ do -- RoomsList
             Index = index
         }
 
+        if metadata.BitValues then
+            local sub = 0
+            if entity and entity.SubType then
+                sub = entity.SubType
+            end
+
+            metaEntity.BitValues = {}
+            for name, bitValue in pairs(metadata.BitValues) do
+                local val = StageAPI.GetBits(sub, bitValue.Offset or 0, bitValue.Length) + (bitValue.ValueOffset or 0)
+                metaEntity.BitValues[name] = val
+            end
+        end
+
         if metadata.HasPersistentData then
             persistentIndex = (persistentIndex and persistentIndex + 1) or 0
             metaEntity.PersistentIndex = persistentIndex
@@ -2748,7 +2795,11 @@ do -- RoomsList
 
         Entity = { -- Checks each metadata entity for the specified keys and values, only returns if all match
             Key = Value
-        }
+        },
+
+        BitValues = { -- Checks each metadata entity's BitValues for the specified keys and values, only returns if all match
+            Key = Value
+        },
     }
 
     ]]
@@ -2851,6 +2902,18 @@ do -- RoomsList
         if searchParams.Entity then
             for k, v in pairs(searchParams.Entity) do
                 if metadataEntity[k] ~= v then
+                    return false
+                end
+            end
+        end
+
+        if searchParams.BitValues then
+            if not metadataEntity.BitValues then
+                return false
+            end
+
+            for k, v in pairs(searchParams.BitValues) do
+                if metadataEntity.BitValues[k] ~= v then
                     return false
                 end
             end
@@ -2974,19 +3037,11 @@ do -- RoomsList
             for _, metaEntity in ipairs(metadataEntities) do
                 local metadata = StageAPI.MetadataEntitiesByName[metaEntity.Name]
 
-                local groupID = metadata.GroupID
-                if metadata.GroupIDSubType or metadata.OptionalGroupIDSubType then
-                    local subtypeID = metaEntity.Entity.SubType
-                    local params = metadata.GroupIDSubType or metadata.OptionalGroupIDSubType
-                    if type(params) == "table" then
-                        subtypeID = StageAPI.GetBits(subtypeID, params.Offset, params.Length)
-                    end
-
-                    if metadata.GroupIDSubType then
-                        groupID = subtypeID
-                    elseif subtypeID > 0 then
-                        groupID = subtypeID - 1
-                    end
+                local groupID
+                if metaEntity.BitValues and metaEntity.BitValues.GroupID and metaEntity.BitValues.GroupID ~= -1 then
+                    groupID = metaEntity.BitValues.GroupID
+                elseif metadata.GroupID then
+                    groupID = metadata.GroupID
                 end
 
                 if groupID then
@@ -9559,10 +9614,10 @@ do
         local swapperIndices = {}
         local swappers = roomMetadata:Search({Name = "Swapper"})
         for _, swapper in ipairs(swappers) do
-            swapperIndices[swapper.Index] = true
+            swapperIndices[swapper.Index] = swapper
         end
 
-        for index, _ in pairs(swapperIndices) do
+        for index, swapper in pairs(swapperIndices) do
             local alreadyInSwap = {}
             local canSwapWith = {}
             local groupedWith = roomMetadata:GroupsWithIndex(index)
@@ -9581,18 +9636,33 @@ do
                 local swappingEntityList = outEntities[swapWith]
                 outEntities[swapWith] = outEntities[index]
                 outEntities[index] = swappingEntityList
-                local swappingEntityMeta = roomMetadata.IndexMetadata[swapWith]
-                roomMetadata.IndexMetadata[swapWith] = roomMetadata.IndexMetadata[index]
-                roomMetadata.IndexMetadata[index] = swappingEntityMeta
+
                 local swappingGrid = outGrids[swapWith]
                 outGrids[swapWith] = outGrids[index]
                 outGrids[index] = swappingGrid
-                local swappingGroups = roomMetadata:GroupsWithIndex(swapWith)
-                local swappingGroups2 = roomMetadata:GroupsWithIndex(index)
-                roomMetadata:RemoveIndexFromGroup(swapWith, swappingGroups)
-                roomMetadata:AddIndexToGroup(swapWith, swappingGroups2)
-                roomMetadata:RemoveIndexFromGroup(index, swappingGroups2)
-                roomMetadata:AddIndexToGroup(index, swappingGroups)
+
+                if swapper.BitValues.NoMetadata ~= 1 then
+                    local swappingEntityMeta = roomMetadata.IndexMetadata[swapWith]
+                    roomMetadata.IndexMetadata[swapWith] = roomMetadata.IndexMetadata[index]
+                    roomMetadata.IndexMetadata[index] = swappingEntityMeta
+
+                    local swappedEnts = roomMetadata:Search({Index = swapWith}, roomMetadata.IndexMetadata[index])
+                    for _, ent in ipairs(swappedEnts) do
+                        ent.Index = index
+                    end
+
+                    local swappedEnts2 = roomMetadata:Search({Index = index}, roomMetadata.IndexMetadata[swapWith])
+                    for _, ent in ipairs(swappedEnts2) do
+                        ent.Index = swapWith
+                    end
+
+                    local swappingGroups = roomMetadata:GroupsWithIndex(swapWith)
+                    local swappingGroups2 = roomMetadata:GroupsWithIndex(index)
+                    roomMetadata:RemoveIndexFromGroup(swapWith, swappingGroups)
+                    roomMetadata:AddIndexToGroup(swapWith, swappingGroups2)
+                    roomMetadata:RemoveIndexFromGroup(index, swappingGroups2)
+                    roomMetadata:AddIndexToGroup(index, swappingGroups)
+                end
             end
         end
 
@@ -9672,6 +9742,11 @@ do
                         Triggered = false
                     })
                 end
+            elseif loadFeature.Name == "SetPlayerPosition" then
+                local unclearedOnly = loadFeature.BitValues.UnclearedOnly == 1
+                if not unclearedOnly or not currentRoom.IsClear or firstLoad then
+                    StageAPI.ForcePlayerNewRoomPosition = room:GetGridPosition(loadFeature.Index)
+                end
             elseif loadFeature.Name == "EnteredFromTrigger" then
                 local checkPos = StageAPI.ForcePlayerNewRoomPosition
                 if not checkPos and StageAPI.ForcePlayerDoorSlot then
@@ -9722,7 +9797,7 @@ do
             local pickupModifiers = currentRoom.Metadata:Search({Tag = "StageAPIPickupEditorFeature", Index = index})
             for _, metaEntity in ipairs(pickupModifiers) do
                 if metaEntity.Name == "ShopItem" then
-                    local price = StageAPI.GetBits(metaEntity.Entity.SubType, 0, 7) - 5
+                    local price = metaEntity.BitValues.Price
                     if price == 0 then
                         price = PickupPrice.PRICE_FREE
                     end
@@ -9730,7 +9805,7 @@ do
                     pickup.AutoUpdatePrice = false
                     pickup.Price = price
                 elseif metaEntity.Name == "OptionsPickup" then
-                    local idx = StageAPI.GetBits(metaEntity.Entity.SubType, 0, 16) + 100
+                    local idx = metaEntity.BitValues.OptionsIndex
                     pickup.OptionsPickupIndex = idx
                 end
             end
@@ -9891,7 +9966,7 @@ do
                     if not persistData or not persistData.NoTrigger then
                         local blockedEntities = currentRoom.Metadata.BlockedEntities[index]
                         if blockedEntities and #blockedEntities > 0 then
-                            local spawnAll = StageAPI.GetBits(metadataEntity.Entity.SubType, 14, 1) == 1
+                            local spawnAll = metadataEntity.BitValues.SpawnAll == 1
                             local toSpawn = {}
                             if spawnAll then
                                 toSpawn = blockedEntities
@@ -9905,7 +9980,7 @@ do
                                 StageAPI.CallCallbacks("POST_SPAWN_ENTITY", false, ent, {Data = spawn}, {}, index)
                             end
 
-                            local onlyOnce = StageAPI.GetBits(metadataEntity.Entity.SubType, 15, 1) == 1
+                            local onlyOnce = metadataEntity.BitValues.SingleActivation == 1
                             if onlyOnce then
                                 if not persistData then
                                     persistData = currentRoom:GetPersistenceData(metadataEntity, true)
