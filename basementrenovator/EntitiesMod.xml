@@ -67,6 +67,7 @@
 			</spinner>
 		</bitfield>
 	</entity>
+	<entity Metadata="1" Group="StageAPI Utilities" ID="199" Image="stageapi/boss_identifier.png" Kind="Stage" Name="Boss Identifier" Subtype="0" Variant="30" />
 
 	<entity Metadata="1" Group="StageAPI Utilities" ID="199" Image="stageapi/room.png" Kind="Stage" Name="Room" Subtype="0" Variant="40" >
 		<bitfield Key="Subtype">

@@ -903,9 +903,9 @@ do -- Boss Data
 
         local cleanName = string.lower(filesName or name)
         cleanName = string.gsub(cleanName, " ", "")
-        cleanName = string.gsub(cleanName, ".", "")
+        cleanName = string.gsub(cleanName, "%.", "")
         cleanName = string.gsub(cleanName, "'", "")
-        cleanName = string.gsub(cleanName, "-", "")
+        cleanName = string.gsub(cleanName, "%-", "")
 
         local bossData = {
             Entity = entity,
