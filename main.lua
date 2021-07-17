@@ -2755,12 +2755,28 @@ do -- RoomsList
         return metaEntity, persistentIndex
     end
 
+    function StageAPI.RoomMetadata:GetBlockedEntities(index, setIfNot)
+        if setIfNot and not self.BlockedEntities[index] then
+            self.BlockedEntities[index] = {}
+        end
+
+        return self.BlockedEntities[index]
+    end
+
+    function StageAPI.RoomMetadata:SetBlockedEntities(index, tbl)
+        self.BlockedEntities[index] = tbl
+    end
+
     --[[
 
     METADATA SEARCH PARAMS
 
     {
-        Name = string, -- Matches "Name" from metadata entity data
+        Names = { -- Matches "Name" from metadata entity data
+            string,
+            ...
+        },
+        Name = string, -- Singular version of Names
 
         Indices = { -- List of indices to search for metadata entities on
             GridIndex,
@@ -2856,8 +2872,13 @@ do -- RoomsList
         end
     end
 
-    function StageAPI.RoomMetadata:EntityMatchesSearchParams(metadataEntity, searchParams, checkTags)
-        if searchParams.Name and metadataEntity.Name ~= searchParams.Name then
+    function StageAPI.RoomMetadata:EntityMatchesSearchParams(metadataEntity, searchParams, checkNames, checkTags)
+        if not checkNames then
+            checkNames = searchParams.Names or {}
+            checkNames[#checkNames + 1] = searchParams.Name
+        end
+
+        if #checkNames > 0 and not StageAPI.IsIn(checkNames, metadataEntity.Name) then
             return false
         end
 
@@ -2919,9 +2940,10 @@ do -- RoomsList
 
     function StageAPI.RoomMetadata:Search(searchParams, narrowEntities)
         searchParams = searchParams or {}
-        local checkIndices, checkGroups, checkTags = searchParams.Indices or {}, searchParams.Groups or {}, searchParams.Tags or {}
+        local checkIndices, checkGroups, checkNames, checkTags = searchParams.Indices or {}, searchParams.Groups or {}, searchParams.Names or {}, searchParams.Tags or {}
         checkIndices[#checkIndices + 1] = searchParams.Index
         checkGroups[#checkGroups + 1] = searchParams.Group
+        checkNames[#checkNames + 1] = searchParams.Name
         checkTags[#checkTags + 1] = searchParams.Tag
 
         for _, index in ipairs(checkIndices) do
@@ -2932,7 +2954,7 @@ do -- RoomsList
         if narrowEntities then
             for _, metadataEntity in ipairs(narrowEntities) do
                 if self:IndexMatchesSearchParams(metadataEntity.Index, searchParams, checkIndices, checkGroups) then
-                    if self:EntityMatchesSearchParams(metadataEntity, searchParams, checkTags) then
+                    if self:EntityMatchesSearchParams(metadataEntity, searchParams, checkNames, checkTags) then
                         matchingEntities[#matchingEntities + 1] = metadataEntity
                     end
                 end
@@ -2941,7 +2963,7 @@ do -- RoomsList
             for index, metadataEntities in pairs(self.IndexMetadata) do
                 if self:IndexMatchesSearchParams(index, searchParams, checkIndices, checkGroups) then
                     for _, metadataEntity in ipairs(metadataEntities) do
-                        if self:EntityMatchesSearchParams(metadataEntity, searchParams, checkTags) then
+                        if self:EntityMatchesSearchParams(metadataEntity, searchParams, checkNames, checkTags) then
                             matchingEntities[#matchingEntities + 1] = metadataEntity
                         end
                     end
@@ -9142,7 +9164,10 @@ do
                 end
 
                 if #blocked > 0 then
-                    roomMetadata.BlockedEntities[entityBlocker.Index] = blocked
+                    local blockedEnts = roomMetadata:GetBlockedEntities(entityBlocker.Index, true)
+                    for _, entity in ipairs(blocked) do
+                        blockedEnts[#blockedEnts + 1] = entity
+                    end
                 end
 
                 if #outEntities[entityBlocker.Index] == 0 then
@@ -9157,8 +9182,9 @@ do
             local bossIdentifiers = currentRoom.Metadata:Search({Name = "BossIdentifier"})
             for _, bossIdentifier in ipairs(bossIdentifiers) do
                 local checkEnts = {}
-                if currentRoom.Metadata.BlockedEntities[bossIdentifier.Index] then
-                    for _, ent in ipairs(currentRoom.Metadata.BlockedEntities[bossIdentifier.Index]) do
+                local blockedEntities = currentRoom.Metadata:GetBlockedEntities(bossIdentifier.Index)
+                if blockedEntities then
+                    for _, ent in ipairs(blockedEntities) do
                         checkEnts[#checkEnts + 1] = ent
                     end
                 end
@@ -9231,7 +9257,7 @@ do
                     for _, metaEnt in ipairs(triggerable) do
                         local shouldTrigger = true
                         if metaEnt.Name == "Spawner" then
-                            local spawnedEntities = currentRoom.Metadata.BlockedEntities[metaEnt.Index]
+                            local spawnedEntities = currentRoom.Metadata:GetBlockedEntities(metaEnt.Index)
                             if spawnedEntities and #spawnedEntities > 0 then
                                 local hasNPC
                                 for _, ent in ipairs(spawnedEntities) do
@@ -9428,7 +9454,7 @@ do
                 if metadataEntity.Triggered then
                     local persistData = currentRoom:GetPersistenceData(metadataEntity)
                     if not persistData or not persistData.NoTrigger then
-                        local blockedEntities = currentRoom.Metadata.BlockedEntities[index]
+                        local blockedEntities = currentRoom.Metadata:GetBlockedEntities(metadataEntity.Index)
                         if blockedEntities and #blockedEntities > 0 then
                             local spawnAll = metadataEntity.BitValues.SpawnAll == 1
                             local toSpawn = {}
