@@ -129,9 +129,6 @@ Callback List:
 - PRE_SELECT_NEXT_STAGE(currentstage)
 -- return a stage to go to instead of currentstage.NextStage or none.
 
-- PRE_SHADING_RENDER(shadingEntity)
-- POST_SHADING_RENDER(shadingEntity)
-
 -- StageAPI Structures:
 EntityData {
     Type = integer,
@@ -230,8 +227,6 @@ StageOverrideStage {
     ReplaceWith = CustomStage
 }
 
-Shading = shadingPrefix .. "_RoomShape" .. shadingName
-
 StageAPI Variables:
 
 StageOverride {
@@ -255,7 +250,7 @@ StageAPI Objects:
 -- AddDoors(filename, DoorInfo)
 -- SetPayToPlayDoor(filename)
 
-- RoomGfx(Backdrop, GridGfx, shadingName, shadingPrefix)
+- RoomGfx(Backdrop, GridGfx)
 
 - RoomsList(name, roomfiles...) -- NAME IS NOT OPTIONAL. USED FOR SAVING / LOADING ROOMS.
 -- AddRooms(roomfiles...) -- automatically called on init.
@@ -356,7 +351,6 @@ ChangeGrid(GridContainer, filename)
 ChangeSingleGrid(GridEntity, GridGfx, gridIndex)
 ChangeGrids(GridGfx)
 ChangeBackdrop(Backdrop)
-ChangeShading(name, prefix)
 ChangeRoomGfx(RoomGfx)
 
 PlayTextStreak(params)
@@ -510,7 +504,6 @@ do -- Core Definitions
     StageAPI.E = {
         MetaEntity = "StageAPIMetaEntity",
         Backdrop = "StageAPIBackdrop",
-        Shading = "StageAPIShading",
         StageShadow = "StageAPIStageShadow",
         GenericEffect = "StageAPIGenericEffect",
         FloorEffect = "StageAPIFloorEffect",
@@ -525,8 +518,7 @@ do -- Core Definitions
     }
 
     StageAPI.S = {
-        BossIntro = Isaac.GetSoundIdByName("StageAPI Boss Intro"),
-        TarLoop = Isaac.GetSoundIdByName("StageAPI Tar Loop")
+        BossIntro = Isaac.GetSoundIdByName("StageAPI Boss Intro")
     }
 
     StageAPI.Game = Game()
@@ -1098,26 +1090,10 @@ do -- Core Functions
         S = 12545
     }
 
-    StageAPI.E.FloorEffectWaterCreep = {
-        T = EntityType.ENTITY_EFFECT,
-        V = EffectVariant.COLOSTOMIA_PUDDLE,
-        S = 12545
-    }
-
-    function StageAPI.SpawnFloorEffect(pos, velocity, spawner, anm2, loadGraphics, variant, aboveWater)
+    function StageAPI.SpawnFloorEffect(pos, velocity, spawner, anm2, loadGraphics, variant)
         local creep = StageAPI.E.FloorEffectCreep
-        if aboveWater then
-            creep = StageAPI.E.FloorEffectWaterCreep
-        end
-
         local eff = Isaac.Spawn(creep.T, creep.V, creep.S, pos or zeroVector, velocity or zeroVector, spawner)
-
-        if aboveWater then
-            eff.CollisionDamage = 0
-            eff:ToEffect().Timeout = 0
-        else
-            eff.Variant = variant or StageAPI.E.FloorEffect.V
-        end
+        eff.Variant = variant or StageAPI.E.FloorEffect.V
 
         if anm2 then
             eff:GetSprite():Load(anm2, loadGraphics)
@@ -2091,7 +2067,7 @@ do -- RoomsList
         if doEnts or doPersistentEnts then
             for _, ent in ipairs(Isaac.GetRoomEntities()) do
                 local etype = ent.Type
-                if not excludeTypesFromClearing[etype] and not (etype == StageAPI.E.Shading.T and ent.Variant == StageAPI.E.Shading.V) then
+                if not excludeTypesFromClearing[etype] then
                     local persistentData = StageAPI.CheckPersistence(ent.Type, ent.Variant, ent.SubType)
                     if (doPersistentEnts or (ent:ToNPC() and (not persistentData or not persistentData.AutoPersists))) and not (ent:HasEntityFlags(EntityFlag.FLAG_CHARM) or ent:HasEntityFlags(EntityFlag.FLAG_FRIENDLY) or ent:HasEntityFlags(EntityFlag.FLAG_PERSISTENT)) then
                         ent:Remove()
@@ -2410,7 +2386,10 @@ do -- RoomsList
                 Name = "Direction",
                 Tag = "Direction",
                 ConflictTag = "Direction",
-                PreventConflictWith = "PreventDirectionConflict"
+                PreventConflictWith = "PreventDirectionConflict",
+                BitValues = {
+                    Direction = {Offset = 0, Length = 4}
+                }
             },
             [3] = {
                 Name = "PreventDirectionConflict"
@@ -2761,12 +2740,28 @@ do -- RoomsList
         return metaEntity, persistentIndex
     end
 
+    function StageAPI.RoomMetadata:GetBlockedEntities(index, setIfNot)
+        if setIfNot and not self.BlockedEntities[index] then
+            self.BlockedEntities[index] = {}
+        end
+
+        return self.BlockedEntities[index]
+    end
+
+    function StageAPI.RoomMetadata:SetBlockedEntities(index, tbl)
+        self.BlockedEntities[index] = tbl
+    end
+
     --[[
 
     METADATA SEARCH PARAMS
 
     {
-        Name = string, -- Matches "Name" from metadata entity data
+        Names = { -- Matches "Name" from metadata entity data
+            string,
+            ...
+        },
+        Name = string, -- Singular version of Names
 
         Indices = { -- List of indices to search for metadata entities on
             GridIndex,
@@ -2862,8 +2857,13 @@ do -- RoomsList
         end
     end
 
-    function StageAPI.RoomMetadata:EntityMatchesSearchParams(metadataEntity, searchParams, checkTags)
-        if searchParams.Name and metadataEntity.Name ~= searchParams.Name then
+    function StageAPI.RoomMetadata:EntityMatchesSearchParams(metadataEntity, searchParams, checkNames, checkTags)
+        if not checkNames then
+            checkNames = searchParams.Names or {}
+            checkNames[#checkNames + 1] = searchParams.Name
+        end
+
+        if #checkNames > 0 and not StageAPI.IsIn(checkNames, metadataEntity.Name) then
             return false
         end
 
@@ -2925,9 +2925,10 @@ do -- RoomsList
 
     function StageAPI.RoomMetadata:Search(searchParams, narrowEntities)
         searchParams = searchParams or {}
-        local checkIndices, checkGroups, checkTags = searchParams.Indices or {}, searchParams.Groups or {}, searchParams.Tags or {}
+        local checkIndices, checkGroups, checkNames, checkTags = searchParams.Indices or {}, searchParams.Groups or {}, searchParams.Names or {}, searchParams.Tags or {}
         checkIndices[#checkIndices + 1] = searchParams.Index
         checkGroups[#checkGroups + 1] = searchParams.Group
+        checkNames[#checkNames + 1] = searchParams.Name
         checkTags[#checkTags + 1] = searchParams.Tag
 
         for _, index in ipairs(checkIndices) do
@@ -2938,7 +2939,7 @@ do -- RoomsList
         if narrowEntities then
             for _, metadataEntity in ipairs(narrowEntities) do
                 if self:IndexMatchesSearchParams(metadataEntity.Index, searchParams, checkIndices, checkGroups) then
-                    if self:EntityMatchesSearchParams(metadataEntity, searchParams, checkTags) then
+                    if self:EntityMatchesSearchParams(metadataEntity, searchParams, checkNames, checkTags) then
                         matchingEntities[#matchingEntities + 1] = metadataEntity
                     end
                 end
@@ -2947,7 +2948,7 @@ do -- RoomsList
             for index, metadataEntities in pairs(self.IndexMetadata) do
                 if self:IndexMatchesSearchParams(index, searchParams, checkIndices, checkGroups) then
                     for _, metadataEntity in ipairs(metadataEntities) do
-                        if self:EntityMatchesSearchParams(metadataEntity, searchParams, checkTags) then
+                        if self:EntityMatchesSearchParams(metadataEntity, searchParams, checkNames, checkTags) then
                             matchingEntities[#matchingEntities + 1] = metadataEntity
                         end
                     end
@@ -2966,7 +2967,7 @@ do -- RoomsList
         local directions = self:Search({Name = "Direction", Index = index})
         local outDirections = {}
         for _, direction in ipairs(directions) do
-            local angle = direction.Entity.SubType * (360 / 16)
+            local angle = direction.BitValues.Direction * (360 / 16)
             outDirections[#outDirections + 1] = angle
         end
 
@@ -3032,7 +3033,7 @@ do -- RoomsList
 
             for conflictTag, metaEntities in pairs(setsOfConflicting) do
                 local use = metaEntities[StageAPI.Random(1, #metaEntities, StageAPI.RoomLoadRNG)]
-                metaEntities[#metadataEntities + 1] = use
+                metadataEntities[#metadataEntities + 1] = use
             end
 
             for _, metaEntity in ipairs(metadataEntities) do
@@ -6557,7 +6558,7 @@ do -- Backdrop & RoomGfx
         return renderPos, needsExtra, sprite
     end
 
-    function StageAPI.ChangeBackdrop(backdrop, justWalls, storeBackdropEnts, shading)
+    function StageAPI.ChangeBackdrop(backdrop, justWalls, storeBackdropEnts)
         if type(backdrop) == "number" then
             game:ShowHallucination(0, backdrop)
             sfx:Stop(SoundEffect.SOUND_DEATH_CARD)
@@ -6598,12 +6599,6 @@ do -- Backdrop & RoomGfx
             end
         end
 
-        if shading and shading.Name then
-            StageAPI.ChangeShading(shading.Name, shading.Prefix)
-        else
-            StageAPI.ChangeShading("_default")
-        end
-
         return backdropEnts
     end
 
@@ -6639,99 +6634,12 @@ do -- Backdrop & RoomGfx
         end
     end
 
-    local shadingDefaultOffset = Vector(-80,-80)
-    local shadingIhOffset = Vector(-80,-160)
-    local shadingIvOffset = Vector(-240,-80)
-    function StageAPI.ChangeShading(name, prefix)
-        prefix = prefix or "stageapi/shading/shading"
-        local shading = Isaac.FindByType(StageAPI.E.FloorEffectWaterCreep.T, StageAPI.E.FloorEffectWaterCreep.V, StageAPI.E.FloorEffectWaterCreep.S, false, false)
-        for _, e in ipairs(shading) do
-            if e:GetData().StageAPIShading then
-                e:Remove()
-            end
-        end
-
-        local roomShape = room:GetRoomShape()
-
-        local topLeft = room:GetTopLeftPos()
-        local renderPos = topLeft + shadingDefaultOffset
-        local sheet
-        local lFrame
-
-        if roomShape == RoomShape.ROOMSHAPE_1x1 then sheet = ""
-        elseif roomShape == RoomShape.ROOMSHAPE_1x2 then sheet = "_1x2"
-        elseif roomShape == RoomShape.ROOMSHAPE_2x1 then sheet = "_2x1"
-        elseif roomShape == RoomShape.ROOMSHAPE_2x2 then sheet = "_2x2"
-        elseif roomShape == RoomShape.ROOMSHAPE_IH then
-            sheet = "_ih"
-            renderPos = topLeft + shadingIhOffset
-        elseif roomShape == RoomShape.ROOMSHAPE_IIH then
-            sheet = "_iih"
-            renderPos = topLeft + shadingIhOffset
-        elseif roomShape == RoomShape.ROOMSHAPE_IV then
-            sheet = "_iv"
-            renderPos = topLeft + shadingIvOffset
-        elseif roomShape == RoomShape.ROOMSHAPE_IIV then
-            sheet = "_iiv"
-            renderPos = topLeft + shadingIvOffset
-        elseif roomShape == RoomShape.ROOMSHAPE_LTL then
-            sheet = "_ltl"
-            lFrame = 0
-        elseif roomShape == RoomShape.ROOMSHAPE_LTR then
-            sheet = "_ltr"
-            lFrame = 1
-        elseif roomShape == RoomShape.ROOMSHAPE_LBL then
-            sheet = "_lbl"
-            lFrame = 2
-        elseif roomShape == RoomShape.ROOMSHAPE_LBR then
-            sheet = "_lbr"
-            lFrame = 3
-        end
-
-        sheet = prefix .. sheet .. name .. ".png"
-
-        for i = 0, 1 do
-            local shadingEntity
-            if i == 0 then
-                shadingEntity = Isaac.Spawn(StageAPI.E.Shading.T, StageAPI.E.Shading.V, 0, Vector(0, 1), zeroVector, nil)
-            elseif i == 1 then
-                shadingEntity = StageAPI.SpawnFloorEffect(Vector(0, 1), zeroVector, nil, nil, false, nil, true)
-                shadingEntity:GetData().StageAPIShading = true
-            end
-
-            local sprite = shadingEntity:GetSprite()
-            sprite:Load("stageapi/Shading.anm2", false)
-            for i = 0, 4 do
-                sprite:ReplaceSpritesheet(i, sheet)
-            end
-
-            sprite:LoadGraphics()
-
-            if lFrame then
-                if i == 0 then
-                    sprite:SetFrame("Walls", lFrame)
-                else
-                    sprite:SetFrame("Floors", lFrame)
-                end
-            else
-                sprite:Play("Default", true)
-            end
-
-            shadingEntity:GetData().Sheet = sheet
-            shadingEntity.SpriteOffset = ((renderPos - shadingEntity.Position) / 40) * 26
-
-            if i == 0 then
-                shadingEntity:AddEntityFlags(EntityFlag.FLAG_RENDER_WALL)
-            end
-        end
-    end
-
     function StageAPI.ChangeRoomGfx(roomgfx)
         StageAPI.BackdropRNG:SetSeed(room:GetDecorationSeed(), 0)
         if roomgfx.Backdrops then
             if #roomgfx.Backdrops > 0 then
                 local backdrop = StageAPI.Random(1, #roomgfx.Backdrops, StageAPI.BackdropRNG)
-                StageAPI.ChangeBackdrop(roomgfx.Backdrops[backdrop], nil, nil, roomgfx.Shading)
+                StageAPI.ChangeBackdrop(roomgfx.Backdrops[backdrop])
             else
                 StageAPI.ChangeBackdrop(roomgfx.Backdrops)
             end
@@ -6743,13 +6651,9 @@ do -- Backdrop & RoomGfx
     end
 
     StageAPI.RoomGfx = StageAPI.Class("RoomGfx")
-    function StageAPI.RoomGfx:Init(backdrops, grids, shading, shadingPrefix)
+    function StageAPI.RoomGfx:Init(backdrops, grids)
         self.Backdrops = backdrops
         self.Grids = grids
-        self.Shading = {
-            Name = shading,
-            Prefix = shadingPrefix
-        }
     end
 
     StageAPI.AddCallback("StageAPI", "POST_STAGEAPI_NEW_ROOM", 0, function()
@@ -8630,14 +8534,6 @@ do -- Callbacks
                 if currentRoom then
                     currentRoom.Data.RoomGfx = usingGfx
                 end
-            else
-                if backdropType ~= 16 and room:GetType() ~= RoomType.ROOM_DUNGEON then
-                    if backdropType == BackdropType.UTERO then
-                        StageAPI.ChangeShading("_utero")
-                    else
-                        StageAPI.ChangeShading("_default")
-                    end
-                end
             end
 
             StageAPI.CallCallbacks("POST_CHANGE_ROOM_GFX", false, currentRoom, usingGfx, true)
@@ -9061,14 +8957,6 @@ do -- Callbacks
             StageAPI.ChangeRoomGfx(usingGfx)
             if currentRoom then
                 currentRoom.Data.RoomGfx = usingGfx
-            end
-        else
-            if room:GetType() ~= RoomType.ROOM_DUNGEON and room:GetBackdropType() ~= 16 then
-                if backdropType == BackdropType.UTERO then
-                    StageAPI.ChangeShading("_utero")
-                else
-                    StageAPI.ChangeShading("_default")
-                end
             end
         end
 
@@ -9702,7 +9590,10 @@ do
                 end
 
                 if #blocked > 0 then
-                    roomMetadata.BlockedEntities[entityBlocker.Index] = blocked
+                    local blockedEnts = roomMetadata:GetBlockedEntities(entityBlocker.Index, true)
+                    for _, entity in ipairs(blocked) do
+                        blockedEnts[#blockedEnts + 1] = entity
+                    end
                 end
 
                 if #outEntities[entityBlocker.Index] == 0 then
@@ -9717,8 +9608,9 @@ do
             local bossIdentifiers = currentRoom.Metadata:Search({Name = "BossIdentifier"})
             for _, bossIdentifier in ipairs(bossIdentifiers) do
                 local checkEnts = {}
-                if currentRoom.Metadata.BlockedEntities[bossIdentifier.Index] then
-                    for _, ent in ipairs(currentRoom.Metadata.BlockedEntities[bossIdentifier.Index]) do
+                local blockedEntities = currentRoom.Metadata:GetBlockedEntities(bossIdentifier.Index)
+                if blockedEntities then
+                    for _, ent in ipairs(blockedEntities) do
                         checkEnts[#checkEnts + 1] = ent
                     end
                 end
@@ -9791,7 +9683,7 @@ do
                     for _, metaEnt in ipairs(triggerable) do
                         local shouldTrigger = true
                         if metaEnt.Name == "Spawner" then
-                            local spawnedEntities = currentRoom.Metadata.BlockedEntities[metaEnt.Index]
+                            local spawnedEntities = currentRoom.Metadata:GetBlockedEntities(metaEnt.Index)
                             if spawnedEntities and #spawnedEntities > 0 then
                                 local hasNPC
                                 for _, ent in ipairs(spawnedEntities) do
@@ -9988,7 +9880,7 @@ do
                 if metadataEntity.Triggered then
                     local persistData = currentRoom:GetPersistenceData(metadataEntity)
                     if not persistData or not persistData.NoTrigger then
-                        local blockedEntities = currentRoom.Metadata.BlockedEntities[index]
+                        local blockedEntities = currentRoom.Metadata:GetBlockedEntities(metadataEntity.Index)
                         if blockedEntities and #blockedEntities > 0 then
                             local spawnAll = metadataEntity.BitValues.SpawnAll == 1
                             local toSpawn = {}
