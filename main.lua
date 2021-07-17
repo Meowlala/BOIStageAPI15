@@ -6507,7 +6507,7 @@ do -- Bosses
     function StageAPI.SetFloorInfo(info, stage, stagetype, doGreed)
         if stagetype == true then
             for _, stype in ipairs(StageAPI.StageTypes) do
-                StageAPI.SetFloorInfo(StageAPI.Copy(info), stage, stype, doGreed)
+                StageAPI.SetFloorInfo(StageAPI.DeepCopy(info), stage, stype, doGreed)
             end
 
             return
@@ -6521,7 +6521,7 @@ do -- Bosses
             if stageTwo then
                 StageAPI.FloorInfo[stageTwo] = StageAPI.FloorInfo[stageTwo] or {}
 
-                local stageTwoInfo = StageAPI.Copy(info)
+                local stageTwoInfo = StageAPI.DeepCopy(info)
                 if noBossStages[stageTwo] then
                     stageTwoInfo.Bosses = nil
                 end
@@ -6536,7 +6536,7 @@ do -- Bosses
                 greedStage = stageToGreed[stage] or stage
             end
 
-            local greedInfo = StageAPI.Copy(info)
+            local greedInfo = StageAPI.DeepCopy(info)
             greedInfo.Bosses = nil
 
             StageAPI.FloorInfoGreed[greedStage] = StageAPI.FloorInfoGreed[greedStage] or {}
@@ -6858,7 +6858,8 @@ do -- Bosses
 
         if not bossID then
             roomDesc = roomDesc or level:GetCurrentRoomDesc()
-            local isHorsemanRoom = StageAPI.IsIn(horsemanRoomSubtypes, roomDesc.Data.Subtype)
+            local roomSubtype = roomDesc.Data.Subtype
+            local isHorsemanRoom = StageAPI.IsIn(horsemanRoomSubtypes, roomSubtype)
 
             local floatWeights
             local totalUnencounteredWeight = 0
@@ -6908,6 +6909,12 @@ do -- Bosses
                         end
                     elseif poolEntry.OnlyReplaceHorsemen or potentialBoss.OnlyReplaceHorsemen then
                         invalid = true
+                    end
+
+                    if poolEntry.OnlyReplaceSubtype and not invalid then
+                        if roomSubtype ~= poolEntry.OnlyReplaceSubtype then
+                            invalid = true
+                        end
                     end
                 end
 
