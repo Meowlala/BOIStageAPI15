@@ -3026,7 +3026,7 @@ do -- RoomsList
 
             for conflictTag, metaEntities in pairs(setsOfConflicting) do
                 local use = metaEntities[StageAPI.Random(1, #metaEntities, StageAPI.RoomLoadRNG)]
-                metaEntities[#metadataEntities + 1] = use
+                metadataEntities[#metadataEntities + 1] = use
             end
 
             for _, metaEntity in ipairs(metadataEntities) do
