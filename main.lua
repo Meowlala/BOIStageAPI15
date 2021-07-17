@@ -2410,7 +2410,10 @@ do -- RoomsList
                 Name = "Direction",
                 Tag = "Direction",
                 ConflictTag = "Direction",
-                PreventConflictWith = "PreventDirectionConflict"
+                PreventConflictWith = "PreventDirectionConflict",
+                BitValues = {
+                    Direction = {Offset = 0, Length = 4}
+                }
             },
             [3] = {
                 Name = "PreventDirectionConflict"
@@ -2982,7 +2985,7 @@ do -- RoomsList
         local directions = self:Search({Name = "Direction", Index = index})
         local outDirections = {}
         for _, direction in ipairs(directions) do
-            local angle = direction.Entity.SubType * (360 / 16)
+            local angle = direction.BitValues.Direction * (360 / 16)
             outDirections[#outDirections + 1] = angle
         end
 
