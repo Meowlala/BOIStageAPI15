@@ -2727,7 +2727,12 @@ do -- RoomsList
         end
 
         if metadata.HasPersistentData then
-            persistentIndex = (persistentIndex and persistentIndex + 1) or 0
+            if not persistentIndex and self.LevelRoom then
+                persistentIndex = self.LevelRoom:GetNextPersistentIndex()
+            else
+                persistentIndex = (persistentIndex and persistentIndex + 1) or 0
+            end
+
             metaEntity.PersistentIndex = persistentIndex
         end
 
@@ -3802,6 +3807,7 @@ do -- RoomsList
         end
 
         self.SpawnEntities, self.SpawnGrids, self.EntityTakenIndices, self.GridTakenIndices, self.LastPersistentIndex, self.Metadata = StageAPI.ObtainSpawnObjects(self.Layout, seed)
+        self.Metadata.LevelRoom = self
     end
 
     --[[ Deprecated functions, prefer to use LevelRoom.Metadata:<Search/Has/Etc>
@@ -3919,6 +3925,11 @@ do -- RoomsList
         end
     end
 
+    function StageAPI.LevelRoom:GetNextPersistentIndex()
+        self.LastPersistentIndex = self.LastPersistentIndex + 1
+        return self.LastPersistentIndex
+    end
+
     function StageAPI.LevelRoom:SavePersistentEntities()
         local checkExistenceOf = {}
         for hash, entityPersistData in pairs(StageAPI.ActiveEntityPersistenceData) do
@@ -3982,8 +3993,7 @@ do -- RoomsList
                 local persistData = StageAPI.CheckPersistence(entity.Type, entity.Variant, entity.SubType)
                 if persistData then
                     if not persistData.StoreCheck or not persistData.StoreCheck(entity, data) then
-                        local index = self.LastPersistentIndex + 1
-                        self.LastPersistentIndex = index
+                        local index = self:GetNextPersistentIndex()
                         local grindex = room:GetGridIndex(entity.Position)
                         if not self.ExtraSpawn[grindex] then
                             self.ExtraSpawn[grindex] = {}
