@@ -2693,8 +2693,10 @@ do -- RoomsList
         end
 
         local metadata
+        local name
         if entity and type(entity) ~= "string" then
             metadata = StageAPI.IsMetadataEntity(entity)
+            name = metadata.Name
         else
             if entity then
                 name = entity
@@ -2705,7 +2707,7 @@ do -- RoomsList
         end
 
         local metaEntity = {
-            Name = metadata.Name,
+            Name = name,
             Metadata = metadata,
             Entity = entity or {Type = metadata.Type, Variant = metadata.Variant},
             Index = index
