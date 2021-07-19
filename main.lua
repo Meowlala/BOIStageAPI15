@@ -2514,13 +2514,6 @@ do -- RoomsList
     end
 
     function StageAPI.AddMetadataEntity(data, id, variant)
-        if not StageAPI.MetadataEntities[id] then
-            StageAPI.MetadataEntities[id] = {}
-        end
-
-        data.Type = id
-        data.Variant =  variant
-
         if data.Group then -- backwards compatibility features
             if not data.Tags then
                 data.Tags = {}
@@ -2537,19 +2530,41 @@ do -- RoomsList
             data.GroupID = data.Name
         end
 
-        StageAPI.MetadataEntities[id][variant] = data
+        if id and variant then
+            if not StageAPI.MetadataEntities[id] then
+                StageAPI.MetadataEntities[id] = {}
+            end
+
+            data.Type = id
+            data.Variant =  variant
+
+            StageAPI.MetadataEntities[id][variant] = data
+        end
+
         StageAPI.MetadataEntitiesByName[data.Name] = data
     end
 
     function StageAPI.AddMetadataEntities(tbl)
         if type(next(tbl)) == "table" and next(tbl).Name then
             for variant, data in pairs(tbl) do
-                StageAPI.AddMetadataEntity(data, 199, variant)
+                if type(variant) == "string" then
+                    StageAPI.AddMetadataEntity(data)
+                else
+                    StageAPI.AddMetadataEntity(data, 199, variant)
+                end
+            end
+        elseif #tbl > 0 and next(tbl).Name then
+            for _, data in ipairs(tbl) do
+                StageAPI.AddMetadataEntity(data)
             end
         else
             for id, variantTable in pairs(tbl) do
-                for variant, data in pairs(variantTable) do
-                    StageAPI.AddMetadataEntity(data, id, variant)
+                if type(id) == "string" then
+                    StageAPI.AddMetadataEntity(variantTable)
+                else
+                    for variant, data in pairs(variantTable) do
+                        StageAPI.AddMetadataEntity(data, id, variant)
+                    end
                 end
             end
         end
@@ -2562,6 +2577,10 @@ do -- RoomsList
         end
 
         return StageAPI.MetadataEntities[etype] and StageAPI.MetadataEntities[etype][variant]
+    end
+
+    function StageAPI.GetMetadataByName(metadataName)
+        return StageAPI.MetadataEntitiesByName[metadataName]
     end
 
     function StageAPI.RoomDataHasMetadataEntity(data)
@@ -2703,13 +2722,13 @@ do -- RoomsList
                 entity = nil
             end
 
-            metadata = StageAPI.MetadataEntitiesByName[name]
+            metadata = StageAPI.GetMetadataByName(name)
         end
 
         local metaEntity = {
             Name = name,
             Metadata = metadata,
-            Entity = entity or {Type = metadata.Type, Variant = metadata.Variant},
+            Entity = entity,
             Index = index
         }
 
@@ -3022,7 +3041,7 @@ do -- RoomsList
                         setsOfConflicting[metadata.ConflictTag] = {}
 
                         for i, metaEntity2 in StageAPI.ReverseIterate(metadataEntities) do
-                            local metadata2 = StageAPI.MetadataEntitiesByName[metaEntity2.Name]
+                            local metadata2 = metaEntity2.Metadata
                             if metadata2.ConflictTag and metadata2.ConflictTag == metadata.ConflictTag then
                                 setsOfConflicting[metadata.ConflictTag][#setsOfConflicting[metadata.ConflictTag] + 1] = metaEntity
                                 table.remove(metadataEntities, i)
@@ -3038,7 +3057,7 @@ do -- RoomsList
             end
 
             for _, metaEntity in ipairs(metadataEntities) do
-                local metadata = StageAPI.MetadataEntitiesByName[metaEntity.Name]
+                local metadata = metaEntity.Metadata
 
                 local groupID
                 if metaEntity.BitValues and metaEntity.BitValues.GroupID and metaEntity.BitValues.GroupID ~= -1 then
