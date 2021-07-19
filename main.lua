@@ -2816,6 +2816,9 @@ do -- RoomsList
         BitValues = { -- Checks each metadata entity's BitValues for the specified keys and values, only returns if all match
             Key = Value
         },
+
+        IndexTable = boolean, -- If set to true, will return meta entities as a table formatted {[index] = {metaEntity, metaEntity}}
+        IndexBooleanTable = boolean, -- If set to true, will return meta entities as a table formatted {[index] = true} for indices that have a matching metadata entity
     }
 
     ]]
@@ -2958,9 +2961,18 @@ do -- RoomsList
         local matchingEntities = {}
         if narrowEntities then
             for _, metadataEntity in ipairs(narrowEntities) do
-                if self:IndexMatchesSearchParams(metadataEntity.Index, searchParams, checkIndices, checkGroups) then
-                    if self:EntityMatchesSearchParams(metadataEntity, searchParams, checkNames, checkTags) then
-                        matchingEntities[#matchingEntities + 1] = metadataEntity
+                if not searchParams.IndexBooleanTable or not matchingEntities[metadataEntity.Index] then
+                    if self:IndexMatchesSearchParams(metadataEntity.Index, searchParams, checkIndices, checkGroups) then
+                        if self:EntityMatchesSearchParams(metadataEntity, searchParams, checkNames, checkTags) then
+                            if searchParams.IndexBooleanTable then
+                                matchingEntities[metadataEntity.Index] = true
+                            elseif searchParams.IndexTable then
+                                matchingEntities[metadataEntity.Index] = matchingEntities[metadataEntity.Index] or {}
+                                matchingEntities[metadataEntity.Index][#matchingEntities[metadataEntity.Index] + 1] = metadataEntity
+                            else
+                                matchingEntities[#matchingEntities + 1] = metadataEntity
+                            end
+                        end
                     end
                 end
             end
@@ -2969,7 +2981,15 @@ do -- RoomsList
                 if self:IndexMatchesSearchParams(index, searchParams, checkIndices, checkGroups) then
                     for _, metadataEntity in ipairs(metadataEntities) do
                         if self:EntityMatchesSearchParams(metadataEntity, searchParams, checkNames, checkTags) then
-                            matchingEntities[#matchingEntities + 1] = metadataEntity
+                            if searchParams.IndexBooleanTable then
+                                matchingEntities[index] = true
+                                break
+                            elseif searchParams.IndexTable then
+                                matchingEntities[index] = matchingEntities[index] or {}
+                                matchingEntities[index][#matchingEntities[index] + 1] = metadataEntity
+                            else
+                                matchingEntities[#matchingEntities + 1] = metadataEntity
+                            end
                         end
                     end
                 end
