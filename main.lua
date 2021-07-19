@@ -6911,6 +6911,12 @@ do -- Bosses
                         invalid = true
                     end
 
+                    if poolEntry.AlwaysReplaceSubtype and not invalid then
+                        if roomSubtype == poolEntry.AlwaysReplaceSubtype then
+                            forced = true
+                        end
+                    end
+
                     if poolEntry.OnlyReplaceSubtype and not invalid then
                         if roomSubtype ~= poolEntry.OnlyReplaceSubtype then
                             invalid = true
