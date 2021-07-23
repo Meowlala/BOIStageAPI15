@@ -963,7 +963,8 @@ do -- Boss Data
     StageAPI.AddBossData(quickBossData("The Wretched", {100, 1}))
     StageAPI.AddBossData(quickBossData("Daddy Long Legs", {101, 0}))
     StageAPI.AddBossData(quickBossData("Triachnid", {101, 1}))
-    StageAPI.AddBossData(quickBossData("Blue Baby", {102, 0}))
+    StageAPI.AddBossData(quickBossData("Isaac", {102, 0}, nil, {Bossname = "gfx/ui/boss/playername_01_isaac.png"}))
+    StageAPI.AddBossData(quickBossData("Blue Baby", {102, 1}))
     StageAPI.AddBossData(quickBossData("The Haunt", {260, 0}))
     StageAPI.AddBossData(quickBossData("Dingle", {261, 0}))
     StageAPI.AddBossData(quickBossData("Dangle", {261, 1}, true))
@@ -1275,6 +1276,15 @@ do -- Base Floor Info
         }
     }, settingStage, StageType.STAGETYPE_REPENTANCE_B)
 
+    for stageType = StageType.STAGETYPE_ORIGINAL, StageType.STAGETYPE_REPENTANCE_B do
+        if stageType ~= StageType.STAGETYPE_GREEDMODE then
+            local floorInfo = StageAPI.GetBaseFloorInfo(LevelStage.STAGE3_2, stageType, false)
+            floorInfo.Bosses = poolWrap{
+                {BossID = "Mom"}
+            }
+        end
+    end
+
     settingStage = LevelStage.STAGE4_1
     StageAPI.SetFloorInfo({
         Prefix = "07_womb",
@@ -1324,6 +1334,14 @@ do -- Base Floor Info
         }
     }, settingStage, StageType.STAGETYPE_AFTERBIRTH)
 
+    for stageType = StageType.STAGETYPE_ORIGINAL, StageType.STAGETYPE_AFTERBIRTH do
+        local floorInfo = StageAPI.GetBaseFloorInfo(LevelStage.STAGE4_2, stageType, false)
+        floorInfo.Bosses = poolWrap{
+            {BossID = "Mom's Heart", OnlyReplaceSubtype = 8},
+            {BossID = "It Lives", OnlyReplaceSubtype = 25}
+        }
+    end
+
     StageAPI.SetFloorInfo({
         Prefix = "07x_corpse",
         Backdrop = BackdropType.CORPSE,
@@ -1342,29 +1360,44 @@ do -- Base Floor Info
     settingStage = LevelStage.STAGE5
     StageAPI.SetFloorInfo({
         Prefix = "09_sheol",
-        Backdrop = BackdropType.SHEOL
+        Backdrop = BackdropType.SHEOL,
+        Bosses = poolWrap{
+            {BossID = "Satan"}
+        }
     }, settingStage, StageType.STAGETYPE_ORIGINAL, false)
 
     StageAPI.SetFloorInfo({
         Prefix = "10_cathedral",
-        Backdrop = BackdropType.CATHEDRAL
+        Backdrop = BackdropType.CATHEDRAL,
+        Bosses = poolWrap{
+            {BossID = "Isaac"}
+        }
     }, settingStage, StageType.STAGETYPE_WOTL, false)
 
     settingStage = LevelStage.STAGE6
     StageAPI.SetFloorInfo({
         Prefix = "11_darkroom",
-        Backdrop = BackdropType.DARKROOM
+        Backdrop = BackdropType.DARKROOM,
+        Bosses = poolWrap{
+            {BossID = "The Lamb"}
+        }
     }, settingStage, StageType.STAGETYPE_ORIGINAL, false)
 
     StageAPI.SetFloorInfo({
         Prefix = "12_chest",
-        Backdrop = BackdropType.CHEST
+        Backdrop = BackdropType.CHEST,
+        Bosses = poolWrap{
+            {BossID = "Blue Baby"}
+        }
     }, settingStage, StageType.STAGETYPE_WOTL, false)
 
     -- Special Floors
     StageAPI.SetFloorInfo({
         Prefix = "17_blue_womb",
-        Backdrop = BackdropType.BLUE_WOMB
+        Backdrop = BackdropType.BLUE_WOMB,
+        Bosses = poolWrap{
+            {BossID = "Hush"}
+        }
     }, LevelStage.STAGE4_3, true, false)
 
     StageAPI.SetFloorInfo({

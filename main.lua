@@ -2520,13 +2520,6 @@ do -- RoomsList
     end
 
     function StageAPI.AddMetadataEntity(data, id, variant)
-        if not StageAPI.MetadataEntities[id] then
-            StageAPI.MetadataEntities[id] = {}
-        end
-
-        data.Type = id
-        data.Variant =  variant
-
         if data.Group then -- backwards compatibility features
             if not data.Tags then
                 data.Tags = {}
@@ -2543,19 +2536,41 @@ do -- RoomsList
             data.GroupID = data.Name
         end
 
-        StageAPI.MetadataEntities[id][variant] = data
+        if id and variant then
+            if not StageAPI.MetadataEntities[id] then
+                StageAPI.MetadataEntities[id] = {}
+            end
+
+            data.Type = id
+            data.Variant =  variant
+
+            StageAPI.MetadataEntities[id][variant] = data
+        end
+
         StageAPI.MetadataEntitiesByName[data.Name] = data
     end
 
     function StageAPI.AddMetadataEntities(tbl)
         if type(next(tbl)) == "table" and next(tbl).Name then
             for variant, data in pairs(tbl) do
-                StageAPI.AddMetadataEntity(data, 199, variant)
+                if type(variant) == "string" then
+                    StageAPI.AddMetadataEntity(data)
+                else
+                    StageAPI.AddMetadataEntity(data, 199, variant)
+                end
+            end
+        elseif #tbl > 0 and next(tbl).Name then
+            for _, data in ipairs(tbl) do
+                StageAPI.AddMetadataEntity(data)
             end
         else
             for id, variantTable in pairs(tbl) do
-                for variant, data in pairs(variantTable) do
-                    StageAPI.AddMetadataEntity(data, id, variant)
+                if type(id) == "string" then
+                    StageAPI.AddMetadataEntity(variantTable)
+                else
+                    for variant, data in pairs(variantTable) do
+                        StageAPI.AddMetadataEntity(data, id, variant)
+                    end
                 end
             end
         end
@@ -2568,6 +2583,10 @@ do -- RoomsList
         end
 
         return StageAPI.MetadataEntities[etype] and StageAPI.MetadataEntities[etype][variant]
+    end
+
+    function StageAPI.GetMetadataByName(metadataName)
+        return StageAPI.MetadataEntitiesByName[metadataName]
     end
 
     function StageAPI.RoomDataHasMetadataEntity(data)
@@ -2699,21 +2718,23 @@ do -- RoomsList
         end
 
         local metadata
+        local name
         if entity and type(entity) ~= "string" then
             metadata = StageAPI.IsMetadataEntity(entity)
+            name = metadata.Name
         else
             if entity then
                 name = entity
                 entity = nil
             end
 
-            metadata = StageAPI.MetadataEntitiesByName[name]
+            metadata = StageAPI.GetMetadataByName(name)
         end
 
         local metaEntity = {
-            Name = metadata.Name,
+            Name = name,
             Metadata = metadata,
-            Entity = entity or {Type = metadata.Type, Variant = metadata.Variant},
+            Entity = entity,
             Index = index
         }
 
@@ -2731,7 +2752,12 @@ do -- RoomsList
         end
 
         if metadata.HasPersistentData then
-            persistentIndex = (persistentIndex and persistentIndex + 1) or 0
+            if not persistentIndex and self.LevelRoom then
+                persistentIndex = self.LevelRoom:GetNextPersistentIndex()
+            else
+                persistentIndex = (persistentIndex and persistentIndex + 1) or 0
+            end
+
             metaEntity.PersistentIndex = persistentIndex
         end
 
@@ -2796,6 +2822,9 @@ do -- RoomsList
         BitValues = { -- Checks each metadata entity's BitValues for the specified keys and values, only returns if all match
             Key = Value
         },
+
+        IndexTable = boolean, -- If set to true, will return meta entities as a table formatted {[index] = {metaEntity, metaEntity}}
+        IndexBooleanTable = boolean, -- If set to true, will return meta entities as a table formatted {[index] = true} for indices that have a matching metadata entity
     }
 
     ]]
@@ -2938,9 +2967,18 @@ do -- RoomsList
         local matchingEntities = {}
         if narrowEntities then
             for _, metadataEntity in ipairs(narrowEntities) do
-                if self:IndexMatchesSearchParams(metadataEntity.Index, searchParams, checkIndices, checkGroups) then
-                    if self:EntityMatchesSearchParams(metadataEntity, searchParams, checkNames, checkTags) then
-                        matchingEntities[#matchingEntities + 1] = metadataEntity
+                if not searchParams.IndexBooleanTable or not matchingEntities[metadataEntity.Index] then
+                    if self:IndexMatchesSearchParams(metadataEntity.Index, searchParams, checkIndices, checkGroups) then
+                        if self:EntityMatchesSearchParams(metadataEntity, searchParams, checkNames, checkTags) then
+                            if searchParams.IndexBooleanTable then
+                                matchingEntities[metadataEntity.Index] = true
+                            elseif searchParams.IndexTable then
+                                matchingEntities[metadataEntity.Index] = matchingEntities[metadataEntity.Index] or {}
+                                matchingEntities[metadataEntity.Index][#matchingEntities[metadataEntity.Index] + 1] = metadataEntity
+                            else
+                                matchingEntities[#matchingEntities + 1] = metadataEntity
+                            end
+                        end
                     end
                 end
             end
@@ -2949,7 +2987,15 @@ do -- RoomsList
                 if self:IndexMatchesSearchParams(index, searchParams, checkIndices, checkGroups) then
                     for _, metadataEntity in ipairs(metadataEntities) do
                         if self:EntityMatchesSearchParams(metadataEntity, searchParams, checkNames, checkTags) then
-                            matchingEntities[#matchingEntities + 1] = metadataEntity
+                            if searchParams.IndexBooleanTable then
+                                matchingEntities[index] = true
+                                break
+                            elseif searchParams.IndexTable then
+                                matchingEntities[index] = matchingEntities[index] or {}
+                                matchingEntities[index][#matchingEntities[index] + 1] = metadataEntity
+                            else
+                                matchingEntities[#matchingEntities + 1] = metadataEntity
+                            end
                         end
                     end
                 end
@@ -3021,7 +3067,7 @@ do -- RoomsList
                         setsOfConflicting[metadata.ConflictTag] = {}
 
                         for i, metaEntity2 in StageAPI.ReverseIterate(metadataEntities) do
-                            local metadata2 = StageAPI.MetadataEntitiesByName[metaEntity2.Name]
+                            local metadata2 = metaEntity2.Metadata
                             if metadata2.ConflictTag and metadata2.ConflictTag == metadata.ConflictTag then
                                 setsOfConflicting[metadata.ConflictTag][#setsOfConflicting[metadata.ConflictTag] + 1] = metaEntity
                                 table.remove(metadataEntities, i)
@@ -3037,7 +3083,7 @@ do -- RoomsList
             end
 
             for _, metaEntity in ipairs(metadataEntities) do
-                local metadata = StageAPI.MetadataEntitiesByName[metaEntity.Name]
+                local metadata = metaEntity.Metadata
 
                 local groupID
                 if metaEntity.BitValues and metaEntity.BitValues.GroupID and metaEntity.BitValues.GroupID ~= -1 then
@@ -3806,96 +3852,8 @@ do -- RoomsList
         end
 
         self.SpawnEntities, self.SpawnGrids, self.EntityTakenIndices, self.GridTakenIndices, self.LastPersistentIndex, self.Metadata = StageAPI.ObtainSpawnObjects(self.Layout, seed)
+        self.Metadata.LevelRoom = self
     end
-
-    --[[ Deprecated functions, prefer to use LevelRoom.Metadata:<Search/Has/Etc>
-    function StageAPI.LevelRoom:SetEntityMetadata(index, name)
-        self.Metadata:AddMetadataEntity(index, name)
-    end
-
-    function StageAPI.LevelRoom:HasEntityMetadata(index, name)
-        return self.Metadata:Has({
-            Index = index,
-            Name = name
-        })
-    end
-
-    function StageAPI.LevelRoom:GetEntityMetadata(index, name)
-        local search = self.Metadata:Search({
-            Index = index,
-            Name = name
-        })
-
-        if index and name then
-            return (#search > 0) and #search
-        end
-
-        local out = {}
-        for _, metadataEntity in ipairs(search) do
-            if not name then
-                out[metadataEntity.Name] = (out[metadataEntity.Name] or 0) + 1
-            elseif not index then
-                out[metadataEntity.Index] = (out[metadataEntity.Index] or 0) + 1
-            end
-        end
-
-        return out
-    end
-
-    function StageAPI.LevelRoom:GetEntityMetadataOfType(metatype, index)
-        local search = self.Metadata:Search({
-            Index = index,
-            Tag = metatype,
-        })
-
-        if index then
-            local includedMetadata = {}
-            for _, metadataEntity in ipairs(search) do
-                includedMetadata[#includedMetadata + 1] = metadataEntity.Name
-            end
-
-            return includedMetadata
-        else
-            local includedMetadataByIndex = {}
-            for _, metadataEntity in ipairs(search) do
-                local index = metadataEntity.Index
-                includedMetadataByIndex[index] = includedMetadataByIndex[index] or {}
-                includedMetadataByIndex[index][#includedMetadataByIndex[index] + 1] = metadataEntity.Name
-            end
-
-            return includedMetadataByIndex
-        end
-    end
-
-    function StageAPI.LevelRoom:GetEntityMetadataGroups(index)
-        return self.Metadata:GroupsWithIndex(index)
-    end
-
-    function StageAPI.LevelRoom:IndicesShareGroup(index, index2, specificGroup)
-        if specificGroup then
-            return self.Metadata:IsIndexInGroup(index, specificGroup) and self.Metadata:IsIndexInGroup(index2, specificGroup)
-        else
-            local groups = self.Metadata:GroupsWithIndex(index)
-            for _, group in ipairs(groups) do
-                if self.Metadata:IsIndexInGroup(index2, group) then
-                    return true
-                end
-            end
-        end
-
-        return false
-    end
-
-    function StageAPI.LevelRoom:GetIndicesInGroup(group)
-        return self.Metadata:IndicesInGroup(group)
-    end
-
-    function StageAPI.LevelRoom:GroupHasMetadata(group, name)
-        return self.Metadata:Has({
-            Group = group,
-            Name = name
-        })
-    end]]
 
     function StageAPI.LevelRoom:IsGridIndexFree(index, ignoreEntities, ignoreGrids)
         return (ignoreEntities or not self.EntityTakenIndices[index]) and (ignoreGrids or not self.GridTakenIndices[index])
@@ -3921,6 +3879,11 @@ do -- RoomsList
 
             return self.PersistenceData[index]
         end
+    end
+
+    function StageAPI.LevelRoom:GetNextPersistentIndex()
+        self.LastPersistentIndex = self.LastPersistentIndex + 1
+        return self.LastPersistentIndex
     end
 
     function StageAPI.LevelRoom:SavePersistentEntities()
@@ -3986,8 +3949,7 @@ do -- RoomsList
                 local persistData = StageAPI.CheckPersistence(entity.Type, entity.Variant, entity.SubType)
                 if persistData then
                     if not persistData.StoreCheck or not persistData.StoreCheck(entity, data) then
-                        local index = self.LastPersistentIndex + 1
-                        self.LastPersistentIndex = index
+                        local index = self:GetNextPersistentIndex()
                         local grindex = room:GetGridIndex(entity.Position)
                         if not self.ExtraSpawn[grindex] then
                             self.ExtraSpawn[grindex] = {}
@@ -6869,25 +6831,25 @@ do -- Custom Stage
         end
     end
 
-    function StageAPI.CustomStage:GenerateRoom(rtype, shape, doors, isStartingRoom, fromLevelGenerator, roomDescriptor)
+    function StageAPI.CustomStage:GenerateRoom(roomDescriptor, isStartingRoom, fromLevelGenerator, roomArgs)
         StageAPI.LogMinor("Generating room for stage " .. self:GetDisplayName())
 
         local roomData
         if roomDescriptor then
             roomData = roomDescriptor.Data
-            rtype = rtype or roomData.Type
-            shape = shape or roomData.Shape
-            doors = doors or StageAPI.GetDoorsForRoomFromData(roomDescriptor.Data)
         end
 
-        if StageAPI.CurrentStage.SinRooms and (rtype == RoomType.ROOM_MINIBOSS or rtype == RoomType.ROOM_SECRET or rtype == RoomType.ROOM_SHOP) then
+        local rtype = (roomArgs and roomArgs.RoomType) or (roomData and roomData.Type) or RoomType.ROOM_DEFAULT
+        local shape = (roomArgs and roomArgs.Shape) or (roomData and roomData.Shape) or RoomShape.ROOMSHAPE_1x1
+
+        if self.SinRooms and (rtype == RoomType.ROOM_MINIBOSS or rtype == RoomType.ROOM_SECRET or rtype == RoomType.ROOM_SHOP) then
             local usingRoomsList
             local includedSins = {}
 
             if roomData then
                 StageAPI.ForAllSpawnEntries(roomData, function(entry, spawn)
                     for i, sin in ipairs(StageAPI.SinsSplitData) do
-                        if entry.Type == sin.Type and (sin.Variant and entry.Variant == sin.Variant) and ((sin.ListName and StageAPI.CurrentStage.SinRooms[sin.ListName]) or (sin.MultipleListName and StageAPI.CurrentStage.SinRooms[sin.MultipleListName])) then
+                        if entry.Type == sin.Type and (sin.Variant and entry.Variant == sin.Variant) and ((sin.ListName and self.SinRooms[sin.ListName]) or (sin.MultipleListName and self.SinRooms[sin.MultipleListName])) then
                             if not includedSins[i] then
                                 includedSins[i] = 0
                             end
@@ -6900,7 +6862,7 @@ do -- Custom Stage
             else
                 for _, entity in ipairs(Isaac.GetRoomEntities()) do
                     for i, sin in ipairs(StageAPI.SinsSplitData) do
-                        if entity.Type == sin.Type and (sin.Variant and entity.Variant == sin.Variant) and ((sin.ListName and StageAPI.CurrentStage.SinRooms[sin.ListName]) or (sin.MultipleListName and StageAPI.CurrentStage.SinRooms[sin.MultipleListName])) then
+                        if entity.Type == sin.Type and (sin.Variant and entity.Variant == sin.Variant) and ((sin.ListName and self.SinRooms[sin.ListName]) or (sin.MultipleListName and self.SinRooms[sin.MultipleListName])) then
                             if not includedSins[i] then
                                 includedSins[i] = 0
                             end
@@ -6919,20 +6881,17 @@ do -- Custom Stage
                     listName = sin.MultipleListName
                 end
 
-                usingRoomsList = StageAPI.CurrentStage.SinRooms[listName]
+                usingRoomsList = self.SinRooms[listName]
             end
 
             if usingRoomsList then
                 local shape = room:GetRoomShape()
                 if #usingRoomsList.ByShape[shape] > 0 then
-                    local newRoom = StageAPI.LevelRoom{
+                    local newRoom = StageAPI.LevelRoom(StageAPI.Merged({
                         RoomsList = usingRoomsList,
-                        Shape = shape,
-                        RoomType = rtype,
-                        RequireRoomType = StageAPI.CurrentStage.RequireRoomTypeSin,
-                        Doors = doors,
-                        RoomDesciptor = roomDescriptor
-                    }
+                        RoomDescriptor = roomDescriptor,
+                        RequireRoomType = self.RequireRoomTypeSin
+                    }, roomArgs))
 
                     return newRoom
                 end
@@ -6940,27 +6899,24 @@ do -- Custom Stage
         end
 
         if not isStartingRoom and StageAPI.CurrentStage.Rooms and StageAPI.CurrentStage.Rooms[rtype] then
-            local newRoom = StageAPI.LevelRoom{
+            local newRoom = StageAPI.LevelRoom(StageAPI.Merged({
                 RoomsList = StageAPI.CurrentStage.Rooms[rtype],
-                Shape = shape,
-                RoomType = rtype,
-                RequireRoomType = StageAPI.CurrentStage.RequireRoomTypeMatching,
-                Doors = doors,
-                RoomDesciptor = roomDescriptor
-            }
+                RoomDescriptor = roomDescriptor,
+                RequireRoomType = self.RequireRoomTypeMatching
+            }, roomArgs))
 
             return newRoom
         end
 
-        if StageAPI.CurrentStage.Bosses and rtype == RoomType.ROOM_BOSS then
+        if self.Bosses and rtype == RoomType.ROOM_BOSS then
             local newRoom, boss = StageAPI.GenerateBossRoom({
-                Bosses = StageAPI.CurrentStage.Bosses,
+                Bosses = self.Bosses,
                 CheckEncountered = true,
                 NoPlayBossAnim = fromLevelGenerator
-            }, {
-                RequireRoomType = StageAPI.CurrentStage.RequireRoomTypeBoss,
-                RoomDescriptor = roomDescriptor
-            })
+            }, StageAPI.Merged({
+                RoomDescriptor = roomDescriptor,
+                RequireRoomType = self.RequireRoomTypeBoss
+            }, roomArgs))
 
             return newRoom, boss
         end
@@ -6981,7 +6937,7 @@ do -- Custom Stage
             local roomDesc = roomsList:Get(i)
             if roomDesc then
                 local isStartingRoom = startingRoomIndex == roomDesc.SafeGridIndex
-                local newRoom = self:GenerateRoom(nil, nil, nil, isStartingRoom, true, roomDesc)
+                local newRoom = self:GenerateRoom(roomDesc, isStartingRoom, true)
                 if newRoom then
                     local listIndex = roomDesc.ListIndex
                     StageAPI.SetLevelRoom(newRoom, listIndex)
@@ -7207,7 +7163,7 @@ do -- Bosses
     function StageAPI.SetFloorInfo(info, stage, stagetype, doGreed)
         if stagetype == true then
             for _, stype in ipairs(StageAPI.StageTypes) do
-                StageAPI.SetFloorInfo(StageAPI.Copy(info), stage, stype, doGreed)
+                StageAPI.SetFloorInfo(StageAPI.DeepCopy(info), stage, stype, doGreed)
             end
 
             return
@@ -7221,7 +7177,7 @@ do -- Bosses
             if stageTwo then
                 StageAPI.FloorInfo[stageTwo] = StageAPI.FloorInfo[stageTwo] or {}
 
-                local stageTwoInfo = StageAPI.Copy(info)
+                local stageTwoInfo = StageAPI.DeepCopy(info)
                 if noBossStages[stageTwo] then
                     stageTwoInfo.Bosses = nil
                 end
@@ -7236,7 +7192,7 @@ do -- Bosses
                 greedStage = stageToGreed[stage] or stage
             end
 
-            local greedInfo = StageAPI.Copy(info)
+            local greedInfo = StageAPI.DeepCopy(info)
             greedInfo.Bosses = nil
 
             StageAPI.FloorInfoGreed[greedStage] = StageAPI.FloorInfoGreed[greedStage] or {}
@@ -7558,7 +7514,8 @@ do -- Bosses
 
         if not bossID then
             roomDesc = roomDesc or level:GetCurrentRoomDesc()
-            local isHorsemanRoom = StageAPI.IsIn(horsemanRoomSubtypes, roomDesc.Data.Subtype)
+            local roomSubtype = roomDesc.Data.Subtype
+            local isHorsemanRoom = StageAPI.IsIn(horsemanRoomSubtypes, roomSubtype)
 
             local floatWeights
             local totalUnencounteredWeight = 0
@@ -7608,6 +7565,18 @@ do -- Bosses
                         end
                     elseif poolEntry.OnlyReplaceHorsemen or potentialBoss.OnlyReplaceHorsemen then
                         invalid = true
+                    end
+
+                    if poolEntry.AlwaysReplaceSubtype and not invalid then
+                        if roomSubtype == poolEntry.AlwaysReplaceSubtype then
+                            forced = true
+                        end
+                    end
+
+                    if poolEntry.OnlyReplaceSubtype and not invalid then
+                        if roomSubtype ~= poolEntry.OnlyReplaceSubtype then
+                            invalid = true
+                        end
                     end
                 end
 
@@ -8642,19 +8611,6 @@ do -- Callbacks
         return newRoom, boss
     end
 
-    function StageAPI.SetCurrentBossRoom(...)
-        local newRoom, boss = StageAPI.GenerateBossRoom(...)
-        if not newRoom then
-            StageAPI.LogErr('Could not generate room for boss: ID: ' .. bossID .. ' List Length: ' .. tostring(bosses and #bosses or 0))
-            return nil, nil
-        end
-
-        StageAPI.SetCurrentRoom(newRoom)
-        newRoom:Load()
-
-        return newRoom, boss
-    end
-
     function StageAPI.GenerateBaseLevel()
         local baseFloorInfo = StageAPI.GetBaseFloorInfo()
         local startingRoomIndex = level:GetStartingRoomIndex()
@@ -8844,7 +8800,7 @@ do -- Callbacks
 
         if not StageAPI.InExtraRoom and StageAPI.InNewStage() then
             if not currentRoom and not inStartingRoom and StageAPI.CurrentStage.GenerateRoom then
-                local newRoom, newBoss = StageAPI.CurrentStage:GenerateRoom(room:GetType())
+                local newRoom, newBoss = StageAPI.CurrentStage:GenerateRoom(level:GetCurrentRoomDesc(), false, false)
                 if newRoom then
                     StageAPI.SetCurrentRoom(newRoom)
                     newRoom:Load()
