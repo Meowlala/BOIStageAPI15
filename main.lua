@@ -7949,19 +7949,6 @@ do -- Callbacks
         return newRoom, boss
     end
 
-    function StageAPI.SetCurrentBossRoom(...)
-        local newRoom, boss = StageAPI.GenerateBossRoom(...)
-        if not newRoom then
-            StageAPI.LogErr('Could not generate room for boss: ID: ' .. bossID .. ' List Length: ' .. tostring(bosses and #bosses or 0))
-            return nil, nil
-        end
-
-        StageAPI.SetCurrentRoom(newRoom)
-        newRoom:Load()
-
-        return newRoom, boss
-    end
-
     function StageAPI.GenerateBaseLevel()
         local baseFloorInfo = StageAPI.GetBaseFloorInfo()
         local startingRoomIndex = level:GetStartingRoomIndex()
