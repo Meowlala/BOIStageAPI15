@@ -6177,6 +6177,9 @@ do -- Custom Stage
             roomData = roomDescriptor.Data
         end
 
+        local rtype = (roomArgs and roomArgs.RoomType) or (roomData and roomData.Type) or RoomType.ROOM_DEFAULT
+        local shape = (roomArgs and roomArgs.Shape) or (roomData and roomData.Shape) or RoomShape.ROOMSHAPE_1x1
+
         if self.SinRooms and (rtype == RoomType.ROOM_MINIBOSS or rtype == RoomType.ROOM_SECRET or rtype == RoomType.ROOM_SHOP) then
             local usingRoomsList
             local includedSins = {}
@@ -8148,7 +8151,7 @@ do -- Callbacks
 
         if not StageAPI.InExtraRoom and StageAPI.InNewStage() then
             if not currentRoom and not inStartingRoom and StageAPI.CurrentStage.GenerateRoom then
-                local newRoom, newBoss = StageAPI.CurrentStage:GenerateRoom(level:GetCurrentRoomDesc(), inStartingRoom, false)
+                local newRoom, newBoss = StageAPI.CurrentStage:GenerateRoom(level:GetCurrentRoomDesc(), false, false)
                 if newRoom then
                     StageAPI.SetCurrentRoom(newRoom)
                     newRoom:Load()
