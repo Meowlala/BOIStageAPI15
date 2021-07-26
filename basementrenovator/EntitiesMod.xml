@@ -110,24 +110,4 @@
 		</bitfield>
 	</entity>
 	<entity Metadata="1" Group="StageAPI Utilities" ID="199" Image="stageapi/boss_identifier.png" Kind="Stage" Name="Boss Identifier" Subtype="0" Variant="30" />
-
-	<!-- Pre-parameters system for groups / directions -->
-	<entity Metadata="1" Group="z StageAPI Deprecated" ID="199" Image="stageapi/group_1.png" Kind="Stage" Name="Group 1" Subtype="1" Variant="0" />
-	<entity Metadata="1" Group="z StageAPI Deprecated" ID="199" Image="stageapi/group_2.png" Kind="Stage" Name="Group 2" Subtype="2" Variant="0" />
-	<entity Metadata="1" Group="z StageAPI Deprecated" ID="199" Image="stageapi/group_3.png" Kind="Stage" Name="Group 3" Subtype="3" Variant="0" />
-	<entity Metadata="1" Group="z StageAPI Deprecated" ID="199" Image="stageapi/group_4.png" Kind="Stage" Name="Group 4" Subtype="4" Variant="0" />
-	<entity Metadata="1" Group="z StageAPI Deprecated" ID="199" Image="stageapi/group_5.png" Kind="Stage" Name="Group 5" Subtype="5" Variant="0" />
-	<entity Metadata="1" Group="z StageAPI Deprecated" ID="199" Image="stageapi/group_6.png" Kind="Stage" Name="Group 6" Subtype="6" Variant="0" />
-	<entity Metadata="1" Group="z StageAPI Deprecated" ID="199" Image="stageapi/group_7.png" Kind="Stage" Name="Group 7" Subtype="7" Variant="0" />
-	<entity Metadata="1" Group="z StageAPI Deprecated" ID="199" Image="stageapi/group_8.png" Kind="Stage" Name="Group 8" Subtype="8" Variant="0" />
-	<entity Metadata="1" Group="z StageAPI Deprecated" ID="199" Image="stageapi/group_9.png" Kind="Stage" Name="Group 9" Subtype="9" Variant="0" />
-
-	<entity Metadata="1" Group="z StageAPI Deprecated" ID="199" Image="stageapi/left.png" Kind="Stage" Name="Left" Subtype="8" Variant="2" />
-	<entity Metadata="1" Group="z StageAPI Deprecated" ID="199" Image="stageapi/up_left.png" Kind="Stage" Name="Up Left" Subtype="10" Variant="2" />
-	<entity Metadata="1" Group="z StageAPI Deprecated" ID="199" Image="stageapi/up.png" Kind="Stage" Name="Up" Subtype="12" Variant="2" />
-	<entity Metadata="1" Group="z StageAPI Deprecated" ID="199" Image="stageapi/up_right.png" Kind="Stage" Name="Up Right" Subtype="14" Variant="2" />
-	<entity Metadata="1" Group="z StageAPI Deprecated" ID="199" Image="stageapi/right.png" Kind="Stage" Name="Right" Subtype="0" Variant="2" />
-	<entity Metadata="1" Group="z StageAPI Deprecated" ID="199" Image="stageapi/down_right.png" Kind="Stage" Name="Down Right" Subtype="2" Variant="2" />
-	<entity Metadata="1" Group="z StageAPI Deprecated" ID="199" Image="stageapi/down.png" Kind="Stage" Name="Down" Subtype="4" Variant="2" />
-	<entity Metadata="1" Group="z StageAPI Deprecated" ID="199" Image="stageapi/down_left.png" Kind="Stage" Name="Down Left" Subtype="6" Variant="2" />
 </data>
