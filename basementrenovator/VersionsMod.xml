@@ -1,0 +1,11 @@
+<data>
+    <version Name="StageAPI">
+        <entities File="EntitiesStageAPI.xml"/>
+    </version>
+    <version Name="Afterbirth+">
+        <version Name="StageAPI"/>
+    </version>
+    <version Name="Repentance">
+        <version Name="StageAPI"/>
+    </version>
+</data>
