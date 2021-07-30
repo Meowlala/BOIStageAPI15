@@ -112,6 +112,25 @@
         		</bitfield>
         	</entity>
         	<entity Metadata="1" ID="199" Image="stageapi/boss_identifier.png" Name="Boss Identifier" Subtype="0" Variant="30" />
+
+            <entity Metadata="1" Group="StageAPI Utilities" ID="199" Image="stageapi/room.png" Kind="Stage" Name="Room" Subtype="0" Variant="40" >
+                <bitfield Key="Subtype">
+                    <checkbox Name="Starting Room" Length="1"/>
+                    <checkbox Name="Do not Persist" Length="1">
+                        <tooltip>If set, the room is reset when re-entered</tooltip>
+                    </checkbox>
+                    <spinner Name="Room ID" Length="14">
+                        <tooltip>Determines which room from this file is placed at a position on the map
+        If used with the Room ID of another map layout, merges the two maps based on overlap.</tooltip>
+                    </spinner>
+                </bitfield>
+            </entity>
+            <entity Metadata="1" Group="StageAPI Utilities" ID="199" Image="stageapi/stage.png" Kind="Stage" Name="Stage" Subtype="0" Variant="41" >
+                <bitfield Key="Subtype">
+                    <spinner Name="Stage" Length="4" Minimum="0" Maximum="12" ValueOffset="1"/>
+                    <spinner Name="Stage Type" Length="3" Minimum="0" Maximum="4"/>
+                </bitfield>
+            </entity>
         </group>
     </group>
 </data>

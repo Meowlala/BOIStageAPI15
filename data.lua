@@ -1034,6 +1034,7 @@ do -- Base Floor Info
     StageAPI.SetFloorInfo({
         Prefix = "01_basement",
         Backdrop = BackdropType.BASEMENT,
+        RoomGfx = StageAPI.BaseRoomGfx.Basement,
         Bosses = poolWrap{
             {BossID = "Monstro"},
             {BossID = "Gemini"},
@@ -1054,6 +1055,7 @@ do -- Base Floor Info
     StageAPI.SetFloorInfo({
         Prefix = "02_cellar",
         Backdrop = BackdropType.CELLAR,
+        RoomGfx = StageAPI.BaseRoomGfx.Cellar,
         Bosses = poolWrap{
             {BossID = "Pin"},
             {BossID = "Widow"},
@@ -1071,6 +1073,7 @@ do -- Base Floor Info
     StageAPI.SetFloorInfo({
         Prefix = "13_burning_basement",
         Backdrop = BackdropType.BURNT_BASEMENT,
+        RoomGfx = StageAPI.BaseRoomGfx.BurningBasement,
         FloorTextColor = Color(0.5,0.5,0.5,1,0,0,0),
         Bosses = poolWrap{
             {BossID = "Monstro"},
@@ -1092,6 +1095,7 @@ do -- Base Floor Info
     StageAPI.SetFloorInfo({
         Prefix = "01x_downpour",
         Backdrop = BackdropType.DOWNPOUR,
+        RoomGfx = StageAPI.BaseRoomGfx.Downpour,
         Bosses = poolWrap{
             {BossID = "Lil Blub"},
             {BossID = "Wormwood"},
@@ -1106,6 +1110,7 @@ do -- Base Floor Info
     StageAPI.SetFloorInfo({
         Prefix = "02x_dross",
         Backdrop = BackdropType.DROSS,
+        RoomGfx = StageAPI.BaseRoomGfx.Dross,
         Bosses = poolWrap{
             {BossID = "Lil Blub"},
             {BossID = "Wormwood"},
@@ -1122,6 +1127,7 @@ do -- Base Floor Info
     StageAPI.SetFloorInfo({
         Prefix = "03_caves",
         Backdrop = BackdropType.CAVES,
+        RoomGfx = StageAPI.BaseRoomGfx.Caves,
         Bosses = poolWrap{
             {BossID = "Chub"},
             {BossID = "Gurdy"},
@@ -1143,6 +1149,7 @@ do -- Base Floor Info
     StageAPI.SetFloorInfo({
         Prefix = "04_catacombs",
         Backdrop = BackdropType.CATACOMBS,
+        RoomGfx = StageAPI.BaseRoomGfx.Catacombs,
         Bosses = poolWrap{
             {BossID = "The Hollow"},
             {BossID = "The Husk"},
@@ -1165,6 +1172,7 @@ do -- Base Floor Info
     StageAPI.SetFloorInfo({
         Prefix = "14_drowned_caves",
         Backdrop = BackdropType.FLOODED_CAVES,
+        RoomGfx = StageAPI.BaseRoomGfx.FloodedCaves,
         Bosses = poolWrap{
             {BossID = "Chub"},
             {BossID = "Gurdy"},
@@ -1188,6 +1196,7 @@ do -- Base Floor Info
     StageAPI.SetFloorInfo({
         Prefix = "03x_mines",
         Backdrop = BackdropType.MINES,
+        RoomGfx = StageAPI.BaseRoomGfx.Mines,
         Bosses = poolWrap{
             {BossID = "Reap Creep"},
             {BossID = "Tuff Twins"},
@@ -1199,6 +1208,7 @@ do -- Base Floor Info
     StageAPI.SetFloorInfo({
         Prefix = "04x_ashpit",
         Backdrop = BackdropType.ASHPIT,
+        RoomGfx = StageAPI.BaseRoomGfx.Ashpit,
         Bosses = poolWrap{
             {BossID = "The Pile"},
             {BossID = "The Shell"},
@@ -1211,6 +1221,7 @@ do -- Base Floor Info
     StageAPI.SetFloorInfo({
         Prefix = "05_depths",
         Backdrop = BackdropType.DEPTHS,
+        RoomGfx = StageAPI.BaseRoomGfx.Depths,
         Bosses = poolWrap{
             {BossID = "The Cage"},
             {BossID = "Monstro 2"},
@@ -1228,6 +1239,7 @@ do -- Base Floor Info
     StageAPI.SetFloorInfo({
         Prefix = "06_necropolis",
         Backdrop = BackdropType.NECROPOLIS,
+        RoomGfx = StageAPI.BaseRoomGfx.Necropolis,
         Bosses = poolWrap{
             {BossID = "The Adversary"},
             {BossID = "The Bloat"},
@@ -1244,6 +1256,7 @@ do -- Base Floor Info
     StageAPI.SetFloorInfo({
         Prefix = "15_dank_depths",
         Backdrop = BackdropType.DANK_DEPTHS,
+        RoomGfx = StageAPI.BaseRoomGfx.DankDepths,
         Bosses = poolWrap{
             {BossID = "The Cage"},
             {BossID = "Monstro 2"},
@@ -1261,6 +1274,7 @@ do -- Base Floor Info
     StageAPI.SetFloorInfo({
         Prefix = "05x_mausoleum",
         Backdrop = BackdropType.MAUSOLEUM,
+        RoomGfx = StageAPI.BaseRoomGfx.Mausoleum,
         Bosses = poolWrap{
             {BossID = "The Siren"},
             {BossID = "The Heretic"},
@@ -1270,6 +1284,7 @@ do -- Base Floor Info
     StageAPI.SetFloorInfo({
         Prefix = "06x_gehenna",
         Backdrop = BackdropType.GEHENNA,
+        RoomGfx = StageAPI.BaseRoomGfx.Gehenna,
         Bosses = poolWrap{
             {BossID = "The Visage"},
             {BossID = "Horny Boys"},
@@ -1289,6 +1304,7 @@ do -- Base Floor Info
     StageAPI.SetFloorInfo({
         Prefix = "07_womb",
         Backdrop = BackdropType.WOMB,
+        RoomGfx = StageAPI.BaseRoomGfx.Womb,
         Bosses = poolWrap{
             {BossID = "Scolex"},
             {BossID = "Mama Gurdy"},
@@ -1305,6 +1321,7 @@ do -- Base Floor Info
     StageAPI.SetFloorInfo({
         Prefix = "07_womb",
         Backdrop = BackdropType.UTERO,
+        RoomGfx = StageAPI.BaseRoomGfx.Utero,
         Bosses = poolWrap{
             {BossID = "Teratoma"},
             {BossID = "Lokii"},
@@ -1320,6 +1337,7 @@ do -- Base Floor Info
     StageAPI.SetFloorInfo({
         Prefix = "16_scarred_womb",
         Backdrop = BackdropType.SCARRED_WOMB,
+        RoomGfx = StageAPI.BaseRoomGfx.ScarredWomb,
         Bosses = poolWrap{
             {BossID = "Scolex"},
             {BossID = "Mama Gurdy"},
@@ -1345,6 +1363,7 @@ do -- Base Floor Info
     StageAPI.SetFloorInfo({
         Prefix = "07x_corpse",
         Backdrop = BackdropType.CORPSE,
+        RoomGfx = StageAPI.BaseRoomGfx.Corpse,
         Bosses = poolWrap{
             {BossID = "The Scourge"},
             {BossID = "Chimera"},
@@ -1361,6 +1380,7 @@ do -- Base Floor Info
     StageAPI.SetFloorInfo({
         Prefix = "09_sheol",
         Backdrop = BackdropType.SHEOL,
+        RoomGfx = StageAPI.BaseRoomGfx.Sheol,
         Bosses = poolWrap{
             {BossID = "Satan"}
         }
@@ -1369,6 +1389,7 @@ do -- Base Floor Info
     StageAPI.SetFloorInfo({
         Prefix = "10_cathedral",
         Backdrop = BackdropType.CATHEDRAL,
+        RoomGfx = StageAPI.BaseRoomGfx.Cathedral,
         Bosses = poolWrap{
             {BossID = "Isaac"}
         }
@@ -1378,6 +1399,7 @@ do -- Base Floor Info
     StageAPI.SetFloorInfo({
         Prefix = "11_darkroom",
         Backdrop = BackdropType.DARKROOM,
+        RoomGfx = StageAPI.BaseRoomGfx.DarkRoom,
         Bosses = poolWrap{
             {BossID = "The Lamb"}
         }
@@ -1386,6 +1408,7 @@ do -- Base Floor Info
     StageAPI.SetFloorInfo({
         Prefix = "12_chest",
         Backdrop = BackdropType.CHEST,
+        RoomGfx = StageAPI.BaseRoomGfx.Chest,
         Bosses = poolWrap{
             {BossID = "Blue Baby"}
         }
@@ -1395,6 +1418,7 @@ do -- Base Floor Info
     StageAPI.SetFloorInfo({
         Prefix = "17_blue_womb",
         Backdrop = BackdropType.BLUE_WOMB,
+        RoomGfx = StageAPI.BaseRoomGfx.BlueWomb,
         Bosses = poolWrap{
             {BossID = "Hush"}
         }
@@ -1407,22 +1431,26 @@ do -- Base Floor Info
 
     StageAPI.SetFloorInfo({
         Prefix = "0ex_dogma",
-        Backdrop = BackdropType.ISAACS_BEDROOM
+        Backdrop = BackdropType.ISAACS_BEDROOM,
+        RoomGfx = StageAPI.BaseRoomGfx.Isaacs
     }, LevelStage.STAGE8, true, false)
 
     -- Greed Floors
     StageAPI.SetFloorInfo({
         Prefix = "09_sheol",
-        Backdrop = BackdropType.SHEOL
+        Backdrop = BackdropType.SHEOL,
+        RoomGfx = StageAPI.BaseRoomGfx.Sheol
     }, LevelStage.STAGE5_GREED, true, true)
 
     StageAPI.SetFloorInfo({
         Prefix = "bossspot_18_shop",
-        Backdrop = BackdropType.SHOP
+        Backdrop = BackdropType.SHOP,
+        RoomGfx = StageAPI.BaseRoomGfx.Shop
     }, LevelStage.STAGE6_GREED, true, true)
 
     StageAPI.SetFloorInfo({
         Prefix = "bossspot_18_shop",
-        Backdrop = BackdropType.SHOP
+        Backdrop = BackdropType.SHOP,
+        RoomGfx = StageAPI.BaseRoomGfx.Shop
     }, LevelStage.STAGE7_GREED, true, true)
 end

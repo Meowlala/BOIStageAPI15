@@ -5284,7 +5284,7 @@ do -- Custom Doors
         return renderOverlay, not not anim, not not overlayAnim
     end
 
-    function StageAPI.SpawnCustomDoor(slot, leadsTo, isCustomMap, doorDataName, data, exitSlot) -- isCustomMap used to be a leadsToNormal index, with leadsTo being leadsToExtra, so to ensure compatibility there is some funkiness
+    function StageAPI.SpawnCustomDoor(slot, leadsTo, isCustomMap, doorDataName, data, exitSlot, doorSprite) -- isCustomMap used to be a leadsToNormal index, with leadsTo being leadsToExtra, so to ensure compatibility there is some funkiness
         if type(isCustomMap) == "number" then
             leadsTo = isCustomMap
             isCustomMap = nil
@@ -5298,7 +5298,8 @@ do -- Custom Doors
             LeadsTo = leadsTo,
             IsCustomMap = isCustomMap,
             DoorDataName = doorDataName,
-            Data = data
+            Data = data,
+            DoorSprite = doorSprite
         })
     end
 
@@ -5325,6 +5326,10 @@ do -- Custom Doors
         local door = Isaac.Spawn(StageAPI.E.Door.T, StageAPI.E.Door.V, 0, room:GetGridPosition(index), zeroVector, nil)
         local data, sprite = door:GetData(), door:GetSprite()
         sprite:Load(doorData.Anm2, true)
+
+        if persistData.DoorSprite then
+            data.DoorSprite = persistData.DoorSprite
+        end
 
         door.RenderZOffset = -10000
         sprite.Rotation = persistData.Slot * 90 - 90
@@ -8791,9 +8796,9 @@ do -- Callbacks
                 end
             end
 
+            justGenerated = StageAPI.CurrentExtraRoom.FirstLoad
             StageAPI.CurrentExtraRoom:Load(true)
             StageAPI.LoadedExtraRoom = true
-            justGenerated = StageAPI.CurrentExtraRoom.FirstLoad
         else
             StageAPI.LoadedExtraRoom = false
         end
@@ -10653,8 +10658,8 @@ do -- Custom Floor Generation
                 local isBossAmbush = nil
                 local isPayToPlay = nil
                 local isSurpriseMiniboss = levelRoom.SurpriseMiniboss
-                local _, useDoor = StageAPI.CompareDoorSpawns(StageAPI.BaseDoorSpawnList, current, target, isBossAmbush, isPayToPlay, isSurpriseMiniboss)
-                StageAPI.SpawnCustomDoor(slot, doorData.ExitRoom, true, useDoor, nil, doorData.ExitSlot)
+                local useSprite, useDoor = StageAPI.CompareDoorSpawns(StageAPI.BaseDoorSpawnList, current, target, isBossAmbush, isPayToPlay, isSurpriseMiniboss)
+                StageAPI.SpawnCustomDoor(slot, doorData.ExitRoom, true, useDoor, nil, doorData.ExitSlot, useSprite)
             end
         end
     end
@@ -10663,6 +10668,15 @@ do -- Custom Floor Generation
         if StageAPI.InCustomMap and newRoom.IsExtraRoom then
             if firstLoad then
                 StageAPI.LoadCustomMapRoomDoors(StageAPI.CurrentLevelMap[StageAPI.CurrentCustomMapRoomID])
+            end
+        end
+    end)
+
+    StageAPI.AddCallback("StageAPI", "POST_CHANGE_ROOM_GFX", -1, function(currentRoom)
+        if StageAPI.InCustomMap and currentRoom and currentRoom.IsExtraRoom and not StageAPI.CurrentStage then
+            local baseFloorInfo = StageAPI.GetBaseFloorInfo()
+            if baseFloorInfo.RoomGfx then
+                StageAPI.ChangeDoors(baseFloorInfo.RoomGfx)
             end
         end
     end)
