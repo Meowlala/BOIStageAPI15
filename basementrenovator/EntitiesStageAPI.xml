@@ -113,7 +113,7 @@
         	</entity>
         	<entity Metadata="1" ID="199" Image="stageapi/boss_identifier.png" Name="Boss Identifier" Subtype="0" Variant="30" />
 
-            <entity Metadata="1" Group="StageAPI Utilities" ID="199" Image="stageapi/room.png" Kind="Stage" Name="Room" Subtype="0" Variant="40" >
+            <entity Metadata="1" ID="199" Image="stageapi/room.png" Name="Room" Subtype="0" Variant="40" >
                 <bitfield Key="Subtype">
                     <checkbox Name="Starting Room" Length="1"/>
                     <checkbox Name="Do not Persist" Length="1">
@@ -125,7 +125,7 @@
                     </spinner>
                 </bitfield>
             </entity>
-            <entity Metadata="1" Group="StageAPI Utilities" ID="199" Image="stageapi/stage.png" Kind="Stage" Name="Stage" Subtype="0" Variant="41" >
+            <entity Metadata="1" ID="199" Image="stageapi/stage.png" Name="Stage" Subtype="0" Variant="41" >
                 <bitfield Key="Subtype">
                     <spinner Name="Stage" Length="4" Minimum="0" Maximum="12" ValueOffset="1"/>
                     <spinner Name="Stage Type" Length="3" Minimum="0" Maximum="4"/>
