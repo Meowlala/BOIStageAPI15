@@ -8618,7 +8618,13 @@ do -- Callbacks
 
     function StageAPI.GenerateBaseLevel()
         local baseFloorInfo = StageAPI.GetBaseFloorInfo()
+        local xlFloorInfo
+        if level:GetCurses() & LevelCurse.CURSE_OF_LABYRINTH ~= 0 then
+            xlFloorInfo = StageAPI.GetBaseFloorInfo(level:GetStage() + 1)
+        end
+
         local startingRoomIndex = level:GetStartingRoomIndex()
+        local lastBossRoomListIndex = level:GetLastBossRoomListIndex()
         local backwards = game:GetStateFlag(GameStateFlag.STATE_BACKWARDS_PATH_INIT) or game:GetStateFlag(GameStateFlag.STATE_BACKWARDS_PATH)
         local roomsList = level:GetRooms()
         for i = 0, roomsList.Size - 1 do
@@ -8627,7 +8633,12 @@ do -- Callbacks
                 local dimension = StageAPI.GetDimension(roomDesc)
                 local newRoom
                 if baseFloorInfo and baseFloorInfo.HasCustomBosses and roomDesc.Data.Type == RoomType.ROOM_BOSS and dimension == 0 and not backwards then
-                    local bossID = StageAPI.SelectBoss(baseFloorInfo.Bosses, nil, roomDesc, true)
+                    local bossFloorInfo = baseFloorInfo
+                    if xlFloorInfo and roomDesc.ListIndex == lastBossRoomListIndex then
+                        bossFloorInfo = xlFloorInfo
+                    end
+
+                    local bossID = StageAPI.SelectBoss(bossFloorInfo.Bosses, nil, roomDesc, true)
                     if bossID then
                         local bossData = StageAPI.GetBossData(bossID)
                         if bossData and not bossData.BaseGameBoss and bossData.Rooms then
