@@ -8085,8 +8085,9 @@ do -- Callbacks
                             })
 
                             if roomDesc.Data.Subtype == 83 then -- Remove Great Gideon special health bar
+                                local overwritableRoomDesc = level:GetRoomByIdx(roomDesc.SafeGridIndex, dimension)
                                 local replaceData = StageAPI.GetGotoDataForTypeShape(RoomType.ROOM_BOSS, roomDesc.Data.Shape)
-                                roomDesc.Data = replaceData
+                                overwritableRoomDesc.Data = replaceData
                             end
 
                             StageAPI.LogMinor("Switched Base Floor Boss Room, new boss is " .. bossID)
