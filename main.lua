@@ -8649,9 +8649,10 @@ do -- Callbacks
                                 RoomDescriptor = roomDesc
                             })
 
-                            if roomDesc.Data.Subtype == 83 then -- Remove Great Gideon special health bar
+                            if roomDesc.Data.Subtype == 82 or roomDesc.Data.Subtype == 83 then -- Remove Great Gideon special health bar & Hornfel room properties
+                                local overwritableRoomDesc = level:GetRoomByIdx(roomDesc.SafeGridIndex, dimension)
                                 local replaceData = StageAPI.GetGotoDataForTypeShape(RoomType.ROOM_BOSS, roomDesc.Data.Shape)
-                                roomDesc.Data = replaceData
+                                overwritableRoomDesc.Data = replaceData
                             end
 
                             StageAPI.LogMinor("Switched Base Floor Boss Room, new boss is " .. bossID)
@@ -9108,7 +9109,9 @@ do -- Callbacks
         [EntityType.ENTITY_STONE_EYE] = true,
         [EntityType.ENTITY_BRIMSTONE_HEAD] = true,
         [EntityType.ENTITY_GAPING_MAW] = true,
-        [EntityType.ENTITY_BROKEN_GAPING_MAW] = true
+        [EntityType.ENTITY_BROKEN_GAPING_MAW] = true,
+        [EntityType.ENTITY_QUAKE_GRIMACE] = true,
+        [EntityType.ENTITY_BOMB_GRIMACE] = true
     }
 
     mod:AddCallback(ModCallbacks.MC_PRE_ROOM_ENTITY_SPAWN, function(_, t, v, s, index, seed)
