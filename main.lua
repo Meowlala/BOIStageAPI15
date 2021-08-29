@@ -8538,7 +8538,7 @@ do -- Callbacks
         end
     end)
 
-    local gridBlacklist = {
+    StageAPI.RoomEntitySpawnGridBlacklist = {
         [EntityType.ENTITY_STONEHEAD] = true,
         [EntityType.ENTITY_CONSTANT_STONE_SHOOTER] = true,
         [EntityType.ENTITY_STONE_EYE] = true,
@@ -8550,7 +8550,7 @@ do -- Callbacks
     }
 
     mod:AddCallback(ModCallbacks.MC_PRE_ROOM_ENTITY_SPAWN, function(_, t, v, s, index, seed)
-        if StageAPI.ShouldOverrideRoom() and (t >= 1000 or gridBlacklist[t] or StageAPI.IsMetadataEntity(t, v)) and not StageAPI.ActiveTransitionToExtraRoom then
+        if StageAPI.ShouldOverrideRoom() and (t >= 1000 or StageAPI.RoomEntitySpawnGridBlacklist[t] or StageAPI.IsMetadataEntity(t, v)) and not StageAPI.ActiveTransitionToExtraRoom then
             local shouldReturn
             if room:IsFirstVisit() or StageAPI.IsMetadataEntity(t, v) then
                 shouldReturn = true
@@ -9500,15 +9500,6 @@ do -- BR Compatibility
         local testList = StageAPI.RoomsList("BRTest", brTestRooms)
         for i, testLayout in ipairs(testList.All) do
             StageAPI.RegisterLayout("BRTest-" .. i, testLayout)
-
-            if not StageAPI.OverrideTestRoom then -- force stageapi override for rooms containing metadata entities
-                for _, entity in ipairs(testLayout.Entities) do
-                    if StageAPI.IsMetadataEntity(entity.Type, entity.Variant) then
-                        StageAPI.OverrideTestRoom = true
-                        break
-                    end
-                end
-            end
         end
 
         BasementRenovator = BasementRenovator or { subscribers = {} }
@@ -9540,13 +9531,19 @@ do -- BR Compatibility
                     StageAPI.OverrideTestRoom = true -- must be turned on for custom stages
                 end
             end,
-            TestRoomEntitySpawn = function()
+            TestRoomEntitySpawn = function(testData, testRoom, id, variant)
                 if StageAPI.BadTestFile then return end
+
+                if StageAPI.IsMetadataEntity(id, variant) then
+                    StageAPI.OverrideTestRoom = true
+                end
 
                 if not StageAPI.OverrideTestRoom then return end
 
                 -- makes sure placeholder/meta entities can't spawn
-                return { 999, StageAPI.E.DeleteMeEffect.V, 0 }
+                if (id >= 1000 and id ~= 10000) or StageAPI.RoomEntitySpawnGridBlacklist[id] or StageAPI.IsMetadataEntity(id, variant) then
+                    return { 999, StageAPI.E.DeleteMeEffect.V, 0 }
+                end
             end
         }
 
