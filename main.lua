@@ -4464,7 +4464,9 @@ do -- Custom Grid Entities
 
     function StageAPI.CustomGridEntity:UpdateProjectile(projectile)
         self.Projectile = projectile
+        StageAPI.TemporaryIgnoreSpawnOverride = true
         self:CallCallbacks("POST_CUSTOM_GRID_PROJECTILE_UPDATE", projectile)
+        StageAPI.TemporaryIgnoreSpawnOverride = false
     end
 
     function StageAPI.CustomGridEntity:UpdateProjectileHelper(projectileHelper)
@@ -7629,6 +7631,7 @@ do -- Rock Alt Override
     StageAPI.JustBrokenGridSpawns = {}
     StageAPI.RecentFarts = {}
     StageAPI.LastRockAltCheckedRoom = nil
+    StageAPI.TemporaryIgnoreSpawnOverride = false
     mod:AddCallback(ModCallbacks.MC_PRE_ENTITY_SPAWN, function(_, id, variant, subtype, position, velocity, spawner, seed)
         if StageAPI.LastRockAltCheckedRoom ~= level:GetCurrentRoomIndex() then
             StageAPI.LastRockAltCheckedRoom = level:GetCurrentRoomIndex()
@@ -7664,7 +7667,7 @@ do -- Rock Alt Override
             end
         end
 
-        if shouldOverride then
+        if shouldOverride and not StageAPI.TemporaryIgnoreSpawnOverride then
             if (id == EntityType.ENTITY_PICKUP and (variant == PickupVariant.PICKUP_COLLECTIBLE or variant == PickupVariant.PICKUP_TAROTCARD or variant == PickupVariant.PICKUP_HEART or variant == PickupVariant.PICKUP_COIN or variant == PickupVariant.PICKUP_TRINKET or variant == PickupVariant.PICKUP_PILL))
             or id == EntityType.ENTITY_SPIDER
             or (id == EntityType.ENTITY_EFFECT and (variant == EffectVariant.FART or variant == EffectVariant.POOF01 or variant == EffectVariant.CREEP_RED))
