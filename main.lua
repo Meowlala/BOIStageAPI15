@@ -82,10 +82,16 @@ Callback List:
 - POST_ROOM_LOAD(currentRoom, isFirstLoad, isExtraRoom)
 -- Called when a room is loaded. Takes no return value.
 
-- POST_SPAWN_CUSTOM_GRID(spawnIndex, force, reSpawning, grid, persistentData, CustomGrid)
+- POST_SPAWN_CUSTOM_GRID(CustomGridEntity, force, respawning)
 -- Takes CustomGridTypeName as first callback parameter, and will only run if parameter not supplied or matches current grid.
 
-- POST_CUSTOM_GRID_UPDATE(grid, spawnIndex, persistData, CustomGrid, customGridTypeName)
+- POST_CUSTOM_GRID_UPDATE(CustomGridEntity)
+-- Takes CustomGridTypeName as first callback parameter, and will only run if parameter not supplied or matches current grid.
+
+- POST_CUSTOM_GRID_PROJECTILE_UPDATE(CustomGridEntity, projectile)
+-- Takes CustomGridTypeName as first callback parameter, and will only run if parameter not supplied or matches current grid.
+
+- POST_CUSTOM_GRID_PROJECTILE_HELPER_UPDATE(CustomGridEntity, projectileHelper, projectileHelperParent)
 -- Takes CustomGridTypeName as first callback parameter, and will only run if parameter not supplied or matches current grid.
 
 - POST_CUSTOM_GRID_REMOVE(spawnIndex, persistData, CustomGrid, customGridTypeName)
@@ -207,13 +213,6 @@ VanillaStage {
     StageType = StageType
 }
 
-CustomGridIndexData {
-    Name = CustomGridName,
-    PersistData = persistData,
-    Data = CustomGrid,
-    Index = gridIndex
-}
-
 GridContainer {
     Grid = GridEntity,
     Type = GridEntityType,
@@ -287,7 +286,14 @@ StageAPI Objects:
 
 - CustomGrid(name, GridEntityType, baseVariant, anm2, animation, frame, variantFrames, offset, overrideGridSpawns, overrideGridSpawnAtState, forceSpawning)
 -- NAME IS NOT OPTIONAL. USED FOR IDENTIFICATION AFTER SAVING.
--- Spawn(grindex, force, reSpawning, initialPersistData) -- only sets persistData if not already defined.
+-- Spawn(grindex, force, reSpawning, initialPersistData) -- returns a new CustomGridEntity
+
+- CustomGridEntity() -- Returned from various GetCustomGrid functions and callbacks
+-- CustomGridEntity:Remove(keepBaseGrid)
+-- CustomGridEntity.PersistentData -- data table automatically saved to file
+-- CustomGridEntity.Data -- data table reset on new room
+-- CustomGridEntity.GridIndex
+-- CustomGridEntity.GridConfig -- associated CustomGrid object
 
 - CustomDoor(name, anm2, openAnim, closeAnim, openedAnim, closedAnim, noAutoHandling, alwaysOpen)
 -- NAME IS NOT OPTIONAL. USED FOR IDENTIFICATION AFTER SAVING.
@@ -316,7 +322,6 @@ TransitionFromExtraRoom(toNormalRoomIndex, exitSlot)
 SpawnCustomDoor(slot, leadsToExtraRoomName, leadsToNormalRoomIndex, CustomDoorName, data(at persistData.Data), exitSlot)
 SetDoorOpen(open, door)
 
-GetCustomGridIndicesByName(name)
 GetCustomGridsByName(name) -- returns list of CustomGridIndexData
 GetCustomGrids() -- returns list of CustomGridIndexData
 GetCustomDoors(doorDataName) -- returns list of CustomGridIndexData
@@ -3627,6 +3632,18 @@ do -- RoomsList
         return tbl[dimension]
     end
 
+    function StageAPI.GetTableIndexedByDimensionRoom(tbl, setIfNot, dimension, roomID)
+        local byDimension = StageAPI.GetTableIndexedByDimension(tbl, setIfNot, dimension)
+        roomID = roomID or StageAPI.GetCurrentRoomID()
+        if byDimension then
+            if setIfNot and not byDimension[roomID] then
+                byDimension[roomID] = {}
+            end
+
+            return byDimension[roomID]
+        end
+    end
+
     function StageAPI.GetLevelRoom(roomID, dimension)
         dimension = dimension or StageAPI.GetDimension()
         return StageAPI.LevelRooms[dimension] and StageAPI.LevelRooms[dimension][roomID]
@@ -4252,19 +4269,33 @@ StageAPI.LogMinor("Loading Custom Grid System")
 do -- Custom Grid Entities
     StageAPI.CustomGridTypes = {}
     StageAPI.CustomGrid = StageAPI.Class("CustomGrid")
-    function StageAPI.CustomGrid:Init(name, baseType, baseVariant, anm2, animation, frame, variantFrames, offset, overrideGridSpawns, overrideGridSpawnAtState, forceSpawning, noOverrideGridSprite)
+
+    function StageAPI.CustomGridArgPacker(baseType, baseVariant, anm2, animation, frame, variantFrames, offset, overrideGridSpawns, overrideGridSpawnAtState, forceSpawning, noOverrideGridSprite)
+        return {
+            BaseType = baseType,
+            BaseVariant = baseVariant,
+            Anm2 = anm2,
+            Animation = animation,
+            Frame = frame,
+            VariantFrames = variantFrames,
+            OverrideGridSpawns = overrideGridSpawns,
+            OverrideGridSpawnsState = overrideGridSpawnAtState,
+            NoOverrideGridSprite = noOverrideGridSprite,
+            ForceSpawning = forceSpawning,
+            Offset = offset
+        }
+    end
+
+    function StageAPI.CustomGrid:Init(name, args, ...)
+        if type(args) ~= "table" then
+            args = StageAPI.CustomGridArgPacker(args, ...)
+        end
+
         self.Name = name
-        self.BaseType = baseType
-        self.BaseVariant = baseVariant
-        self.Anm2 = anm2
-        self.Animation = animation
-        self.Frame = frame
-        self.VariantFrames = variantFrames
-        self.OverrideGridSpawns = overrideGridSpawns
-        self.OverrideGridSpawnState = overrideGridSpawnAtState
-        self.NoOverrideGridSprite = noOverrideGridSprite
-        self.ForceSpawning = forceSpawning
-        self.Offset = offset
+
+        for k, v in pairs(args) do
+            self[k] = v
+        end
 
         StageAPI.CustomGridTypes[name] = self
     end
@@ -4284,33 +4315,27 @@ do -- Custom Grid Entities
     }
 
     StageAPI.CustomGrids = {}
-    function StageAPI.SetCustomGrid(grindex, gridName, persistData, roomID, dimension)
-        roomID = roomID or StageAPI.GetCurrentRoomID()
+    function StageAPI.GetRoomCustomGrids(dimension, roomID)
+        local customGrids = StageAPI.GetTableIndexedByDimensionRoom(StageAPI.CustomGrids, true, dimension, roomID)
+        if not customGrids.Grids then
+            customGrids.Grids = {}
+        end
 
-        local customGrids = StageAPI.GetTableIndexedByDimension(StageAPI.CustomGrids, true, dimension)
+        if not customGrids.LastPersistentIndex then
+            customGrids.LastPersistentIndex = 0
+        end
 
-        customGrids[roomID] = customGrids[roomID] or {}
-        customGrids[roomID][gridName] = customGrids[roomID][gridName] or {}
-        customGrids[roomID][gridName][grindex] = persistData or {}
-
-        return customGrids[roomID][gridName][grindex]
+        return customGrids
     end
 
-    function StageAPI.CustomGrid:Spawn(grindex, force, reSpawning, startPersistData)
-        local grid
+    function StageAPI.CustomGrid:SpawnBaseGrid(grindex, force, respawning)
         if self.BaseType then
-            if not reSpawning then
+            local grid
+            if not respawning then
                 force = force or self.ForceSpawning
                 grid = Isaac.GridSpawn(self.BaseType, self.BaseVariant or 0, room:GetGridPosition(grindex), force)
             else
                 grid = room:GetGridEntity(grindex)
-            end
-
-            if self.OverrideGridSpawns and grid then
-                local overrideState = self.OverrideGridSpawnState or StageAPI.DefaultBrokenGridStateByType[grid.Desc.Type] or 2
-                if grid.State ~= overrideState then
-                    StageAPI.SpawnOverriddenGrids[grindex] = self.OverrideGridSpawnState or overrideState
-                end
             end
 
             if self.Anm2 and grid then
@@ -4331,129 +4356,222 @@ do -- Custom Grid Entities
                     sprite.Offset = self.Offset
                 end
             end
-        end
 
-        local gridData = StageAPI.GetCustomGrid(grindex, self.Name)
-        local persistData
-        if not gridData then
-            persistData = StageAPI.SetCustomGrid(grindex, self.Name, startPersistData)
-        else
-            persistData = gridData.PersistData
+            return grid
         end
+    end
 
-        for _, callback in ipairs(StageAPI.GetCallbacks("POST_SPAWN_CUSTOM_GRID")) do
-            if not callback.Params[1] or callback.Params[1] == self.Name then
-                callback.Function(grindex, force, reSpawning, grid, persistData, self)
+    function StageAPI.CustomGrid:Spawn(grindex, force, respawning, persistentData)
+        local grid = StageAPI.CustomGridEntity(self, grindex, force, respawning)
+        if persistentData then
+            for k, v in pairs(persistentData) do
+                grid.PersistentData[k] = v
             end
         end
 
         return grid
     end
 
-    function StageAPI.GetCustomGrids(index, name)
-        local dimension = StageAPI.GetDimension()
-        local lindex = StageAPI.GetCurrentRoomID()
-        if StageAPI.CustomGrids[dimension] and StageAPI.CustomGrids[dimension][lindex] then
-            local customGrids = StageAPI.CustomGrids[dimension][lindex]
-            local ret = {}
-            if name then
-                local grindices = customGrids[name]
-                if grindices then
-                    if index then
-                        local persistData = grindices[index]
-                        if persistData then
-                            return {
-                                Name = name,
-                                PersistData = persistData,
-                                Data = StageAPI.CustomGridTypes[name],
-                                Index = index
-                            }
-                        else
-                            return
-                        end
-                    else
-                        for grindex, persistData in pairs(grindices) do
-                            ret[#ret + 1] = {
-                                Name = name,
-                                PersistData = persistData,
-                                Data = StageAPI.CustomGridTypes[name],
-                                Index = grindex
-                            }
-                        end
-                    end
-                elseif index then
-                    return
-                end
+    StageAPI.CustomGridEntities = {}
+    StageAPI.CustomGridEntity = StageAPI.Class("CustomGridEntity")
+    function StageAPI.CustomGridEntity:Init(gridConfig, index, force, respawning)
+        local roomGrids = StageAPI.GetRoomCustomGrids()
+
+        if type(gridConfig) == "number" then
+            self.PersistentIndex = gridConfig
+            gridConfig = nil
+        end
+
+        if not self.PersistentIndex then
+            self.PersistentIndex = roomGrids.LastPersistentIndex + 1
+            roomGrids.LastPersistentIndex = self.PersistentIndex
+        end
+
+        gridData = roomGrids.Grids[self.PersistentIndex]
+        if not gridData then
+            gridData = {Name = gridConfig.Name, Index = index, PersistData = {}}
+            roomGrids.Grids[self.PersistentIndex] = gridData
+        else
+            gridConfig = StageAPI.CustomGridTypes[gridData.Name]
+        end
+
+        self.GridConfig = gridConfig
+        self.PersistentData = gridData.PersistData
+        self.GridIndex = index
+        self.Data = {}
+
+        local grid = gridConfig:SpawnBaseGrid(index, force, respawning)
+        self.GridEntity = grid
+
+        StageAPI.CustomGridEntities[self.GridIndex] = StageAPI.CustomGridEntities[self.GridIndex] or {}
+        StageAPI.CustomGridEntities[self.GridIndex][self.GridConfig.Name] = StageAPI.CustomGridEntities[self.GridIndex][self.GridConfig.Name] or {}
+        StageAPI.CustomGridEntities[self.GridIndex][self.GridConfig.Name][#StageAPI.CustomGridEntities[self.GridIndex][self.GridConfig.Name] + 1] = self
+
+        self.RoomIndex = StageAPI.GetCurrentRoomID()
+
+        self:CallCallbacks("POST_SPAWN_CUSTOM_GRID", force, respawning)
+    end
+
+    function StageAPI.CustomGridEntity:Update()
+        self.RecentlyLifted = false
+
+        if self.Projectile and not self.Projectile:Exists() then
+            self.RecentProjectilePosition = self.Projectile.Position
+            self.ProjectilePositionTimer = 10
+            self.Projectile = nil
+        end
+
+        if self.ProjectilePositionTimer then
+            self.ProjectilePositionTimer = self.ProjectilePositionTimer - 1
+            if self.ProjectilePositionTimer <= 0 then
+                self.RecentProjectilePosition = nil
+                self.ProjectilePositionTimer = nil
+            end
+        end
+
+        if self.ProjectileHelper and not self.ProjectileHelper:Exists() then
+            self.ProjectileHelper = nil
+        end
+
+        if self.GridConfig.BaseType then
+            self.GridEntity = room:GetGridEntity(self.GridIndex)
+            if not self.GridEntity then
+                self:Remove(true)
+                return
             else
-                for name, grindices in pairs(customGrids) do
-                    for grindex, persistData in pairs(grindices) do
-                        if not index or grindex == index then
-                            ret[#ret + 1] = {
-                                Name = name,
-                                PersistData = persistData,
-                                Data = StageAPI.CustomGridTypes[name],
-                                Index = grindex
-                            }
+                if not self.Lifted then
+                    local sprite = self.GridEntity:GetSprite()
+                    if sprite:GetFilename() == "" and sprite:GetAnimation() == "" then
+                        self.RecentlyLifted = true
+                        self.Lifted = true
+                    end
+                end
+            end
+        end
+
+        local grid = self.GridEntity or room:GetGridEntity(self.GridIndex)
+        if self.GridConfig.OverrideGridSpawns and grid then
+            local overrideState = self.GridConfig.OverrideGridSpawnsState or StageAPI.DefaultBrokenGridStateByType[grid.Desc.Type] or 2
+            if grid.State ~= overrideState then
+                StageAPI.SpawnOverriddenGrids[self.GridIndex] = overrideState
+            end
+        end
+
+        self:CallCallbacks("POST_CUSTOM_GRID_UPDATE")
+
+        self.JustBrokenGridSpawns = nil
+    end
+
+    function StageAPI.CustomGridEntity:UpdateProjectile(projectile)
+        self.Projectile = projectile
+        self:CallCallbacks("POST_CUSTOM_GRID_PROJECTILE_UPDATE", projectile)
+    end
+
+    function StageAPI.CustomGridEntity:UpdateProjectileHelper(projectileHelper)
+        self.ProjectileHelper = projectileHelper
+        self:CallCallbacks("POST_CUSTOM_GRID_PROJECTILE_HELPER_UPDATE", projectileHelper, projectileHelper.Parent)
+    end
+
+    function StageAPI.CustomGridEntity:Unload()
+        local matchingGrids = StageAPI.CustomGridEntities[self.GridIndex][self.GridConfig.Name]
+        for i, grid in StageAPI.ReverseIterate(matchingGrids) do
+            if grid.PersistentIndex == self.PersistentIndex then
+                table.remove(matchingGrids, i)
+            end
+        end
+    end
+
+    function StageAPI.CustomGridEntity:Remove(keepBaseGrid)
+        local roomGrids = StageAPI.GetRoomCustomGrids()
+        roomGrids.Grids[self.PersistentIndex] = nil
+
+        if not keepBaseGrid and self.GridEntity then
+            room:RemoveGridEntity(self.GridIndex, 0, false)
+        end
+
+        self:Unload()
+
+        self:CallCallbacks("POST_REMOVE_CUSTOM_GRID", keepBaseGrid)
+    end
+
+    function StageAPI.CustomGridEntity:CallCallbacks(callback, ...)
+        for _, callback in ipairs(StageAPI.GetCallbacks(callback)) do
+            if not callback.Params[1] or callback.Params[1] == self.GridConfig.Name then
+                callback.Function(self, ...)
+            end
+        end
+    end
+
+    function StageAPI.GetCustomGrids(index, name)
+        local roomGrids = StageAPI.GetRoomCustomGrids()
+        if index and name then
+            return (StageAPI.CustomGridEntities[index] and StageAPI.CustomGridEntities[index][name]) or {}
+        elseif index then
+            if StageAPI.CustomGridEntities[index] then
+                local out = {}
+                for gridName, grids in pairs(StageAPI.CustomGridEntities[index]) do
+                    for _, grid in ipairs(grids) do
+                        out[#out + 1] = grid
+                    end
+                end
+
+                return out
+            else
+                return {}
+            end
+        else
+            local out = {}
+            for index, gridNames in pairs(StageAPI.CustomGridEntities) do
+                for gridName, grids in pairs(gridNames) do
+                    if not name or name == gridName then
+                        for _, grid in ipairs(grids) do
+                            out[#out + 1] = grid
                         end
                     end
                 end
             end
 
-            return ret
-        elseif index and name then
-            return
+            return out
         end
-
-        return {}
     end
 
-    function StageAPI.GetCustomGridsByName(name)
-        return StageAPI.GetCustomGrids(nil, name)
-    end
-
-    function StageAPI.GetCustomGridIndicesByName(name)
-        local ret = {}
-        for _, grid in ipairs(StageAPI.GetCustomGrids(nil, name)) do
-            ret[#ret + 1] = grid.Index
-        end
-
-        return ret
-    end
-
-    function StageAPI.GetCustomGrid(index, name)
-        return StageAPI.GetCustomGrids(index, name)
-    end
-
-    function StageAPI.GetCustomGridsAtIndex(index)
-        return StageAPI.GetCustomGrids(index)
-    end
-
-    function StageAPI.RemoveCustomGrid(index, name, keepVanillaGrid)
-        local lindex = StageAPI.GetCurrentRoomID()
-        local gridDat = StageAPI.GetCustomGrid(index, name)
-        if gridDat then
-            local customGrids = StageAPI.GetTableIndexedByDimension(StageAPI.CustomGrids, true)
-            customGrids[lindex][name][index] = nil
-
-            if not keepVanillaGrid then
-                room:RemoveGridEntity(index, 0, false)
-            end
-
-            local callbacks = StageAPI.GetCallbacks("POST_CUSTOM_GRID_REMOVE")
-            for _, callback in ipairs(callbacks) do
-                if not callback.Params[1] or callback.Params[1] == name then
-                    callback.Function(index, gridDat.PersistData, StageAPI.CustomGridTypes[name], name)
+    function StageAPI.GetLiftedCustomGrids(ignoreMarked, includeRecent)
+        local customGrids = StageAPI.GetCustomGrids()
+        local lifted = {}
+        for _, grid in ipairs(customGrids) do
+            local gridEnt = room:GetGridEntity(grid.GridIndex)
+            if gridEnt and (ignoreMarked or (not grid.Lifted or (includeRecent and grid.RecentlyLifted))) then
+                local sprite = gridEnt:GetSprite()
+                if sprite:GetFilename() == "" and sprite:GetAnimation() == "" then
+                    lifted[#lifted + 1] = grid
                 end
             end
         end
+
+        return lifted
+    end
+
+    function StageAPI.GetClosestLiftedCustomGrid(position, ignoreMarked, includeRecent)
+        local liftedGrids = StageAPI.GetLiftedCustomGrids(ignoreMarked, includeRecent)
+        local closest, closestDist
+        for _, grid in ipairs(liftedGrids) do
+            local pos = room:GetGridPosition(grid.GridIndex)
+            local dist = pos:DistanceSquared(position)
+            if not closestDist or dist < closestDist then
+                closest = grid
+                closestDist = dist
+            end
+        end
+
+        return closest
     end
 
     function StageAPI.IsCustomGrid(index, name)
-        if name then
-            return not not StageAPI.GetCustomGrid(index, name)
-        else
-            return #StageAPI.GetCustomGridsAtIndex(index) > 0
-        end
+        return #StageAPI.GetCustomGrids(index, name) > 0
+    end
+
+    function StageAPI.GetCustomGrid(index, name)
+        return StageAPI.GetCustomGrids(index, name)[1]
     end
 
     mod:AddCallback(ModCallbacks.MC_POST_UPDATE, function()
@@ -4464,20 +4582,173 @@ do -- Custom Grid Entities
 
         local customGrids = StageAPI.GetCustomGrids()
         for _, customGrid in ipairs(customGrids) do
-            local customGridType = customGrid.Data
-            local grid = room:GetGridEntity(customGrid.Index)
-            if not grid and customGridType.BaseType then
-                StageAPI.RemoveCustomGrid(customGrid.Index, customGrid.Name, true)
-            else
-                local callbacks = StageAPI.GetCallbacks("POST_CUSTOM_GRID_UPDATE")
-                for _, callback in ipairs(callbacks) do
-                    if not callback.Params[1] or callback.Params[1] == customGrid.Name then
-                        callback.Function(grid, customGrid.Index, customGrid.PersistData, customGridType, customGrid.Name)
+            customGrid:Update()
+        end
+    end)
+
+    local function customGridPoopGibs(_, eff)
+        if not eff:GetData().StageAPIPoopGibChecked then
+            eff:GetData().StageAPIPoopGibChecked = true
+
+            local customGrids = StageAPI.GetCustomGrids()
+            local replacingGridConfig
+            for _, grid in ipairs(customGrids) do
+                local gridConfig = grid.GridConfig
+                if gridConfig.PoopExplosionColor or gridConfig.PoopExplosionAnm2 or gridConfig.PoopExplosionSheet or gridConfig.PoopGibColor or gridConfig.PoopGibAnm2 or gridConfig.PoopGibSheet then
+                    if not grid.Lifted and grid.GridIndex == room:GetGridIndex(eff.Position) then
+                        replacingGridConfig = gridConfig
+                    end
+
+                    local projPosition = (grid.Projectile and grid.Projectile:IsDead() and grid.Projectile.Position) or grid.RecentProjectilePosition
+                    if projPosition and projPosition:DistanceSquared(eff.Position) < 20 ^ 2 then
+                        replacingGridConfig = gridConfig
                     end
                 end
             end
+
+            if replacingGridConfig then
+                local sprite = eff:GetSprite()
+                local anim, frame = sprite:GetAnimation(), sprite:GetFrame()
+                if eff.Variant == EffectVariant.POOP_EXPLOSION then
+                    if replacingGridConfig.PoopExplosionColor then
+                        sprite.Color = replacingGridConfig.PoopExplosionColor
+                    end
+
+                    if replacingGridConfig.PoopExplosionAnm2 then
+                        sprite:Load(replacingGridConfig.PoopGibAnm2)
+                    end
+
+                    if replacingGridConfig.PoopExplosionSheet then
+                        sprite:ReplaceSpritesheet(0, replacingGridConfig.PoopGibSheet)
+                    end
+        		elseif eff.Variant == EffectVariant.POOP_PARTICLE then
+                    if replacingGridConfig.PoopGibColor then
+                        sprite.Color = replacingGridConfig.PoopGibColor
+                    end
+
+                    if replacingGridConfig.PoopGibAnm2 then
+                        sprite:Load(replacingGridConfig.PoopGibAnm2)
+                    end
+
+                    if replacingGridConfig.PoopGibSheet then
+                        sprite:ReplaceSpritesheet(0, replacingGridConfig.PoopGibSheet)
+                    end
+        		end
+
+                sprite:LoadGraphics()
+                sprite:SetAnimation(anim, false)
+                sprite:SetFrame(frame)
+            end
         end
-    end)
+    end
+
+    mod:AddCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, customGridPoopGibs, EffectVariant.POOP_EXPLOSION)
+    mod:AddCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, customGridPoopGibs, EffectVariant.POOP_PARTICLE)
+
+    -- Custom Grid Projectile Handling
+    mod:AddCallback(ModCallbacks.MC_USE_ITEM, function(_, collectible, rng, player)
+        local projectileHelpers = Isaac.FindByType(EntityType.ENTITY_EFFECT, EffectVariant.GRID_ENTITY_PROJECTILE_HELPER, -1)
+        local liftedHelper
+        for _, helper in ipairs(projectileHelpers) do
+            if not helper:GetData().StageAPIBraceletChecked then
+                helper:GetData().StageAPIBraceletChecked = true
+
+                if helper.FrameCount == 0 then
+                    liftedHelper = helper
+                    break
+                end
+            end
+        end
+
+        if liftedHelper then
+            local liftedGrid = StageAPI.GetClosestLiftedCustomGrid(player.Position)
+            if liftedGrid then
+                liftedHelper:GetData().CustomGrid = liftedGrid
+            end
+        end
+    end, CollectibleType.COLLECTIBLE_MOMS_BRACELET)
+
+    mod:AddCallback(ModCallbacks.MC_POST_ENTITY_REMOVE, function(_, entity)
+        if entity.Variant ~= EffectVariant.GRID_ENTITY_PROJECTILE_HELPER or room:GetFrameCount() <= 1 then return end
+
+        local data = entity:GetData()
+
+        if not data.StageAPIProjectileHelperRemoveChecked then
+            data.StageAPIProjectileHelperRemoveChecked = true
+            if not data.CustomGrid and entity.FrameCount == 0 then
+                local liftedGrid = StageAPI.GetClosestLiftedCustomGrid(entity.Position)
+                if liftedGrid then
+                    data.CustomGrid = liftedGrid
+                end
+            end
+        end
+
+        local gridProjectiles = Isaac.FindByType(EntityType.ENTITY_PROJECTILE, ProjectileVariant.PROJECTILE_GRID, -1)
+        for _, projectile in ipairs(gridProjectiles) do
+            if projectile.FrameCount == 0 and not projectile:GetData().StageAPIProjectileHelperRemoveChecked then
+                projectile:GetData().StageAPIProjectileHelperRemoveChecked = true
+                projectile:GetData().CustomGrid = data.CustomGrid
+            end
+        end
+
+        local gridTears = Isaac.FindByType(EntityType.ENTITY_TEAR, TearVariant.GRIDENT, -1)
+        for _, tear in ipairs(gridTears) do
+            if tear.FrameCount == 0 and not tear:GetData().StageAPIProjectileHelperRemoveChecked then
+                tear:GetData().StageAPIProjectileHelperRemoveChecked = true
+                tear:GetData().CustomGrid = data.CustomGrid
+            end
+        end
+    end, EntityType.ENTITY_EFFECT)
+
+    local function gridProjectileRemove(_, projectile)
+        if projectile.Type == EntityType.ENTITY_TEAR and projectile.Variant ~= TearVariant.GRIDENT then
+            return
+        elseif projectile.Type == EntityType.ENTITY_PROJECTILE and projectile.Variant ~= ProjectileVariant.PROJECTILE_GRID then
+            return
+        end
+
+        local projectileHelpers = Isaac.FindByType(EntityType.ENTITY_EFFECT, EffectVariant.GRID_ENTITY_PROJECTILE_HELPER, -1)
+        for _, helper in ipairs(projectileHelpers) do
+            if not helper:GetData().StageAPIGridProjectileRemoveChecked then
+                helper:GetData().StageAPIGridProjectileRemoveChecked = true
+
+                if helper.FrameCount == 0 then
+                    helper:GetData().CustomGrid = projectile:GetData().CustomGrid
+                end
+            end
+        end
+    end
+
+    mod:AddCallback(ModCallbacks.MC_POST_ENTITY_REMOVE, gridProjectileRemove, EntityType.ENTITY_TEAR)
+    mod:AddCallback(ModCallbacks.MC_POST_ENTITY_REMOVE, gridProjectileRemove, EntityType.ENTITY_PROJECTILE)
+
+    local function gridProjectileUpdate(_, projectile)
+        local data = projectile:GetData()
+        if data.CustomGrid then
+            data.CustomGrid:UpdateProjectile(projectile)
+        end
+    end
+
+    mod:AddCallback(ModCallbacks.MC_POST_TEAR_UPDATE, gridProjectileUpdate, TearVariant.GRIDENT)
+    mod:AddCallback(ModCallbacks.MC_POST_PROJECTILE_UPDATE, gridProjectileUpdate, ProjectileVariant.PROJECTILE_GRID)
+
+    mod:AddCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, function(_, eff)
+        local data = eff:GetData()
+        if not data.StageAPIProjectileHelperUpdateChecked then
+            data.StageAPIProjectileHelperUpdateChecked = true
+
+            if not data.StageAPIBraceletChecked and not data.StageAPIGridProjectileRemoveChecked then
+                local liftedGrid = StageAPI.GetClosestLiftedCustomGrid(eff.Position, nil, true)
+                if liftedGrid then
+                    data.CustomGrid = liftedGrid
+                end
+            end
+        end
+
+        if data.CustomGrid then
+            data.CustomGrid:UpdateProjectileHelper(eff)
+        end
+    end, EffectVariant.GRID_ENTITY_PROJECTILE_HELPER)
 end
 
 StageAPI.LogMinor("Loading Extra Room Handler")
@@ -5227,7 +5498,10 @@ do -- Custom Doors
         return ret
     end
 
-    StageAPI.AddCallback("StageAPI", "POST_SPAWN_CUSTOM_GRID", 0, function(index, force, respawning, grid, persistData, customGrid)
+    StageAPI.AddCallback("StageAPI", "POST_SPAWN_CUSTOM_GRID", 0, function(customGrid, force, respawning)
+        local index = persistData.GridIndex
+        local persistData = customGrid.PersistentData
+
         local doorData
         if persistData.DoorDataName and StageAPI.DoorTypes[persistData.DoorDataName] then
             doorData = StageAPI.DoorTypes[persistData.DoorDataName]
@@ -5273,7 +5547,7 @@ do -- Custom Doors
         local callbacks = StageAPI.GetCallbacks("POST_SPAWN_CUSTOM_DOOR")
         for _, callback in ipairs(callbacks) do
             if not callback.Params[1] or callback.Params[1] == persistData.DoorDataName then
-                callback.Function(door, data, sprite, doorData, persistData, index, force, respawning, grid, customGrid)
+                callback.Function(door, data, sprite, doorData, customGrid, force, respawning)
             end
         end
     end, "CustomDoor")
@@ -5771,10 +6045,10 @@ do -- GridGfx
         local gridCount = 0
         local pits = {}
         for i = 0, room:GetGridSize() do
-            local customGrids = StageAPI.GetCustomGridsAtIndex(i)
+            local customGrids = StageAPI.GetCustomGrids(i)
             local customGridBlocking = false
             for _, cgrid in ipairs(customGrids) do
-                if not cgrid.Data.NoOverrideGridSprite then
+                if not cgrid.GridConfig.NoOverrideGridSprite then
                     customGridBlocking = true
                 end
             end
@@ -7361,7 +7635,7 @@ do -- Rock Alt Override
             StageAPI.SpawnOverriddenGrids = {}
         end
 
-        local lindex = StageAPI.GetCurrentRoomID()
+        local shouldOverride
         local grindex = room:GetGridIndex(position)
         if StageAPI.SpawnOverriddenGrids[grindex] then
             local grid = room:GetGridEntity(grindex)
@@ -7373,61 +7647,90 @@ do -- Rock Alt Override
                 stateCheck = StageAPI.DefaultBrokenGridStateByType[grid.Type] or 2
             end
 
-            if not grid or grid.State == stateCheck then
-                if (id == EntityType.ENTITY_PICKUP and (variant == PickupVariant.PICKUP_COLLECTIBLE or variant == PickupVariant.PICKUP_TAROTCARD or variant == PickupVariant.PICKUP_HEART or variant == PickupVariant.PICKUP_COIN or variant == PickupVariant.PICKUP_TRINKET or variant == PickupVariant.PICKUP_PILL))
-                or id == EntityType.ENTITY_SPIDER
-                or (id == EntityType.ENTITY_EFFECT and (variant == EffectVariant.FART or variant == EffectVariant.POOF01 or variant == EffectVariant.CREEP_RED))
-                or id == EntityType.ENTITY_PROJECTILE
-                or id == EntityType.ENTITY_HOST
-                or id == EntityType.ENTITY_MUSHROOM then
-                    if id == EntityType.ENTITY_EFFECT and variant == EffectVariant.FART then
-                        StageAPI.RecentFarts[grindex] = 2
-                        sfx:Stop(SoundEffect.SOUND_FART)
-                    end
+            shouldOverride = not grid or grid.State == stateCheck
+        end
 
+        local customGrid
+        if not shouldOverride then
+            local customGrids = StageAPI.GetCustomGrids()
+            for _, grid in ipairs(customGrids) do
+                if grid.GridConfig.OverrideGridSpawns then
+                    local projPosition = (grid.Projectile and grid.Projectile:IsDead() and grid.Projectile.Position) or grid.RecentProjectilePosition
+                    if projPosition and projPosition:DistanceSquared(position) < 20 ^ 2 then
+                        shouldOverride = true
+                        customGrid = grid
+                    end
+                end
+            end
+        end
+
+        if shouldOverride then
+            if (id == EntityType.ENTITY_PICKUP and (variant == PickupVariant.PICKUP_COLLECTIBLE or variant == PickupVariant.PICKUP_TAROTCARD or variant == PickupVariant.PICKUP_HEART or variant == PickupVariant.PICKUP_COIN or variant == PickupVariant.PICKUP_TRINKET or variant == PickupVariant.PICKUP_PILL))
+            or id == EntityType.ENTITY_SPIDER
+            or (id == EntityType.ENTITY_EFFECT and (variant == EffectVariant.FART or variant == EffectVariant.POOF01 or variant == EffectVariant.CREEP_RED))
+            or id == EntityType.ENTITY_PROJECTILE
+            or id == EntityType.ENTITY_STRIDER
+            or id == EntityType.ENTITY_SMALL_LEECH
+            or id == EntityType.ENTITY_DRIP
+            or id == EntityType.ENTITY_HOST
+            or id == EntityType.ENTITY_MUSHROOM then
+                if id == EntityType.ENTITY_EFFECT and variant == EffectVariant.FART then
+                    StageAPI.RecentFarts[grindex] = 2
+                    sfx:Stop(SoundEffect.SOUND_FART)
+                end
+
+                local dat = {
+                    Type = id,
+                    Variant = variant,
+                    SubType = subtype,
+                    Position = position,
+                    Velocity = velocity,
+                    Spawner = spawner,
+                    Seed = seed
+                }
+
+                if not customGrid then
                     if not StageAPI.JustBrokenGridSpawns[grindex] then
                         StageAPI.JustBrokenGridSpawns[grindex] = {}
                     end
 
-                    StageAPI.JustBrokenGridSpawns[grindex][#StageAPI.JustBrokenGridSpawns[grindex] + 1] = {
-                        Type = id,
-                        Variant = variant,
-                        SubType = subtype,
-                        Position = position,
-                        Velocity = velocity,
-                        Spawner = spawner,
-                        Seed = seed
-                    }
-
-                    if id == EntityType.ENTITY_EFFECT then
-                        return {
-                            StageAPI.E.DeleteMeEffect.T,
-                            StageAPI.E.DeleteMeEffect.V,
-                            0,
-                            seed
-                        }
-                    elseif id == EntityType.ENTITY_PICKUP then
-                        return {
-                            StageAPI.E.DeleteMePickup.T,
-                            StageAPI.E.DeleteMePickup.V,
-                            0,
-                            seed
-                        }
-                    elseif id == EntityType.ENTITY_PROJECTILE then
-                        return {
-                            StageAPI.E.DeleteMeProjectile.T,
-                            StageAPI.E.DeleteMeProjectile.V,
-                            0,
-                            seed
-                        }
-                    else
-                        return {
-                            StageAPI.E.DeleteMeNPC.T,
-                            StageAPI.E.DeleteMeNPC.V,
-                            0,
-                            seed
-                        }
+                    StageAPI.JustBrokenGridSpawns[grindex][#StageAPI.JustBrokenGridSpawns[grindex] + 1] = dat
+                else
+                    if not customGrid.JustBrokenGridSpawns then
+                        customGrid.JustBrokenGridSpawns = {}
                     end
+
+                    customGrid.JustBrokenGridSpawns[#customGrid.JustBrokenGridSpawns + 1] = dat
+                end
+
+                if id == EntityType.ENTITY_EFFECT then
+                    return {
+                        StageAPI.E.DeleteMeEffect.T,
+                        StageAPI.E.DeleteMeEffect.V,
+                        0,
+                        seed
+                    }
+                elseif id == EntityType.ENTITY_PICKUP then
+                    return {
+                        StageAPI.E.DeleteMePickup.T,
+                        StageAPI.E.DeleteMePickup.V,
+                        0,
+                        seed
+                    }
+                elseif id == EntityType.ENTITY_PROJECTILE then
+                    return {
+                        StageAPI.E.DeleteMeProjectile.T,
+                        StageAPI.E.DeleteMeProjectile.V,
+                        0,
+                        seed
+                    }
+                else
+                    return {
+                        StageAPI.E.DeleteMeNPC.T,
+                        StageAPI.E.DeleteMeNPC.V,
+                        0,
+                        seed
+                    }
                 end
             end
         end
@@ -8168,7 +8471,12 @@ do -- Callbacks
 
         local isNewStage, override = StageAPI.InOverriddenStage()
         local inStartingRoom = level:GetCurrentRoomIndex() == level:GetStartingRoomIndex()
-        StageAPI.CustomGridIndices = {}
+
+        for _, customGrid in ipairs(StageAPI.GetCustomGrids()) do
+            if customGrid.RoomIndex ~= StageAPI.GetCurrentRoomID() then
+                customGrid:Unload()
+            end
+        end
 
         -- Only a room the player is actively in can be "Loaded"
         for _, levelRoom in ipairs(StageAPI.GetAllLevelRooms()) do
@@ -8295,10 +8603,10 @@ do -- Callbacks
         end
 
         if not justGenerated then
-            local customGrids = StageAPI.GetCustomGrids()
+            local customGrids = StageAPI.GetRoomCustomGrids()
             if #customGrids > 0 then
-                for _, customGrid in ipairs(customGrids) do
-                    customGrid.Data:Spawn(customGrid.Index, nil, true)
+                for persistentIndex, customGrid in pairs(customGrids.Grids) do
+                    StageAPI.CustomGridEntity(persistentIndex, customGrid.Index, nil, true)
                 end
             end
         end
@@ -8677,23 +8985,7 @@ do
                 end
 
                 local roomDat = levelSaveData[strDimension][strindex]
-                for name, indices in pairs(customGrids) do
-                    for index, value in pairs(indices) do
-                        if not roomDat.CustomGrids then
-                            roomDat.CustomGrids = {}
-                        end
-
-                        if not roomDat.CustomGrids[name] then
-                            roomDat.CustomGrids[name] = {}
-                        end
-
-                        if value == true then
-                            roomDat.CustomGrids[name][#roomDat.CustomGrids[name] + 1] = index
-                        else
-                            roomDat.CustomGrids[name][#roomDat.CustomGrids[name] + 1] = {index, value}
-                        end
-                    end
-                end
+                roomDat.CustomGrids = customGrids
             end
         end
 
@@ -8777,22 +9069,7 @@ do
                     end
                 end
 
-                if roomSaveData.CustomGrids then
-                    retCustomGrids[dimension][lindex] = {}
-                    for name, indices in pairs(roomSaveData.CustomGrids) do
-                        for _, index in ipairs(indices) do
-                            if not retCustomGrids[dimension][lindex][name] then
-                                retCustomGrids[dimension][lindex][name] = {}
-                            end
-
-                            if type(index) == "table" then
-                                retCustomGrids[dimension][lindex][name][index[1]] = index[2]
-                            else
-                                retCustomGrids[dimension][lindex][name][index] = true
-                            end
-                        end
-                    end
-                end
+                retCustomGrids[dimension][lindex] = roomSaveData.CustomGrids
 
                 if roomSaveData.Room then
                     local customRoom = StageAPI.LevelRoom{FromSave = roomSaveData.Room}
@@ -9143,7 +9420,9 @@ do
         end
     end)
 
-    StageAPI.AddCallback("StageAPI", "POST_SPAWN_CUSTOM_GRID", 0, function(index, force, respawning, grid, persistData)
+    StageAPI.AddCallback("StageAPI", "POST_SPAWN_CUSTOM_GRID", 0, function(customGrid)
+        local index = customGrid.GridIndex
+        local persistData = customGrid.PersistentData
         local button = StageAPI.SpawnFloorEffect(room:GetGridPosition(index), Vector.Zero, nil, "gfx/grid/grid_pressureplate.anm2", false, StageAPI.E.Button.V)
         local sprite = button:GetSprite()
         sprite:ReplaceSpritesheet(0, "gfx/grid/grid_button_output.png")
