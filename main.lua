@@ -4550,7 +4550,6 @@ do -- Custom Grid Entities
     end
 
     function StageAPI.GetCustomGrids(index, name)
-        local roomGrids = StageAPI.GetRoomCustomGrids()
         if index and name then
             return (StageAPI.CustomGridEntities[index] and StageAPI.CustomGridEntities[index][name]) or {}
         elseif index then
@@ -8622,10 +8621,8 @@ do -- Callbacks
 
         if not justGenerated then
             local customGrids = StageAPI.GetRoomCustomGrids()
-            if #customGrids > 0 then
-                for persistentIndex, customGrid in pairs(customGrids.Grids) do
-                    StageAPI.CustomGridEntity(persistentIndex, customGrid.Index, nil, true)
-                end
+            for persistentIndex, customGrid in pairs(customGrids.Grids) do
+                StageAPI.CustomGridEntity(persistentIndex, customGrid.Index, nil, true)
             end
         end
 
