@@ -4474,6 +4474,51 @@ do -- Custom Grid Entities
         self:CallCallbacks("POST_CUSTOM_GRID_PROJECTILE_HELPER_UPDATE", projectileHelper, projectileHelper.Parent)
     end
 
+    function StageAPI.CustomGridEntity:CheckPoopGib(effect)
+        local sprite = effect:GetSprite()
+        local anim, frame = sprite:GetAnimation(), sprite:GetFrame()
+        local updated = false
+        if effect.Variant == EffectVariant.POOP_EXPLOSION then
+            if self.GridConfig.PoopExplosionColor then
+                sprite.Color = self.GridConfig.PoopExplosionColor
+                updated = true
+            end
+
+            if self.GridConfig.PoopExplosionAnm2 then
+                sprite:Load(self.GridConfig.PoopGibAnm2, true)
+                updated = true
+            end
+
+            if self.GridConfig.PoopExplosionSheet then
+                sprite:ReplaceSpritesheet(0, self.GridConfig.PoopGibSheet)
+                updated = true
+            end
+        elseif effect.Variant == EffectVariant.POOP_PARTICLE then
+            if self.GridConfig.PoopGibColor then
+                sprite.Color = self.GridConfig.PoopGibColor
+                updated = true
+            end
+
+            if self.GridConfig.PoopGibAnm2 then
+                sprite:Load(self.GridConfig.PoopGibAnm2, true)
+                updated = true
+            end
+
+            if self.GridConfig.PoopGibSheet then
+                sprite:ReplaceSpritesheet(0, self.GridConfig.PoopGibSheet)
+                updated = true
+            end
+        end
+
+        if updated then
+            sprite:LoadGraphics()
+            sprite:SetAnimation(anim, false)
+            sprite:SetFrame(frame)
+        end
+
+        self:CallCallbacks("POST_CUSTOM_GRID_POOP_GIB_SPAWN", effect)
+    end
+
     function StageAPI.CustomGridEntity:Unload()
         local matchingGrids = StageAPI.CustomGridEntities[self.GridIndex][self.GridConfig.Name]
         for i, grid in StageAPI.ReverseIterate(matchingGrids) do
@@ -4593,59 +4638,29 @@ do -- Custom Grid Entities
             eff:GetData().StageAPIPoopGibChecked = true
 
             local customGrids = StageAPI.GetCustomGrids()
-            local replacingGridConfig
+            local customGrid
             for _, grid in ipairs(customGrids) do
                 local gridConfig = grid.GridConfig
-                if gridConfig.PoopExplosionColor or gridConfig.PoopExplosionAnm2 or gridConfig.PoopExplosionSheet or gridConfig.PoopGibColor or gridConfig.PoopGibAnm2 or gridConfig.PoopGibSheet then
+                if gridConfig.PoopExplosionColor or gridConfig.PoopExplosionAnm2 or gridConfig.PoopExplosionSheet or gridConfig.PoopGibColor or gridConfig.PoopGibAnm2 or gridConfig.PoopGibSheet or gridConfig.CustomPoopGibs then
                     if not grid.Lifted and grid.GridIndex == room:GetGridIndex(eff.Position) then
-                        replacingGridConfig = gridConfig
+                        customGrid = grid
                     end
 
                     local projPosition = (grid.Projectile and grid.Projectile:IsDead() and grid.Projectile.Position) or grid.RecentProjectilePosition
                     if projPosition and projPosition:DistanceSquared(eff.Position) < 20 ^ 2 then
-                        replacingGridConfig = gridConfig
+                        customGrid = grid
                     end
                 end
             end
 
-            if replacingGridConfig then
-                local sprite = eff:GetSprite()
-                local anim, frame = sprite:GetAnimation(), sprite:GetFrame()
-                if eff.Variant == EffectVariant.POOP_EXPLOSION then
-                    if replacingGridConfig.PoopExplosionColor then
-                        sprite.Color = replacingGridConfig.PoopExplosionColor
-                    end
-
-                    if replacingGridConfig.PoopExplosionAnm2 then
-                        sprite:Load(replacingGridConfig.PoopGibAnm2)
-                    end
-
-                    if replacingGridConfig.PoopExplosionSheet then
-                        sprite:ReplaceSpritesheet(0, replacingGridConfig.PoopGibSheet)
-                    end
-        		elseif eff.Variant == EffectVariant.POOP_PARTICLE then
-                    if replacingGridConfig.PoopGibColor then
-                        sprite.Color = replacingGridConfig.PoopGibColor
-                    end
-
-                    if replacingGridConfig.PoopGibAnm2 then
-                        sprite:Load(replacingGridConfig.PoopGibAnm2)
-                    end
-
-                    if replacingGridConfig.PoopGibSheet then
-                        sprite:ReplaceSpritesheet(0, replacingGridConfig.PoopGibSheet)
-                    end
-        		end
-
-                sprite:LoadGraphics()
-                sprite:SetAnimation(anim, false)
-                sprite:SetFrame(frame)
+            if customGrid then
+                customGrid:CheckPoopGib(eff)
             end
         end
     end
 
-    mod:AddCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, customGridPoopGibs, EffectVariant.POOP_EXPLOSION)
-    mod:AddCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, customGridPoopGibs, EffectVariant.POOP_PARTICLE)
+    mod:AddCallback(ModCallbacks.MC_POST_EFFECT_INIT, customGridPoopGibs, EffectVariant.POOP_EXPLOSION)
+    mod:AddCallback(ModCallbacks.MC_POST_EFFECT_INIT, customGridPoopGibs, EffectVariant.POOP_PARTICLE)
 
     -- Custom Grid Projectile Handling
     mod:AddCallback(ModCallbacks.MC_USE_ITEM, function(_, collectible, rng, player)
