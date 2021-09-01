@@ -8620,9 +8620,17 @@ do -- Callbacks
         end
 
         if not justGenerated then
-            local customGrids = StageAPI.GetRoomCustomGrids()
-            for persistentIndex, customGrid in pairs(customGrids.Grids) do
-                StageAPI.CustomGridEntity(persistentIndex, customGrid.Index, nil, true)
+            local customGridData = StageAPI.GetRoomCustomGrids()
+            local customGrids = StageAPI.GetCustomGrids()
+            local persistentIndicesAlreadySpawned = {}
+            for _, grid in ipairs(customGrids) do
+                persistentIndicesAlreadySpawned[grid.PersistentIndex] = true
+            end
+
+            for persistentIndex, customGrid in pairs(customGridData.Grids) do
+                if not persistentIndicesAlreadySpawned[persistentIndex] then
+                    StageAPI.CustomGridEntity(persistentIndex, customGrid.Index, nil, true)
+                end
             end
         end
 
