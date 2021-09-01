@@ -3496,9 +3496,9 @@ do -- RoomsList
                     if grid:ToPoop() then
                         if grid.State == 1000 then
                             sprite:Play("State5", true)
-                        elseif grid.State > 666 then
+                        elseif grid.State > 750 then
                             sprite:Play("State4", true)
-                        elseif grid.State > 333 then
+                        elseif grid.State > 250 then
                             sprite:Play("State3", true)
                         elseif grid.State > 0 then
                             sprite:Play("State2", true)
