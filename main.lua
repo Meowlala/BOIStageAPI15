@@ -4516,7 +4516,9 @@ do -- Custom Grid Entities
             sprite:SetFrame(frame)
         end
 
+        StageAPI.IgnorePoopGibsSpawned = true
         self:CallCallbacks("POST_CUSTOM_GRID_POOP_GIB_SPAWN", effect)
+        StageAPI.IgnorePoopGibsSpawned = false
     end
 
     function StageAPI.CustomGridEntity:Unload()
@@ -4632,6 +4634,7 @@ do -- Custom Grid Entities
         end
     end)
 
+    StageAPI.IgnorePoopGibsSpawned = false
     local function customGridPoopGibs(_, eff)
         if not eff:GetData().StageAPIPoopGibChecked then
             eff:GetData().StageAPIPoopGibChecked = true
@@ -4652,7 +4655,7 @@ do -- Custom Grid Entities
                 end
             end
 
-            if customGrid then
+            if customGrid and not StageAPI.IgnorePoopGibsSpawned then
                 customGrid:CheckPoopGib(eff)
             end
         end
