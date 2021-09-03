@@ -4521,6 +4521,12 @@ do -- Custom Grid Entities
         StageAPI.IgnorePoopGibsSpawned = false
     end
 
+    function StageAPI.CustomGridEntity:CheckDirtyMind(familiar)
+        StageAPI.IgnoreDirtyMindSpawned = true
+        self:CallCallbacks("POST_CUSTOM_GRID_DIRTY_MIND_SPAWN", familiar)
+        StageAPI.IgnoreDirtyMindSpawned = false
+    end
+
     function StageAPI.CustomGridEntity:Unload()
         local matchingGrids = StageAPI.CustomGridEntities[self.GridIndex][self.GridConfig.Name]
         for i, grid in StageAPI.ReverseIterate(matchingGrids) do
@@ -4634,6 +4640,7 @@ do -- Custom Grid Entities
         end
     end)
 
+    -- Poop Gib Handling
     StageAPI.IgnorePoopGibsSpawned = false
     local function customGridPoopGibs(_, eff)
         if not eff:GetData().StageAPIPoopGibChecked then
@@ -4663,6 +4670,31 @@ do -- Custom Grid Entities
 
     mod:AddCallback(ModCallbacks.MC_POST_EFFECT_INIT, customGridPoopGibs, EffectVariant.POOP_EXPLOSION)
     mod:AddCallback(ModCallbacks.MC_POST_EFFECT_INIT, customGridPoopGibs, EffectVariant.POOP_PARTICLE)
+
+    -- Dirty Mind Dip handling
+    StageAPI.IgnoreDirtyMindSpawned = false
+    mod:AddCallback(ModCallbacks.MC_FAMILIAR_INIT, function(_, familiar)
+        if not familiar:GetData().StageAPIDirtyMindChecked then
+            familiar:GetData().StageAPIDirtyMindChecked = true
+
+            local customGrids = StageAPI.GetCustomGrids()
+            local customGrid
+            for _, grid in ipairs(customGrids) do
+                if not grid.Lifted and grid.GridIndex == room:GetGridIndex(familiar.Position) then
+                    customGrid = grid
+                end
+
+                local projPosition = (grid.Projectile and grid.Projectile:IsDead() and grid.Projectile.Position) or grid.RecentProjectilePosition
+                if projPosition and projPosition:DistanceSquared(eff.Position) < 20 ^ 2 then
+                    customGrid = grid
+                end
+            end
+
+            if customGrid and not StageAPI.IgnoreDirtyMindSpawned then
+                customGrid:CheckDirtyMind(familiar)
+            end
+        end
+    end, FamiliarVariant.DIP)
 
     -- Custom Grid Projectile Handling
     mod:AddCallback(ModCallbacks.MC_USE_ITEM, function(_, collectible, rng, player)
