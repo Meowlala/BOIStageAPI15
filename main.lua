@@ -4685,7 +4685,7 @@ do -- Custom Grid Entities
                 end
 
                 local projPosition = (grid.Projectile and grid.Projectile:IsDead() and grid.Projectile.Position) or grid.RecentProjectilePosition
-                if projPosition and projPosition:DistanceSquared(eff.Position) < 20 ^ 2 then
+                if projPosition and projPosition:DistanceSquared(familiar.Position) < 20 ^ 2 then
                     customGrid = grid
                 end
             end
