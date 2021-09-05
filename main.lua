@@ -8406,79 +8406,82 @@ do -- Callbacks
         return newRoom, boss
     end
 
-    function StageAPI.GenerateBaseLevel()
+    function StageAPI.GenerateBaseRoom(roomDesc)
         local baseFloorInfo = StageAPI.GetBaseFloorInfo()
         local xlFloorInfo
         if level:GetCurses() & LevelCurse.CURSE_OF_LABYRINTH ~= 0 then
             xlFloorInfo = StageAPI.GetBaseFloorInfo(level:GetStage() + 1)
         end
 
-        local startingRoomIndex = level:GetStartingRoomIndex()
         local lastBossRoomListIndex = level:GetLastBossRoomListIndex()
         local backwards = game:GetStateFlag(GameStateFlag.STATE_BACKWARDS_PATH_INIT) or game:GetStateFlag(GameStateFlag.STATE_BACKWARDS_PATH)
+        local dimension = StageAPI.GetDimension(roomDesc)
+        local newRoom
+        if baseFloorInfo and baseFloorInfo.HasCustomBosses and roomDesc.Data.Type == RoomType.ROOM_BOSS and dimension == 0 and not backwards then
+            local bossFloorInfo = baseFloorInfo
+            if xlFloorInfo and roomDesc.ListIndex == lastBossRoomListIndex then
+                bossFloorInfo = xlFloorInfo
+            end
+
+            local bossID = StageAPI.SelectBoss(bossFloorInfo.Bosses, nil, roomDesc, true)
+            if bossID then
+                local bossData = StageAPI.GetBossData(bossID)
+                if bossData and not bossData.BaseGameBoss and bossData.Rooms then
+                    newRoom = StageAPI.GenerateBossRoom({
+                        BossID = bossID,
+                        NoPlayBossAnim = true
+                    }, {
+                        RoomDescriptor = roomDesc
+                    })
+
+                    if roomDesc.Data.Subtype == 82 or roomDesc.Data.Subtype == 83 then -- Remove Great Gideon special health bar & Hornfel room properties
+                        local overwritableRoomDesc = level:GetRoomByIdx(roomDesc.SafeGridIndex, dimension)
+                        local replaceData = StageAPI.GetGotoDataForTypeShape(RoomType.ROOM_BOSS, roomDesc.Data.Shape)
+                        overwritableRoomDesc.Data = replaceData
+                    end
+
+                    StageAPI.LogMinor("Switched Base Floor Boss Room, new boss is " .. bossID)
+                end
+            end
+        end
+
+        if not newRoom then
+            local hasMetadataEntity
+            StageAPI.ForAllSpawnEntries(roomDesc.Data, function(entry, spawn)
+                if StageAPI.IsMetadataEntity(entry.Type, entry.Variant) then
+                    hasMetadataEntity = true
+                    return true
+                end
+            end)
+
+            if hasMetadataEntity then
+                newRoom = StageAPI.LevelRoom{
+                    FromData = roomDesc.ListIndex,
+                    RoomDescriptor = roomDesc
+                }
+
+                StageAPI.LogMinor("Switched Base Floor Room With Metadata")
+            end
+        end
+
+        if newRoom then
+            local listIndex = roomDesc.ListIndex
+            StageAPI.SetLevelRoom(newRoom, listIndex, dimension)
+            if roomDesc.Data.Type == RoomType.ROOM_BOSS and baseFloorInfo.HasMirrorLevel and dimension == 0 then
+                StageAPI.Log("Mirroring!")
+                local mirroredRoom = newRoom:Copy(roomDesc)
+                local mirroredDesc = level:GetRoomByIdx(roomDesc.SafeGridIndex, 1)
+                StageAPI.SetLevelRoom(mirroredRoom, mirroredDesc.ListIndex, 1)
+            end
+        end
+    end
+
+    function StageAPI.GenerateBaseLevel()
         local roomsList = level:GetRooms()
         for i = 0, roomsList.Size - 1 do
             local roomDesc = roomsList:Get(i)
             if roomDesc then
-                local dimension = StageAPI.GetDimension(roomDesc)
-                local newRoom
-                if baseFloorInfo and baseFloorInfo.HasCustomBosses and roomDesc.Data.Type == RoomType.ROOM_BOSS and dimension == 0 and not backwards then
-                    local bossFloorInfo = baseFloorInfo
-                    if xlFloorInfo and roomDesc.ListIndex == lastBossRoomListIndex then
-                        bossFloorInfo = xlFloorInfo
-                    end
-
-                    local bossID = StageAPI.SelectBoss(bossFloorInfo.Bosses, nil, roomDesc, true)
-                    if bossID then
-                        local bossData = StageAPI.GetBossData(bossID)
-                        if bossData and not bossData.BaseGameBoss and bossData.Rooms then
-                            newRoom = StageAPI.GenerateBossRoom({
-                                BossID = bossID,
-                                NoPlayBossAnim = true
-                            }, {
-                                RoomDescriptor = roomDesc
-                            })
-
-                            if roomDesc.Data.Subtype == 82 or roomDesc.Data.Subtype == 83 then -- Remove Great Gideon special health bar & Hornfel room properties
-                                local overwritableRoomDesc = level:GetRoomByIdx(roomDesc.SafeGridIndex, dimension)
-                                local replaceData = StageAPI.GetGotoDataForTypeShape(RoomType.ROOM_BOSS, roomDesc.Data.Shape)
-                                overwritableRoomDesc.Data = replaceData
-                            end
-
-                            StageAPI.LogMinor("Switched Base Floor Boss Room, new boss is " .. bossID)
-                        end
-                    end
-                end
-
-                if not newRoom then
-                    local hasMetadataEntity
-                    StageAPI.ForAllSpawnEntries(roomDesc.Data, function(entry, spawn)
-                        if StageAPI.IsMetadataEntity(entry.Type, entry.Variant) then
-                            hasMetadataEntity = true
-                            return true
-                        end
-                    end)
-
-                    if hasMetadataEntity then
-                        newRoom = StageAPI.LevelRoom{
-                            FromData = roomDesc.ListIndex,
-                            RoomDescriptor = roomDesc
-                        }
-
-                        StageAPI.LogMinor("Switched Base Floor Room With Metadata")
-                    end
-                end
-
-                if newRoom then
-                    local listIndex = roomDesc.ListIndex
-                    StageAPI.SetLevelRoom(newRoom, listIndex, dimension)
-                    if roomDesc.Data.Type == RoomType.ROOM_BOSS and baseFloorInfo.HasMirrorLevel and dimension == 0 then
-                        StageAPI.Log("Mirroring!")
-                        local mirroredRoom = newRoom:Copy(roomDesc)
-                        local mirroredDesc = level:GetRoomByIdx(roomDesc.SafeGridIndex, 1)
-                        StageAPI.SetLevelRoom(mirroredRoom, mirroredDesc.ListIndex, 1)
-                    end
-                end
+                StageAPI.GenerateBaseRoom(roomDesc)
             end
         end
     end
@@ -8517,6 +8520,84 @@ do -- Callbacks
             end
         end
     end)
+
+    StageAPI.PreviousBaseLevelLayout = {}
+
+    function StageAPI.DetectBaseLayoutChanges(generateNewRooms)
+        local roomsList = level:GetRooms()
+        local changedRooms = {}
+        for i = 0, roomsList.Size - 1 do
+            local roomDesc = roomsList:Get(i)
+            local previous = StageAPI.PreviousBaseLevelLayout[i]
+            local changed = false
+            if previous then
+                if previous.Name ~= roomDesc.Data.Name or previous.Variant ~= roomDesc.Data.Variant or previous.AwardSeed ~= roomDesc.AwardSeed then
+                    changedRooms[#changedRooms + 1] = {
+                        Previous = previous,
+                        ListIndex = i,
+                        Dimension = StageAPI.GetDimension(roomDesc)
+                    }
+                    changed = true
+                end
+            end
+
+            if changed or not previous then
+                if not previous and generateNewRooms then
+                    if StageAPI.CurrentStage then
+                        if StageAPI.CurrentStage.PregenerationEnabled then
+                            StageAPI.CurrentStage:GenerateRoom(roomDesc, roomDesc.SafeGridIndex == level:GetStartingRoomIndex(), true)
+                        end
+                    else
+                        StageAPI.GenerateBaseRoom(roomDesc)
+                    end
+                end
+
+                StageAPI.PreviousBaseLevelLayout[i] = {Name = roomDesc.Data.Name, Variant = roomDesc.Data.Variant, AwardSeed = roomDesc.AwardSeed}
+            end
+        end
+
+        for _, changed in ipairs(changedRooms) do
+            local previous = changed.Previous
+            local new = StageAPI.PreviousBaseLevelLayout[changed.ListIndex]
+            local dimension = changed.Dimension
+            local swappedWith
+            for _, changed2 in ipairs(changedRooms) do
+                local previous2 = changed2.Previous
+                local new2 = StageAPI.PreviousBaseLevelLayout[changed2.ListIndex]
+                if changed.ListIndex ~= changed2.ListIndex and previous.AwardSeed == new2.AwardSeed and new.AwardSeed == previous2.AwardSeed then
+                    swappedWith = changed2
+                    break
+                end
+            end
+
+            if swappedWith then
+                local levelRoomOne = StageAPI.GetLevelRoom(swappedWith.ListIndex, dimension)
+                local levelRoomTwo = StageAPI.GetLevelRoom(changed.ListIndex, dimension)
+                StageAPI.SetLevelRoom(levelRoomOne, changed.ListIndex, dimension)
+                StageAPI.SetLevelRoom(levelRoomTwo, swappedWith.ListIndex, dimension)
+            else
+                StageAPI.SetLevelRoom(nil, changed.ListIndex, dimension)
+                if generateNewRooms then
+                    local roomDesc = level:GetRooms():Get(changed.ListIndex)
+                    if StageAPI.CurrentStage then
+                        if StageAPI.CurrentStage.PregenerationEnabled then
+                            StageAPI.CurrentStage:GenerateRoom(roomDesc, roomDesc.SafeGridIndex == level:GetStartingRoomIndex(), true)
+                        end
+                    else
+                        StageAPI.GenerateBaseRoom(roomDesc)
+                    end
+                end
+            end
+        end
+    end
+
+    mod:AddCallback(ModCallbacks.MC_USE_ITEM, function()
+        StageAPI.DetectBaseLayoutChanges(true)
+    end, CollectibleType.COLLECTIBLE_RED_KEY)
+
+    mod:AddCallback(ModCallbacks.MC_USE_ITEM, function()
+        StageAPI.DetectBaseLayoutChanges(true)
+    end, CollectibleType.COLLECTIBLE_BOOK_OF_REVELATIONS)
 
     mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, function()
         StageAPI.CallCallbacks("PRE_STAGEAPI_NEW_ROOM", false)
@@ -8558,6 +8639,7 @@ do -- Callbacks
                 end
             end
 
+            StageAPI.PreviousBaseLevelLayout = {}
             StageAPI.CurrentStage = nil
             if isNewStage then
                 if not StageAPI.NextStage then
@@ -8583,6 +8665,8 @@ do -- Callbacks
                 end
             end
         end
+
+        StageAPI.DetectBaseLayoutChanges(false)
 
         if not StageAPI.ActiveTransitionToExtraRoom then
             StageAPI.CurrentExtraRoom = nil
