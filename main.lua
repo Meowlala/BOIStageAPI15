@@ -313,10 +313,6 @@ AddBossData(id, BossData) -- ID is needed for save / resume.
 GetBossData(id)
 IsDoorSlotAllowed(slot) -- needed in custom rooms
 
-SetExtraRoom(name, room)
-GetExtraRoom(name)
-TransitionToExtraRoom(name, exitSlot)
-TransitionFromExtraRoom(toNormalRoomIndex, exitSlot)
 SpawnCustomDoor(slot, leadsToExtraRoomName, leadsToNormalRoomIndex, CustomDoorName, data(at persistData.Data), exitSlot)
 SetDoorOpen(open, door)
 
@@ -5251,14 +5247,10 @@ do -- Extra Rooms
 
         local transitionFrom = level:GetCurrentRoomIndex()
         local transitionTo
-        if levelMapID == false then
+        if not levelMapID then
             transitionTo = levelMapRoomID
-        else
-            if type(levelMapID) == "table" then
-                levelMapID = levelMapID.Dimension
-            else
-                levelMapID = levelMapID or StageAPI.DefaultLevelMapID
-            end
+        elseif type(levelMapID) == "table" then
+            levelMapID = levelMapID.Dimension
         end
 
         if transitionFrom >= 0 then
@@ -5289,6 +5281,10 @@ do -- Extra Rooms
             if stage ~= curStage or stageType ~= currentStageType then
                 level:SetStage(stage, stageType)
             end
+        else
+            StageAPI.TransitioningToExtraRoom = false
+            StageAPI.CurrentLevelMapID = StageAPI.DefaultLevelMapID
+            StageAPI.CurrentLevelMapRoomID = nil
         end
 
         if targetLevelRoom then
@@ -5548,12 +5544,8 @@ do -- Custom Doors
     end
 
     function StageAPI.SpawnCustomDoor(slot, leadsTo, levelMapID, doorDataName, data, exitSlot, doorSprite)
-        if levelMapID ~= false then
-            if type(levelMapID) == "table" then
-                levelMapID = levelMapID.Dimension
-            else
-                levelMapID = levelMapID or StageAPI.DefaultLevelMapID
-            end
+        if type(levelMapID) == "table" then
+            levelMapID = levelMapID.Dimension
         end
 
         local index = room:GetGridIndex(room:GetDoorSlotPosition(slot))
@@ -5981,18 +5973,8 @@ do -- Custom Doors
 
                 local leadsTo = data.DoorGridData.LeadsTo
                 if leadsTo then
-                    if data.DoorGridData.LevelMapID then
-                        transitionStarted = true
-                        StageAPI.ExtraRoomTransition(leadsTo, StageAPI.DoorSlotToDirection[data.DoorGridData.Slot], RoomTransitionAnim.WALK, data.DoorGridData.LevelMapID, data.DoorGridData.Slot, data.DoorGridData.ExitSlot)
-                    else
-                        transitionStarted = true
-                        local leaveDoor = data.DoorGridData.Slot
-                        if type(leadsTo) ~= "string" then
-                            leaveDoor = nil
-                        end
-
-                        StageAPI.ExtraRoomTransition(leadsTo, StageAPI.DoorSlotToDirection[data.DoorGridData.Slot], RoomTransitionAnim.WALK, false, leaveDoor, data.DoorGridData.ExitSlot)
-                    end
+                    transitionStarted = true
+                    StageAPI.ExtraRoomTransition(leadsTo, StageAPI.DoorSlotToDirection[data.DoorGridData.Slot], RoomTransitionAnim.WALK, data.DoorGridData.LevelMapID, data.DoorGridData.Slot, data.DoorGridData.ExitSlot)                    
                 end
             end
         end
@@ -10479,6 +10461,25 @@ do -- Custom Floor Generation
 
         StageAPI.LevelMaps[self.Dimension] = self
     end
+    
+    function StageAPI.LevelMap:UpdateDoorsAroundRoom(roomData)
+        if not roomData.LowX or not roomData.HighX or not roomData.LowY or not roomData.HighY or not roomData.X or not roomData.Y then
+            return
+        end
+        
+        local updatedRooms = {}
+        for x = roomData.LowX - 2, roomData.HighX + 2 do
+            if self.Map2D[x] then
+                for y = roomData.LowY - 2, roomData.HighY + 2 do
+                    local roomData = self:GetRoomData(x, y)
+                    if not updatedRooms[roomData.RoomID] then
+                        updatedRooms[roomData.RoomID] = true
+                        self:SetRoomDoors(roomData)
+                    end
+                end
+            end
+        end
+    end
 
     function StageAPI.LevelMap:AddRoom(levelRoom, roomData, noUpdateDoors)
         roomData = roomData or {}
@@ -10488,6 +10489,7 @@ do -- Custom Floor Generation
 
         local mapID = #self.Map + 1
         roomData.RoomID = roomData.RoomID or mapID
+        roomData.MapID = mapID
 
         if levelRoom then
             StageAPI.SetLevelRoom(levelRoom, roomData.RoomID, self.Dimension)
@@ -10522,18 +10524,7 @@ do -- Custom Floor Generation
             end
 
             if not noUpdateDoors then
-                local updatedRooms = {}
-                for x = roomData.LowX - 2, roomData.HighX + 2 do
-                    if StageAPI.Map2D[x] then
-                        for y = roomData.LowY - 2, roomData.HighY + 2 do
-                            local roomData = self:GetRoomData(x, y)
-                            if not updatedRooms[roomData.RoomID] then
-                                updatedRooms[roomData.RoomID] = true
-                                self:SetRoomDoors(roomData)
-                            end
-                        end
-                    end
-                end
+                self:UpdateDoorsAroundRoom(roomData)
             end
         end
 
@@ -10541,6 +10532,42 @@ do -- Custom Floor Generation
         self.Map[mapID] = roomData
 
         return mapID
+    end
+    
+    function StageAPI.LevelMap:RemoveRoom(removeRoomData, noUpdateDoors, noRemoveLevelRoom)
+        local mapID = removeRoomData.MapID
+        if not mapID and removeRoomData.RoomID then
+            for _, roomData in ipairs(self.Map) do
+                if roomData.RoomID == removeRoomData.RoomID then
+                    mapID = roomData.MapID
+                    break
+                end 
+            end
+        end
+        
+        if not mapID then
+            return
+        end
+        
+        local roomData = self.Map[mapID]
+        if not noRemoveLevelRoom then
+            StageAPI.SetLevelRoom(nil, roomData.RoomID, self.Dimension)
+        end
+        
+        self.Map[mapID] = nil
+        if roomData.LowX and roomData.LowY and roomData.HighX and roomData.HighY then
+            for x = roomData.LowX, roomData.HighX do
+                for y = roomData.LowY, roomData.HighY do
+                    if self.Map2D[x] and self.Map2D[x][y] == mapID then
+                        self.Map2D[x][y] = nil
+                    end
+                end
+            end
+            
+            if not noUpdateDoors then
+                self:UpdateDoorsAroundRoom(roomData)
+            end
+        end
     end
 
     function StageAPI.LevelMap:AddRoomToMinimap(roomData)
@@ -10619,12 +10646,12 @@ do -- Custom Floor Generation
             if self.Map2D[x] then
                 for y = roomData.LowY - 2, roomData.HighY + 2 do
                     local adjacentRoomData = self:GetRoomData(x, y)
-                    if adjacentRoomData and adjacentRoomData.RoomID ~= roomData.RoomID then
+                    if adjacentRoomData and adjacentRoomData.MapID ~= roomData.MapID then
                         local adjacent, doors = StageAPI.CheckRoomAdjacency(roomData, adjacentRoomData, true)
                         if adjacent then
                             for enterSlot, exitSlot in pairs(doors) do
                                 roomData.Doors[enterSlot] = {
-                                    ExitRoom = adjacentRoomData.RoomID,
+                                    ExitRoom = adjacentRoomData.MapID,
                                     ExitSlot = exitSlot
                                 }
                             end
