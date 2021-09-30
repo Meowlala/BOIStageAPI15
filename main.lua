@@ -9372,7 +9372,7 @@ do -- Callbacks
                 }
 
                 local levelMap = StageAPI.GetDefaultLevelMap()
-                local mapID = levelMap:AddRoom(testRoom, {RoomID = "StageAPITest"}, true)
+                local addedRoomData = levelMap:AddRoom(testRoom, {RoomID = "StageAPITest"}, true)
 
                 local doors = {}
                 for _, door in ipairs(StageAPI.Layouts[params].Doors) do
@@ -9381,7 +9381,7 @@ do -- Callbacks
                     end
                 end
 
-                StageAPI.ExtraRoomTransition(mapID, nil, nil, StageAPI.DefaultLevelMapID, doors[StageAPI.Random(1, #doors)])
+                StageAPI.ExtraRoomTransition(addedRoomData.MapID, nil, nil, StageAPI.DefaultLevelMapID, doors[StageAPI.Random(1, #doors)])
             else
                 Isaac.ConsoleOutput(params .. " is not a registered room.\n")
             end
@@ -9428,7 +9428,7 @@ do -- Callbacks
                     }
 
                     local levelMap = StageAPI.GetDefaultLevelMap()
-                    local mapID = levelMap:AddRoom(testRoom, {RoomID = "StageAPITest"}, true)
+                    local addedRoomData = levelMap:AddRoom(testRoom, {RoomID = "StageAPITest"}, true)
 
                     local doors = {}
                     for _, door in ipairs(selectedLayout.Doors) do
@@ -9437,7 +9437,7 @@ do -- Callbacks
                         end
                     end
 
-                    StageAPI.ExtraRoomTransition(mapID, nil, nil, StageAPI.DefaultLevelMapID, doors[StageAPI.Random(1, #doors)])
+                    StageAPI.ExtraRoomTransition(addedRoomData.MapID, nil, nil, StageAPI.DefaultLevelMapID, doors[StageAPI.Random(1, #doors)])
                 else
                     Isaac.ConsoleOutput("Room with ID or name " .. tostring(name) .. " does not exist.")
                 end
@@ -10531,25 +10531,23 @@ do -- Custom Floor Generation
         self:AddRoomToMinimap(roomData)
         self.Map[mapID] = roomData
 
-        return mapID
+        return roomData
     end
     
     function StageAPI.LevelMap:RemoveRoom(removeRoomData, noUpdateDoors, noRemoveLevelRoom)
         local mapID = removeRoomData.MapID
-        if not mapID and removeRoomData.RoomID then
-            for _, roomData in ipairs(self.Map) do
-                if roomData.RoomID == removeRoomData.RoomID then
-                    mapID = roomData.MapID
-                    break
-                end 
-            end
+        local roomData
+        if mapID then
+            roomData = self.Map[mapID]
+        else
+            roomData = self:GetRoomDataFromRoomID(removeRoomData.RoomID)
+            mapID = roomData.MapID
         end
         
-        if not mapID then
+        if not roomData then
             return
         end
         
-        local roomData = self.Map[mapID]
         if not noRemoveLevelRoom then
             StageAPI.SetLevelRoom(nil, roomData.RoomID, self.Dimension)
         end
@@ -10604,6 +10602,14 @@ do -- Custom Floor Generation
             end
         else
             return self.Map[x]
+        end
+    end
+    
+    function StageAPI.LevelMap:GetRoomDataFromRoomID(roomID)
+        for _, roomData in ipairs(self.Map) do
+            if roomData.RoomID == roomID then
+                return roomData
+            end 
         end
     end
 
@@ -10940,9 +10946,9 @@ do -- Custom Floor Generation
                             roomData.StageType = stage.StageType
                         end
 
-                        local mapID = levelMap:AddRoom(newRoom, roomData, true)
+                        local addedRoomData = levelMap:AddRoom(newRoom, roomData, true)
                         if isStartingRoom then
-                            levelMap.StartingRoom = mapID
+                            levelMap.StartingRoom = addedRoomData.MapID
                         end
                     end
                 end
@@ -11064,9 +11070,9 @@ do -- Custom Floor Generation
                     LevelIndex = id
                 }
 
-                local mapID = levelMap:AddRoom(newRoom, {GridIndex = roomDesc.GridIndex, AutoDoors = true}, true)
+                local addedRoomData = levelMap:AddRoom(newRoom, {GridIndex = roomDesc.GridIndex, AutoDoors = true}, true)
                 if level:GetStartingRoomIndex() == roomDesc.SafeGridIndex then
-                    levelMap.StartingRoom = mapID
+                    levelMap.StartingRoom = addedRoomData.MapID
                 end
             end
         end
