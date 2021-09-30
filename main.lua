@@ -5550,7 +5550,7 @@ do -- Custom Doors
     end
 
     StageAPI.AddCallback("StageAPI", "POST_SPAWN_CUSTOM_GRID", 0, function(customGrid, force, respawning)
-        local index = persistData.GridIndex
+        local index = customGrid.GridIndex
         local persistData = customGrid.PersistentData
 
         local doorData
@@ -8531,7 +8531,7 @@ do -- Callbacks
             local previous = StageAPI.PreviousBaseLevelLayout[i]
             local changed = false
             if previous then
-                if previous.Name ~= roomDesc.Data.Name or previous.Variant ~= roomDesc.Data.Variant or previous.AwardSeed ~= roomDesc.AwardSeed then
+                if previous.Name ~= roomDesc.Data.Name or previous.Variant ~= roomDesc.Data.Variant or previous.SpawnSeed ~= roomDesc.SpawnSeed then
                     changedRooms[#changedRooms + 1] = {
                         Previous = previous,
                         ListIndex = i,
@@ -8552,7 +8552,7 @@ do -- Callbacks
                     end
                 end
 
-                StageAPI.PreviousBaseLevelLayout[i] = {Name = roomDesc.Data.Name, Variant = roomDesc.Data.Variant, AwardSeed = roomDesc.AwardSeed}
+                StageAPI.PreviousBaseLevelLayout[i] = {Name = roomDesc.Data.Name, Variant = roomDesc.Data.Variant, SpawnSeed = roomDesc.SpawnSeed}
             end
         end
 
