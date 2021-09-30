@@ -315,8 +315,6 @@ IsDoorSlotAllowed(slot) -- needed in custom rooms
 
 SetExtraRoom(name, room)
 GetExtraRoom(name)
-InOrTransitioningToExtraRoom()
-TransitioningToOrFromExtraRoom()
 TransitionToExtraRoom(name, exitSlot)
 TransitionFromExtraRoom(toNormalRoomIndex, exitSlot)
 SpawnCustomDoor(slot, leadsToExtraRoomName, leadsToNormalRoomIndex, CustomDoorName, data(at persistData.Data), exitSlot)
@@ -538,8 +536,10 @@ do -- Core Definitions
             StageAPI.LevelRooms = {}
             StageAPI.RoomGrids = {}
             StageAPI.CustomGrids = {}
-            StageAPI.CurrentExtraRoom = nil
-            StageAPI.CurrentExtraRoomName = nil
+            StageAPI.LevelMaps = {}
+            StageAPI.CurrentLevelMapID = nil
+            StageAPI.CurrentLevelMapRoomID = nil
+            StageAPI.DefaultLevelMapID = nil
         end
     end
 
@@ -1607,6 +1607,14 @@ do -- RoomsList
         end
     end
 
+    function StageAPI.RoomsList:GetRooms(shape)
+        if shape == -1 then
+            return self.All
+        else
+            return self.ByShape[shape]
+        end
+    end
+
     function StageAPI.RoomsList:CopyRooms(roomsList)
         self:AddRooms(roomsList.All)
     end
@@ -2134,13 +2142,7 @@ do -- RoomsList
         local validRooms = {}
         local validRoomWeights = 0
 
-        local possibleRooms
-        if shape == -1 then
-            possibleRooms = roomList.All
-        else
-            possibleRooms = roomList.ByShape[shape]
-        end
-
+        local possibleRooms = roomList:GetRooms(shape)
         if not possibleRooms then
             return {}, nil, "No rooms for shape!"
         end
@@ -2154,7 +2156,7 @@ do -- RoomsList
         local seed = args.Seed or roomDesc.SpawnSeed
         local disallowIDs = args.DisallowIDs
 
-        for _, layout in ipairs(possibleRooms) do
+        for listID, layout in ipairs(possibleRooms) do
             shape = layout.Shape
 
             local isValid = true
@@ -2199,7 +2201,7 @@ do -- RoomsList
             end
 
             if isValid then
-                validRooms[#validRooms + 1] = {layout, weight}
+                validRooms[#validRooms + 1] = {{Layout = layout, ListID = listID}, weight}
                 validRoomWeights = validRoomWeights + weight
             end
         end
@@ -2230,7 +2232,8 @@ do -- RoomsList
 
         if #validRooms > 0 then
             StageAPI.RoomChooseRNG:SetSeed(seed, 0)
-            return StageAPI.WeightedRNG(validRooms, StageAPI.RoomChooseRNG, nil, totalWeight)
+            local chosen = StageAPI.WeightedRNG(validRooms, StageAPI.RoomChooseRNG, nil, totalWeight)
+            return chosen.Layout, chosen.ListID
         else
             StageAPI.LogErr("No rooms with correct shape and doors!")
         end
@@ -3606,8 +3609,9 @@ do -- RoomsList
     end
 
     function StageAPI.GetCurrentRoomID()
-        if (StageAPI.ActiveTransitionToExtraRoom or StageAPI.LoadedExtraRoom) then
-            return StageAPI.CurrentExtraRoomName
+        local levelMap = StageAPI.GetCurrentLevelMap()
+        if levelMap and StageAPI.CurrentLevelMapRoomID then
+            return levelMap:GetRoomData(StageAPI.CurrentLevelMapRoomID).RoomID
         else
             return StageAPI.GetCurrentListIndex()
         end
@@ -3615,6 +3619,13 @@ do -- RoomsList
 
     StageAPI.LevelRooms = {}
     function StageAPI.GetDimension(roomDesc)
+        if not roomDesc then
+            local levelMap = StageAPI.GetCurrentLevelMap()
+            if levelMap and StageAPI.CurrentLevelMapRoomID then
+                return levelMap.Dimension
+            end
+        end
+
         roomDesc = roomDesc or level:GetCurrentRoomDesc()
         if roomDesc.GridIndex < 0 then -- Off-grid rooms
             return -2
@@ -3750,7 +3761,7 @@ do -- RoomsList
         }
     end
 
-    local levelRoomCopyFromArgs = {"IsExtraRoom","LevelIndex","Doors","Shape","RoomType","SpawnSeed","LayoutName","RequireRoomType","IgnoreRoomRules","DecorationSeed","AwardSeed","VisitCount","IsClear","ClearCount","IsPersistentRoom","HasWaterPits","ChallengeDone","FromData","Dimension"}
+    local levelRoomCopyFromArgs = {"IsExtraRoom","LevelIndex","Doors","Shape","RoomType","SpawnSeed","LayoutName","RequireRoomType","IgnoreRoomRules","DecorationSeed","AwardSeed","VisitCount","IsClear","ClearCount","IsPersistentRoom","HasWaterPits","ChallengeDone","FromData","Dimension","RoomsListName","RoomsListID"}
 
     StageAPI.LevelRoom = StageAPI.Class("LevelRoom")
     StageAPI.NextUniqueRoomIdentifier = 0
@@ -3797,34 +3808,14 @@ do -- RoomsList
 
             self.Dimension = self.Dimension or StageAPI.GetDimension(roomDesc)
 
+            if args.RoomsList then
+                self.RoomsListName = self.RoomsListName or args.RoomsList.Name
+            end
+
             -- backwards compatibility
             self.Seed = self.SpawnSeed
 
-            local layout = args.Layout
-            if args.FromData then
-                local roomDesc = level:GetRooms():Get(args.FromData)
-                if roomDesc then
-                    layout = StageAPI.GenerateRoomLayoutFromData(roomDesc.Data)
-                end
-            elseif not layout then
-                local replaceLayoutName = StageAPI.CallCallbacks("PRE_ROOM_LAYOUT_CHOOSE", true, self)
-                if replaceLayoutName then
-                    StageAPI.LogMinor("Layout replaced")
-                    self.LayoutName = replaceLayoutName
-                end
-
-                if self.LayoutName then
-                    layout = StageAPI.Layouts[self.LayoutName]
-                end
-
-                if not layout then
-                    local roomsList = StageAPI.CallCallbacks("PRE_ROOMS_LIST_USE", true, self) or args.RoomsList
-                    self.RoomsListName = roomsList.Name
-                    layout = StageAPI.ChooseRoomLayout(roomsList, self.SpawnSeed, self.Shape, self.RoomType, self.RequireRoomType, self.IgnoreDoors, self.Doors)
-                end
-            end
-
-            self.Layout = layout
+            self:GetLayout()
             self:PostGetLayout(self.SpawnSeed)
         end
 
@@ -3849,6 +3840,43 @@ do -- RoomsList
         newLevelRoom.Data = StageAPI.DeepCopy(self.Data)
 
         return newLevelRoom
+    end
+
+    function StageAPI.LevelRoom:GetLayout()
+        if self.FromData and not self.Layout then
+            local roomDesc = level:GetRooms():Get(self.FromData)
+            if roomDesc then
+                self.Layout = StageAPI.GenerateRoomLayoutFromData(roomDesc.Data)
+            end
+        end
+
+        if self.LayoutName and not self.Layout then
+            self.Layout = StageAPI.Layouts[self.LayoutName]
+        end
+
+        if self.RoomsListName and self.RoomsListID and not self.Layout then
+            local roomsList = StageAPI.RoomsLists[self.RoomsListName]
+            if roomsList then
+                local layouts = roomsList:GetRooms(self.Shape)
+                if layouts and layouts[self.RoomsListID] then
+                    self.Layout = layouts[self.RoomsListID]
+                end
+            end
+        end
+
+        if self.RoomsListName and not self.Layout then
+            local roomsList = StageAPI.CallCallbacks("PRE_ROOMS_LIST_USE", true, self) or StageAPI.RoomsLists[self.RoomsListName]
+            if roomsList then
+                self.RoomsListName = roomsList.Name
+
+                local retLayout = StageAPI.CallCallbacks("PRE_ROOM_LAYOUT_CHOOSE", true, self, roomsList)
+                if retLayout then
+                    self.Layout = retLayout
+                else
+                    self.Layout = StageAPI.ChooseRoomLayout(roomsList, self.SpawnSeed, self.Shape, self.RoomType, self.RequireRoomType, false, self.Doors)
+                end
+            end
+        end
     end
 
     function StageAPI.LevelRoom:PostGetLayout(seed)
@@ -4062,10 +4090,10 @@ do -- RoomsList
     end
 
     local saveDataCopyDirectly = {
-        "IsClear","WasClearAtStart","RoomsListName","LayoutName","SpawnSeed","AwardSeed","DecorationSeed",
+        "IsClear","WasClearAtStart","RoomsListName","RoomsListID","LayoutName","SpawnSeed","AwardSeed","DecorationSeed",
         "FirstLoad","Shape","RoomType","TypeOverride","PersistentData","IsExtraRoom","LastPersistentIndex",
         "RequireRoomType", "IgnoreRoomRules", "VisitCount", "ClearCount", "LevelIndex","HasWaterPits","ChallengeDone",
-        "SurpriseMiniboss", "FromData"
+        "SurpriseMiniboss", "FromData", "Dimension"
     }
 
     function StageAPI.LevelRoom:GetSaveData(isExtraRoom)
@@ -4157,31 +4185,7 @@ do -- RoomsList
             end
         end
 
-        local layout
-        if self.FromData and not layout then
-            local roomDesc = level:GetRooms():Get(self.FromData)
-            if roomDesc then
-                layout = StageAPI.GenerateRoomLayoutFromData(roomDesc.Data)
-            end
-        end
-
-        if self.LayoutName and not layout then
-            layout = StageAPI.Layouts[layoutName]
-        end
-
-        if self.RoomsListName and not layout then
-            local roomsList = StageAPI.RoomsLists[self.RoomsListName]
-            if roomsList then
-                local retLayout = StageAPI.CallCallbacks("PRE_ROOM_LAYOUT_CHOOSE", true, self, roomsList)
-                if retLayout then
-                    layout = retLayout
-                else
-                    layout = StageAPI.ChooseRoomLayout(roomsList, self.SpawnSeed, self.Shape, self.RoomType, self.RequireRoomType, false, self.Doors)
-                end
-            end
-        end
-
-        self.Layout = layout
+        self:GetLayout()
         self:PostGetLayout(self.SpawnSeed)
 
         self.LastPersistentIndex = self.LastPersistentIndex or self.LastPersistentIndex
@@ -4368,19 +4372,13 @@ do -- Custom Grid Entities
     end
 
     function StageAPI.CustomGrid:Spawn(grindex, force, respawning, persistentData)
-        local grid = StageAPI.CustomGridEntity(self, grindex, force, respawning)
-        if persistentData then
-            for k, v in pairs(persistentData) do
-                grid.PersistentData[k] = v
-            end
-        end
-
+        local grid = StageAPI.CustomGridEntity(self, grindex, force, respawning, persistentData)
         return grid
     end
 
     StageAPI.CustomGridEntities = {}
     StageAPI.CustomGridEntity = StageAPI.Class("CustomGridEntity")
-    function StageAPI.CustomGridEntity:Init(gridConfig, index, force, respawning)
+    function StageAPI.CustomGridEntity:Init(gridConfig, index, force, respawning, setPersistData)
         local roomGrids = StageAPI.GetRoomCustomGrids()
 
         if type(gridConfig) == "number" then
@@ -4403,6 +4401,12 @@ do -- Custom Grid Entities
 
         self.GridConfig = gridConfig
         self.PersistentData = gridData.PersistData
+        if setPersistData then
+            for k, v in pairs(setPersistData) do
+                self.PersistentData[k] = v
+            end
+        end
+        
         self.GridIndex = index
         self.Data = {}
 
@@ -4810,56 +4814,6 @@ end
 
 StageAPI.LogMinor("Loading Extra Room Handler")
 do -- Extra Rooms
-    StageAPI.InExtraRoom = false
-    StageAPI.LoadedExtraRoom = false
-    StageAPI.CurrentExtraRoom = nil
-    StageAPI.CurrentExtraRoomName = nil
-    function StageAPI.SetExtraRoom(name, room)
-        StageAPI.SetLevelRoom(room, name, -2)
-    end
-
-    function StageAPI.GetExtraRoom(name)
-        return StageAPI.GetLevelRoom(name, -2)
-    end
-
-    StageAPI.ActiveTransitionToExtraRoom = nil
-    StageAPI.ActiveTransitionFromExtraRoom = nil
-    function StageAPI.InOrTransitioningToExtraRoom()
-        return StageAPI.ActiveTransitionToExtraRoom or StageAPI.InExtraRoom
-    end
-
-    function StageAPI.TransitioningToOrFromExtraRoom()
-        return StageAPI.ActiveTransitionToExtraRoom or StageAPI.ActiveTransitionFromExtraRoom
-    end
-
-    function StageAPI.TransitioningToExtraRoom()
-        return StageAPI.ActiveTransitionToExtraRoom
-    end
-
-    function StageAPI.TransitioningFromExtraRoom()
-        return StageAPI.ActiveTransitionFromExtraRoom
-    end
-
-    StageAPI.RoomTransitionOverlay = Sprite()
-    StageAPI.RoomTransitionOverlay:Load("stageapi/overlay_black.anm2", false)
-    StageAPI.RoomTransitionOverlay:ReplaceSpritesheet(0, "stageapi/overlay_black.png")
-    StageAPI.RoomTransitionOverlay:LoadGraphics()
-    StageAPI.RoomTransitionOverlay:Play("Idle", true)
-    function StageAPI.RenderBlackScreen(alpha)
-        alpha = alpha or 1
-        StageAPI.RoomTransitionOverlay.Scale = StageAPI.GetScreenScale(true) * 8
-        StageAPI.RoomTransitionOverlay.Color = Color(1, 1, 1, alpha, 0, 0, 0)
-        StageAPI.RoomTransitionOverlay:Render(StageAPI.GetScreenCenterPosition(), zeroVector, zeroVector)
-    end
-
-    function StageAPI.TransitionToExtraRoom(name, exitSlot, skipTransition, extraRoomBaseType)
-        StageAPI.ExtraRoomTransition(name, Direction.NO_DIRECTION, RoomTransitionAnim.FADE, false, nil, exitSlot, nil, extraRoomBaseType)
-    end
-
-    function StageAPI.TransitionFromExtraRoom(toIndex, exitSlot)
-        StageAPI.ExtraRoomTransition(toIndex, Direction.NO_DIRECTION, RoomTransitionAnim.FADE, false, nil, exitSlot)
-    end
-
     if not RoomType.ROOM_SECRET_EXIT then
         RoomType.ROOM_SECRET_EXIT = 27
     end
@@ -5283,27 +5237,27 @@ do -- Extra Rooms
         return default, alternate, lDefault, lAlternate
     end
 
-    function StageAPI.ExtraRoomTransition(name, direction, transitionType, isCustomMap, leaveDoor, enterDoor, setPlayerPosition, extraRoomBaseType)
+    function StageAPI.ExtraRoomTransition(levelMapRoomID, direction, transitionType, levelMapID, leaveDoor, enterDoor, setPlayerPosition, extraRoomBaseType)
         leaveDoor = leaveDoor or -1
         enterDoor = enterDoor or -1
         transitionType = transitionType or RoomTransitionAnim.WALK
         direction = direction or Direction.NO_DIRECTION
         StageAPI.ForcePlayerNewRoomPosition = setPlayerPosition
 
-        if StageAPI.CurrentExtraRoom then
-            StageAPI.ActiveTransitionFromExtraRoom = true
-            StageAPI.CurrentExtraRoom:SaveGridInformation()
-            StageAPI.CurrentExtraRoom:SavePersistentEntities()
+        local currentRoom = StageAPI.GetCurrentRoom()
+        if currentRoom and currentRoom.IsExtraRoom then
+            currentRoom:Save()
         end
 
         local transitionFrom = level:GetCurrentRoomIndex()
         local transitionTo
-        local extraRoomName
-        if not isCustomMap then
-            if type(name) ~= "string" then
-                transitionTo = name
+        if levelMapID == false then
+            transitionTo = levelMapRoomID
+        else
+            if type(levelMapID) == "table" then
+                levelMapID = levelMapID.Dimension
             else
-                extraRoomName = name
+                levelMapID = levelMapID or StageAPI.DefaultLevelMapID
             end
         end
 
@@ -5321,34 +5275,21 @@ do -- Extra Rooms
 
         local targetLevelRoom
         local setDataForShape, setVisitCount, setClear, setClearCount, setDecoSeed, setSpawnSeed, setAwardSeed, setWater, setChallengeDone
-        if isCustomMap then
-            local targetRoomData = StageAPI.CurrentLevelMap[name]
-            extraRoomName = targetRoomData.ExtraRoomName
+        if levelMapID then
+            StageAPI.TransitioningToExtraRoom = true
+            StageAPI.CurrentLevelMapID = levelMapID
+            StageAPI.CurrentLevelMapRoomID = levelMapRoomID
+
+            local levelMap = StageAPI.GetCurrentLevelMap()
+            local roomData = levelMap:GetRoomData(levelMapRoomID)
+            targetLevelRoom = levelMap:GetRoom(levelMapRoomID)
 
             local curStage, currentStageType = level:GetStage(), level:GetStageType()
-            local stage, stageType = targetRoomData.Stage or curStage, targetRoomData.StageType or currentStageType
+            local stage, stageType = roomData.Stage or curStage, roomData.StageType or currentStageType
             if stage ~= curStage or stageType ~= currentStageType then
                 level:SetStage(stage, stageType)
             end
-
-            StageAPI.CurrentCustomMapRoomID = name
         end
-
-        if extraRoomName then
-            targetLevelRoom = StageAPI.GetExtraRoom(extraRoomName)
-            StageAPI.InExtraRoom = true
-            StageAPI.CurrentExtraRoom = targetLevelRoom
-            StageAPI.CurrentExtraRoomName = extraRoomName
-            StageAPI.ActiveTransitionToExtraRoom = true
-            StageAPI.LoadedExtraRoom = false
-        else
-            StageAPI.InExtraRoom = false
-            StageAPI.CurrentExtraRoom = nil
-            StageAPI.CurrentExtraRoomName = nil
-            StageAPI.ActiveTransitionToExtraRoom = false
-        end
-
-        StageAPI.LoadedExtraRoom = false
 
         if targetLevelRoom then
             extraRoomBaseType = extraRoomBaseType or targetLevelRoom.RoomType
@@ -5437,8 +5378,6 @@ do -- Extra Rooms
             targetRoomDesc.AwardSeed = setAwardSeed
         end
 
-        StageAPI.InCustomMap = isCustomMap
-
         level.LeaveDoor = leaveDoor
         level.EnterDoor = enterDoor
 
@@ -5459,10 +5398,12 @@ do -- Extra Rooms
     mod:AddCallback(ModCallbacks.MC_POST_RENDER, function()
         if not game:IsPaused() then
             StageAPI.StoredExtraRoomThisPause = false
-        elseif StageAPI.LoadedExtraRoom and not StageAPI.StoredExtraRoomThisPause then
+        elseif StageAPI.InExtraRoom() and not StageAPI.StoredExtraRoomThisPause and not StageAPI.TransitioningToExtraRoom then
             StageAPI.StoredExtraRoomThisPause = true
-            StageAPI.CurrentExtraRoom:SaveGridInformation()
-            StageAPI.CurrentExtraRoom:SavePersistentEntities()
+            local currentRoom = StageAPI.GetCurrentRoom()
+            if currentRoom then
+                currentRoom:Save()
+            end
         end
 
         if not StageAPI.IsHUDAnimationPlaying() then
@@ -5606,19 +5547,21 @@ do -- Custom Doors
         return renderOverlay, not not anim, not not overlayAnim
     end
 
-    function StageAPI.SpawnCustomDoor(slot, leadsTo, isCustomMap, doorDataName, data, exitSlot, doorSprite) -- isCustomMap used to be a leadsToNormal index, with leadsTo being leadsToExtra, so to ensure compatibility there is some funkiness
-        if type(isCustomMap) == "number" then
-            leadsTo = isCustomMap
-            isCustomMap = nil
+    function StageAPI.SpawnCustomDoor(slot, leadsTo, levelMapID, doorDataName, data, exitSlot, doorSprite)
+        if levelMapID ~= false then
+            if type(levelMapID) == "table" then
+                levelMapID = levelMapID.Dimension
+            else
+                levelMapID = levelMapID or StageAPI.DefaultLevelMapID
+            end
         end
 
-        -- String IDs are Extra Rooms, number IDs are level / custom map rooms
         local index = room:GetGridIndex(room:GetDoorSlotPosition(slot))
         StageAPI.CustomDoorGrid:Spawn(index, nil, false, {
             Slot = slot,
             ExitSlot = exitSlot or (slot + 2) % 4,
             LeadsTo = leadsTo,
-            IsCustomMap = isCustomMap,
+            LevelMapID = levelMapID,
             DoorDataName = doorDataName,
             Data = data,
             DoorSprite = doorSprite
@@ -5765,10 +5708,6 @@ do -- Custom Doors
     mod:AddCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, function(_, door)
         local data, sprite = door:GetData(), door:GetSprite()
         local doorData = data.DoorData
-        if StageAPI.TransitioningToOrFromExtraRoom() then
-            return
-        end
-
         if not doorData then
             framesWithoutDoorData = framesWithoutDoorData + 1
             hadFrameWithoutDoorData = true
@@ -6042,9 +5981,9 @@ do -- Custom Doors
 
                 local leadsTo = data.DoorGridData.LeadsTo
                 if leadsTo then
-                    if data.DoorGridData.IsCustomMap then
+                    if data.DoorGridData.LevelMapID then
                         transitionStarted = true
-                        StageAPI.ExtraRoomTransition(leadsTo, StageAPI.DoorSlotToDirection[data.DoorGridData.Slot], RoomTransitionAnim.WALK, true, data.DoorGridData.Slot, data.DoorGridData.ExitSlot)
+                        StageAPI.ExtraRoomTransition(leadsTo, StageAPI.DoorSlotToDirection[data.DoorGridData.Slot], RoomTransitionAnim.WALK, data.DoorGridData.LevelMapID, data.DoorGridData.Slot, data.DoorGridData.ExitSlot)
                     else
                         transitionStarted = true
                         local leaveDoor = data.DoorGridData.Slot
@@ -7216,7 +7155,7 @@ do -- Custom Stage
 
             if usingRoomsList then
                 local shape = room:GetRoomShape()
-                if #usingRoomsList.ByShape[shape] > 0 then
+                if usingRoomsList:GetRooms(shape) then
                     local newRoom = StageAPI.LevelRoom(StageAPI.Merged({
                         RoomsList = usingRoomsList,
                         RoomDescriptor = roomDescriptor,
@@ -8008,6 +7947,18 @@ do -- Transition
 
     StageAPI.Seeds = game:GetSeeds()
 
+    StageAPI.BlackScreenOverlay = Sprite()
+    StageAPI.BlackScreenOverlay:Load("stageapi/overlay_black.anm2", false)
+    StageAPI.BlackScreenOverlay:ReplaceSpritesheet(0, "stageapi/overlay_black.png")
+    StageAPI.BlackScreenOverlay:LoadGraphics()
+    StageAPI.BlackScreenOverlay:Play("Idle", true)
+    function StageAPI.RenderBlackScreen(alpha)
+        alpha = alpha or 1
+        StageAPI.BlackScreenOverlay.Scale = StageAPI.GetScreenScale(true) * 8
+        StageAPI.BlackScreenOverlay.Color = Color(1, 1, 1, alpha, 0, 0, 0)
+        StageAPI.BlackScreenOverlay:Render(StageAPI.GetScreenCenterPosition(), zeroVector, zeroVector)
+    end
+
     mod:AddCallback(ModCallbacks.MC_POST_RENDER, function()
         if StageAPI.TransitionAnimation:IsPlaying("Scene") or StageAPI.TransitionAnimation:IsPlaying("SceneNoShake") then
             if StageAPI.IsOddRenderFrame then
@@ -8688,7 +8639,7 @@ do -- Callbacks
             currentRoom = StageAPI.GetCurrentRoom()
         end
 
-        if currentRoom or (StageAPI.ActiveTransitionToExtraRoom or StageAPI.LoadedExtraRoom) or (not inStartingRoom and StageAPI.InNewStage() and ((StageAPI.CurrentStage.Rooms and StageAPI.CurrentStage.Rooms[room:GetType()]) or (StageAPI.CurrentStage.Bosses and room:GetType() == RoomType.ROOM_BOSS))) then
+        if currentRoom or (not inStartingRoom and StageAPI.InNewStage() and ((StageAPI.CurrentStage.Rooms and StageAPI.CurrentStage.Rooms[room:GetType()]) or (StageAPI.CurrentStage.Bosses and room:GetType() == RoomType.ROOM_BOSS))) then
             return true
         end
     end
@@ -9202,6 +9153,19 @@ do -- Callbacks
                         end
                     end
                 end
+
+                for mapID, levelMap in pairs(StageAPI.LevelMaps) do
+                    if not levelMap.Persistent then
+                        local rooms = levelMap:GetRooms()
+                        if #rooms == 0 then
+                            levelMap:Destroy()
+                        else
+                            for _, roomData in ipairs(levelMap.Map) do
+                                levelMap:AddRoomToMinimap(roomData)
+                            end
+                        end
+                    end
+                end
             end
 
             StageAPI.PreviousBaseLevelLayout = {}
@@ -9230,14 +9194,21 @@ do -- Callbacks
                 end
             end
         end
-
+        
         StageAPI.DetectBaseLayoutChanges(false)
 
-        if not StageAPI.ActiveTransitionToExtraRoom then
-            StageAPI.CurrentExtraRoom = nil
-            StageAPI.CurrentExtraRoomName = nil
-            StageAPI.InExtraRoom = false
-            StageAPI.LoadedExtraRoom = false
+        if not StageAPI.DefaultLevelMapID then
+            local defaultLevelMap = StageAPI.LevelMap{OverlapDimension = 0}
+            StageAPI.DefaultLevelMapID = defaultLevelMap.Dimension
+        end
+
+        if not StageAPI.CurrentLevelMapID then
+            StageAPI.CurrentLevelMapID = StageAPI.DefaultLevelMapID
+        end
+
+        if not StageAPI.TransitioningToExtraRoom then
+            StageAPI.CurrentLevelMapID = StageAPI.DefaultLevelMapID
+            StageAPI.CurrentLevelMapRoomID = nil
         end
 
         local currentListIndex = StageAPI.GetCurrentRoomID()
@@ -9250,21 +9221,16 @@ do -- Callbacks
             StageAPI.SetCurrentRoom(currentRoom)
         end
 
-        if StageAPI.CurrentExtraRoom then
+        if StageAPI.InExtraRoom() then
             for i = 0, 7 do
                 if room:GetDoor(i) then
                     room:RemoveDoor(i)
                 end
             end
 
-            justGenerated = StageAPI.CurrentExtraRoom.FirstLoad
-            StageAPI.CurrentExtraRoom:Load(true)
-            StageAPI.LoadedExtraRoom = true
-        else
-            StageAPI.LoadedExtraRoom = false
-        end
-
-        if not StageAPI.InExtraRoom and StageAPI.InNewStage() then
+            justGenerated = currentRoom.FirstLoad
+            currentRoom:Load(true)
+        elseif StageAPI.InNewStage() then
             if not currentRoom and not inStartingRoom and StageAPI.CurrentStage.GenerateRoom then
                 local newRoom, newBoss = StageAPI.CurrentStage:GenerateRoom(level:GetCurrentRoomDesc(), false, false)
                 if newRoom then
@@ -9291,7 +9257,7 @@ do -- Callbacks
             boss = StageAPI.GetBossData(currentRoom.PersistentData.BossID)
         end
 
-        if currentRoom and not StageAPI.InExtraRoom and not justGenerated then
+        if currentRoom and not StageAPI.InExtraRoom() and not justGenerated then
             currentRoom:Load()
         end
 
@@ -9391,10 +9357,8 @@ do -- Callbacks
         StageAPI.CallCallbacks("POST_CHANGE_ROOM_GFX", false, currentRoom, usingGfx, false)
 
         StageAPI.LastBackdropType = room:GetBackdropType()
-
-        StageAPI.ActiveTransitionFromExtraRoom = false
-        StageAPI.ActiveTransitionToExtraRoom = false
         StageAPI.RoomRendered = false
+        StageAPI.TransitioningToExtraRoom = false
     end)
 
     function StageAPI.GetGridPosition(index, width)
@@ -9417,12 +9381,6 @@ do -- Callbacks
             StageAPI.LoadSaveString(StageAPI.GetSaveString())
         elseif cmd == "printsave" then
             Isaac.DebugString(StageAPI.GetSaveString())
-        elseif cmd == "extraroom" then
-            if StageAPI.GetExtraRoom(params) then
-                StageAPI.TransitionToExtraRoom(params)
-            end
-        elseif cmd == "extraroomexit" then
-            StageAPI.TransitionFromExtraRoom(StageAPI.LastNonExtraRoom)
         elseif cmd == "regroom" then -- Load a registered room
             if StageAPI.Layouts[params] then
                 local testRoom = StageAPI.LevelRoom{
@@ -9431,7 +9389,9 @@ do -- Callbacks
                     RoomType = StageAPI.Layouts[params].Type,
                 }
 
-                StageAPI.SetExtraRoom("StageAPITest", testRoom)
+                local levelMap = StageAPI.GetDefaultLevelMap()
+                local mapID = levelMap:AddRoom(testRoom, {RoomID = "StageAPITest"}, true)
+
                 local doors = {}
                 for _, door in ipairs(StageAPI.Layouts[params].Doors) do
                     if door.Exists then
@@ -9439,7 +9399,7 @@ do -- Callbacks
                     end
                 end
 
-                StageAPI.TransitionToExtraRoom("StageAPITest", doors[StageAPI.Random(1, #doors)])
+                StageAPI.ExtraRoomTransition(mapID, nil, nil, StageAPI.DefaultLevelMapID, doors[StageAPI.Random(1, #doors)])
             else
                 Isaac.ConsoleOutput(params .. " is not a registered room.\n")
             end
@@ -9484,7 +9444,10 @@ do -- Callbacks
                         Shape = selectedLayout.Shape,
                         RoomType = selectedLayout.Type
                     }
-                    StageAPI.SetExtraRoom("StageAPITest", testRoom)
+
+                    local levelMap = StageAPI.GetDefaultLevelMap()
+                    local mapID = levelMap:AddRoom(testRoom, {RoomID = "StageAPITest"}, true)
+
                     local doors = {}
                     for _, door in ipairs(selectedLayout.Doors) do
                         if door.Exists then
@@ -9492,7 +9455,7 @@ do -- Callbacks
                         end
                     end
 
-                    StageAPI.TransitionToExtraRoom("StageAPITest", doors[StageAPI.Random(1, #doors)])
+                    StageAPI.ExtraRoomTransition(mapID, nil, nil, StageAPI.DefaultLevelMapID, doors[StageAPI.Random(1, #doors)])
                 else
                     Isaac.ConsoleOutput("Room with ID or name " .. tostring(name) .. " does not exist.")
                 end
@@ -9724,10 +9687,17 @@ do
             end
         end
 
+        local levelMaps = {}
+        for dimension, levelMap in pairs(StageAPI.LevelMaps) do
+            levelMaps[#levelMaps + 1] = levelMap:GetSaveData()
+        end
+
         return StageAPI.json.encode({
             LevelInfo = levelSaveData,
+            LevelMaps = levelMaps,
             Stage = stage,
-            ExtraRoomName = StageAPI.CurrentExtraRoomName,
+            CurrentLevelMapID = StageAPI.CurrentLevelMapID,
+            CurrentLevelMapRoomID = StageAPI.CurrentLevelMapRoomID,
             EncounteredBosses = encounteredBosses
         })
     end
@@ -9741,8 +9711,6 @@ do
         local decoded = StageAPI.json.decode(str)
 
         StageAPI.CurrentStage = nil
-        StageAPI.CurrentExtraRoom = nil
-        StageAPI.CurrentExtraRoomName = decoded.ExtraRoomName
         if decoded.Stage then
             StageAPI.CurrentStage = StageAPI.CustomStages[decoded.Stage]
         else
@@ -9785,11 +9753,13 @@ do
             end
         end
 
-        if StageAPI.CurrentExtraRoomName then
-            StageAPI.CurrentExtraRoom = retLevelRooms[-2][StageAPI.CurrentExtraRoomName]
-            StageAPI.InExtraRoom = true
-            StageAPI.LoadingExtraRoomFromSave = true
+        StageAPI.LevelMaps = {}
+        for _, levelMapSaveData in ipairs(decoded.LevelMaps) do
+            StageAPI.LevelMap({SaveData = levelMapSaveData})
         end
+
+        StageAPI.CurrentLevelMapID = decoded.CurrentLevelMapID
+        StageAPI.CurrentLevelMapRoomID = decoded.CurrentLevelMapRoomID
 
         StageAPI.RoomGrids = retRoomGrids
         StageAPI.CustomGrids = retCustomGrids
@@ -10471,90 +10441,272 @@ do -- Challenge Rooms
 end
 
 do -- Custom Floor Generation
-    StageAPI.CurrentLevelMap = {}
-    StageAPI.CurrentLevelMap2D = {}
+    StageAPI.LevelMaps = {}
+    StageAPI.DefaultLevelMapID = nil
+    StageAPI.CurrentLevelMapID = nil
+    StageAPI.CurrentLevelMapRoomID = nil
 
+    StageAPI.LevelMapStartingDimension = -2
 
-    local heart = {
-        "  XX   XX  ",
-        " XXXX OXXX ",
-        "  XXXXXXX  ",
-        "    XXX    ",
-        "     X     "
-    }
+    StageAPI.LevelMap = StageAPI.Class("LevelMap")
 
-    function StageAPI.CreateMapForShapeStringTable(tbl)
-        local outRooms = {}
-        local map = {}
-        local lowX, highX, lowY, highY
-        for y, row in ipairs(tbl) do
-            for x = 1, string.len(row) do
-                local at = string.sub(row, x, x)
-                if at == "X" or at == "O" then
-                    if not map[x] then
-                        map[x] = {}
-                    end
+    local levelMapDirectCopyFromArgs = {"Dimension", "StartingRoom", "Persistent", "OverlapDimension"}
+    function StageAPI.LevelMap:Init(args)
+        args = args or {}
 
-                    if at == "O" then
-                        map[x][y] = -1
-                        outRooms[#outRooms + 1] = {X = x, Y = y, Shape = RoomShape.ROOMSHAPE_1x1, StartingRoom = true}
-                    else
-                        map[x][y] = 1
-                    end
+        self.Map = {}
+        self.Map2D = {}
 
-                    if not lowX or x < lowX then lowX = x end
-                    if not highX or x > highX then highX = x end
-                    if not lowY or y < lowY then lowY = y end
-                    if not highY or y > highY then highY = y end
-                end
+        for _, arg in ipairs(levelMapDirectCopyFromArgs) do
+            if args[arg] then
+                self[arg] = args[arg]
             end
         end
 
-
-        local filled
-        while not filled do
-            local positions = {}
-            for x = lowX, highX do
-                for y = lowY, highY do
-                    if map[x] and map[x][y] == 1 then
-                        positions[#positions + 1] = {x, y}
-                    end
+        if args.SaveData then
+            self:LoadSaveData(args.SaveData)
+        elseif not self.Dimension then
+            local dimension = StageAPI.LevelMapStartingDimension
+            while not self.Dimension do
+                if not StageAPI.LevelMaps[dimension] then
+                    self.Dimension = dimension
+                    break
                 end
+
+                dimension = dimension - 1
+            end
+        end
+
+        StageAPI.LevelMaps[self.Dimension] = self
+    end
+
+    function StageAPI.LevelMap:AddRoom(levelRoom, roomData, noUpdateDoors)
+        roomData = roomData or {}
+        if roomData.GridIndex then
+            roomData.X, roomData.Y = StageAPI.GridToVector(roomData.GridIndex, 13)
+        end
+
+        local mapID = #self.Map + 1
+        roomData.RoomID = roomData.RoomID or mapID
+
+        if levelRoom then
+            StageAPI.SetLevelRoom(levelRoom, roomData.RoomID, self.Dimension)
+        else
+            levelRoom = StageAPI.GetLevelRoom(roomData.RoomID, self.Dimension)
+        end
+
+        roomData.Shape = levelRoom.Shape
+
+        if roomData.X and roomData.Y then
+            roomData.MapSegments = StageAPI.GetRoomMapSegments(roomData.X, roomData.Y, roomData.Shape)
+
+            for _, seg in ipairs(roomData.MapSegments) do
+                if not self.Map2D[seg.X] then
+                    self.Map2D[seg.X] = {}
+                end
+
+                if self.Map2D[seg.X][seg.Y] then
+                    StageAPI.LogErr("Overriding a room! Something went wrong at " .. tostring(seg.X) .. "x" .. tostring(seg.Y) ..  "!")
+                end
+
+                self.Map2D[seg.X][seg.Y] = mapID
+
+                if not roomData.LowX or seg.X < roomData.LowX then roomData.LowX = seg.X end
+                if not roomData.HighX or seg.X > roomData.HighX then roomData.HighX = seg.X end
+                if not roomData.LowY or seg.Y < roomData.LowY then roomData.LowY = seg.Y end
+                if not roomData.HighY or seg.Y > roomData.HighY then roomData.HighY = seg.Y end
+                if not self.LowX or seg.X < self.LowX then self.LowX = seg.X end
+                if not self.HighX or seg.X > self.HighX then self.HighX = seg.X end
+                if not self.LowY or seg.Y < self.LowY then self.LowY = seg.Y end
+                if not self.HighY or seg.Y > self.HighY then self.HighY = seg.Y end
             end
 
-            if #positions == 0 then
-                filled = true
-                break
-            end
-
-            local choose = positions[math.random(1, #positions)]
-            local validShapes = {}
-
-            for name, shape in pairs(RoomShape) do
-                if shape ~= RoomShape.NUM_ROOMSHAPES and shape ~= RoomShape.ROOMSHAPE_IH and shape ~= RoomShape.ROOMSHAPE_IIH and shape ~= RoomShape.ROOMSHAPE_IV and shape ~= RoomShape.ROOMSHAPE_IIV then
-                    local segments = StageAPI.GetRoomMapSegments(choose[1], choose[2], shape)
-                    local fail
-                    for _, seg in ipairs(segments) do
-                        if not map[seg.X] or map[seg.X][seg.Y] ~= 1 then
-                            fail = true
-                            break
+            if not noUpdateDoors then
+                local updatedRooms = {}
+                for x = roomData.LowX - 2, roomData.HighX + 2 do
+                    if StageAPI.Map2D[x] then
+                        for y = roomData.LowY - 2, roomData.HighY + 2 do
+                            local roomData = self:GetRoomData(x, y)
+                            if not updatedRooms[roomData.RoomID] then
+                                updatedRooms[roomData.RoomID] = true
+                                self:SetRoomDoors(roomData)
+                            end
                         end
                     end
-
-                    if not fail then
-                        validShapes[#validShapes + 1] = {shape, segments}
-                    end
                 end
-            end
-
-            local chooseShape = validShapes[math.random(1,#validShapes)]
-            outRooms[#outRooms + 1] = {X = choose[1], Y = choose[2], Shape = chooseShape[1]}
-            for _, seg in ipairs(chooseShape[2]) do
-                map[seg.X][seg.Y] = -1
             end
         end
 
-        StageAPI.UpdateLevelMap(outRooms)
+        self:AddRoomToMinimap(roomData)
+        self.Map[mapID] = roomData
+
+        return mapID
+    end
+
+    function StageAPI.LevelMap:AddRoomToMinimap(roomData)
+        if MinimapAPI and roomData.X and roomData.Y then
+            local levelRoom = self:GetRoom(roomData)
+            if levelRoom then
+                local dim = self.OverlapDimension or self.Dimension
+                local t = {
+                    Shape = levelRoom.Shape,
+                    PermanentIcons = {MinimapAPI:GetRoomTypeIconID(levelRoom.RoomType)},
+                    LockedIcons = {MinimapAPI:GetUnknownRoomTypeIconID(levelRoom.RoomType)},
+                    ItemIcons = {},
+                    VisitedIcons = {},
+                    Position = Vector(roomData.X, roomData.Y),
+                    AdjacentDisplayFlags = MinimapAPI.RoomTypeDisplayFlagsAdjacent[levelRoom.RoomType] or 5,
+                    Type = levelRoom.RoomType,
+                    Dimension = dim
+                }
+                if t.Type == RoomType.ROOM_SECRET or t.Type == RoomType.ROOM_SUPERSECRET then
+                    t.Hidden = 1
+                elseif t.Type == RoomType.ROOM_ULTRASECRET then
+                    t.Hidden = 2
+                end
+
+                MinimapAPI:AddRoom(t)
+            end
+        end
+    end
+
+    function StageAPI.LevelMap:GetRoomData(x, y)
+        if y then
+            if self.Map2D[x] and self.Map2D[x][y] then
+                return self.Map[self.Map2D[x][y]]
+            end
+        else
+            return self.Map[x]
+        end
+    end
+
+    function StageAPI.LevelMap:GetRoom(x, y)
+        if type(x) == "table" then
+            return StageAPI.GetLevelRoom(x.RoomID, self.Dimension)
+        else
+            local roomData = self:GetRoomData(x, y)
+            if roomData then
+                return StageAPI.GetLevelRoom(roomData.RoomID, self.Dimension)
+            end
+        end
+    end
+
+    function StageAPI.LevelMap:GetRooms()
+        local rooms = {}
+        for _, roomData in ipairs(self.Map) do
+            rooms[#rooms + 1] = StageAPI.GetLevelRoom(roomData.RoomID, self.Dimension)
+        end
+
+        return rooms
+    end
+
+    function StageAPI.LevelMap:GetCurrentRoomData()
+        if self:IsCurrent() and StageAPI.CurrentLevelMapRoomID then
+            return self.Map[StageAPI.CurrentLevelMapRoomID]
+        end
+    end
+
+    function StageAPI.LevelMap:SetRoomDoors(roomData)
+        if not roomData.X or not roomData.Y then
+            return
+        end
+
+        if not roomData.Doors then
+            roomData.Doors = {}
+        end
+
+        for x = roomData.LowX - 2, roomData.HighX + 2 do -- no need to consider rooms more than two segments away, since 2x2 is the largest shape.
+            if self.Map2D[x] then
+                for y = roomData.LowY - 2, roomData.HighY + 2 do
+                    local adjacentRoomData = self:GetRoomData(x, y)
+                    if adjacentRoomData and adjacentRoomData.RoomID ~= roomData.RoomID then
+                        local adjacent, doors = StageAPI.CheckRoomAdjacency(roomData, adjacentRoomData, true)
+                        if adjacent then
+                            for enterSlot, exitSlot in pairs(doors) do
+                                roomData.Doors[enterSlot] = {
+                                    ExitRoom = adjacentRoomData.RoomID,
+                                    ExitSlot = exitSlot
+                                }
+                            end
+                        end
+                    end
+                end
+            end
+        end
+
+        local levelRoom = self:GetRoom(roomData)
+        levelRoom.Doors = {}
+        for slot, _ in pairs(roomData.Doors) do
+            levelRoom.Doors[slot] = true
+        end
+    end
+
+    function StageAPI.LevelMap:SetAllRoomDoors()
+        for _, roomData in ipairs(self.Map) do
+            self:SetRoomDoors(roomData)
+        end
+    end
+
+    function StageAPI.LevelMap:GetSaveData()
+        local saveMap = {}
+        for _, roomData in ipairs(self.Map) do
+            saveMap[#saveMap + 1] = {
+                RoomID = roomData.RoomID,
+                X = roomData.X,
+                Y = roomData.Y,
+                Stage = roomData.Stage,
+                StageType = roomData.StageType,
+                Shape = roomData.Shape,
+                AutoDoors = roomData.AutoDoors
+            }
+        end
+
+        return {Map = saveMap, Dimension = self.Dimension, StartingRoom = self.StartingRoom}
+    end
+
+    function StageAPI.LevelMap:LoadSaveData(saveData)
+        for _, arg in ipairs(levelMapDirectCopyFromArgs) do
+            if saveData[arg] then
+                self[arg] = saveData[arg]
+            end
+        end
+
+        for _, roomData in ipairs(saveData.Map) do
+            self:AddRoom(nil, roomData, true)
+        end
+
+        self:SetAllRoomDoors()
+    end
+
+    function StageAPI.LevelMap:Destroy()
+        StageAPI.LevelMaps[self.Dimension] = nil
+        if StageAPI.CurrentLevelMapID == self.Dimension then
+            StageAPI.CurrentLevelMapID = nil
+        end
+
+        if StageAPI.DefaultLevelMapID == self.Dimension then
+            StageAPI.DefaultLevelMapID = nil
+        end
+    end
+
+    function StageAPI.LevelMap:IsCurrent()
+        return StageAPI.CurrentLevelMapID == self.Dimension
+    end
+
+    function StageAPI.GetCurrentLevelMap()
+        if StageAPI.CurrentLevelMapID then
+            return StageAPI.LevelMaps[StageAPI.CurrentLevelMapID]
+        end
+    end
+
+    function StageAPI.GetDefaultLevelMap()
+        if StageAPI.DefaultLevelMapID then
+            return StageAPI.LevelMaps[StageAPI.DefaultLevelMapID]
+        end
+    end
+
+    function StageAPI.InExtraRoom()
+        return not not (StageAPI.CurrentLevelMapID and StageAPI.CurrentLevelMapRoomID)
     end
 
     function StageAPI.CreateMapFromRoomsList(roomsList, useMapID)
@@ -10674,7 +10826,7 @@ do -- Custom Floor Generation
 
             StageAPI.StageRNG:SetSeed(StageAPI.Seeds:GetStageSeed(level:GetStage()), 32)
 
-            local outRooms = {}
+            local levelMap = StageAPI.LevelMap()
             for roomID, roomPositions in pairs(roomsByID) do
                 local roomLayout = nonMapLayouts[roomID]
                 local shape = roomLayout.Shape
@@ -10734,128 +10886,43 @@ do -- Custom Floor Generation
                             end
                         end
 
-                        local id = "CL" .. tostring(setRoom.X) .. "." .. tostring(setRoom.Y) .. "." .. tostring(shape)
-                        StageAPI.RegisterLayout(id, roomLayout)
+                        local listIndex
+                        local searchRooms = roomsList:GetRooms(shape)
+                        for listID, layout in ipairs(searchRooms) do
+                            if layout.Variant == roomLayout.Variant then
+                                listIndex = listID
+                                break
+                            end
+                        end
 
                         local newRoom = StageAPI.LevelRoom{
-                            LayoutName = id,
+                            RoomsListName = roomsList.Name,
+                            RoomsListID = listIndex,
                             SpawnSeed = StageAPI.StageRNG:Next(),
                             AwardSeed = StageAPI.StageRNG:Next(),
                             DecorationSeed = StageAPI.StageRNG:Next(),
                             Shape = shape,
                             RoomType = roomLayout.Type,
                             IsPersistentRoom = true,
-                            IsExtraRoom = true,
-                            LevelIndex = id
+                            IsExtraRoom = true
                         }
 
-                        StageAPI.SetExtraRoom(id, newRoom)
-
-                        local outRoom = {
-                            X = setRoom.X,
-                            Y = setRoom.Y,
-                            Shape = shape,
-                            StartingRoom = isStartingRoom,
-                            Persistent = isPersistent,
-                            ExtraRoomName = id
-                        }
-
+                        local roomData = {X = setRoom.X, Y = setRoom.Y, AutoDoors = true}
                         if stage then
-                            outRoom.Stage = stage.Stage
-                            outRoom.StageType = stage.StageType
+                            roomData.Stage = stage.Stage
+                            roomData.StageType = stage.StageType
                         end
 
-                        outRooms[#outRooms + 1] = outRoom
+                        local mapID = levelMap:AddRoom(newRoom, roomData, true)
+                        if isStartingRoom then
+                            levelMap.StartingRoom = mapID
+                        end
                     end
                 end
             end
 
-            StageAPI.UpdateLevelMap(outRooms, nil, true)
-        end
-    end
-
-    function StageAPI.PrintCustomLevelMap()
-        local mapStr = ""
-        for y = StageAPI.CurrentLevelMap2D.LowY, StageAPI.CurrentLevelMap2D.HighY do
-            for x = StageAPI.CurrentLevelMap2D.LowX, StageAPI.CurrentLevelMap2D.HighX do
-                if StageAPI.CurrentLevelMap2D[x] and StageAPI.CurrentLevelMap2D[x][y] then
-                    local roomID = StageAPI.CurrentLevelMap2D[x][y]
-                    if roomID < 10 then
-                        mapStr = mapStr .. " 0" .. tostring(roomID) .. " "
-                    else
-                        mapStr = mapStr .. " " .. tostring(roomID) .. " "
-                    end
-                else
-                    mapStr = mapStr .. "    "
-                end
-            end
-
-            mapStr = mapStr .. "\n"
-        end
-
-        Isaac.DebugString(mapStr)
-    end
-
-    function StageAPI.SetLevelMapDoors(levelMap, levelMap2D)
-        -- Calculate and set the doors for each room
-        local checkedRooms = {}
-        for x = levelMap2D.LowX, levelMap2D.HighX do
-            if levelMap2D[x] then
-                for y = levelMap2D.LowY, levelMap2D.HighY do
-                    local room1 = levelMap2D[x][y]
-                    if room1 and not checkedRooms[room1] then
-                        local roomData = levelMap[room1]
-                        if not roomData.Doors then
-                            roomData.Doors = {}
-                        end
-
-                        for x2 = x - 2, x + 2 do -- no need to consider rooms more than two segments away, since 2x2 is the largest shape.
-                            if levelMap2D[x2] then
-                                for y2 = y - 2, y + 2 do
-                                    local room2 = levelMap2D[x2][y2]
-                                    if room2 and room2 ~= room1 then
-                                        local adjacent, doors = StageAPI.CheckRoomAdjacency(levelMap[room1], levelMap[room2], true)
-                                        if adjacent then
-                                            for enterSlot, exitSlot in pairs(doors) do
-                                                roomData.Doors[enterSlot] = {
-                                                    ExitRoom = room2,
-                                                    ExitSlot = exitSlot
-                                                }
-                                            end
-                                        end
-                                    end
-                                end
-                            end
-                        end
-
-                        checkedRooms[room1] = true
-                    end
-                end
-            end
-        end
-
-        for _, roomData in ipairs(levelMap) do
-            if roomData.Doors then
-                local levelRoom = StageAPI.GetExtraRoom(roomData.ExtraRoomName)
-                levelRoom.Doors = {}
-                for slot, _ in pairs(roomData.Doors) do
-                    levelRoom.Doors[slot] = true
-                end
-            end
-        end
-    end
-
-    function StageAPI.UpdateLevelMap(newLevelMap, newLevelMap2D, doDoors)
-        StageAPI.CurrentLevelMap = newLevelMap
-
-        if not newLevelMap2D then
-            StageAPI.CurrentLevelMap2D = StageAPI.GenerateLevelMap2D(StageAPI.CurrentLevelMap)
-        else
-            StageAPI.CurrentLevelMap2D = newLevelMap2D
-        end
-
-        if doDoors then
-            StageAPI.SetLevelMapDoors(StageAPI.CurrentLevelMap, StageAPI.CurrentLevelMap2D)
+            levelMap:SetAllRoomDoors()
+            return levelMap
         end
     end
 
@@ -10946,44 +11013,8 @@ do -- Custom Floor Generation
         end
     end
 
-    function StageAPI.GenerateLevelMap2D(levelMap)
-        local lowX, lowY, highX, highY
-        local levelMap2D = {}
-        for i, room in ipairs(levelMap) do
-            if not room.X or not room.Y then
-                room.X, room.Y = StageAPI.GridToVector(room.GridIndex, 13)
-            end
-
-            room.MapSegments = StageAPI.GetRoomMapSegments(room.X, room.Y, room.Shape)
-
-            for _, seg in ipairs(room.MapSegments) do
-                if not levelMap2D[seg.X] then
-                    levelMap2D[seg.X] = {}
-                end
-
-                if levelMap2D[seg.X][seg.Y] then
-                    StageAPI.LogErr("Overriding a room! Something went wrong at " .. tostring(seg.X) .. "x" .. tostring(seg.Y) ..  "!")
-                end
-
-                levelMap2D[seg.X][seg.Y] = i
-
-                if not lowX or seg.X < lowX then lowX = seg.X end
-                if not highX or seg.X > highX then highX = seg.X end
-                if not lowY or seg.Y < lowY then lowY = seg.Y end
-                if not highY or seg.Y > highY then highY = seg.Y end
-            end
-        end
-
-        levelMap2D.LowX = lowX
-        levelMap2D.HighX = highX
-        levelMap2D.LowY = lowY
-        levelMap2D.HighY = highY
-
-        return levelMap2D
-    end
-
     function StageAPI.CopyCurrentLevelMap()
-        local newLevelMap = {}
+        local levelMap = StageAPI.LevelMap()
         local roomsList = level:GetRooms()
         for i = 0, roomsList.Size do
             local roomDesc = roomsList:Get(i)
@@ -11006,19 +11037,15 @@ do -- Custom Floor Generation
                     LevelIndex = id
                 }
 
-                StageAPI.SetExtraRoom(id, newRoom)
-
-                newLevelMap[#newLevelMap + 1] = {
-                    ExtraRoomName = id,
-                    GridIndex = roomDesc.GridIndex,
-                    SafeGridIndex = roomDesc.SafeGridIndex,
-                    Shape = roomDesc.Data.Shape,
-                    StartingRoom = level:GetStartingRoomIndex() == roomDesc.SafeGridIndex
-                }
+                local mapID = levelMap:AddRoom(newRoom, {GridIndex = roomDesc.GridIndex, AutoDoors = true}, true)
+                if level:GetStartingRoomIndex() == roomDesc.SafeGridIndex then
+                    levelMap.StartingRoom = mapID
+                end
             end
         end
 
-        StageAPI.UpdateLevelMap(newLevelMap, nil, true)
+        levelMap:SetAllRoomDoors()
+        return levelMap
     end
 
     local directionStringSwap = {
@@ -11084,65 +11111,47 @@ do -- Custom Floor Generation
         return StageAPI.CheckAdjacentRoomSegments(segs1, segs2, getDoors, getSegs)
     end
 
-    StageAPI.RoomShapeToRoomGridIndex = {}
-    StageAPI.CurrentCustomMapRoomID = nil
-
-    function StageAPI.LoadCustomMapRoomDoors(mapRoom, map)
-        map = map or StageAPI.CurrentLevelMap
-        if mapRoom.Doors then
-            local levelRoom = StageAPI.GetExtraRoom(mapRoom.ExtraRoomName)
-            for slot, doorData in pairs(mapRoom.Doors) do
-                local targRoom = map[doorData.ExitRoom]
-                local targLevelRoom = StageAPI.GetExtraRoom(targRoom.ExtraRoomName)
+    function StageAPI.LoadCustomMapRoomDoors(levelRoom, roomData, levelMap)
+        levelMap = levelMap or StageAPI.GetCurrentLevelMap()
+        if roomData.Doors then
+            for slot, doorData in pairs(roomData.Doors) do
+                local targLevelRoom = levelMap:GetRoom(doorData.ExitRoom)
                 local current, target = levelRoom.RoomType, targLevelRoom.RoomType
                 local isBossAmbush = nil
                 local isPayToPlay = nil
                 local isSurpriseMiniboss = levelRoom.SurpriseMiniboss
                 local useSprite, useDoor = StageAPI.CompareDoorSpawns(StageAPI.BaseDoorSpawnList, current, target, isBossAmbush, isPayToPlay, isSurpriseMiniboss)
-                StageAPI.SpawnCustomDoor(slot, doorData.ExitRoom, true, useDoor, nil, doorData.ExitSlot, useSprite)
+                StageAPI.SpawnCustomDoor(slot, doorData.ExitRoom, levelMap, useDoor, nil, doorData.ExitSlot, useSprite)
             end
         end
     end
 
     StageAPI.AddCallback("StageAPI", "POST_ROOM_LOAD", -1, function(newRoom, firstLoad)
-        if StageAPI.InCustomMap and newRoom.IsExtraRoom then
-            if firstLoad then
-                StageAPI.LoadCustomMapRoomDoors(StageAPI.CurrentLevelMap[StageAPI.CurrentCustomMapRoomID])
-            end
+        local levelMap = StageAPI.GetCurrentLevelMap()
+        local roomData = levelMap:GetCurrentRoomData()
+        if roomData and roomData.AutoDoors and firstLoad then
+            StageAPI.LoadCustomMapRoomDoors(newRoom, roomData, levelMap)
         end
     end)
 
     StageAPI.AddCallback("StageAPI", "POST_CHANGE_ROOM_GFX", -1, function(currentRoom)
-        if StageAPI.InCustomMap and currentRoom and currentRoom.IsExtraRoom and not StageAPI.CurrentStage then
+        if StageAPI.InExtraRoom() and currentRoom and currentRoom.IsExtraRoom and not StageAPI.CurrentStage then
             local baseFloorInfo = StageAPI.GetBaseFloorInfo()
-            if baseFloorInfo.RoomGfx then
+            if room:GetBackdropType() == baseFloorInfo.Backdrop and baseFloorInfo.RoomGfx then
                 StageAPI.ChangeDoors(baseFloorInfo.RoomGfx)
             end
         end
     end)
 
-    function StageAPI.InitCustomLevel(levelStartRoom)
+    function StageAPI.InitCustomLevel(levelMap, levelStartRoom)
         if levelStartRoom then
-            StageAPI.InCustomMap = true
-
             if levelStartRoom == true then
-                for i, room in ipairs(StageAPI.CurrentLevelMap) do
-                    if room.StartingRoom then
-                        levelStartRoom = i
-                    end
-                end
+                levelStartRoom = levelMap.StartingRoom
             end
 
-            StageAPI.ExtraRoomTransition(levelStartRoom, Direction.NO_DIRECTION, -1, true, nil, nil, Vector(320, 380))
+            StageAPI.ExtraRoomTransition(levelStartRoom, Direction.NO_DIRECTION, -1, levelMap, nil, nil, Vector(320, 380))
         end
     end
-
-    mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, function()
-        if level:GetCurrentRoomIndex() == level:GetStartingRoomIndex() and room:IsFirstVisit() and not customMapTransitionInProgress then
-            StageAPI.CurrentCustomMapRoomID = nil
-            StageAPI.InCustomMap = nil
-        end
-    end)
 
     local testingStage
     local testingRoomsList
@@ -11165,18 +11174,19 @@ do -- Custom Floor Generation
             local baseStageType = level:GetStageType()
             Isaac.ExecuteCommand("stage " .. testingStage)
             testingStage = nil
-            StageAPI.CopyCurrentLevelMap()
+            local levelMap = StageAPI.CopyCurrentLevelMap()
             Isaac.ExecuteCommand("stage " .. tostring(baseStage) .. StageAPI.StageTypeToString[baseStageType])
-            StageAPI.InitCustomLevel(true)
+            StageAPI.InitCustomLevel(levelMap, true)
         elseif testingRoomsList then
+            local levelMap
             if testingRoomsList == true then
-                StageAPI.CreateMapFromRoomsList(mapLayoutTestRoomsList)
+                levelMap = StageAPI.CreateMapFromRoomsList(mapLayoutTestRoomsList)
             else
-                StageAPI.CreateMapFromRoomsList(mapLayoutTestRoomsList, testingRoomsList)
+                levelMap = StageAPI.CreateMapFromRoomsList(mapLayoutTestRoomsList, testingRoomsList)
             end
 
             testingRoomsList = nil
-            StageAPI.InitCustomLevel(true)
+            StageAPI.InitCustomLevel(levelMap, true)
         end
     end)
 end
@@ -11276,6 +11286,43 @@ do -- BR Compatibility
 end
 
 do -- Mod Compatibility
+    function StageAPI.UpdateMinimapAPIPlayerPosition()
+        if StageAPI.InExtraRoom() then
+            local currentLevelMap = StageAPI.GetCurrentLevelMap()
+            local roomData = currentLevelMap:GetCurrentRoomData()
+            if roomData then
+                if roomData.X and roomData.Y then
+                    return Vector(roomData.X, roomData.Y)
+                else
+                    return Vector(-32768, -32768)
+                end
+            end
+        end
+    end
+
+    function StageAPI.UpdateMinimapAPIDimension(currentDimension)
+        if StageAPI.InExtraRoom() then
+            local currentLevelMap = StageAPI.GetCurrentLevelMap()
+            if currentLevelMap.OverlapDimension then
+                if currentDimension ~= currentLevelMap.OverlapDimension then
+                    return currentLevelMap.OverlapDimension
+                end
+            else
+                local level = MinimapAPI:GetLevel(currentLevelMap.Dimension)
+                if not level then
+                    MinimapAPI:SetLevel({}, currentLevelMap.Dimension)
+                end
+
+                return currentLevelMap.Dimension
+            end
+        end
+    end
+
+    function StageAPI.LoadMinimapAPICompat()
+        MinimapAPI:AddPlayerPositionCallback(mod, StageAPI.UpdateMinimapAPIPlayerPosition)
+        MinimapAPI:AddDimensionCallback(mod, StageAPI.UpdateMinimapAPIDimension)
+    end
+
     local addedChangelogs
     local latestChangelog
     local function TryAddChangelog(ver, log)
@@ -11296,11 +11343,12 @@ do -- Mod Compatibility
     end
 
     mod:AddCallback(ModCallbacks.MC_POST_GAME_STARTED, function()
-        if addedChangelogs then
-            return
+        if MinimapAPI and not StageAPI.LoadedMinimapAPICompat then
+            StageAPI.LoadMinimapAPICompat()
+            StageAPI.LoadedMinimapAPICompat = true
         end
 
-        if (DeadSeaScrollsMenu and DeadSeaScrollsMenu.AddChangelog) or (REVEL and REVEL.AddChangelog and not REVEL.AddedStageAPIChangelogs) then
+        if not addedChangelogs and ((DeadSeaScrollsMenu and DeadSeaScrollsMenu.AddChangelog) or (REVEL and REVEL.AddChangelog and not REVEL.AddedStageAPIChangelogs)) then
             addedChangelogs = true
 
             if not (DeadSeaScrollsMenu and DeadSeaScrollsMenu.AddChangelog) then
