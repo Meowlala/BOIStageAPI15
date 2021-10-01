@@ -4463,7 +4463,8 @@ do -- Custom Grid Entities
                             if self.GridConfig.BaseVariant and self.GridEntity.Desc.Variant ~= self.GridConfig.BaseVariant then
                                 self:Remove(true)
                                 return
-                            elseif self.GridEntity.State == StageAPI.DefaultBrokenGridStateByType[self.GridConfig.BaseType] then
+                            elseif self.GridEntity.State == StageAPI.DefaultBrokenGridStateByType[self.GridConfig.BaseType] and not self.PersistentData.Destroyed then
+                                self.PersistentData.Destroyed = true
                                 self:CallCallbacks("POST_CUSTOM_GRID_DESTROY")
                             end
                         end
@@ -4502,7 +4503,8 @@ do -- Custom Grid Entities
         self.Projectile = projectile
         StageAPI.TemporaryIgnoreSpawnOverride = true
         self:CallCallbacks("POST_CUSTOM_GRID_PROJECTILE_UPDATE", projectile)
-        if self.Projectile:IsDead() then
+        if self.Projectile:IsDead() and not self.PersistentData.Destroyed then
+            self.PersistentData.Destroyed = true
             self:CallCallbacks("POST_CUSTOM_GRID_DESTROY", projectile)
         end
         
