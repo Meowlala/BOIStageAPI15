@@ -4456,7 +4456,7 @@ do -- Custom Grid Entities
                         if filename == "" and sprite:GetAnimation() == "" then
                             self.RecentlyLifted = true
                             self.Lifted = true
-                        elseif filename ~= self.LastFilename and self.GridConfig.RemoveOnAnm2Change then
+                        elseif self.LastFilename and filename ~= self.LastFilename and self.GridConfig.RemoveOnAnm2Change then
                             self:Remove(true)
                             return
                         else
