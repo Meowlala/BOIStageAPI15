@@ -11416,6 +11416,180 @@ do -- Mod Compatibility
             if not (DeadSeaScrollsMenu and DeadSeaScrollsMenu.AddChangelog) then
                 REVEL.AddedStageAPIChangelogs = true
             end
+            
+            TryAddChangelog("v2.0", [[- StageAPI now supports
+Custom Floor Generation,
+implemented via
+a new LevelMap System.
+
+- Most extra room
+functionality has been
+replaced by LevelMaps,
+including extending base
+floors with StageAPI's
+DefaultLevelMap.
+
+- Every shape of every
+room type that is
+used in the base
+game is now preloaded
+and usable in extra
+rooms. Additional shapes
+or types can be
+requested by mods via
+a function.
+
+- Custom Grid Entities
+have been overhauled.
+Each CustomGridEntity in
+a room is now
+its own object.
+This enables things
+like custom effects for
+Polties and 
+Mom's Bracelet.
+Additional support
+has also been added
+for Dirty Mind and
+Poop Gibs.
+
+- Metadata Entities
+have been overhauled.
+Each Metadata Entity
+in a room is now
+its own object.
+This simplifies searching
+for Metadata Entities,
+which is now done
+with a single function.
+
+- Metadata Entities can
+now take advantage of
+their Subtype, allowing
+room editor defined
+variation. For instance,
+Groups can now be
+given any 16-bit
+integer ID.
+
+- Added new
+Metadata Entities:
+
+-- Entered From Trigger.
+Triggers the associated
+group ID when the
+player enters the room
+near its position.
+Can be used to
+change the layout
+of rooms depending
+on which door you
+enter from.
+
+-- Shop Item Modifier.
+When placed on a
+pickup, turns it
+into a shop item
+with a specified
+price.
+
+-- Options Pickup Modifier.
+When placed on
+pickups, turns them
+into an Options
+group of a
+specified ID.
+You can only pick
+one pickup from
+the group.
+
+-- Cancel Clear Award.
+Disables the room's
+clear award.
+
+-- Set Player Position.
+Sets the player's
+position when the
+room is entered.
+Can be set to
+only occur when
+the room is not
+yet cleared.
+
+-- Button Trigger.
+Reimplements
+Event Buttons from
+the base game, as
+a trigger tied
+to a group.
+
+-- Boss Identifier.
+When placed on a
+boss, attempts to
+locate the StageAPI
+definition of that
+boss, and convert the
+boss room into a
+StageAPI boss room
+for that boss ID.
+Mostly useful to
+play the right boss
+animation for extra
+boss rooms or
+modded bosses.
+
+-- Room.
+Custom LevelMaps can
+be loaded from a
+room file. The Room
+Metadata Entity
+indicates which room
+to load and where
+to put it on
+the LevelMap.
+
+-- Stage.
+Allows setting the
+stage of rooms on
+a LevelMap room file,
+when placed overlapping
+a Room entity.
+Alternatively, if
+placed not overlapping
+any entity, sets the
+default stage for
+ALL Room entities
+
+- Rooms with Metadata
+Entities are now
+automatically taken
+over by StageAPI, and
+thus functional on
+base game floors
+
+- Updated all of
+the icons for
+StageAPI editor
+entities.
+
+- Custom Floors now
+support pre-generation
+of rooms, rather than
+generating each room
+as you enter it,
+optionally.
+
+- Added a custom boss
+pool system that
+enables multiple mods
+to add bosses to
+the same floor via
+StageAPI's pool.
+
+- Improved entity and
+grid persistence in
+extra rooms significantly
+]])
 
             TryAddChangelog("v1.92 - 93", [[- Fixed bridges not
 functioning in Catacombs,
