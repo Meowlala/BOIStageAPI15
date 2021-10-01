@@ -4409,9 +4409,7 @@ do -- Custom Grid Entities
         local grid = gridConfig:SpawnBaseGrid(index, force, respawning)
         self.GridEntity = grid
 
-        StageAPI.CustomGridEntities[self.GridIndex] = StageAPI.CustomGridEntities[self.GridIndex] or {}
-        StageAPI.CustomGridEntities[self.GridIndex][self.GridConfig.Name] = StageAPI.CustomGridEntities[self.GridIndex][self.GridConfig.Name] or {}
-        StageAPI.CustomGridEntities[self.GridIndex][self.GridConfig.Name][#StageAPI.CustomGridEntities[self.GridIndex][self.GridConfig.Name] + 1] = self
+        StageAPI.CustomGridEntities[#StageAPI.CustomGridEntities + 1] = self
 
         self.RoomIndex = StageAPI.GetCurrentRoomID()
 
@@ -4435,35 +4433,61 @@ do -- Custom Grid Entities
             end
         end
 
+        self.RecentProjectileHelper = false
         if self.ProjectileHelper and not self.ProjectileHelper:Exists() then
+            self.RecentProjectileHelper = true
             self.ProjectileHelper = nil
         end
 
-        if self.GridConfig.BaseType then
-            self.GridEntity = room:GetGridEntity(self.GridIndex)
-            if not self.GridEntity then
-                self:Remove(true)
-                return
-            else
-                if not self.Lifted then
-                    local sprite = self.GridEntity:GetSprite()
-                    if sprite:GetFilename() == "" and sprite:GetAnimation() == "" then
-                        self.RecentlyLifted = true
-                        self.Lifted = true
+        if self:IsOnGrid() then
+            if self.GridConfig.BaseType then
+                self.GridEntity = room:GetGridEntity(self.GridIndex)
+                if not self.GridEntity then
+                    self:Remove(true)
+                    return
+                else
+                    if not self.Lifted then
+                        local sprite = self.GridEntity:GetSprite()
+                        local filename = sprite:GetFilename()
+                        if filename == "" and sprite:GetAnimation() == "" then
+                            self.RecentlyLifted = true
+                            self.Lifted = true
+                        elseif filename ~= self.LastFilename and self.GridConfig.RemoveOnAnm2Change then
+                            self:Remove(true)
+                            return
+                        end
+                        
+                        if self.GridConfig.BaseVariant and self.GridEntity.Desc.Variant ~= self.GridConfig.BaseVariant then
+                            self:Remove(true)
+                            return
+                        end
                     end
                 end
             end
-        end
-
-        local grid = self.GridEntity or room:GetGridEntity(self.GridIndex)
-        if self.GridConfig.OverrideGridSpawns and grid then
-            local overrideState = self.GridConfig.OverrideGridSpawnsState or StageAPI.DefaultBrokenGridStateByType[grid.Desc.Type] or 2
-            if grid.State ~= overrideState then
-                StageAPI.SpawnOverriddenGrids[self.GridIndex] = overrideState
+        
+            if self.Lifted and not self.RecentlyLifted then
+                self:RemoveFromGrid()
+            elseif self.GridConfig.OverrideGridSpawns then
+                local grid = self.GridEntity or room:GetGridEntity(self.GridIndex)
+                if grid then
+                    local overrideState = self.GridConfig.OverrideGridSpawnsState or StageAPI.DefaultBrokenGridStateByType[grid.Desc.Type] or 2
+                    if grid.State ~= overrideState then
+                        StageAPI.SpawnOverriddenGrids[self.GridIndex] = overrideState
+                    end
+                end
+            end
+        else
+            if not self.ProjectileHelper and not self.RecentProjectileHelper and not self.Projectile and not self.RecentProjectilePosition then
+                self:Unload()
+                return
             end
         end
 
         self:CallCallbacks("POST_CUSTOM_GRID_UPDATE")
+        
+        if self:IsOnGrid() and self.GridConfig.BaseType then
+            self.LastFilename = self.GridEntity:GetSprite():GetFilename()
+        end
 
         self.JustBrokenGridSpawns = nil
     end
@@ -4534,21 +4558,33 @@ do -- Custom Grid Entities
     end
 
     function StageAPI.CustomGridEntity:Unload()
-        local matchingGrids = StageAPI.CustomGridEntities[self.GridIndex][self.GridConfig.Name]
-        for i, grid in StageAPI.ReverseIterate(matchingGrids) do
+        for i, grid in StageAPI.ReverseIterate(StageAPI.CustomGridEntities) do
             if grid.PersistentIndex == self.PersistentIndex then
-                table.remove(matchingGrids, i)
+                table.remove(StageAPI.CustomGridEntities, i)
             end
         end
     end
+    
+    function StageAPI.CustomGridEntity:RemoveFromGrid()
+        if self:IsOnGrid() then
+            local roomGrids = StageAPI.GetRoomCustomGrids()
+            roomGrids.Grids[self.PersistentIndex] = nil
+            self.GridEntity = nil
+            self.GridIndex = nil
+            self.RoomIndex = nil
+        end
+    end
+    
+    function StageAPI.CustomGridEntity:IsOnGrid()
+        return self.RoomIndex ~= nil and self.GridIndex ~= nil
+    end
 
     function StageAPI.CustomGridEntity:Remove(keepBaseGrid)
-        local roomGrids = StageAPI.GetRoomCustomGrids()
-        roomGrids.Grids[self.PersistentIndex] = nil
-
         if not keepBaseGrid and self.GridEntity then
             room:RemoveGridEntity(self.GridIndex, 0, false)
         end
+
+        self:RemoveFromGrid()
 
         self:Unload()
 
@@ -4564,35 +4600,14 @@ do -- Custom Grid Entities
     end
 
     function StageAPI.GetCustomGrids(index, name)
-        if index and name then
-            return (StageAPI.CustomGridEntities[index] and StageAPI.CustomGridEntities[index][name]) or {}
-        elseif index then
-            if StageAPI.CustomGridEntities[index] then
-                local out = {}
-                for gridName, grids in pairs(StageAPI.CustomGridEntities[index]) do
-                    for _, grid in ipairs(grids) do
-                        out[#out + 1] = grid
-                    end
-                end
-
-                return out
-            else
-                return {}
+        local matches = {}
+        for _, customGrid in ipairs(StageAPI.CustomGridEntities) do
+            if (not index or index == customGrid.GridIndex) and (not name or name == customGrid.GridConfig.Name) then
+                matches[#matches + 1] = customGrid
             end
-        else
-            local out = {}
-            for index, gridNames in pairs(StageAPI.CustomGridEntities) do
-                for gridName, grids in pairs(gridNames) do
-                    if not name or name == gridName then
-                        for _, grid in ipairs(grids) do
-                            out[#out + 1] = grid
-                        end
-                    end
-                end
-            end
-
-            return out
         end
+        
+        return matches
     end
 
     function StageAPI.GetLiftedCustomGrids(ignoreMarked, includeRecent)
@@ -8213,7 +8228,7 @@ do -- Rock Alt Override
                 end
             end
         end
-
+        
         if shouldOverride and not StageAPI.TemporaryIgnoreSpawnOverride then
             if (id == EntityType.ENTITY_PICKUP and (variant == PickupVariant.PICKUP_COLLECTIBLE or variant == PickupVariant.PICKUP_TAROTCARD or variant == PickupVariant.PICKUP_HEART or variant == PickupVariant.PICKUP_COIN or variant == PickupVariant.PICKUP_TRINKET or variant == PickupVariant.PICKUP_PILL))
             or id == EntityType.ENTITY_SPIDER
@@ -9104,7 +9119,7 @@ do -- Callbacks
         local inStartingRoom = level:GetCurrentRoomIndex() == level:GetStartingRoomIndex()
 
         for _, customGrid in ipairs(StageAPI.GetCustomGrids()) do
-            if customGrid.RoomIndex ~= StageAPI.GetCurrentRoomID() then
+            if customGrid.RoomIndex and customGrid.RoomIndex ~= StageAPI.GetCurrentRoomID() then
                 customGrid:Unload()
             end
         end
