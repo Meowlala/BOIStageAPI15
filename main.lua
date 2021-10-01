@@ -4465,7 +4465,9 @@ do -- Custom Grid Entities
                                 return
                             elseif self.GridEntity.State == StageAPI.DefaultBrokenGridStateByType[self.GridConfig.BaseType] and not self.PersistentData.Destroyed then
                                 self.PersistentData.Destroyed = true
+                                StageAPI.TemporaryIgnoreSpawnOverride = true
                                 self:CallCallbacks("POST_CUSTOM_GRID_DESTROY")
+                                StageAPI.TemporaryIgnoreSpawnOverride = false
                             end
                         end
                     end
