@@ -4408,6 +4408,9 @@ do -- Custom Grid Entities
 
         local grid = gridConfig:SpawnBaseGrid(index, force, respawning)
         self.GridEntity = grid
+        if self.GridEntity then
+            self.RNG = grid:GetRNG()
+        end
 
         StageAPI.CustomGridEntities[#StageAPI.CustomGridEntities + 1] = self
 
