@@ -4446,6 +4446,7 @@ do -- Custom Grid Entities
                     self:Remove(true)
                     return
                 else
+                    self.RNG = self.GridEntity:GetRNG()
                     if not self.Lifted then
                         local sprite = self.GridEntity:GetSprite()
                         local filename = sprite:GetFilename()
@@ -4455,11 +4456,13 @@ do -- Custom Grid Entities
                         elseif filename ~= self.LastFilename and self.GridConfig.RemoveOnAnm2Change then
                             self:Remove(true)
                             return
-                        end
-                        
-                        if self.GridConfig.BaseVariant and self.GridEntity.Desc.Variant ~= self.GridConfig.BaseVariant then
-                            self:Remove(true)
-                            return
+                        else
+                            if self.GridConfig.BaseVariant and self.GridEntity.Desc.Variant ~= self.GridConfig.BaseVariant then
+                                self:Remove(true)
+                                return
+                            elseif self.GridEntity.State == StageAPI.DefaultBrokenGridStateByType[self.GridConfig.BaseType] then
+                                self:CallCallbacks("POST_CUSTOM_GRID_DESTROY")
+                            end
                         end
                     end
                 end
@@ -4496,6 +4499,10 @@ do -- Custom Grid Entities
         self.Projectile = projectile
         StageAPI.TemporaryIgnoreSpawnOverride = true
         self:CallCallbacks("POST_CUSTOM_GRID_PROJECTILE_UPDATE", projectile)
+        if self.Projectile:IsDead() then
+            self:CallCallbacks("POST_CUSTOM_GRID_DESTROY", projectile)
+        end
+        
         StageAPI.TemporaryIgnoreSpawnOverride = false
     end
 
