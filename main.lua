@@ -4402,7 +4402,7 @@ do -- Custom Grid Entities
                 self.PersistentData[k] = v
             end
         end
-        
+
         self.GridIndex = index
         self.Data = {}
 
@@ -4473,7 +4473,7 @@ do -- Custom Grid Entities
                     end
                 end
             end
-        
+
             if self.Lifted and not self.RecentlyLifted then
                 self:RemoveFromGrid()
             elseif self.GridConfig.OverrideGridSpawns then
@@ -4493,7 +4493,7 @@ do -- Custom Grid Entities
         end
 
         self:CallCallbacks("POST_CUSTOM_GRID_UPDATE")
-        
+
         if self:IsOnGrid() and self.GridConfig.BaseType then
             self.LastFilename = self.GridEntity:GetSprite():GetFilename()
         end
@@ -4509,7 +4509,7 @@ do -- Custom Grid Entities
             self.PersistentData.Destroyed = true
             self:CallCallbacks("POST_CUSTOM_GRID_DESTROY", projectile)
         end
-        
+
         StageAPI.TemporaryIgnoreSpawnOverride = false
     end
 
@@ -4578,7 +4578,7 @@ do -- Custom Grid Entities
             end
         end
     end
-    
+
     function StageAPI.CustomGridEntity:RemoveFromGrid()
         if self:IsOnGrid() then
             local roomGrids = StageAPI.GetRoomCustomGrids()
@@ -4588,7 +4588,7 @@ do -- Custom Grid Entities
             self.RoomIndex = nil
         end
     end
-    
+
     function StageAPI.CustomGridEntity:IsOnGrid()
         return self.RoomIndex ~= nil and self.GridIndex ~= nil
     end
@@ -4620,7 +4620,7 @@ do -- Custom Grid Entities
                 matches[#matches + 1] = customGrid
             end
         end
-        
+
         return matches
     end
 
@@ -6003,7 +6003,7 @@ do -- Custom Doors
                 local leadsTo = data.DoorGridData.LeadsTo
                 if leadsTo then
                     transitionStarted = true
-                    StageAPI.ExtraRoomTransition(leadsTo, StageAPI.DoorSlotToDirection[data.DoorGridData.Slot], RoomTransitionAnim.WALK, data.DoorGridData.LevelMapID, data.DoorGridData.Slot, data.DoorGridData.ExitSlot)                    
+                    StageAPI.ExtraRoomTransition(leadsTo, StageAPI.DoorSlotToDirection[data.DoorGridData.Slot], RoomTransitionAnim.WALK, data.DoorGridData.LevelMapID, data.DoorGridData.Slot, data.DoorGridData.ExitSlot)
                 end
             end
         end
@@ -6132,14 +6132,16 @@ do -- GridGfx
         local grid = pit.Grid
         local gsprite = grid:GetSprite()
 
-        if gsprite:GetFilename() ~= "stageapi/pit.anm2" then
-            gsprite:Load("stageapi/pit.anm2", true)
-        end
+        if pitFile then
+            if gsprite:GetFilename() ~= "stageapi/pit.anm2" then
+                gsprite:Load("stageapi/pit.anm2", true)
+            end
 
-        if alt and room:HasWaterPits() then
-            gsprite:ReplaceSpritesheet(0, alt.File)
-        else
-            gsprite:ReplaceSpritesheet(0, pitFile.File)
+            if alt and room:HasWaterPits() then
+                gsprite:ReplaceSpritesheet(0, alt.File)
+            else
+                gsprite:ReplaceSpritesheet(0, pitFile.File)
+            end
         end
 
         if bridgefilename then
@@ -6530,7 +6532,7 @@ do -- GridGfx
             end
         elseif StageAPI.RockTypes[gtype] and grids.Rocks then
             StageAPI.ChangeRock(send, grids.Rocks)
-        elseif gtype == GridEntityType.GRID_PIT and grids.Pits then
+        elseif gtype == GridEntityType.GRID_PIT and (grids.Pits or grids.Bridges) then
             StageAPI.ChangePit(send, grids.Pits, grids.Bridges, grids.AltPits)
         elseif gtype == GridEntityType.GRID_DECORATION and grids.Decorations then
             StageAPI.ChangeDecoration(send, grids.Decorations)
@@ -8242,7 +8244,7 @@ do -- Rock Alt Override
                 end
             end
         end
-        
+
         if shouldOverride and not StageAPI.TemporaryIgnoreSpawnOverride then
             if (id == EntityType.ENTITY_PICKUP and (variant == PickupVariant.PICKUP_COLLECTIBLE or variant == PickupVariant.PICKUP_TAROTCARD or variant == PickupVariant.PICKUP_HEART or variant == PickupVariant.PICKUP_COIN or variant == PickupVariant.PICKUP_TRINKET or variant == PickupVariant.PICKUP_PILL))
             or id == EntityType.ENTITY_SPIDER
@@ -9205,7 +9207,7 @@ do -- Callbacks
                 end
             end
         end
-        
+
         StageAPI.DetectBaseLayoutChanges(false)
 
         if not StageAPI.DefaultLevelMapID then
@@ -10490,12 +10492,12 @@ do -- Custom Floor Generation
 
         StageAPI.LevelMaps[self.Dimension] = self
     end
-    
+
     function StageAPI.LevelMap:UpdateDoorsAroundRoom(roomData)
         if not roomData.LowX or not roomData.HighX or not roomData.LowY or not roomData.HighY or not roomData.X or not roomData.Y then
             return
         end
-        
+
         local updatedRooms = {}
         for x = roomData.LowX - 2, roomData.HighX + 2 do
             if self.Map2D[x] then
@@ -10562,7 +10564,7 @@ do -- Custom Floor Generation
 
         return roomData
     end
-    
+
     function StageAPI.LevelMap:RemoveRoom(removeRoomData, noUpdateDoors, noRemoveLevelRoom)
         local mapID = removeRoomData.MapID
         local roomData
@@ -10572,15 +10574,15 @@ do -- Custom Floor Generation
             roomData = self:GetRoomDataFromRoomID(removeRoomData.RoomID)
             mapID = roomData.MapID
         end
-        
+
         if not roomData then
             return
         end
-        
+
         if not noRemoveLevelRoom then
             StageAPI.SetLevelRoom(nil, roomData.RoomID, self.Dimension)
         end
-        
+
         self.Map[mapID] = nil
         if roomData.LowX and roomData.LowY and roomData.HighX and roomData.HighY then
             for x = roomData.LowX, roomData.HighX do
@@ -10590,7 +10592,7 @@ do -- Custom Floor Generation
                     end
                 end
             end
-            
+
             if not noUpdateDoors then
                 self:UpdateDoorsAroundRoom(roomData)
             end
@@ -10633,12 +10635,12 @@ do -- Custom Floor Generation
             return self.Map[x]
         end
     end
-    
+
     function StageAPI.LevelMap:GetRoomDataFromRoomID(roomID)
         for _, roomData in ipairs(self.Map) do
             if roomData.RoomID == roomID then
                 return roomData
-            end 
+            end
         end
     end
 
@@ -11416,7 +11418,7 @@ do -- Mod Compatibility
             if not (DeadSeaScrollsMenu and DeadSeaScrollsMenu.AddChangelog) then
                 REVEL.AddedStageAPIChangelogs = true
             end
-            
+
             TryAddChangelog("v2.0", [[- StageAPI now supports
 Custom Floor Generation,
 implemented via
@@ -11446,7 +11448,7 @@ a room is now
 its own object.
 This enables things
 like custom effects for
-Polties and 
+Polties and
 Mom's Bracelet.
 Additional support
 has also been added
