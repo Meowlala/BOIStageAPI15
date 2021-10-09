@@ -2082,15 +2082,31 @@ do -- RoomsList
     -- These rooms consist purely of wall entities placed where the walls of the room should be
     -- Used to fix the occasional broken walls when entering extra rooms
     StageAPI.WallDataLayouts = StageAPI.RoomsList("StageAPIWallData", fixInclude("resources.stageapi.luarooms.walldata"))
-    function StageAPI.FixWalls()
-        local shape = room:GetRoomShape()
+    StageAPI.WallData = {}
+    for name, shape in pairs(RoomShape) do
         local layouts = StageAPI.WallDataLayouts.ByShape[shape]
         if layouts and layouts[1] then
             local layout = layouts[1]
-            local validWallSpots = {}
-            for index, _ in pairs(layout.GridEntitiesByIndex) do
+            local lowIndex
+            StageAPI.WallData[shape] = {Indices = {}}
+            for index, grid in pairs(layout.GridEntitiesByIndex) do
+                if not lowIndex or index < lowIndex then
+                    lowIndex = index
+                end
+
+                StageAPI.WallData[shape].Indices[index] = true
+            end
+
+            StageAPI.WallData[shape].TopLeft = lowIndex
+        end
+    end
+
+    function StageAPI.FixWalls()
+        local shape = room:GetRoomShape()
+        local data = StageAPI.WallData[shape]
+        if data then
+            for index, _ in pairs(data.Indices) do
                 local grid = room:GetGridEntity(index)
-                validWallSpots[index] = true
                 if not grid or (grid.Desc.Type ~= GridEntityType.GRID_WALL and grid.Desc.Type ~= GridEntityType.GRID_DOOR) then
                     room:SpawnGridEntity(index, GridEntityType.GRID_WALL, 0, 1, 0)
                 end
@@ -2098,7 +2114,7 @@ do -- RoomsList
 
             for i = 0, room:GetGridSize() do
                 local grid = room:GetGridEntity(i)
-                if not validWallSpots[i] and grid and grid.Desc.Type == GridEntityType.GRID_WALL then
+                if not data.Indices[i] and grid and grid.Desc.Type == GridEntityType.GRID_WALL then
                     room:RemoveGridEntity(i, 0, false)
                 end
             end
@@ -2136,7 +2152,7 @@ do -- RoomsList
                 local grid = room:GetGridEntity(i)
                 if grid then
                     local gtype = grid.Desc.Type
-                    if (doWalls or gtype ~= GridEntityType.GRID_WALL or room:IsPositionInRoom(grid.Position, 0)) -- this allows custom wall grids to exist
+                    if (doWalls or gtype ~= GridEntityType.GRID_WALL or StageAPI.FixedIsPositionInRoom(grid.Position, 0)) -- this allows custom wall grids to exist
                     and (doDoors or gtype ~= GridEntityType.GRID_DOOR)
                     and (not onlyRemoveTheseDecorations or gtype ~= GridEntityType.GRID_DECORATION or onlyRemoveTheseDecorations[i]) then
                         StageAPI.Room:RemoveGridEntity(i, 0, keepDecoration)
@@ -3512,7 +3528,7 @@ do -- RoomsList
                 end
             end
 
-            if shouldSpawn and StageAPI.Room:IsPositionInRoom(StageAPI.Room:GetGridPosition(index), 0) then
+            if shouldSpawn and StageAPI.FixedIsPositionInRoom(StageAPI.Room:GetGridPosition(index), 0) then
                 room:RemoveGridEntity(index, 0, false)
                 local grid = Isaac.GridSpawn(gridData.Type, gridData.Variant, StageAPI.Room:GetGridPosition(index), true)
                 if grid then
@@ -3607,7 +3623,7 @@ do -- RoomsList
         local gridInformation = {}
         for i = 0, room:GetGridSize() do
             local grid = room:GetGridEntity(i)
-            if grid and grid.Desc.Type ~= GridEntityType.GRID_DOOR and (grid.Desc.Type ~= GridEntityType.GRID_WALL or room:IsPositionInRoom(grid.Position, 0)) then
+            if grid and grid.Desc.Type ~= GridEntityType.GRID_DOOR and (grid.Desc.Type ~= GridEntityType.GRID_WALL or StageAPI.FixedIsPositionInRoom(grid.Position, 0)) then
                 gridInformation[i] = {
                     State = grid.State,
                     VarData = grid.VarData,
@@ -5768,6 +5784,28 @@ do -- Custom Doors
         end
     end
 
+    function StageAPI.GetFixedTopLeftPos()
+        local shape = room:GetRoomShape()
+        local data = StageAPI.WallData[shape]
+        if data then
+            return room:GetGridPosition(data.TopLeft) + Vector(20, 20)
+        end
+
+        return room:GetTopLeftPos()
+    end
+
+    function StageAPI.GetFixedBottomRightPos()
+        local fixedTL, originalTL = StageAPI.GetFixedTopLeftPos(), room:GetTopLeftPos()
+        local diff = fixedTL - originalTL
+        return room:GetBottomRightPos() + diff
+    end
+
+    function StageAPI.FixedIsPositionInRoom(pos, padding)
+        local padding = Vector(padding, padding)
+        local fixedTL, fixedBR = StageAPI.GetFixedTopLeftPos() + padding, StageAPI.GetFixedBottomRightPos() - padding
+        return pos.X > fixedTL.X and pos.Y > fixedTL.Y and pos.X < fixedBR.X and pos.Y < fixedBR.Y
+    end
+
     local framesWithoutDoorData = 0
     local hadFrameWithoutDoorData = false
     mod:AddCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, function(_, door)
@@ -5974,7 +6012,7 @@ do -- Custom Doors
 
                                 for i = 1,count do
                                     local direction = Vector.FromAngle(sprite.Rotation + StageAPI.Random(-90, 90))
-                                    if not room:IsPositionInRoom(door.Position + direction * 40, 0) then
+                                    if not StageAPI.FixedIsPositionInRoom(door.Position + direction * 40, 0) then
                                         direction = -direction
                                     end
 
@@ -6039,7 +6077,7 @@ do -- Custom Doors
         local transitionStarted
         for _, player in ipairs(players) do
             local size = 32 + player.Size
-            if not room:IsPositionInRoom(player.Position, -16) and player.Position:DistanceSquared(door.Position) < size * size then
+            if not StageAPI.FixedIsPositionInRoom(player.Position, -16) and player.Position:DistanceSquared(door.Position) < size * size then
                 if doorData.ExitFunction then
                     doorData.ExitFunction(door, data, sprite, doorData, data.DoorGridData)
                 end
@@ -6836,7 +6874,7 @@ do -- Backdrop & RoomGfx
 
         sprite:LoadGraphics()
 
-        local renderPos = room:GetTopLeftPos()
+        local renderPos = StageAPI.GetFixedTopLeftPos()
         if mode ~= 2 then
             renderPos = renderPos - Vector(80, 80)
         end
@@ -6917,7 +6955,7 @@ do -- Backdrop & RoomGfx
             local shadowEntity = Isaac.Spawn(StageAPI.E.StageShadow.T, StageAPI.E.StageShadow.V, 0, zeroVector, zeroVector, nil)
             shadowEntity:GetData().Sheet = sheet
             shadowEntity:GetData().Animation = anim
-            shadowEntity.Position = StageAPI.Lerp(room:GetTopLeftPos(), room:GetBottomRightPos(), 0.5)
+            shadowEntity.Position = StageAPI.Lerp(StageAPI.GetFixedTopLeftPos(), StageAPI.GetFixedBottomRightPos(), 0.5)
             shadowEntity:AddEntityFlags(EntityFlag.FLAG_DONT_OVERWRITE)
         end
     end
