@@ -2079,7 +2079,37 @@ do -- RoomsList
         [EntityType.ENTITY_MOTHERS_SHADOW] = true
     }
 
+    -- These rooms consist purely of wall entities placed where the walls of the room should be
+    -- Used to fix the occasional broken walls when entering extra rooms
+    StageAPI.WallDataLayouts = StageAPI.RoomsList("StageAPIWallData", fixInclude("resources.stageapi.luarooms.walldata"))
+    function StageAPI.FixWalls()
+        local shape = room:GetRoomShape()
+        local layouts = StageAPI.WallDataLayouts.ByShape[shape]
+        if layouts and layouts[1] then
+            local layout = layouts[1]
+            local validWallSpots = {}
+            for index, _ in pairs(layout.GridEntitiesByIndex) do
+                local grid = room:GetGridEntity(index)
+                validWallSpots[index] = true
+                if not grid or (grid.Desc.Type ~= GridEntityType.GRID_WALL and grid.Desc.Type ~= GridEntityType.GRID_DOOR) then
+                    room:SpawnGridEntity(index, GridEntityType.GRID_WALL, 0, 1, 0)
+                end
+            end
+
+            for i = 0, room:GetGridSize() do
+                local grid = room:GetGridEntity(i)
+                if not validWallSpots[i] and grid and grid.Desc.Type == GridEntityType.GRID_WALL then
+                    room:RemoveGridEntity(i, 0, false)
+                end
+            end
+        end
+    end
+
     function StageAPI.ClearRoomLayout(keepDecoration, doGrids, doEnts, doPersistentEnts, onlyRemoveTheseDecorations, doWalls, doDoors, skipIndexedGrids)
+        if StageAPI.InOrTransitioningToExtraRoom() and room:GetType() ~= RoomType.ROOM_DUNGEON then
+            StageAPI.FixWalls()
+        end
+
         if doEnts or doPersistentEnts then
             for _, ent in ipairs(Isaac.GetRoomEntities()) do
                 local etype = ent.Type
@@ -10785,6 +10815,10 @@ do -- Custom Floor Generation
 
     function StageAPI.InExtraRoom()
         return not not (StageAPI.CurrentLevelMapID and StageAPI.CurrentLevelMapRoomID)
+    end
+
+    function StageAPI.InOrTransitioningToExtraRoom()
+        return StageAPI.InExtraRoom() or StageAPI.TransitioningToExtraRoom
     end
 
     function StageAPI.CreateMapFromRoomsList(roomsList, useMapID)
