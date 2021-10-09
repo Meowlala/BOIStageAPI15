@@ -5025,6 +5025,7 @@ do -- Extra Rooms
     }, defaultSpecialRoomShapes)
 
     StageAPI.DataLoadNeedsRestart = false
+    StageAPI.GotoDataLoaded = false
     mod:AddCallback(ModCallbacks.MC_POST_GAME_STARTED, function()
         if not StageAPI.InTestMode then
             local needsToLoad
@@ -5077,7 +5078,13 @@ do -- Extra Rooms
                 game:StartRoomTransition(currentIndex, Direction.NO_DIRECTION, 0)
             end
         end
+
+        StageAPI.GotoDataLoaded = true
     end)
+
+    function StageAPI.FinishedLoadingData()
+        return StageAPI.GotoDataLoaded and not StageAPI.DataLoadNeedsRestart
+    end
 
     mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, function()
         if StageAPI.DataLoadNeedsRestart then
