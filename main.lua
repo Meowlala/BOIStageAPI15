@@ -386,14 +386,21 @@ Lerp(first, second, percent)
 ReverseIterate() -- in place of ipairs / pairs.
 ]]
 
+local function fixInclude(...)
+    local includeFunc = include or require
+
+    local status, ret = pcall(includeFunc, ...)
+    if status then
+        return ret
+    else
+        return require(...)
+    end
+end
+
 Isaac.DebugString("[StageAPI] Loading Core Definitions")
 do -- Core Definitions
     if not StageAPI then
         StageAPI = {}
-    end
-
-    if not include then
-        include = require
     end
 
     function StageAPI.LogConcat(prefix, ...)
@@ -11226,7 +11233,7 @@ do -- Custom Floor Generation
 
     local testingStage
     local testingRoomsList
-    local testSuite = include("resources.stageapi.luarooms.testsuite")
+    local testSuite = fixInclude("resources.stageapi.luarooms.testsuite")
     local mapLayoutTestRoomsList = StageAPI.RoomsList("MapLayoutTest", testSuite)
     mod:AddCallback(ModCallbacks.MC_EXECUTE_CMD, function(_, cmd, params)
         if cmd == "teststage" then
@@ -11263,7 +11270,7 @@ do -- Custom Floor Generation
 end
 
 -- Load base game reimplementation data
-include("data")
+fixInclude("data")
 
 StageAPI.LogMinor("Loading BR Compatibility")
 do -- BR Compatibility
@@ -12068,7 +12075,7 @@ other than a door
 end
 
 StageAPI.LogMinor("Fully Loaded, loading dependent mods.")
-StageAPI.MarkLoaded("StageAPI", "1.94", true, true)
+StageAPI.MarkLoaded("StageAPI", "2.01", true, true)
 
 StageAPI.Loaded = true
 if StageAPI.ToCall then
