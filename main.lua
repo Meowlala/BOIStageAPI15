@@ -5785,25 +5785,35 @@ do -- Custom Doors
     end
 
     function StageAPI.GetFixedTopLeftPos()
-        local shape = room:GetRoomShape()
-        local data = StageAPI.WallData[shape]
-        if data then
-            return room:GetGridPosition(data.TopLeft) + Vector(20, 20)
+        if StageAPI.InOrTransitioningToExtraRoom() then
+            local shape = room:GetRoomShape()
+            local data = StageAPI.WallData[shape]
+            if data then
+                return room:GetGridPosition(data.TopLeft) + Vector(20, 20)
+            end
         end
 
         return room:GetTopLeftPos()
     end
 
     function StageAPI.GetFixedBottomRightPos()
-        local fixedTL, originalTL = StageAPI.GetFixedTopLeftPos(), room:GetTopLeftPos()
-        local diff = fixedTL - originalTL
-        return room:GetBottomRightPos() + diff
+        if StageAPI.InOrTransitioningToExtraRoom() then
+            local fixedTL, originalTL = StageAPI.GetFixedTopLeftPos(), room:GetTopLeftPos()
+            local diff = fixedTL - originalTL
+            return room:GetBottomRightPos() + diff
+        end
+
+        return room:GetBottomRightPos()
     end
 
     function StageAPI.FixedIsPositionInRoom(pos, padding)
-        local padding = Vector(padding, padding)
-        local fixedTL, fixedBR = StageAPI.GetFixedTopLeftPos() + padding, StageAPI.GetFixedBottomRightPos() - padding
-        return pos.X > fixedTL.X and pos.Y > fixedTL.Y and pos.X < fixedBR.X and pos.Y < fixedBR.Y
+        if StageAPI.InOrTransitioningToExtraRoom() then
+            local padding = Vector(padding, padding)
+            local fixedTL, fixedBR = StageAPI.GetFixedTopLeftPos() + padding, StageAPI.GetFixedBottomRightPos() - padding
+            return pos.X > fixedTL.X and pos.Y > fixedTL.Y and pos.X < fixedBR.X and pos.Y < fixedBR.Y
+        end
+
+        return room:IsPositionInRoom(pos, padding)
     end
 
     local framesWithoutDoorData = 0
