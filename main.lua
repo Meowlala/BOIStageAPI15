@@ -5562,7 +5562,7 @@ do -- Custom Doors
 
     StageAPI.DoorTypes = {}
     StageAPI.CustomDoor = StageAPI.Class("CustomDoor")
-    function StageAPI.CustomDoor:Init(name, anm2, openAnim, closeAnim, openedAnim, closedAnim, noAutoHandling, alwaysOpen, exitFunction, directionOffsets)
+    function StageAPI.CustomDoor:Init(name, anm2, openAnim, closeAnim, openedAnim, closedAnim, noAutoHandling, alwaysOpen, exitFunction, directionOffsets, transitionAnim)
         self.NoAutoHandling = noAutoHandling
         self.AlwaysOpen = alwaysOpen
         self.Anm2 = anm2 or "gfx/grid/door_01_normaldoor.anm2"
@@ -5572,6 +5572,7 @@ do -- Custom Doors
         self.ClosedAnim = closedAnim or "Closed"
         self.ExitFunction = exitFunction
         self.DirectionOffsets = directionOffsets
+        self.TransitionAnim = transitionAnim
         self.Name = name
         StageAPI.DoorTypes[name] = self
     end
@@ -5632,7 +5633,7 @@ do -- Custom Doors
         return renderOverlay, not not anim, not not overlayAnim
     end
 
-    function StageAPI.SpawnCustomDoor(slot, leadsTo, levelMapID, doorDataName, data, exitSlot, doorSprite)
+    function StageAPI.SpawnCustomDoor(slot, leadsTo, levelMapID, doorDataName, data, exitSlot, doorSprite, transitionAnim)
         if type(levelMapID) == "table" then
             levelMapID = levelMapID.Dimension
         end
@@ -5645,7 +5646,8 @@ do -- Custom Doors
             LevelMapID = levelMapID,
             DoorDataName = doorDataName,
             Data = data,
-            DoorSprite = doorSprite
+            DoorSprite = doorSprite,
+            TransitionAnim = transitionAnim
         })
     end
 
@@ -6093,9 +6095,10 @@ do -- Custom Doors
                 end
 
                 local leadsTo = data.DoorGridData.LeadsTo
+                local transitionAnim = data.DoorGridData.TransitionAnim or doorData.TransitionAnim or RoomTransitionAnim.WALK
                 if leadsTo then
                     transitionStarted = true
-                    StageAPI.ExtraRoomTransition(leadsTo, StageAPI.DoorSlotToDirection[data.DoorGridData.Slot], RoomTransitionAnim.WALK, data.DoorGridData.LevelMapID, data.DoorGridData.Slot, data.DoorGridData.ExitSlot)
+                    StageAPI.ExtraRoomTransition(leadsTo, StageAPI.DoorSlotToDirection[data.DoorGridData.Slot], transitionAnim, data.DoorGridData.LevelMapID, data.DoorGridData.Slot, data.DoorGridData.ExitSlot)
                 end
             end
         end
