@@ -9428,7 +9428,8 @@ do -- Callbacks
 
         StageAPI.CallCallbacks("POST_STAGEAPI_NEW_ROOM", false, justGenerated)
 
-        if not StageAPI.InNewStage() then
+        local stageType = level:GetStageType()
+        if not StageAPI.InNewStage() and stageType ~= StageType.STAGETYPE_REPENTANCE and stageType ~= StageType.STAGETYPE_REPENTANCE_B then
             local stage = level:GetStage()
             if stage == LevelStage.STAGE2_1 or stage == LevelStage.STAGE2_2 then
                 StageAPI.ChangeStageShadow("stageapi/floors/catacombs/overlays/", 5)
