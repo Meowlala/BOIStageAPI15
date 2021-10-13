@@ -9426,7 +9426,7 @@ do -- Callbacks
             end
         end
 
-        StageAPI.CallCallbacks("POST_STAGEAPI_NEW_ROOM", false, justGenerated)
+        StageAPI.TransitioningToExtraRoom = false
 
         local stageType = level:GetStageType()
         if not StageAPI.InNewStage() and stageType ~= StageType.STAGETYPE_REPENTANCE and stageType ~= StageType.STAGETYPE_REPENTANCE_B then
@@ -9467,7 +9467,8 @@ do -- Callbacks
 
         StageAPI.LastBackdropType = room:GetBackdropType()
         StageAPI.RoomRendered = false
-        StageAPI.TransitioningToExtraRoom = false
+
+        StageAPI.CallCallbacks("POST_STAGEAPI_NEW_ROOM", false, justGenerated)
     end)
 
     function StageAPI.GetGridPosition(index, width)
