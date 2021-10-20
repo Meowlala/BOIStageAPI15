@@ -5199,6 +5199,14 @@ do -- Extra Rooms
         [RoomShape.ROOMSHAPE_LBR] = true
     }
 
+    StageAPI.LargeRoomShapes = {
+        [RoomShape.ROOMSHAPE_LTL] = true,
+        [RoomShape.ROOMSHAPE_LTR] = true,
+        [RoomShape.ROOMSHAPE_LBL] = true,
+        [RoomShape.ROOMSHAPE_LBR] = true,
+        [RoomShape.ROOMSHAPE_2x2] = true,
+    }
+
     local function anyPlayerHas(id, trinket)
         for _, player in ipairs(players) do
             if trinket then
@@ -5318,22 +5326,24 @@ do -- Extra Rooms
         local taken = {}
         local default = StageAPI.GetNextFreeBaseGridRoom(StageAPI.BaseGridRoomPriority, taken, nextIsBoss)
         local alternate = StageAPI.GetNextFreeBaseGridRoom(StageAPI.BaseGridRoomPriority, taken, nextIsBoss)
-        local lDefault = StageAPI.GetNextFreeBaseGridRoom(StageAPI.BaseLGridRoomPriority, taken, nextIsBoss)
-        local lAlternate = StageAPI.GetNextFreeBaseGridRoom(StageAPI.BaseLGridRoomPriority, taken, nextIsBoss)
+        local largeDefault = StageAPI.GetNextFreeBaseGridRoom(StageAPI.BaseLGridRoomPriority, taken, nextIsBoss)
+        local largeAlternate = StageAPI.GetNextFreeBaseGridRoom(StageAPI.BaseLGridRoomPriority, taken, nextIsBoss)
 
-        return default, alternate, lDefault, lAlternate
+        return default, alternate, largeDefault, largeAlternate
     end
 
-    function StageAPI.ExtraRoomTransition(levelMapRoomID, direction, transitionType, levelMapID, leaveDoor, enterDoor, setPlayerPosition, extraRoomBaseType)
+    function StageAPI.ExtraRoomTransition(levelMapRoomID, direction, transitionType, levelMapID, leaveDoor, enterDoor, setPlayerPosition, extraRoomBaseType, noSave)
         leaveDoor = leaveDoor or -1
         enterDoor = enterDoor or -1
         transitionType = transitionType or RoomTransitionAnim.WALK
         direction = direction or Direction.NO_DIRECTION
         StageAPI.ForcePlayerNewRoomPosition = setPlayerPosition
 
-        local currentRoom = StageAPI.GetCurrentRoom()
-        if currentRoom and currentRoom.IsExtraRoom then
-            currentRoom:Save()
+        if not noSave then
+            local currentRoom = StageAPI.GetCurrentRoom()
+            if currentRoom and currentRoom.IsExtraRoom then
+                currentRoom:Save()
+            end
         end
 
         local transitionFrom = level:GetCurrentRoomIndex()
@@ -5404,20 +5414,20 @@ do -- Extra Rooms
         end
 
         if not transitionTo then
-            local defaultGridRoom, alternateGridRoom, defaultLGridRoom, alternateLGridRoom = StageAPI.GetExtraRoomBaseGridRooms(extraRoomBaseType == RoomType.ROOM_BOSS)
+            local defaultGridRoom, alternateGridRoom, defaultLargeGridRoom, alternateLargeGridRoom = StageAPI.GetExtraRoomBaseGridRooms(extraRoomBaseType == RoomType.ROOM_BOSS)
 
             transitionTo = defaultGridRoom
 
-            if setDataForShape and StageAPI.LRoomShapes[setDataForShape] then
-                transitionTo = defaultLGridRoom
+            if setDataForShape and StageAPI.LargeRoomShapes[setDataForShape] then
+                transitionTo = defaultLargeGridRoom
             end
 
             -- alternating between two off-grid rooms makes transitions between certain room types and shapes cleaner
             if transitionFrom < 0 and transitionFrom == transitionTo then
                 if transitionTo == defaultGridRoom then
                     transitionTo = alternateGridRoom
-                elseif transitionTo == defaultLGridRoom then
-                    transitionTo = alternateLGridRoom
+                elseif transitionTo == defaultLargeGridRoom then
+                    transitionTo = alternateLargeGridRoom
                 end
             end
         end
@@ -9212,7 +9222,7 @@ do -- Callbacks
 
         if StageAPI.TransitioningToExtraRoom and StageAPI.IsRoomTopLeftShifted() and not StageAPI.DoubleTransitioning then
             StageAPI.DoubleTransitioning = true
-            local defaultGridRoom, alternateGridRoom, defaultLGridRoom, alternateLGridRoom = StageAPI.GetExtraRoomBaseGridRooms(extraRoomBaseType == RoomType.ROOM_BOSS)
+            local defaultGridRoom, alternateGridRoom, defaultLargeGridRoom, alternateLargeGridRoom = StageAPI.GetExtraRoomBaseGridRooms(extraRoomBaseType == RoomType.ROOM_BOSS)
             local targetRoom
             if level:GetCurrentRoomIndex() == defaultGridRoom then
                 targetRoom = alternateGridRoom
