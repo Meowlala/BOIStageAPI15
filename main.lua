@@ -9213,11 +9213,22 @@ do -- Callbacks
         if StageAPI.TransitioningToExtraRoom and StageAPI.IsRoomTopLeftShifted() and not StageAPI.DoubleTransitioning then
             StageAPI.DoubleTransitioning = true
             local defaultGridRoom, alternateGridRoom, defaultLGridRoom, alternateLGridRoom = StageAPI.GetExtraRoomBaseGridRooms(extraRoomBaseType == RoomType.ROOM_BOSS)
+            local targetRoom
             if level:GetCurrentRoomIndex() == defaultGridRoom then
-                level:ChangeRoom(alternateGridRoom)
+                targetRoom = alternateGridRoom
             else
-                level:ChangeRoom(defaultGridRoom)
+                targetRoom = defaultGridRoom
             end
+
+            local targetRoomDesc = level:GetRoomByIdx(targetRoom)
+            local targetGotoData, targetGotoLockedData = StageAPI.GetGotoDataForTypeShape(room:GetType(), room:GetRoomShape())
+            if targetGotoLockedData and StageAPI.DoorOneSlots[level.EnterDoor] then
+                targetRoomDesc.Data = targetGotoLockedData
+            else
+                targetRoomDesc.Data = targetGotoData
+            end
+
+            level:ChangeRoom(targetRoom)
 
             return
         end
