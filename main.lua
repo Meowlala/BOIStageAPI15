@@ -1515,7 +1515,7 @@ do -- RoomsList
 
     function StageAPI.ForAllSpawnEntries(data, func)
         local spawns = data.Spawns
-        for i = 0, spawns.Size do
+        for i = 0, spawns.Size - 1 do
             local spawn = spawns:Get(i)
             local shouldBreak
             if spawn then
@@ -2650,7 +2650,7 @@ do -- RoomsList
 
     function StageAPI.RoomDataHasMetadataEntity(data)
         local spawns = data.Spawns
-        for i = 0, spawns.Size do
+        for i = 0, spawns.Size - 1 do
             local spawn = spawns:Get(i)
             if spawn then
                 local sumWeight = spawn.SumWeights
@@ -5255,7 +5255,7 @@ do -- Extra Rooms
                 elseif idx == GridRooms.ROOM_ROTGUT_DUNGEON1_IDX or idx == GridRooms.ROOM_ROTGUT_DUNGEON2_IDX then
                     local rooms = level:GetRooms()
                     local hasRotgutRoom
-                    for i = 0, rooms.Size do
+                    for i = 0, rooms.Size - 1 do
                         local desc = rooms:Get(i)
                         if desc and desc.Data.Type == RoomType.ROOM_BOSS and desc.Data.Subtype == 87 then
                             hasRotgutRoom = true
@@ -9615,7 +9615,7 @@ do -- Callbacks
             end
         elseif cmd == "roomtest" then
             local roomsList = level:GetRooms()
-            for i = 0, roomsList.Size do
+            for i = 0, roomsList.Size - 1 do
                 local roomDesc = roomsList:Get(i)
                 if roomDesc and roomDesc.Data.Type == RoomType.ROOM_DEFAULT then
                     game:ChangeRoom(roomDesc.SafeGridIndex)
