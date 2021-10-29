@@ -10729,7 +10729,8 @@ do -- Custom Floor Generation
                     Position = Vector(roomData.X, roomData.Y),
                     AdjacentDisplayFlags = MinimapAPI.RoomTypeDisplayFlagsAdjacent[levelRoom.RoomType] or 5,
                     Type = levelRoom.RoomType,
-                    Dimension = dim
+                    Dimension = dim,
+                    ID = roomData.MapID
                 }
                 if t.Type == RoomType.ROOM_SECRET or t.Type == RoomType.ROOM_SUPERSECRET then
                     t.Hidden = 1
