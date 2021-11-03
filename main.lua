@@ -8177,7 +8177,7 @@ do -- Transition
 
     function StageAPI.PlayTransitionAnimation(stage)
         local gfxData = StageAPI.TryGetPlayerGraphicsInfo(players[1])
-        StageAPI.PlayTransitionAnimationManual(gfxData.PortraitBig, stage.TransitionIcon, stage.TransitionMusic, stage.Music[RoomType.ROOM_DEFAULT], gfxData.NoShake)
+        StageAPI.PlayTransitionAnimationManual(gfxData.PortraitBig, stage.TransitionIcon, stage.TransitionMusic, stage.Music and stage.Music[RoomType.ROOM_DEFAULT], gfxData.NoShake)
     end
 
     StageAPI.StageRNG = RNG()
@@ -9259,6 +9259,13 @@ do -- Callbacks
             levelRoom.Loaded = false
         end
 
+        local setDefaultLevelMap
+        if not StageAPI.TransitioningToExtraRoom then
+            setDefaultLevelMap = true
+            StageAPI.CurrentLevelMapID = StageAPI.DefaultLevelMapID
+            StageAPI.CurrentLevelMapRoomID = nil
+        end
+
         if (inStartingRoom and StageAPI.GetDimension() == 0 and room:IsFirstVisit()) or (isNewStage and not StageAPI.CurrentStage) then
             if inStartingRoom then
                 local maintainGrids = {}
@@ -9295,6 +9302,18 @@ do -- Callbacks
                 end
             end
 
+            if not StageAPI.DefaultLevelMapID then
+                local defaultLevelMap = StageAPI.LevelMap{OverlapDimension = 0}
+                StageAPI.DefaultLevelMapID = defaultLevelMap.Dimension
+                if setDefaultLevelMap then
+                    StageAPI.CurrentLevelMapID = StageAPI.DefaultLevelMapID
+                end
+            end
+
+            if not StageAPI.CurrentLevelMapID then
+                StageAPI.CurrentLevelMapID = StageAPI.DefaultLevelMapID
+            end
+
             StageAPI.PreviousBaseLevelLayout = {}
             StageAPI.CurrentStage = nil
             if isNewStage then
@@ -9323,20 +9342,6 @@ do -- Callbacks
         end
 
         StageAPI.DetectBaseLayoutChanges(false)
-
-        if not StageAPI.DefaultLevelMapID then
-            local defaultLevelMap = StageAPI.LevelMap{OverlapDimension = 0}
-            StageAPI.DefaultLevelMapID = defaultLevelMap.Dimension
-        end
-
-        if not StageAPI.CurrentLevelMapID then
-            StageAPI.CurrentLevelMapID = StageAPI.DefaultLevelMapID
-        end
-
-        if not StageAPI.TransitioningToExtraRoom then
-            StageAPI.CurrentLevelMapID = StageAPI.DefaultLevelMapID
-            StageAPI.CurrentLevelMapRoomID = nil
-        end
 
         local currentListIndex = StageAPI.GetCurrentRoomID()
         local currentRoom, justGenerated, boss = StageAPI.GetCurrentRoom(), nil, nil
