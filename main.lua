@@ -1559,6 +1559,29 @@ do -- RoomsList
         return layout
     end
 
+    -- convenience function for testing if an entity exists anywhere in a stage's room layouts
+    function StageAPI.EntityInLevel(id, variant, subtype, defaultRoomsOnly)
+        local roomsList = level:GetRooms()
+        for i = 0, roomsList.Size - 1 do
+            local roomDesc = roomsList:Get(i)
+            if roomDesc and (not defaultRoomsOnly or roomDesc.Data.Type == RoomType.ROOM_DEFAULT) then
+                local foundMatch
+                StageAPI.ForAllSpawnEntries(roomDesc.Data, function(entry)
+                    if entry.Type == id and (not variant or entry.Variant == variant) and (not subtype or entry.Subtype == subtype) then
+                        foundMatch = true
+                        return true
+                    end
+                end)
+
+                if foundMatch then
+                    return true, i, roomDesc.SafeGridIndex
+                end
+            end
+        end
+
+        return false
+    end
+
     StageAPI.Layouts = {}
     function StageAPI.RegisterLayout(name, layout)
         StageAPI.Layouts[name] = layout
