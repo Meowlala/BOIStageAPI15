@@ -4917,14 +4917,6 @@ end
 
 StageAPI.LogMinor("Loading Extra Room Handler")
 do -- Extra Rooms
-    if not RoomType.ROOM_SECRET_EXIT then
-        RoomType.ROOM_SECRET_EXIT = 27
-    end
-
-    if not RoomType.ROOM_BLUE then
-        RoomType.ROOM_BLUE = 28
-    end
-
     StageAPI.RoomTypeToGotoPrefix = {
         [RoomType.ROOM_DEFAULT] = "d.",
         [RoomType.ROOM_SHOP] = "s.shop.",
