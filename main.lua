@@ -7816,7 +7816,7 @@ do -- Bosses
             end
 
             local centerPos = StageAPI.GetScreenCenterPosition()
-            local layerRenderOrder = {0,1,2,3,14,9,13,4,12,6,7,8,10}
+            local layerRenderOrder = {0,1,2,3,14,9,13,4,5,6,7,8,10}
             for _, layer in ipairs(layerRenderOrder) do
                 local pos = centerPos
                 if StageAPI.BossOffset then
@@ -7880,7 +7880,7 @@ do -- Bosses
             BossPortraitTwo = boss.PortraitTwo,
             BossName = boss.BossName or boss.Bossname,
             BossSpot = boss.Spot or bSpot,
-            PlayerPortrait = gfxData.Portrait,
+            PlayerPortrait = gfxData.BossPortrait or gfxData.Portrait,
             PlayerName = gfxData.Name,
             PlayerSpot = pSpot,
             Unskippable = unskippable,
@@ -8218,7 +8218,7 @@ do -- Transition
 
     function StageAPI.PlayTransitionAnimation(stage)
         local gfxData = StageAPI.TryGetPlayerGraphicsInfo(players[1])
-        StageAPI.PlayTransitionAnimationManual(gfxData.BossPortrait or gfxData.Portrait, stage.TransitionIcon, stage.TransitionMusic, stage.Music and stage.Music[RoomType.ROOM_DEFAULT], gfxData.NoShake)
+        StageAPI.PlayTransitionAnimationManual(gfxData.Portrait, stage.TransitionIcon, stage.TransitionMusic, stage.Music and stage.Music[RoomType.ROOM_DEFAULT], gfxData.NoShake)
     end
 
     StageAPI.StageRNG = RNG()
@@ -8243,7 +8243,7 @@ do -- Transition
 
             if playTransition then
                 local gfxData = StageAPI.TryGetPlayerGraphicsInfo(players[1])
-                StageAPI.PlayTransitionAnimationManual(gfxData.BossPortrait or gfxData.Portrait, StageAPI.GetLevelTransitionIcon(stage.Stage, stageType), nil, nil, gfxData.NoShake)
+                StageAPI.PlayTransitionAnimationManual(gfxData.Portrait, StageAPI.GetLevelTransitionIcon(stage.Stage, stageType), nil, nil, gfxData.NoShake)
             end
 
             Isaac.ExecuteCommand("stage " .. tostring(stage.Stage) .. StageAPI.StageTypeToString[stageType])
