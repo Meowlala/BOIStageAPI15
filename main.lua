@@ -7626,13 +7626,6 @@ do -- Bosses
             use = "theforgotten"
         end
 
-        local portraitbig
-        if k == "lilith" or k == "keeper" then
-            portraitbig = "gfx/ui/stage/playerportraitbig_" .. use .. ".png"
-        else
-            portraitbig = "gfx/ui/stage/playerportraitbig_" .. v .. "_" .. use .. ".png"
-        end
-
         local name
         if k == "keeper" then
             name = "gfx/ui/boss/playername_" .. v .. "_the" .. use .. ".png"
@@ -7640,10 +7633,11 @@ do -- Bosses
             name = "gfx/ui/boss/playername_" .. v .. "_" .. use .. ".png"
         end
 
+        local portraitPath = "gfx/ui/stage/playerportrait_" .. use .. ".png"
+
         StageAPI.PlayerBossInfo[k] = {
-            Portrait = "gfx/ui/boss/playerportrait_" .. v .. "_" .. use .. ".png",
+            Portrait = portraitPath,
             Name = name,
-            PortraitBig = portraitbig
         }
     end
 
@@ -7657,13 +7651,15 @@ do -- Bosses
     StageAPI.PlayerBossInfo.esau.ControlsFrame = 2
     StageAPI.PlayerBossInfo.thelost.NoShake = true
 
-    function StageAPI.AddPlayerGraphicsInfo(name, portrait, namefile, portraitbig, noshake)
+    -- bossportrait is optional since Repentance, used if you want
+    -- your character to have a different boss portrait than the stage one
+    function StageAPI.AddPlayerGraphicsInfo(name, portrait, namefile, bossportrait, noshake)
         local args = portrait
         if type(args) ~= "table" then
             args = {
                 Portrait = portrait,
                 Name = namefile,
-                PortraitBig = portraitbig,
+                BossPortrait = bossportrait,
                 NoShake = noshake,
 				Controls = nil,
                 ControlsFrame = 0,
@@ -7674,9 +7670,9 @@ do -- Bosses
         StageAPI.PlayerBossInfo[string.gsub(string.lower(name), "%s+", "")] = args
     end
 
-    StageAPI.AddPlayerGraphicsInfo("Black Judas", "gfx/ui/boss/playerportrait_blackjudas.png", "gfx/ui/boss/playername_04_judas.png", "gfx/ui/stage/playerportraitbig_blackjudas.png")
-    StageAPI.AddPlayerGraphicsInfo("Lazarus", "gfx/ui/boss/playerportrait_09_lazarus.png", "gfx/ui/boss/playername_10_lazarus.png", "gfx/ui/stage/playerportraitbig_09_lazarus.png")
-    StageAPI.AddPlayerGraphicsInfo("Lazarus II", "gfx/ui/boss/playerportrait_10_lazarus2.png", "gfx/ui/boss/playername_10_lazarus.png", "gfx/ui/stage/playerportraitbig_10_lazarus2.png")
+    StageAPI.AddPlayerGraphicsInfo("Black Judas", "gfx/ui/stage/playerportrait_darkjudas.png", "gfx/ui/boss/playername_04_judas.png")
+    StageAPI.AddPlayerGraphicsInfo("Lazarus", "gfx/ui/stage/playerportrait_lazarus.png", "gfx/ui/boss/playername_10_lazarus.png")
+    StageAPI.AddPlayerGraphicsInfo("Lazarus II", "gfx/ui/stage/playerportrait_lazarus2.png", "gfx/ui/boss/playername_10_lazarus.png")
 
     function StageAPI.GetStageSpot()
         if StageAPI.InNewStage() then
@@ -7717,9 +7713,8 @@ do -- Bosses
             return StageAPI.PlayerBossInfo[playerName]
         else -- worth a shot, most common naming convention
             return {
-                Portrait    = "gfx/ui/boss/playerportrait_" .. playerName .. ".png",
+                Portrait    = "gfx/ui/stage/playerportrait_" .. playerName .. ".png",
                 Name        = "gfx/ui/boss/playername_" .. playerName .. ".png",
-                PortraitBig = "gfx/ui/stage/playerportraitbig_" .. playerName .. ".png"
             }
         end
     end
@@ -8164,8 +8159,8 @@ do -- Transition
         return "stageapi/transition/levelicons/" .. base .. ".png"
     end
 
-    function StageAPI.PlayTransitionAnimationManual(portraitbig, icon, transitionmusic, queue, noshake)
-        portraitbig = portraitbig or "gfx/ui/stage/playerportraitbig_01_isaac.png"
+    function StageAPI.PlayTransitionAnimationManual(portrait, icon, transitionmusic, queue, noshake)
+        portrait = portrait or "gfx/ui/stage/playerportrait_isaac.png"
         icon = icon or "stageapi/transition/levelicons/unknown.png"
         transitionmusic = transitionmusic or Music.MUSIC_JINGLE_NIGHTMARE
 
@@ -8173,7 +8168,9 @@ do -- Transition
             queue = queue or StageAPI.Music:GetCurrentMusicID()
         end
 
-        StageAPI.TransitionAnimation:ReplaceSpritesheet(1, portraitbig)
+        REVEL.DebugLog(portrait, icon)
+
+        StageAPI.TransitionAnimation:ReplaceSpritesheet(1, portrait)
         StageAPI.TransitionAnimation:ReplaceSpritesheet(2, icon)
         StageAPI.TransitionAnimation:LoadGraphics()
         if noshake then
@@ -8192,7 +8189,7 @@ do -- Transition
 
     function StageAPI.PlayTransitionAnimation(stage)
         local gfxData = StageAPI.TryGetPlayerGraphicsInfo(players[1])
-        StageAPI.PlayTransitionAnimationManual(gfxData.PortraitBig, stage.TransitionIcon, stage.TransitionMusic, stage.Music and stage.Music[RoomType.ROOM_DEFAULT], gfxData.NoShake)
+        StageAPI.PlayTransitionAnimationManual(gfxData.BossPortrait or gfxData.Portrait, stage.TransitionIcon, stage.TransitionMusic, stage.Music and stage.Music[RoomType.ROOM_DEFAULT], gfxData.NoShake)
     end
 
     StageAPI.StageRNG = RNG()
@@ -8217,7 +8214,7 @@ do -- Transition
 
             if playTransition then
                 local gfxData = StageAPI.TryGetPlayerGraphicsInfo(players[1])
-                StageAPI.PlayTransitionAnimationManual(gfxData.PortraitBig, StageAPI.GetLevelTransitionIcon(stage.Stage, stageType), nil, nil, gfxData.NoShake)
+                StageAPI.PlayTransitionAnimationManual(gfxData.BossPortrait or gfxData.Portrait, StageAPI.GetLevelTransitionIcon(stage.Stage, stageType), nil, nil, gfxData.NoShake)
             end
 
             Isaac.ExecuteCommand("stage " .. tostring(stage.Stage) .. StageAPI.StageTypeToString[stageType])
