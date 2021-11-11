@@ -7730,17 +7730,26 @@ do -- Bosses
     end
 
     function StageAPI.TryGetPlayerGraphicsInfo(player)
-        local playerType = player:GetPlayerType()
+        local playerType
+        if type(player) == "number" then
+            playerType = player
+        else
+            playerType = player:GetPlayerType()
+        end
+
         if StageAPI.PlayerBossInfo[playerType] then
             return StageAPI.PlayerBossInfo[playerType]
-        else 
+        else
             -- worth a shot, most common naming convention
             local playerName
             if type(player) == "string" then
                 playerName = player
-            else
+            elseif type(player) ~= "number" then
                 playerName = player:GetName()
+            else
+                return StageAPI.PlayerBossInfo[PlayerType.PLAYER_ISAAC]
             end
+
             playerName = string.gsub(string.lower(playerName), "%s+", "")
 
             return {
