@@ -7596,44 +7596,63 @@ do -- Bosses
     end
 
     StageAPI.PlayerBossInfo = {
-        isaac = "01",
-        magdalene = "02",
-        cain = "03",
-        judas = "04",
-        eve = "05",
-        ["???"] = "06",
-        samson = "07",
-        azazel = "08",
-        eden = "09",
-        thelost = "12",
-        lilith = "13",
-        keeper = "14",
-        apollyon = "15",
-        theforgotten = "16",
-        thesoul = "16",
-		bethany = "18",
-		jacob = "19",
-		esau = "19"
+        [PlayerType.PLAYER_ISAAC] = {name = "isaac", id = "01"},
+        [PlayerType.PLAYER_MAGDALENE] = {name = "magdalene", id = "02"},
+        [PlayerType.PLAYER_CAIN] = {name = "cain", id = "03"},
+        [PlayerType.PLAYER_JUDAS] = {name = "judas", id = "04"},
+        [PlayerType.PLAYER_EVE] = {name = "eve", id = "05"},
+        [PlayerType.PLAYER_BLUEBABY] = {name = "???", id = "06"},
+        [PlayerType.PLAYER_SAMSON] = {name = "samson", id = "07"},
+        [PlayerType.PLAYER_AZAZEL] = {name = "azazel", id = "08"},
+        [PlayerType.PLAYER_LAZARUS] = {name = "lazarus", id = "09"},
+        [PlayerType.PLAYER_EDEN] = {name = "eden", id = "09"},
+        [PlayerType.PLAYER_THELOST] = {name = "thelost", id = "12"},
+        [PlayerType.PLAYER_LILITH] = {name = "lilith", id = "13"},
+        [PlayerType.PLAYER_KEEPER] = {name = "keeper", id = "14"},
+        [PlayerType.PLAYER_APOLLYON] = {name = "apollyon", id = "15"},
+        [PlayerType.PLAYER_THEFORGOTTEN] = {name = "theforgotten", id = "16"},
+        [PlayerType.PLAYER_THESOUL] = {name = "theforgotten", id = "16"},
+        [PlayerType.PLAYER_BETHANY] = {name = "bethany", id = "01x"},
+        -- Esau isn't used in the transitions
+
+        [PlayerType.PLAYER_ISAAC_B] = {name = "isaac", id = "01", b = true},
+        [PlayerType.PLAYER_MAGDALENE_B] = {name = "magdalene", id = "02", b = true},
+        [PlayerType.PLAYER_CAIN_B] = {name = "cain", id = "03", b = true},
+        [PlayerType.PLAYER_JUDAS_B] = {name = "judas", id = "04", b = true},
+        [PlayerType.PLAYER_EVE_B] = {name = "eve", id = "05", b = true},
+        [PlayerType.PLAYER_BLUEBABY_B] = {name = "???", id = "06", b = true},
+        [PlayerType.PLAYER_SAMSON_B] = {name = "samson", id = "07", b = true},
+        [PlayerType.PLAYER_AZAZEL_B] = {name = "azazel", id = "08", b = true},
+        [PlayerType.PLAYER_LAZARUS_B] = {name = "lazarus", id = "09", b = true},
+        [PlayerType.PLAYER_EDEN_B] = {name = "eden", id = "09", b = true},
+        [PlayerType.PLAYER_THELOST_B] = {name = "thelost", id = "12", b = true},
+        [PlayerType.PLAYER_LILITH_B] = {name = "lilith", id = "13", b = true},
+        [PlayerType.PLAYER_KEEPER_B] = {name = "keeper", id = "14", b = true},
+        [PlayerType.PLAYER_APOLLYON_B] = {name = "apollyon", id = "15", b = true},
+        [PlayerType.PLAYER_THEFORGOTTEN_B] = {name = "theforgotten", id = "16", b = true},
+        [PlayerType.PLAYER_THESOUL_B] = {name = "theforgotten", id = "16", b = true},
+        [PlayerType.PLAYER_BETHANY_B] = {name = "bethany", id = "01x", b = true},
     }
 
     for k, v in pairs(StageAPI.PlayerBossInfo) do
-        local use = k
+        local use = v.name
         if k == "???" then
             use = "bluebaby"
         end
 
-        if k == "thesoul" then
-            use = "theforgotten"
-        end
-
         local name
         if k == "keeper" then
-            name = "gfx/ui/boss/playername_" .. v .. "_the" .. use .. ".png"
+            name = "gfx/ui/boss/playername_" .. v.id .. "_the" .. use .. ".png"
         else
-            name = "gfx/ui/boss/playername_" .. v .. "_" .. use .. ".png"
+            name = "gfx/ui/boss/playername_" .. v.id .. "_" .. use .. ".png"
         end
 
-        local portraitPath = "gfx/ui/stage/playerportrait_" .. use .. ".png"
+        local portraitPath
+        if v.b then
+            portraitPath = "gfx/ui/stage/playerportrait_" .. use .. "_b.png"
+        else
+            portraitPath = "gfx/ui/stage/playerportrait_" .. use .. ".png"
+        end
 
         StageAPI.PlayerBossInfo[k] = {
             Portrait = portraitPath,
@@ -7641,19 +7660,25 @@ do -- Bosses
         }
     end
 
-    StageAPI.PlayerBossInfo["???"].NoShake = true
-    StageAPI.PlayerBossInfo.keeper.NoShake = true
-    StageAPI.PlayerBossInfo.theforgotten.NoShake = true
-    StageAPI.PlayerBossInfo.thesoul.NoShake = true
-    StageAPI.PlayerBossInfo.theforgotten.ControlsFrame = 1
-    StageAPI.PlayerBossInfo.thesoul.ControlsFrame = 1
-	StageAPI.PlayerBossInfo.jacob.ControlsFrame = 2
-    StageAPI.PlayerBossInfo.esau.ControlsFrame = 2
-    StageAPI.PlayerBossInfo.thelost.NoShake = true
+    StageAPI.PlayerBossInfo[PlayerType.PLAYER_BLUEBABY].NoShake = true
+    StageAPI.PlayerBossInfo[PlayerType.PLAYER_KEEPER].NoShake = true
+    StageAPI.PlayerBossInfo[PlayerType.PLAYER_THEFORGOTTEN].NoShake = true
+    StageAPI.PlayerBossInfo[PlayerType.PLAYER_THESOUL].NoShake = true
+    StageAPI.PlayerBossInfo[PlayerType.PLAYER_THEFORGOTTEN].ControlsFrame = 1
+    StageAPI.PlayerBossInfo[PlayerType.PLAYER_THESOUL].ControlsFrame = 1
+    StageAPI.PlayerBossInfo[PlayerType.PLAYER_THELOST].NoShake = true
+
+    StageAPI.PlayerBossInfo[PlayerType.PLAYER_BLUEBABY_B].NoShake = true
+    StageAPI.PlayerBossInfo[PlayerType.PLAYER_KEEPER_B].NoShake = true
+    StageAPI.PlayerBossInfo[PlayerType.PLAYER_THEFORGOTTEN_B].NoShake = true
+    StageAPI.PlayerBossInfo[PlayerType.PLAYER_THESOUL_B].NoShake = true
+    StageAPI.PlayerBossInfo[PlayerType.PLAYER_THEFORGOTTEN_B].ControlsFrame = 1
+    StageAPI.PlayerBossInfo[PlayerType.PLAYER_THESOUL_B].ControlsFrame = 1
+    StageAPI.PlayerBossInfo[PlayerType.PLAYER_THELOST_B].NoShake = true
 
     -- bossportrait is optional since Repentance, used if you want
     -- your character to have a different boss portrait than the stage one
-    function StageAPI.AddPlayerGraphicsInfo(name, portrait, namefile, bossportrait, noshake)
+    function StageAPI.AddPlayerGraphicsInfo(playertype, portrait, namefile, noshake, bossportrait)
         local args = portrait
         if type(args) ~= "table" then
             args = {
@@ -7667,12 +7692,16 @@ do -- Bosses
             }
         end
 
-        StageAPI.PlayerBossInfo[string.gsub(string.lower(name), "%s+", "")] = args
+        StageAPI.PlayerBossInfo[playertype] = args
     end
 
-    StageAPI.AddPlayerGraphicsInfo("Black Judas", "gfx/ui/stage/playerportrait_darkjudas.png", "gfx/ui/boss/playername_04_judas.png")
-    StageAPI.AddPlayerGraphicsInfo("Lazarus", "gfx/ui/stage/playerportrait_lazarus.png", "gfx/ui/boss/playername_10_lazarus.png")
-    StageAPI.AddPlayerGraphicsInfo("Lazarus II", "gfx/ui/stage/playerportrait_lazarus2.png", "gfx/ui/boss/playername_10_lazarus.png")
+    StageAPI.AddPlayerGraphicsInfo(PlayerType.PLAYER_BLACKJUDAS, "gfx/ui/stage/playerportrait_darkjudas.png", "gfx/ui/boss/playername_04_judas.png")
+    StageAPI.AddPlayerGraphicsInfo(PlayerType.PLAYER_LAZARUS2, "gfx/ui/stage/playerportrait_lazarus2.png", "gfx/ui/boss/playername_10_lazarus.png")
+    StageAPI.AddPlayerGraphicsInfo(PlayerType.PLAYER_LAZARUS2_B, "gfx/ui/stage/playerportrait_lazarus_b_dead.png", "gfx/ui/boss/playername_10_lazarus.png")
+    StageAPI.AddPlayerGraphicsInfo(PlayerType.PLAYER_JACOB, "gfx/ui/stage/playerportrait_jacob.png", "gfx/ui/boss/playername_02x_jacob_esau.png")
+    StageAPI.AddPlayerGraphicsInfo(PlayerType.PLAYER_JACOB_B, "gfx/ui/stage/playerportrait_jacob_b.png", "gfx/ui/boss/playername_02x_jacob.png")
+
+	StageAPI.PlayerBossInfo[PlayerType.PLAYER_JACOB].ControlsFrame = 2
 
     function StageAPI.GetStageSpot()
         if StageAPI.InNewStage() then
@@ -7701,17 +7730,19 @@ do -- Bosses
     end
 
     function StageAPI.TryGetPlayerGraphicsInfo(player)
-        local playerName
-        if type(player) == "string" then
-            playerName = player
-        else
-            playerName = player:GetName()
-        end
-        playerName = string.gsub(string.lower(playerName), "%s+", "")
+        local playerType = player:GetPlayerType()
+        if StageAPI.PlayerBossInfo[playerType] then
+            return StageAPI.PlayerBossInfo[playerType]
+        else 
+            -- worth a shot, most common naming convention
+            local playerName
+            if type(player) == "string" then
+                playerName = player
+            else
+                playerName = player:GetName()
+            end
+            playerName = string.gsub(string.lower(playerName), "%s+", "")
 
-        if StageAPI.PlayerBossInfo[playerName] then
-            return StageAPI.PlayerBossInfo[playerName]
-        else -- worth a shot, most common naming convention
             return {
                 Portrait    = "gfx/ui/stage/playerportrait_" .. playerName .. ".png",
                 Name        = "gfx/ui/boss/playername_" .. playerName .. ".png",
@@ -8167,8 +8198,6 @@ do -- Transition
         if queue ~= false then
             queue = queue or StageAPI.Music:GetCurrentMusicID()
         end
-
-        REVEL.DebugLog(portrait, icon)
 
         StageAPI.TransitionAnimation:ReplaceSpritesheet(1, portrait)
         StageAPI.TransitionAnimation:ReplaceSpritesheet(2, icon)
