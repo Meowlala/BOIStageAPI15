@@ -8264,7 +8264,7 @@ do -- Transition
         elseif (sprite:IsPlaying("Closed") or sprite:IsFinished("Closed")) and room:IsClear() then
             local playerTooClose
             for _, player in ipairs(players) do
-                local size = (eff.Size + player.Size)
+                local size = (eff.Size + player.Size + 40)
                 if player.Position:DistanceSquared(eff.Position) < size * size then
                     playerTooClose = true
                 end
