@@ -7003,34 +7003,6 @@ do -- Backdrop & RoomGfx
         self.Backdrops = backdrops
         self.Grids = grids
     end
-
-    StageAPI.AddCallback("StageAPI", "POST_STAGEAPI_NEW_ROOM", 0, function()
-        if not game:IsGreedMode()
-        and StageAPI.ShouldRenderStartingRoomControls()
-        and level:GetCurrentRoomIndex() == level:GetStartingRoomIndex() then
-            local p1 = players[1]
-            if not p1 then return end
-
-            local gfxData = StageAPI.TryGetPlayerGraphicsInfo(p1)
-			local controls = gfxData.Controls or 'stageapi/controls.png'
-            local controlsFrame = gfxData.ControlsFrame or 0
-            local controlsOffset = gfxData.ControlsOffset or StageAPI.ZeroVector
-
-
-            local eff = StageAPI.SpawnFloorEffect(room:GetCenterPos() + controlsOffset, StageAPI.ZeroVector, nil, 'stageapi/controls.anm2', true)
-            local sprite = eff:GetSprite()
-		    sprite:ReplaceSpritesheet(0, controls)
-            sprite:LoadGraphics()
-			sprite:Play("Controls")
-			sprite:SetLayerFrame(0, controlsFrame)
-			sprite:Stop()
-
-            local color = StageAPI.GetStageFloorTextColor()
-            if color then
-                sprite.Color = color
-            end
-        end
-    end)
 end
 
 StageAPI.LogMinor("Loading CustomStage Handler")
@@ -7709,14 +7681,6 @@ do -- Bosses
         else
             local spot = StageAPI.GetBaseFloorInfo().Prefix
             return "gfx/ui/boss/bossspot_" .. spot .. ".png", "gfx/ui/boss/playerspot_" .. spot .. ".png"
-        end
-    end
-
-    function StageAPI.ShouldRenderStartingRoomControls()
-        if StageAPI.InNewStage() then
-            return StageAPI.CurrentStage.RenderStartingRoomControls
-        else
-            return level:GetStage() == 1 and level:GetStageType() < StageType.STAGETYPE_REPENTANCE
         end
     end
 
