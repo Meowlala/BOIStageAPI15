@@ -498,109 +498,6 @@ end
 
 do -- Reimplementation of most base game GridGfx, Backdrops, RoomGfx
 
--- Base Game Backdrops
-local function autoBackdrop(name, wallVariants, extraFloors, extraWalls, lfloors, nfloors)
-    lfloors = lfloors or 1
-    nfloors = nfloors or 1
-
-    local backdrop = {WallVariants = {}, Floors = {}}
-
-    for var, count in ipairs(wallVariants) do
-        backdrop.WallVariants[var] = {Corners = {}}
-
-        for i = 1, count do
-            backdrop.WallVariants[var][#backdrop.WallVariants[var] + 1] = "stageapi/floors/" .. name .. "/" .. name .. tostring(var) .. "_" .. tostring(i) .. ".png"
-            backdrop.Floors[#backdrop.Floors + 1] = "stageapi/floors/" .. name .. "/" .. name .. tostring(var) .. "_" .. tostring(i) .. ".png"
-        end
-
-        backdrop.WallVariants[var].Corners[#backdrop.WallVariants[var].Corners + 1] = "stageapi/floors/" .. name .. "/" .. name .. tostring(var) .. "_corner.png"
-    end
-
-    if extraFloors then
-        for i = 1, extraFloors do
-            backdrop.Floors[#backdrop.Floors + 1] = "stageapi/floors/" .. name .. "/" .. name .. "extrafloor_" .. tostring(i) .. ".png"
-        end
-    end
-
-    if extraWalls then
-        for var, count in ipairs(extraWalls) do
-            if not backdrop.WallVariants[var] then
-                backdrop.WallVariants[var] = {}
-            end
-
-            if count > 0 then
-                for i = 1, count do
-                    backdrop.WallVariants[var][#backdrop.WallVariants[var] + 1] = "stageapi/floors/" .. name .. "/" .. name .. tostring(var) .. "extrawall_" .. tostring(i) .. ".png"
-                end
-            end
-        end
-    end
-
-    if lfloors > 0 then
-        backdrop.LFloors = {}
-        for i = 1, lfloors do
-            if lfloors == 1 then
-                backdrop.LFloors[#backdrop.LFloors + 1] = "stageapi/floors/" .. name .. "/" .. name .. "_lfloor"
-            else
-                backdrop.LFloors[#backdrop.LFloors + 1] = "stageapi/floors/" .. name .. "/" .. name .. "_lfloor" .. tostring(i)
-            end
-        end
-    end
-
-    if nfloors > 0 then
-        backdrop.NFloors = {}
-        for i = 1, nfloors do
-            if nfloors == 1 then
-                backdrop.NFloors[#backdrop.NFloors + 1] = "stageapi/floors/" .. name .. "/" .. name .. "_nfloor"
-            else
-                backdrop.NFloors[#backdrop.NFloors + 1] = "stageapi/floors/" .. name .. "/" .. name .. "_nfloor" .. tostring(i)
-            end
-        end
-    end
-
-    return backdrop
-end
-
-StageAPI.BaseBackdrops = {
-    Basement = autoBackdrop("basement", {3}, 2),
-    Cellar = autoBackdrop("cellar", {2, 2}, 2),
-    BurningBasement = autoBackdrop("burningbasement", {2, 2}, 2),
-    Caves = autoBackdrop("caves", {3, 3}),
-    Catacombs = autoBackdrop("catacombs", {2, 1}, 3),
-    FloodedCaves = autoBackdrop("floodedCaves", {3, 3}),
-    Depths = autoBackdrop("depths", {3}, 3, nil, nil, 2),
-    Necropolis = autoBackdrop("necropolis", {1}, nil, nil, nil, 2),
-    DankDepths = autoBackdrop("dankdepths", {5}, nil, nil, nil, 2),
-    Womb = autoBackdrop("womb", {1}, 5),
-    Utero = autoBackdrop("utero", {4}),
-    ScarredWomb = autoBackdrop("scarredwomb", {3, 1}, nil, {0, 2}, nil, 2),
-    BlueWomb = autoBackdrop("bluewomb", {3}, 3, nil, 0, 0),
-    Sheol = autoBackdrop("sheol", {1}),
-    Cathedral = {
-        FloorVariants = {{"stageapi/floors/cathedral/cathedralfloor_1.png"},{"stageapi/floors/cathedral/cathedralfloor_2.png"},{"stageapi/floors/cathedral/cathedralfloor_3.png"}},
-        Walls = {"stageapi/floors/cathedral/cathedral1_1.png","stageapi/floors/cathedral/cathedral1_2.png","stageapi/floors/cathedral/cathedral1_3.png","stageapi/floors/cathedral/cathedral1_4.png"},
-        Corners = {"stageapi/floors/cathedral/cathedral1_corner.png"},
-        LFloors = {"stageapi/floors/cathedral/cathedral_lfloor.png"},
-        NFloors = {"stageapi/floors/cathedral/cathedral_nfloor.png"},
-        FloorAnm2 = "stageapi/floors/cathedral/FloorBackdrop.anm2",
-        PreFloorSheetFunc = function(sprite)
-            sprite:ReplaceSpritesheet(20, "stageapi/floors/cathedral/cathedral_bigfloor.png")
-        end
-    },
-    -- Dark room not included yet due to replication difficulty
-    Chest = autoBackdrop("chest", {4}),
-
-    -- Special Rooms
-    Shop = autoBackdrop("shop", {4}, nil, nil, 0),
-    Library = autoBackdrop("library", {1}, nil, nil, 0),
-    Secret = autoBackdrop("secret", {2}, 1, nil, 0),
-    Barren = autoBackdrop("barren", {2}, 4, nil, 0, 0),
-    Isaacs = autoBackdrop("isaacs", {2}, 4, nil, 0, 0),
-    Arcade = autoBackdrop("arcade", {4}, 2, nil, 0, 0),
-    Dice = autoBackdrop("dice", {4}, 2, nil, 0),
-    BlueSecret = autoBackdrop("bluesecret", {2}, 1, nil, 0, 0)
-}
-
 -- Base Game GridGfx
 StageAPI.BaseGridGfx = {}
 
@@ -752,34 +649,77 @@ StageAPI.BaseGridGfx.DarkRoom = StageAPI.GridGfx()
 StageAPI.BaseGridGfx.DarkRoom:SetPits("gfx/grid/grid_pit_darkroom.png")
 StageAPI.BaseGridGfx.DarkRoom:SetDecorations("stageapi/none.png")
 
+StageAPI.BaseGridGfx.Downpour = StageAPI.GridGfx()
+StageAPI.BaseGridGfx.Downpour:SetRocks("gfx/grid/rocks_downpour.png")
+StageAPI.BaseGridGfx.Downpour:SetPits("gfx/grid/grid_pit_downpour.png")
+StageAPI.BaseGridGfx.Downpour:SetDecorations("gfx/grid/props_01x_downpour.png", "gfx/grid/props_01x_downpour.anm2", 20)
+
+StageAPI.BaseGridGfx.Dross = StageAPI.GridGfx()
+StageAPI.BaseGridGfx.Dross:SetRocks("gfx/grid/rocks_dross.png")
+StageAPI.BaseGridGfx.Dross:SetPits("gfx/grid/grid_pit_dross.png")
+StageAPI.BaseGridGfx.Dross:SetDecorations("gfx/grid/props_02x_dross.png", "gfx/grid/props_02x_dross.anm2", 30)
+
+StageAPI.BaseGridGfx.Mines = StageAPI.GridGfx()
+StageAPI.BaseGridGfx.Mines:SetRocks("gfx/grid/rocks_secretroom.png")
+StageAPI.BaseGridGfx.Mines:SetPits("gfx/grid/grid_pit_mines.png")
+StageAPI.BaseGridGfx.Mines:SetDecorations("gfx/grid/props_03x_mines.png", "gfx/grid/props_03x_mines.anm2", 42)
+
+StageAPI.BaseGridGfx.Ashpit = StageAPI.GridGfx()
+StageAPI.BaseGridGfx.Ashpit:SetRocks("gfx/grid/rocks_ashpit.png")
+StageAPI.BaseGridGfx.Ashpit:SetPits("gfx/grid/grid_pit_ashpit.png", "gfx/grid/grid_pit_ashpit_ash.png")
+StageAPI.BaseGridGfx.Ashpit:SetDecorations("gfx/grid/props_03x_mines.png", "gfx/grid/props_03x_mines.anm2", 42)
+
+StageAPI.BaseGridGfx.Mausoleum = StageAPI.GridGfx()
+StageAPI.BaseGridGfx.Mausoleum:SetRocks("gfx/grid/rocks_mausoleum.png")
+StageAPI.BaseGridGfx.Mausoleum:SetPits("gfx/grid/grid_pit_mausoleum.png")
+StageAPI.BaseGridGfx.Mausoleum:SetDecorations("gfx/grid/props_03x_mines.png", "gfx/grid/props_03x_mines.anm2", 42)
+
+StageAPI.BaseGridGfx.Gehenna = StageAPI.GridGfx()
+StageAPI.BaseGridGfx.Gehenna:SetRocks("gfx/grid/rocks_gehenna.png")
+StageAPI.BaseGridGfx.Gehenna:SetPits("gfx/grid/grid_pit_gehenna.png")
+StageAPI.BaseGridGfx.Gehenna:SetDecorations("gfx/grid/props_03x_mines.png", "gfx/grid/props_03x_mines.anm2", 42)
+
+StageAPI.BaseGridGfx.Corpse = StageAPI.GridGfx()
+StageAPI.BaseGridGfx.Corpse:SetRocks("gfx/grid/rocks_corpse.png")
+StageAPI.BaseGridGfx.Corpse:SetPits("gfx/grid/grid_pit_corpse.png")
+StageAPI.BaseGridGfx.Corpse:SetDecorations("gfx/grid/props_07_the corpse.png", "gfx/grid/props_07_the corpse.anm2", 42)
+
 StageAPI.BaseRoomGfx = {
-    Basement = StageAPI.RoomGfx(StageAPI.BaseBackdrops.Basement, StageAPI.BaseGridGfx.Basement, "_default"),
-    Cellar = StageAPI.RoomGfx(StageAPI.BaseBackdrops.Cellar, StageAPI.BaseGridGfx.Cellar, "_default"),
-    BurningBasement = StageAPI.RoomGfx(StageAPI.BaseBackdrops.BurningBasement, StageAPI.BaseGridGfx.BurningBasement, "_default"),
-    Caves = StageAPI.RoomGfx(StageAPI.BaseBackdrops.Caves, StageAPI.BaseGridGfx.Caves, "_default"),
-    Catacombs = StageAPI.RoomGfx(StageAPI.BaseBackdrops.Catacombs, StageAPI.BaseGridGfx.Catacombs, "_default"),
-    FloodedCaves = StageAPI.RoomGfx(StageAPI.BaseBackdrops.FloodedCaves, StageAPI.BaseGridGfx.FloodedCaves, "_default"),
-    Depths = StageAPI.RoomGfx(StageAPI.BaseBackdrops.Depths, StageAPI.BaseGridGfx.Depths, "_default"),
-    Necropolis = StageAPI.RoomGfx(StageAPI.BaseBackdrops.Necropolis, StageAPI.BaseGridGfx.Necropolis, "_default"),
-    DankDepths = StageAPI.RoomGfx(StageAPI.BaseBackdrops.DankDepths, StageAPI.BaseGridGfx.DankDepths, "_default"),
-    Womb = StageAPI.RoomGfx(StageAPI.BaseBackdrops.Womb, StageAPI.BaseGridGfx.Womb, "_default"),
-    Utero = StageAPI.RoomGfx(StageAPI.BaseBackdrops.Utero, StageAPI.BaseGridGfx.Utero, "_default"),
-    ScarredWomb = StageAPI.RoomGfx(StageAPI.BaseBackdrops.ScarredWomb, StageAPI.BaseGridGfx.ScarredWomb, "_default"),
-    BlueWomb = StageAPI.RoomGfx(StageAPI.BaseBackdrops.BlueWomb, StageAPI.BaseGridGfx.BlueWomb, "_default"),
-    Sheol = StageAPI.RoomGfx(StageAPI.BaseBackdrops.Sheol, StageAPI.BaseGridGfx.Sheol, "_default"),
-    Cathedral = StageAPI.RoomGfx(StageAPI.BaseBackdrops.Cathedral, StageAPI.BaseGridGfx.Cathedral, "_default"),
-    DarkRoom = StageAPI.RoomGfx(StageAPI.BaseBackdrops.DarkRoom, StageAPI.BaseGridGfx.DarkRoom, "_default"),
-    Chest = StageAPI.RoomGfx(StageAPI.BaseBackdrops.Chest, StageAPI.BaseGridGfx.Chest, "_default"),
+    Basement = StageAPI.RoomGfx(BackdropType.BASEMENT, StageAPI.BaseGridGfx.Basement, "_default"),
+    Cellar = StageAPI.RoomGfx(BackdropType.CELLAR, StageAPI.BaseGridGfx.Cellar, "_default"),
+    BurningBasement = StageAPI.RoomGfx(BackdropType.BURNT_BASEMENT, StageAPI.BaseGridGfx.BurningBasement, "_default"),
+    Caves = StageAPI.RoomGfx(BackdropType.CAVES, StageAPI.BaseGridGfx.Caves, "_default"),
+    Catacombs = StageAPI.RoomGfx(BackdropType.CATACOMBS, StageAPI.BaseGridGfx.Catacombs, "_default"),
+    FloodedCaves = StageAPI.RoomGfx(BackdropType.FLOODED_CAVES, StageAPI.BaseGridGfx.FloodedCaves, "_default"),
+    Depths = StageAPI.RoomGfx(BackdropType.DEPTHS, StageAPI.BaseGridGfx.Depths, "_default"),
+    Necropolis = StageAPI.RoomGfx(BackdropType.NECROPOLIS, StageAPI.BaseGridGfx.Necropolis, "_default"),
+    DankDepths = StageAPI.RoomGfx(BackdropType.DANK_DEPTHS, StageAPI.BaseGridGfx.DankDepths, "_default"),
+    Womb = StageAPI.RoomGfx(BackdropType.WOMB, StageAPI.BaseGridGfx.Womb, "_default"),
+    Utero = StageAPI.RoomGfx(BackdropType.UTERO, StageAPI.BaseGridGfx.Utero, "_default"),
+    ScarredWomb = StageAPI.RoomGfx(BackdropType.SCARRED_WOMB, StageAPI.BaseGridGfx.ScarredWomb, "_default"),
+    BlueWomb = StageAPI.RoomGfx(BackdropType.BLUE_WOMB, StageAPI.BaseGridGfx.BlueWomb, "_default"),
+    Sheol = StageAPI.RoomGfx(BackdropType.SHEOL, StageAPI.BaseGridGfx.Sheol, "_default"),
+    Cathedral = StageAPI.RoomGfx(BackdropType.CATHEDRAL, StageAPI.BaseGridGfx.Cathedral, "_default"),
+    DarkRoom = StageAPI.RoomGfx(BackdropType.DARKROOM, StageAPI.BaseGridGfx.DarkRoom, "_default"),
+    Chest = StageAPI.RoomGfx(BackdropType.CHEST, StageAPI.BaseGridGfx.Chest, "_default"),
+
+    Downpour = StageAPI.RoomGfx(BackdropType.DOWNPOUR, StageAPI.BaseGridGfx.Downpour, "_default"),
+    Dross = StageAPI.RoomGfx(BackdropType.DROSS, StageAPI.BaseGridGfx.Dross, "_default"),
+    Mines = StageAPI.RoomGfx(BackdropType.MINES, StageAPI.BaseGridGfx.Mines, "_default"),
+    Ashpit = StageAPI.RoomGfx(BackdropType.ASHPIT, StageAPI.BaseGridGfx.Ashpit, "_default"),
+    Mausoleum = StageAPI.RoomGfx(BackdropType.MAUSOLEUM, StageAPI.BaseGridGfx.Mausoleum, "_default"),
+    Gehenna = StageAPI.RoomGfx(BackdropType.GEHENNA, StageAPI.BaseGridGfx.Gehenna, "_default"),
+    Corpse = StageAPI.RoomGfx(BackdropType.CORPSE, StageAPI.BaseGridGfx.Corpse, "_default"),
 
     -- Special Rooms
-    Shop = StageAPI.RoomGfx(StageAPI.BaseBackdrops.Shop, StageAPI.BaseGridGfx.Basement, "_default"),
-    Library = StageAPI.RoomGfx(StageAPI.BaseBackdrops.Library, StageAPI.BaseGridGfx.Basement, "_default"),
-    Secret = StageAPI.RoomGfx(StageAPI.BaseBackdrops.Secret, StageAPI.BaseGridGfx.Secret, "_default"),
-    Barren = StageAPI.RoomGfx(StageAPI.BaseBackdrops.Barren, StageAPI.BaseGridGfx.Basement, "_default"),
-    Isaacs = StageAPI.RoomGfx(StageAPI.BaseBackdrops.Isaacs, StageAPI.BaseGridGfx.Basement, "_default"),
-    Arcade = StageAPI.RoomGfx(StageAPI.BaseBackdrops.Arcade, StageAPI.BaseGridGfx.Basement, "_default"),
-    Dice = StageAPI.RoomGfx(StageAPI.BaseBackdrops.Dice, StageAPI.BaseGridGfx.Basement, "_default"),
-    BlueSecret = StageAPI.RoomGfx(StageAPI.BaseBackdrops.BlueSecret, nil, "_default")
+    Shop = StageAPI.RoomGfx(BackdropType.SHOP, StageAPI.BaseGridGfx.Basement, "_default"),
+    Library = StageAPI.RoomGfx(BackdropType.LIBRARY, StageAPI.BaseGridGfx.Basement, "_default"),
+    Secret = StageAPI.RoomGfx(BackdropType.SECRET, StageAPI.BaseGridGfx.Secret, "_default"),
+    Barren = StageAPI.RoomGfx(BackdropType.BARREN, StageAPI.BaseGridGfx.Basement, "_default"),
+    Isaacs = StageAPI.RoomGfx(BackdropType.ISAAC, StageAPI.BaseGridGfx.Basement, "_default"),
+    Arcade = StageAPI.RoomGfx(BackdropType.ARCADE, StageAPI.BaseGridGfx.Basement, "_default"),
+    Dice = StageAPI.RoomGfx(BackdropType.DICE, StageAPI.BaseGridGfx.Basement, "_default"),
+    BlueSecret = StageAPI.RoomGfx(BackdropType.BLUE_WOMB_PASS, nil, "_default")
 }
 
 end
@@ -788,13 +728,6 @@ end
 do -- Overriden Stages Reimplementation
 
 -- Catacombs --
-
--- this stuff is legacy but a few mods might use it, so we're not removing it yet, there's no need to actually set the roomgfx for the stage because stageapi doesn't remove any of the existing gfx
-StageAPI.CatacombsGridGfx = StageAPI.BaseGridGfx.Catacombs
-StageAPI.CatacombsBackdrop = StageAPI.BaseBackdrops.Catacombs
-StageAPI.CatacombsRoomGfx = StageAPI.BaseRoomGfx.Catacombs
---StageAPI.Catacombs:SetRoomGfx(StageAPI.BaseRoomGfx.Catacombs, {RoomType.ROOM_DEFAULT, RoomType.ROOM_TREASURE, RoomType.ROOM_MINIBOSS, RoomType.ROOM_BOSS})
-
 StageAPI.Catacombs = StageAPI.CustomStage("Catacombs", nil, true)
 StageAPI.Catacombs:SetStageMusic(Music.MUSIC_CATACOMBS)
 StageAPI.Catacombs:SetBossMusic({Music.MUSIC_BOSS, Music.MUSIC_BOSS2}, Music.MUSIC_BOSS_OVER)
@@ -820,13 +753,6 @@ StageAPI.Catacombs:SetReplace(StageAPI.StageOverride.CatacombsOne)
 StageAPI.CatacombsTwo:SetReplace(StageAPI.StageOverride.CatacombsTwo)
 
 -- Necropolis --
-
--- this stuff is legacy but a few mods might use it, so we're not removing it yet, there's no need to actually set the roomgfx for the stage because stageapi doesn't remove any of the existing gfx
-StageAPI.NecropolisGridGfx = StageAPI.BaseGridGfx.Necropolis
-StageAPI.NecropolisBackdrop = StageAPI.BaseBackdrops.Necropolis
-StageAPI.NecropolisRoomGfx = StageAPI.BaseRoomGfx.Necropolis
---StageAPI.Necropolis:SetRoomGfx(StageAPI.BaseRoomGfx.Necropolis, {RoomType.ROOM_DEFAULT, RoomType.ROOM_TREASURE, RoomType.ROOM_MINIBOSS, RoomType.ROOM_BOSS})
-
 StageAPI.NecropolisOverlays = {
     StageAPI.Overlay("stageapi/floors/necropolis/overlay.anm2", Vector(0.33, -0.15), nil, nil, 0.5),
     StageAPI.Overlay("stageapi/floors/necropolis/overlay.anm2", Vector(-0.33, -0.15), Vector(128, 128), nil, 0.5),
@@ -854,13 +780,6 @@ StageAPI.AddOverrideStage("NecropolisTwo", LevelStage.STAGE3_2, StageType.STAGET
 StageAPI.AddOverrideStage("NecropolisGreed", LevelStage.STAGE3_GREED, StageType.STAGETYPE_WOTL, StageAPI.NecropolisGreed, true)
 
 -- Utero --
-
--- this stuff is legacy but a few mods might use it, so we're not removing it yet, there's no need to actually set the roomgfx for the stage because stageapi doesn't remove any of the existing gfx
-StageAPI.UteroGridGfx = StageAPI.BaseGridGfx.Utero
-StageAPI.UteroBackdrop = StageAPI.BaseBackdrops.Utero
-StageAPI.UteroRoomGfx = StageAPI.BaseRoomGfx.Utero
---StageAPI.Utero:SetRoomGfx(StageAPI.BaseRoomGfx.Utero, {RoomType.ROOM_DEFAULT, RoomType.ROOM_TREASURE, RoomType.ROOM_MINIBOSS, RoomType.ROOM_BOSS})
-
 StageAPI.Utero = StageAPI.CustomStage("Utero", nil, true)
 StageAPI.Utero:SetStageMusic(Music.MUSIC_UTERO)
 StageAPI.Utero:SetBossMusic({Music.MUSIC_BOSS, Music.MUSIC_BOSS2}, Music.MUSIC_BOSS_OVER)

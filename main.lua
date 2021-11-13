@@ -5683,14 +5683,14 @@ do -- Custom Doors
         return renderOverlay, not not anim, not not overlayAnim
     end
 
-    function StageAPI.SpawnCustomDoor(slot, leadsTo, levelMapID, doorDataName, data, exitSlot, doorSprite, transitionAnim)
+    function StageAPI.SpawnCustomDoor(slot, leadsTo, levelMapID, doorDataName, data, exitSlot, doorSprite, transitionAnim, exitPosition)
         if type(levelMapID) == "table" then
             levelMapID = levelMapID.Dimension
         end
 
-        local index = room:GetGridIndex(room:GetDoorSlotPosition(slot))
-        StageAPI.CustomDoorGrid:Spawn(index, nil, false, {
+        local persistData = {
             Slot = slot,
+            ExitPosition = exitPosition,
             ExitSlot = exitSlot or (slot + 2) % 4,
             LeadsTo = leadsTo,
             LevelMapID = levelMapID,
@@ -5698,12 +5698,18 @@ do -- Custom Doors
             Data = data,
             DoorSprite = doorSprite,
             TransitionAnim = transitionAnim
-        })
+        }
+        if exitPosition then
+            persistData.ExitSlot = nil
+        end
+
+        local index = room:GetGridIndex(room:GetDoorSlotPosition(slot))
+        StageAPI.CustomDoorGrid:Spawn(index, nil, false, persistData)
     end
 
     function StageAPI.GetCustomDoors(doorDataName)
         local ret = {}
-        local doors = StageAPI.GetCustomGridsByName("CustomDoor")
+        local doors = StageAPI.GetCustomGrids(nil, "CustomDoor")
         for _, door in ipairs(doors) do
             if not doorDataName or door.PersistentData.DoorDataName == doorDataName then
                 ret[#ret + 1] = door
@@ -6130,7 +6136,7 @@ do -- Custom Doors
                 local transitionAnim = data.DoorGridData.TransitionAnim or doorData.TransitionAnim or RoomTransitionAnim.WALK
                 if leadsTo then
                     transitionStarted = true
-                    StageAPI.ExtraRoomTransition(leadsTo, StageAPI.DoorSlotToDirection[data.DoorGridData.Slot], transitionAnim, data.DoorGridData.LevelMapID, data.DoorGridData.Slot, data.DoorGridData.ExitSlot)
+                    StageAPI.ExtraRoomTransition(leadsTo, StageAPI.DoorSlotToDirection[data.DoorGridData.Slot], transitionAnim, data.DoorGridData.LevelMapID, data.DoorGridData.Slot, data.DoorGridData.ExitSlot, data.DoorGridData.ExitPosition)
                 end
             end
         end
@@ -7008,7 +7014,7 @@ do -- Backdrop & RoomGfx
     function StageAPI.ChangeRoomGfx(roomgfx)
         StageAPI.BackdropRNG:SetSeed(room:GetDecorationSeed(), 0)
         if roomgfx.Backdrops then
-            if #roomgfx.Backdrops > 0 then
+            if type(roomgfx.Backdrops) ~= "number" and #roomgfx.Backdrops > 0 then
                 local backdrop = StageAPI.Random(1, #roomgfx.Backdrops, StageAPI.BackdropRNG)
                 StageAPI.ChangeBackdrop(roomgfx.Backdrops[backdrop])
             else
