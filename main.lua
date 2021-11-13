@@ -2210,7 +2210,10 @@ do -- RoomsList
     function StageAPI.GetValidRoomsForLayout(args)
         local roomList = args.RoomList
         local roomDesc = args.RoomDescriptor or level:GetCurrentRoomDesc()
-        local shape = args.Shape or roomDesc.Data.Shape
+        local shape = -1
+        if not args.IgnoreShape then
+            shape = args.Shape or roomDesc.Data.Shape
+        end
 
         local callbacks = StageAPI.GetCallbacks("POST_CHECK_VALID_ROOM")
         local validRooms = {}
@@ -2305,7 +2308,7 @@ do -- RoomsList
         if err then StageAPI.LogErr(err) end
 
         if #validRooms > 0 then
-            StageAPI.RoomChooseRNG:SetSeed(seed, 0)
+            StageAPI.RoomChooseRNG:SetSeed(args.Seed, 0)
             local chosen = StageAPI.WeightedRNG(validRooms, StageAPI.RoomChooseRNG, nil, totalWeight)
             return chosen.Layout, chosen.ListID
         else
@@ -3835,7 +3838,7 @@ do -- RoomsList
         }
     end
 
-    local levelRoomCopyFromArgs = {"IsExtraRoom","LevelIndex","Doors","Shape","RoomType","SpawnSeed","LayoutName","RequireRoomType","IgnoreRoomRules","DecorationSeed","AwardSeed","VisitCount","IsClear","ClearCount","IsPersistentRoom","HasWaterPits","ChallengeDone","FromData","Dimension","RoomsListName","RoomsListID"}
+    local levelRoomCopyFromArgs = {"IsExtraRoom","LevelIndex", "IgnoreDoors","Doors", "IgnoreShape","Shape","RoomType","SpawnSeed","LayoutName","RequireRoomType","IgnoreRoomRules","DecorationSeed","AwardSeed","VisitCount","IsClear","ClearCount","IsPersistentRoom","HasWaterPits","ChallengeDone","FromData","Dimension","RoomsListName","RoomsListID"}
 
     StageAPI.LevelRoom = StageAPI.Class("LevelRoom")
     StageAPI.NextUniqueRoomIdentifier = 0
@@ -3947,7 +3950,27 @@ do -- RoomsList
                 if retLayout then
                     self.Layout = retLayout
                 else
-                    self.Layout = StageAPI.ChooseRoomLayout(roomsList, self.SpawnSeed, self.Shape, self.RoomType, self.RequireRoomType, false, self.Doors)
+                    self.Layout = StageAPI.ChooseRoomLayout{
+                        RoomList = roomsList,
+                        Seed = self.SpawnSeed,
+                        IgnoreShape = self.IgnoreShape,
+                        Shape = self.Shape,
+                        RoomType = self.RoomType,
+                        RequireRoomType = self.RequireRoomType,
+                        IgnoreDoors = self.IgnoreDoors,
+                        Doors = self.Doors
+                    }
+
+                    if self.IgnoreShape then
+                        self.Shape = self.Layout.Shape
+                    end
+
+                    if self.IgnoreDoors then
+                        self.Doors = {}
+                        for _, door in ipairs(self.Layout.Doors) do
+                            self.Doors[door.Slot] = door.Exists
+                        end
+                    end
                 end
             end
         end
