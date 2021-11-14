@@ -562,6 +562,8 @@ do -- Core Definitions
     end
 
     StageAPI.ZeroVector = Vector(0, 0)
+    StageAPI.LastGameSeedLoaded = -1
+    StageAPI.LoadedModDataSinceLastUpdate = false
 
     mod:AddCallback(ModCallbacks.MC_POST_PLAYER_INIT, function()
         StageAPI.Level = StageAPI.Game:GetLevel()
@@ -576,11 +578,17 @@ do -- Core Definitions
         end
 
         if highestPlayerFrame < 3 then
-            StageAPI.TryLoadModData(StageAPI.Game:GetFrameCount() > 2)
+            local seed = StageAPI.Game:GetSeeds():GetStartSeed()
+            if not StageAPI.LoadedModDataSinceLastUpdate or StageAPI.LastGameSeedLoaded ~= seed then
+                StageAPI.LoadedModDataSinceLastUpdate = true
+                StageAPI.LastGameSeedLoaded = seed
+                StageAPI.TryLoadModData(StageAPI.Game:GetFrameCount() > 2)
+            end
         end
     end)
 
     mod:AddCallback(ModCallbacks.MC_POST_UPDATE, function()
+        StageAPI.LoadedModDataSinceLastUpdate = false
         local numPlayers = StageAPI.Game:GetNumPlayers()
         if numPlayers ~= #StageAPI.Players then
             StageAPI.Players = {}
