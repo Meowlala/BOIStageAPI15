@@ -779,7 +779,7 @@ do -- Core Functions
         local index = 1
 
         for i, callback in StageAPI.ReverseIterate(StageAPI.Callbacks[id]) do
-            if priority > callback.Priority then
+            if priority >= callback.Priority then
                 index = i + 1
                 break
             end
