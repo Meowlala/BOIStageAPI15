@@ -11596,6 +11596,17 @@ do -- Mod Compatibility
                 REVEL.AddedStageAPIChangelogs = true
             end
 
+            TryAddChangelog("v2.01", [[- Lots of bug fixes
+
+- Removed starting room
+controls override
+
+- Updated AddPlayerGraphicsInfo
+and related features for
+compatibility with
+Repentance portraits
+]])
+
             TryAddChangelog("v2.0", [[- StageAPI now supports
 Custom Floor Generation,
 implemented via
@@ -12238,7 +12249,7 @@ other than a door
 end
 
 StageAPI.LogMinor("Fully Loaded, loading dependent mods.")
-StageAPI.MarkLoaded("StageAPI", "2.01", true, true)
+StageAPI.MarkLoaded("StageAPI", "2.02", true, true)
 
 StageAPI.Loaded = true
 if StageAPI.ToCall then
