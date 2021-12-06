@@ -4496,7 +4496,7 @@ do -- Custom Grid Entities
             roomGrids.LastPersistentIndex = self.PersistentIndex
         end
 
-        gridData = roomGrids.Grids[self.PersistentIndex]
+        local gridData = roomGrids.Grids[self.PersistentIndex]
         if not gridData then
             gridData = {Name = gridConfig.Name, Index = index, PersistData = {}}
             roomGrids.Grids[self.PersistentIndex] = gridData
