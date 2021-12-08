@@ -55,8 +55,8 @@ Callback List:
 -- Takes 1 return value. If false, cancels selecting the list. If GridData, selects it to spawn.
 -- With no value, picks at random.
 
-- PRE_SELECT_ENTITY_LIST(entityList, spawnIndex, addEntities)
--- Takes 4 return values, AddEntities, EntityList, StillAddRandom, and NoBreak. If the first value is false, cancels selecting the list.
+- PRE_SELECT_ENTITY_LIST(entityList, spawnIndex, roomMetadata)
+-- Takes 3 return values, AddEntities, EntityList, StillAddRandom. If the first value is false, cancels selecting the list.
 -- AddEntities and EntityList are lists of EntityData tables, described below.
 -- Usually StageAPI will pick one entity from the EntityList to add to the AddEntities table at random, but that can be changed with this callback.
 -- If StillAddRandom is true, StageAPI will still add a random entity from the entitylist to addentities, alongside ones you returned.
@@ -68,9 +68,18 @@ Callback List:
 
 - PRE_SPAWN_ENTITY(entityInfo, entityList, index, doGrids, doPersistentOnly, doAutoPersistent, avoidSpawning, persistenceData, shouldSpawnEntity)
 -- Takes 1 return value. If false, cancels spawning the entity info. If a table, uses it as the entity info. Any return value breaks out of future callbacks.
+-- Takes entity Type, Variant and SubType as callback parameters.
+
+- POST_SPAWN_ENTITY(ent, entityInfo, entityList, index, doGrids, doPersistentOnly, doAutoPersistent, avoidSpawning, persistenceData, shouldSpawnEntity)
+-- Called both by normal StageAPI room layout entity spawning, and Spawner metaentities.
 
 - PRE_SPAWN_GRID(gridData, gridInformation, entities, gridSpawnRNG)
 -- Takes 1 return value. If false, cancels spawning the grid. If a table, uses it as the grid data. Any return value breaks out of future callbacks.
+
+-- PRE_ROOMS_LIST_USE(room)
+-- called when deciding the layout of a room.
+-- return a room list table to use that instead of the default one
+-- for the room (the name of which is found in room.RoomsListName) 
 
 - PRE_ROOM_LAYOUT_CHOOSE(currentRoom, roomsList)
 -- Takes 1 return value. If a table, uses it as the current room layout. Otherwise, chooses from the roomslist with seeded RNG. Breaks on first return.
@@ -78,6 +87,9 @@ Callback List:
 
 - POST_ROOM_INIT(currentRoom, fromSaveData, saveData)
 -- Called when a room initializes. Can occur at two times, when a room is initially entered or when a room is loaded from save data. Takes no return values.
+
+- POST_BOSS_ROOM_INIT(currentRoom, boss, bossID)
+-- Called when a boss room is generated.
 
 - POST_ROOM_LOAD(currentRoom, isFirstLoad, isExtraRoom)
 -- Called when a room is loaded. Takes no return value.
@@ -90,12 +102,27 @@ Callback List:
 
 - POST_CUSTOM_GRID_PROJECTILE_UPDATE(CustomGridEntity, projectile)
 -- Takes CustomGridTypeName as first callback parameter, and will only run if parameter not supplied or matches current grid.
+-- Used when the grid is lifted and shot as a projectile
 
 - POST_CUSTOM_GRID_PROJECTILE_HELPER_UPDATE(CustomGridEntity, projectileHelper, projectileHelperParent)
 -- Takes CustomGridTypeName as first callback parameter, and will only run if parameter not supplied or matches current grid.
 
-- POST_CUSTOM_GRID_REMOVE(spawnIndex, persistData, CustomGrid, customGridTypeName)
+- POST_CUSTOM_GRID_DESTROY(CustomGridEntity, projectile)
 -- Takes CustomGridTypeName as first callback parameter, and will only run if parameter not supplied or matches current grid.
+-- projectile is nil in case the grid is destroyed normally, 
+-- and is set to the projectile entity in case the grid was lifted
+-- and shot as a projectile (see POST_CUSTOM_GRID_PROJECTILE_UPDATE)
+
+- POST_REMOVE_CUSTOM_GRID(CustomGridEntity, keepBaseGrid)
+-- Takes CustomGridTypeName as first callback parameter, and will only run if parameter not supplied or matches current grid.
+
+- POST_CUSTOM_GRID_POOP_GIB_SPAWN(CustomGridEntity, effect)
+-- Takes CustomGridTypeName as first callback parameter, and will only run if parameter not supplied or matches current grid.
+
+- POST_CUSTOM_GRID_DIRTY_MIND_SPAWN(CustomGridEntity, familiar)
+-- Takes CustomGridTypeName as first callback parameter, and will only run if parameter not supplied or matches current grid.
+-- Called for dips spawned by dirty mind from a custom grid entity
+-- whose base type is poop
 
 - PRE_TRANSITION_RENDER()
 -- Called before the custom room transition would render, for effects that should render before it.
@@ -106,7 +133,7 @@ Callback List:
 - POST_CUSTOM_DOOR_UPDATE(door, data, sprite, CustomDoor, persistData)
 -- Takes CustomDoorName as first callback parameter, and will only run if parameter not supplied or matches current door.
 
-- PRE_BOSS_SELECT(bosses, allowHorseman, rng)
+- PRE_BOSS_SELECT(bosses, rng, roomDesc, ignoreNoOptions)
 -- If a boss is returned, uses it instead.
 
 - POST_OVERRIDDEN_GRID_BREAK(grindex, grid, justBrokenGridSpawns)
@@ -118,22 +145,57 @@ Callback List:
 - PRE_UPDATE_GRID_GFX()
 -- Allows returning gridgfx to use in place of the stage's.
 
-- PRE_CHANGE_ROOM_GFX(currentRoom)
+- PRE_CHANGE_ROOM_GFX(currentRoom, usingGfx, onRoomLoad)
 -- Allows returning roomgfx to use in place of the stage's.
+-- Runs both on room load and when the backdrop is changed
 
-- POST_CHANGE_ROOM_GFX()
+- POST_CHANGE_ROOM_GFX(currentRoom, usingGfx, onRoomLoad)
+-- Runs both on room load and when the backdrop is changed
 
 - PRE_STAGEAPI_NEW_ROOM()
 -- runs before most but not all stageapi room functionality. guaranteed to run before any room loads.
 
-- POST_STAGEAPI_NEW_ROOM_GENERATION(justGenerated, currentRoom)
--- allows returning justGenerated and currentRoom. run after normal room generation but before reloading old rooms.
+- PRE_STAGEAPI_NEW_ROOM_GENERATION(currentRoom, justGenerated, currentListIndex)
+-- allows returning currentRoom, justGenerated, boss
+-- run before normal room generation
 
-- POST_STAGEAPI_NEW_ROOM()
+- POST_STAGEAPI_NEW_ROOM_GENERATION(currentRoom, justGenerated, currentListIndex, boss)
+-- allows returning currentRoom, justGenerated, boss
+-- run after normal room generation but before reloading old rooms.
+
+- POST_STAGEAPI_NEW_ROOM(justGenerated)
 -- all loading and processing of new room generation and old room loading is done, but the gfx hasn't changed yet
 
 - PRE_SELECT_NEXT_STAGE(currentstage)
 -- return a stage to go to instead of currentstage.NextStage or none.
+
+- PRE_PARSE_METADATA(roomMetadata, outEntities, outGrids, roomLoadRNG)
+-- TODO DESCRIPTION
+
+- POST_PARSE_METADATA(roomMetadata, outEntities, outGrids)
+-- TODO DESCRIPTION
+
+- POST_SELECT_BOSS_MUSIC(currentstage, musicID, isCleared, musicRNG)
+-- return a number to use that MusicID as music, not running further callbacks.
+
+- POST_SELECT_STAGE_MUSIC(currentstage, musicID, roomType, musicRNG)
+-- return a number to use that MusicID as music, not running further callbacks.
+
+- POST_ROOM_CLEAR()
+
+- PRE_STAGEAPI_SELECT_BOSS_ITEM(pickup, currentRoom)
+-- return true to prevent StageAPI from randomly selecting a
+-- collectible to replace pickup with.
+-- pickup is the collectible spawned by vanilla logic, that will
+-- be morphed into a random reward by StageAPI
+
+- PRE_STAGEAPI_LOAD_SAVE()
+-- Before loading stageapi save data
+
+- POST_STAGEAPI_LOAD_SAVE()
+-- Before loading stageapi save data
+
+- CHALLENGE_WAVE_CHANGED()
 
 -- StageAPI Structures:
 EntityData {
