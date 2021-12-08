@@ -79,7 +79,7 @@ Callback List:
 -- PRE_ROOMS_LIST_USE(room)
 -- called when deciding the layout of a room.
 -- return a room list table to use that instead of the default one
--- for the room (the name of which is found in room.RoomsListName) 
+-- for the room (the name of which is found in room.RoomsListName)
 
 - PRE_ROOM_LAYOUT_CHOOSE(currentRoom, roomsList)
 -- Takes 1 return value. If a table, uses it as the current room layout. Otherwise, chooses from the roomslist with seeded RNG. Breaks on first return.
@@ -109,7 +109,7 @@ Callback List:
 
 - POST_CUSTOM_GRID_DESTROY(CustomGridEntity, projectile)
 -- Takes CustomGridTypeName as first callback parameter, and will only run if parameter not supplied or matches current grid.
--- projectile is nil in case the grid is destroyed normally, 
+-- projectile is nil in case the grid is destroyed normally,
 -- and is set to the projectile entity in case the grid was lifted
 -- and shot as a projectile (see POST_CUSTOM_GRID_PROJECTILE_UPDATE)
 
@@ -170,10 +170,13 @@ Callback List:
 -- return a stage to go to instead of currentstage.NextStage or none.
 
 - PRE_PARSE_METADATA(roomMetadata, outEntities, outGrids, roomLoadRNG)
--- TODO DESCRIPTION
+-- Called after all metadata entities in a room are loaded, but before conflicts / groups are resolved
+-- outEntities and outGrids are lists of entities / grids mapped to grid indices
+-- roomMetadata, outEntities, and outGrids can all be edited within the callback to modify the room
 
 - POST_PARSE_METADATA(roomMetadata, outEntities, outGrids)
--- TODO DESCRIPTION
+-- Called after all metadata entities in a room are loaded, and all conflicts / groups are resolved
+-- roomMetadata, outEntities, and outGrids can all be edited within the callback to modify the room
 
 - POST_SELECT_BOSS_MUSIC(currentstage, musicID, isCleared, musicRNG)
 -- return a number to use that MusicID as music, not running further callbacks.
