@@ -55,8 +55,8 @@ Callback List:
 -- Takes 1 return value. If false, cancels selecting the list. If GridData, selects it to spawn.
 -- With no value, picks at random.
 
-- PRE_SELECT_ENTITY_LIST(entityList, spawnIndex, roomMetadata)
--- Takes 3 return values, AddEntities, EntityList, StillAddRandom. If the first value is false, cancels selecting the list.
+- PRE_SELECT_ENTITY_LIST(entityList, spawnIndex, addEntities)
+-- Takes 4 return values, AddEntities, EntityList, StillAddRandom, and NoBreak. If the first value is false, cancels selecting the list.
 -- AddEntities and EntityList are lists of EntityData tables, described below.
 -- Usually StageAPI will pick one entity from the EntityList to add to the AddEntities table at random, but that can be changed with this callback.
 -- If StillAddRandom is true, StageAPI will still add a random entity from the entitylist to addentities, alongside ones you returned.
@@ -68,18 +68,9 @@ Callback List:
 
 - PRE_SPAWN_ENTITY(entityInfo, entityList, index, doGrids, doPersistentOnly, doAutoPersistent, avoidSpawning, persistenceData, shouldSpawnEntity)
 -- Takes 1 return value. If false, cancels spawning the entity info. If a table, uses it as the entity info. Any return value breaks out of future callbacks.
--- Takes entity Type, Variant and SubType as callback parameters.
-
-- POST_SPAWN_ENTITY(ent, entityInfo, entityList, index, doGrids, doPersistentOnly, doAutoPersistent, avoidSpawning, persistenceData, shouldSpawnEntity)
--- Called both by normal StageAPI room layout entity spawning, and Spawner metaentities.
 
 - PRE_SPAWN_GRID(gridData, gridInformation, entities, gridSpawnRNG)
 -- Takes 1 return value. If false, cancels spawning the grid. If a table, uses it as the grid data. Any return value breaks out of future callbacks.
-
--- PRE_ROOMS_LIST_USE(room)
--- called when deciding the layout of a room.
--- return a room list table to use that instead of the default one
--- for the room (the name of which is found in room.RoomsListName)
 
 - PRE_ROOM_LAYOUT_CHOOSE(currentRoom, roomsList)
 -- Takes 1 return value. If a table, uses it as the current room layout. Otherwise, chooses from the roomslist with seeded RNG. Breaks on first return.
@@ -87,9 +78,6 @@ Callback List:
 
 - POST_ROOM_INIT(currentRoom, fromSaveData, saveData)
 -- Called when a room initializes. Can occur at two times, when a room is initially entered or when a room is loaded from save data. Takes no return values.
-
-- POST_BOSS_ROOM_INIT(currentRoom, boss, bossID)
--- Called when a boss room is generated.
 
 - POST_ROOM_LOAD(currentRoom, isFirstLoad, isExtraRoom)
 -- Called when a room is loaded. Takes no return value.
@@ -102,27 +90,12 @@ Callback List:
 
 - POST_CUSTOM_GRID_PROJECTILE_UPDATE(CustomGridEntity, projectile)
 -- Takes CustomGridTypeName as first callback parameter, and will only run if parameter not supplied or matches current grid.
--- Used when the grid is lifted and shot as a projectile
 
 - POST_CUSTOM_GRID_PROJECTILE_HELPER_UPDATE(CustomGridEntity, projectileHelper, projectileHelperParent)
 -- Takes CustomGridTypeName as first callback parameter, and will only run if parameter not supplied or matches current grid.
 
-- POST_CUSTOM_GRID_DESTROY(CustomGridEntity, projectile)
+- POST_CUSTOM_GRID_REMOVE(spawnIndex, persistData, CustomGrid, customGridTypeName)
 -- Takes CustomGridTypeName as first callback parameter, and will only run if parameter not supplied or matches current grid.
--- projectile is nil in case the grid is destroyed normally,
--- and is set to the projectile entity in case the grid was lifted
--- and shot as a projectile (see POST_CUSTOM_GRID_PROJECTILE_UPDATE)
-
-- POST_REMOVE_CUSTOM_GRID(CustomGridEntity, keepBaseGrid)
--- Takes CustomGridTypeName as first callback parameter, and will only run if parameter not supplied or matches current grid.
-
-- POST_CUSTOM_GRID_POOP_GIB_SPAWN(CustomGridEntity, effect)
--- Takes CustomGridTypeName as first callback parameter, and will only run if parameter not supplied or matches current grid.
-
-- POST_CUSTOM_GRID_DIRTY_MIND_SPAWN(CustomGridEntity, familiar)
--- Takes CustomGridTypeName as first callback parameter, and will only run if parameter not supplied or matches current grid.
--- Called for dips spawned by dirty mind from a custom grid entity
--- whose base type is poop
 
 - PRE_TRANSITION_RENDER()
 -- Called before the custom room transition would render, for effects that should render before it.
@@ -133,7 +106,7 @@ Callback List:
 - POST_CUSTOM_DOOR_UPDATE(door, data, sprite, CustomDoor, persistData)
 -- Takes CustomDoorName as first callback parameter, and will only run if parameter not supplied or matches current door.
 
-- PRE_BOSS_SELECT(bosses, rng, roomDesc, ignoreNoOptions)
+- PRE_BOSS_SELECT(bosses, allowHorseman, rng)
 -- If a boss is returned, uses it instead.
 
 - POST_OVERRIDDEN_GRID_BREAK(grindex, grid, justBrokenGridSpawns)
@@ -145,60 +118,22 @@ Callback List:
 - PRE_UPDATE_GRID_GFX()
 -- Allows returning gridgfx to use in place of the stage's.
 
-- PRE_CHANGE_ROOM_GFX(currentRoom, usingGfx, onRoomLoad)
+- PRE_CHANGE_ROOM_GFX(currentRoom)
 -- Allows returning roomgfx to use in place of the stage's.
--- Runs both on room load and when the backdrop is changed
 
-- POST_CHANGE_ROOM_GFX(currentRoom, usingGfx, onRoomLoad)
--- Runs both on room load and when the backdrop is changed
+- POST_CHANGE_ROOM_GFX()
 
 - PRE_STAGEAPI_NEW_ROOM()
 -- runs before most but not all stageapi room functionality. guaranteed to run before any room loads.
 
-- PRE_STAGEAPI_NEW_ROOM_GENERATION(currentRoom, justGenerated, currentListIndex)
--- allows returning currentRoom, justGenerated, boss
--- run before normal room generation
+- POST_STAGEAPI_NEW_ROOM_GENERATION(justGenerated, currentRoom)
+-- allows returning justGenerated and currentRoom. run after normal room generation but before reloading old rooms.
 
-- POST_STAGEAPI_NEW_ROOM_GENERATION(currentRoom, justGenerated, currentListIndex, boss)
--- allows returning currentRoom, justGenerated, boss
--- run after normal room generation but before reloading old rooms.
-
-- POST_STAGEAPI_NEW_ROOM(justGenerated)
+- POST_STAGEAPI_NEW_ROOM()
 -- all loading and processing of new room generation and old room loading is done, but the gfx hasn't changed yet
 
 - PRE_SELECT_NEXT_STAGE(currentstage)
 -- return a stage to go to instead of currentstage.NextStage or none.
-
-- PRE_PARSE_METADATA(roomMetadata, outEntities, outGrids, roomLoadRNG)
--- Called after all metadata entities in a room are loaded, but before conflicts / groups are resolved
--- outEntities and outGrids are lists of entities / grids mapped to grid indices
--- roomMetadata, outEntities, and outGrids can all be edited within the callback to modify the room
-
-- POST_PARSE_METADATA(roomMetadata, outEntities, outGrids)
--- Called after all metadata entities in a room are loaded, and all conflicts / groups are resolved
--- roomMetadata, outEntities, and outGrids can all be edited within the callback to modify the room
-
-- POST_SELECT_BOSS_MUSIC(currentstage, musicID, isCleared, musicRNG)
--- return a number to use that MusicID as music, not running further callbacks.
-
-- POST_SELECT_STAGE_MUSIC(currentstage, musicID, roomType, musicRNG)
--- return a number to use that MusicID as music, not running further callbacks.
-
-- POST_ROOM_CLEAR()
-
-- PRE_STAGEAPI_SELECT_BOSS_ITEM(pickup, currentRoom)
--- return true to prevent StageAPI from randomly selecting a
--- collectible to replace pickup with.
--- pickup is the collectible spawned by vanilla logic, that will
--- be morphed into a random reward by StageAPI
-
-- PRE_STAGEAPI_LOAD_SAVE()
--- Before loading stageapi save data
-
-- POST_STAGEAPI_LOAD_SAVE()
--- Before loading stageapi save data
-
-- CHALLENGE_WAVE_CHANGED()
 
 -- StageAPI Structures:
 EntityData {
@@ -342,7 +277,7 @@ StageAPI Objects:
 -- SetRooms(RoomsList)
 -- SetMusic(musicID, RoomType)
 -- SetBossMusic(musicID, clearedMusicID)
--- SetSpots(bossSpot, playerSpot)
+-- SetSpots(bossSpot, playerSpot, bgColor)
 -- SetBosses(Bosses)
 -- GetPlayingMusic()
 -- OverrideRockAltEffects()
@@ -4561,7 +4496,7 @@ do -- Custom Grid Entities
             roomGrids.LastPersistentIndex = self.PersistentIndex
         end
 
-        local gridData = roomGrids.Grids[self.PersistentIndex]
+        gridData = roomGrids.Grids[self.PersistentIndex]
         if not gridData then
             gridData = {Name = gridConfig.Name, Index = index, PersistData = {}}
             roomGrids.Grids[self.PersistentIndex] = gridData
@@ -7259,9 +7194,10 @@ do -- Custom Stage
         self.FloorTextColor = color
     end
 
-    function StageAPI.CustomStage:SetSpots(bossSpot, playerSpot)
+    function StageAPI.CustomStage:SetSpots(bossSpot, playerSpot, bgColor)
         self.BossSpot = bossSpot
         self.PlayerSpot = playerSpot
+        self.BackgroundColor = bgColor
     end
 
     function StageAPI.CustomStage:SetTrueCoopSpots(twoPlayersSpot, fourPlayersSpot, threePlayersSpot) -- if a three player spot is not defined, uses four instead.
@@ -7779,10 +7715,10 @@ do -- Bosses
 
     function StageAPI.GetStageSpot()
         if StageAPI.InNewStage() then
-            return StageAPI.CurrentStage.BossSpot or "gfx/ui/boss/bossspot.png", StageAPI.CurrentStage.PlayerSpot or "gfx/ui/boss/playerspot.png"
+            return StageAPI.CurrentStage.BossSpot or "gfx/ui/boss/bossspot.png", StageAPI.CurrentStage.PlayerSpot or "gfx/ui/boss/playerspot.png", StageAPI.CurrentStage.BackgroundColor or Color(30/255, 18/255, 15/255, 1, 0, 0, 0)
         else
             local spot = StageAPI.GetBaseFloorInfo().Prefix
-            return "gfx/ui/boss/bossspot_" .. spot .. ".png", "gfx/ui/boss/playerspot_" .. spot .. ".png"
+            return "gfx/ui/boss/bossspot_" .. spot .. ".png", "gfx/ui/boss/playerspot_" .. spot .. ".png", StageAPI.GetBaseFloorInfo().VsBgColor
         end
     end
 
@@ -7824,14 +7760,24 @@ do -- Bosses
             }
         end
     end
-
+    
     StageAPI.BossSprite = Sprite()
     StageAPI.BossSprite:Load("gfx/ui/boss/versusscreen.anm2", false)
-    StageAPI.BossSprite:ReplaceSpritesheet(0, "gfx/ui/boss/bgblack.png")
+    StageAPI.BossSprite:ReplaceSpritesheet(0, "none.png")
+    StageAPI.BossSprite:ReplaceSpritesheet(11, "stageapi/boss/overlay.png")
+    
+    StageAPI.BossSpriteBg = Sprite()
+    StageAPI.BossSpriteBg:Load("gfx/ui/boss/versusscreen.anm2", true)    
+    for i=1, 14 do
+      StageAPI.BossSpriteBg:ReplaceSpritesheet(i, "none.png")
+    end 
+    
     StageAPI.PlayingBossSprite = nil
+    StageAPI.PlayingBossSpriteBg = nil
     StageAPI.UnskippableBossAnim = nil
     StageAPI.BossOffset = nil
-    function StageAPI.PlayBossAnimationManual(portrait, name, spot, playerPortrait, playerName, playerSpot, portraitTwo, unskippable)
+    
+    function StageAPI.PlayBossAnimationManual(portrait, name, spot, playerPortrait, playerName, playerSpot, portraitTwo, unskippable, bgColor, noSkake)
         local paramTable = portrait
         if type(paramTable) ~= "table" then
             paramTable = {
@@ -7842,10 +7788,12 @@ do -- Bosses
                 PlayerPortrait = playerPortrait,
                 PlayerName = playerName,
                 PlayerSpot = playerSpot,
-                Unskippable = unskippable
+                Unskippable = unskippable,
+                BackgroundColor = bgColor,
+                NoShake = noShake
             }
         end
-
+        
         if paramTable.Sprite then -- if you need to use a different sprite (ex for a special boss animation) this could help
             StageAPI.PlayingBossSprite = paramTable.Sprite
         else
@@ -7856,9 +7804,15 @@ do -- Bosses
             StageAPI.PlayingBossSprite:ReplaceSpritesheet(2, paramTable.BossSpot or "gfx/ui/boss/bossspot.png")
             StageAPI.PlayingBossSprite:ReplaceSpritesheet(3, paramTable.PlayerSpot or "gfx/ui/boss/bossspot.png")
             StageAPI.PlayingBossSprite:ReplaceSpritesheet(4, paramTable.BossPortrait or "gfx/ui/boss/portrait_20.0_monstro.png")
-            StageAPI.PlayingBossSprite:ReplaceSpritesheet(5, paramTable.PlayerPortrait or "gfx/ui/boss/portrait_20.0_monstro.png")
             StageAPI.PlayingBossSprite:ReplaceSpritesheet(6, paramTable.PlayerName or "gfx/ui/boss/bossname_20.0_monstro.png")
             StageAPI.PlayingBossSprite:ReplaceSpritesheet(7, paramTable.BossName or "gfx/ui/boss/bossname_20.0_monstro.png")
+            if paramTable.NoShake then
+              StageAPI.PlayingBossSprite:ReplaceSpritesheet(5, "none.png")
+              StageAPI.PlayingBossSprite:ReplaceSpritesheet(12, paramTable.PlayerPortrait or "gfx/ui/boss/portrait_20.0_monstro.png")
+            else
+              StageAPI.PlayingBossSprite:ReplaceSpritesheet(5, paramTable.PlayerPortrait or "gfx/ui/boss/portrait_20.0_monstro.png")
+              StageAPI.PlayingBossSprite:ReplaceSpritesheet(12, "none.png")
+            end
 
             if paramTable.BossPortraitTwo then
                 StageAPI.PlayingBossSprite:ReplaceSpritesheet(9, paramTable.BossPortraitTwo)
@@ -7869,7 +7823,11 @@ do -- Bosses
 
             StageAPI.PlayingBossSprite:LoadGraphics()
         end
-
+        
+        StageAPI.PlayingBossSpriteBg = StageAPI.BossSpriteBg
+        StageAPI.PlayingBossSpriteBg.Color = paramTable.BackgroundColor or Color(0, 0, 0, 1, 0, 0, 0)
+        StageAPI.PlayingBossSpriteBg:Play("Scene", true)
+        
         if paramTable.BossOffset then
             StageAPI.BossOffset = paramTable.BossOffset
         else
@@ -7887,11 +7845,16 @@ do -- Bosses
 
         if isPlaying and ((game:IsPaused() and not menuConfirmTriggered) or StageAPI.UnskippableBossAnim) then
             if StageAPI.IsOddRenderFrame then
+                StageAPI.PlayingBossSpriteBg:Update()
                 StageAPI.PlayingBossSprite:Update()
             end
-
+            
             local centerPos = StageAPI.GetScreenCenterPosition()
-            local layerRenderOrder = {0,1,2,3,14,9,13,4,5,6,7,8,10}
+            --local layerRenderOrder = {0,1,2,3,14,9,13,4,5,6,7,8,10}       --ab+ classy vs screen's compability layer order
+            local layerRenderOrder = {0,1,2,3,9,14,13,4,5,12,11,6,7,8,10}
+            
+            StageAPI.PlayingBossSpriteBg:RenderLayer(0, centerPos)
+            
             for _, layer in ipairs(layerRenderOrder) do
                 local pos = centerPos
                 if StageAPI.BossOffset then
@@ -7912,6 +7875,8 @@ do -- Bosses
         elseif isPlaying then
              StageAPI.PlayingBossSprite:Stop()
              StageAPI.PlayingBossSprite = nil
+             StageAPI.PlayingBossSpriteBg:Stop()
+             StageAPI.PlayingBossSpriteBg = nil
         end
 
         if not isPlaying then
@@ -7948,7 +7913,7 @@ do -- Bosses
     end
 
     function StageAPI.PlayBossAnimation(boss, unskippable)
-        local bSpot, pSpot = StageAPI.GetStageSpot()
+        local bSpot, pSpot, bgColor = StageAPI.GetStageSpot()
         local gfxData = StageAPI.TryGetPlayerGraphicsInfo(StageAPI.Players[1])
         StageAPI.PlayBossAnimationManual({
             BossPortrait = boss.Portrait,
@@ -7959,7 +7924,9 @@ do -- Bosses
             PlayerName = gfxData.Name,
             PlayerSpot = pSpot,
             Unskippable = unskippable,
-            BossOffset = boss.Offset
+            BossOffset = boss.Offset,
+            BackgroundColor = bgColor,
+            NoShake = gfxData.NoShake
         })
     end
 
