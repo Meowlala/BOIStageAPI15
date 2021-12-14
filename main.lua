@@ -7676,14 +7676,14 @@ do -- Bosses
         [PlayerType.PLAYER_CAIN] = {name = "cain", id = "03"},
         [PlayerType.PLAYER_JUDAS] = {name = "judas", id = "04"},
         [PlayerType.PLAYER_EVE] = {name = "eve", id = "05"},
-        [PlayerType.PLAYER_BLUEBABY] = {name = "???", id = "06"},
+        [PlayerType.PLAYER_BLUEBABY] = {name = "bluebaby", id = "06"},
         [PlayerType.PLAYER_SAMSON] = {name = "samson", id = "07"},
         [PlayerType.PLAYER_AZAZEL] = {name = "azazel", id = "08"},
         [PlayerType.PLAYER_LAZARUS] = {name = "lazarus", id = "09"},
         [PlayerType.PLAYER_EDEN] = {name = "eden", id = "09"},
         [PlayerType.PLAYER_THELOST] = {name = "thelost", id = "12"},
         [PlayerType.PLAYER_LILITH] = {name = "lilith", id = "13"},
-        [PlayerType.PLAYER_KEEPER] = {name = "keeper", id = "14"},
+        [PlayerType.PLAYER_KEEPER] = {name = "keeper", bossname = "thekeeper", id = "14"},
         [PlayerType.PLAYER_APOLLYON] = {name = "apollyon", id = "15"},
         [PlayerType.PLAYER_THEFORGOTTEN] = {name = "theforgotten", id = "16"},
         [PlayerType.PLAYER_THESOUL] = {name = "theforgotten", id = "16"},
@@ -7695,14 +7695,14 @@ do -- Bosses
         [PlayerType.PLAYER_CAIN_B] = {name = "cain", id = "03", b = true},
         [PlayerType.PLAYER_JUDAS_B] = {name = "judas", id = "04", b = true},
         [PlayerType.PLAYER_EVE_B] = {name = "eve", id = "05", b = true},
-        [PlayerType.PLAYER_BLUEBABY_B] = {name = "???", id = "06", b = true},
+        [PlayerType.PLAYER_BLUEBABY_B] = {name = "bluebaby", id = "06", b = true},
         [PlayerType.PLAYER_SAMSON_B] = {name = "samson", id = "07", b = true},
         [PlayerType.PLAYER_AZAZEL_B] = {name = "azazel", id = "08", b = true},
         [PlayerType.PLAYER_LAZARUS_B] = {name = "lazarus", id = "09", b = true},
         [PlayerType.PLAYER_EDEN_B] = {name = "eden", id = "09", b = true},
         [PlayerType.PLAYER_THELOST_B] = {name = "thelost", id = "12", b = true},
         [PlayerType.PLAYER_LILITH_B] = {name = "lilith", id = "13", b = true},
-        [PlayerType.PLAYER_KEEPER_B] = {name = "keeper", id = "14", b = true},
+        [PlayerType.PLAYER_KEEPER_B] = {name = "keeper", bossname = "thekeeper", id = "14", b = true},
         [PlayerType.PLAYER_APOLLYON_B] = {name = "apollyon", id = "15", b = true},
         [PlayerType.PLAYER_THEFORGOTTEN_B] = {name = "theforgotten", id = "16", b = true},
         [PlayerType.PLAYER_THESOUL_B] = {name = "theforgotten", id = "16", b = true},
@@ -7711,13 +7711,9 @@ do -- Bosses
 
     for k, v in pairs(StageAPI.PlayerBossInfo) do
         local use = v.name
-        if k == "???" then
-            use = "bluebaby"
-        end
-
         local name
-        if k == "keeper" then
-            name = "gfx/ui/boss/playername_" .. v.id .. "_the" .. use .. ".png"
+        if v.bossname then
+            name = "gfx/ui/boss/playername_" .. v.id .. "_" .. v.bossname .. ".png"
         else
             name = "gfx/ui/boss/playername_" .. v.id .. "_" .. use .. ".png"
         end
@@ -7830,18 +7826,18 @@ do -- Bosses
     StageAPI.BossSprite:Load("gfx/ui/boss/versusscreen.anm2", false)
     StageAPI.BossSprite:ReplaceSpritesheet(0, "none.png")
     StageAPI.BossSprite:ReplaceSpritesheet(11, "stageapi/boss/overlay.png")
-    
+
     StageAPI.BossSpriteBg = Sprite()
-    StageAPI.BossSpriteBg:Load("gfx/ui/boss/versusscreen.anm2", true)    
+    StageAPI.BossSpriteBg:Load("gfx/ui/boss/versusscreen.anm2", true)
     for i=1, 14 do
       StageAPI.BossSpriteBg:ReplaceSpritesheet(i, "none.png")
-    end 
-    
+    end
+
     StageAPI.PlayingBossSprite = nil
     StageAPI.PlayingBossSpriteBg = nil
     StageAPI.UnskippableBossAnim = nil
     StageAPI.BossOffset = nil
-    
+
     function StageAPI.PlayBossAnimationManual(portrait, name, spot, playerPortrait, playerName, playerSpot, portraitTwo, unskippable, bgColor, noSkake)
         local paramTable = portrait
         if type(paramTable) ~= "table" then
@@ -7858,7 +7854,7 @@ do -- Bosses
                 NoShake = noShake
             }
         end
-        
+
         if paramTable.Sprite then -- if you need to use a different sprite (ex for a special boss animation) this could help
             StageAPI.PlayingBossSprite = paramTable.Sprite
         else
@@ -7888,11 +7884,11 @@ do -- Bosses
 
             StageAPI.PlayingBossSprite:LoadGraphics()
         end
-        
+
         StageAPI.PlayingBossSpriteBg = StageAPI.BossSpriteBg
         StageAPI.PlayingBossSpriteBg.Color = paramTable.BackgroundColor or Color(0, 0, 0, 1, 0, 0, 0)
         StageAPI.PlayingBossSpriteBg:Play("Scene", true)
-        
+
         if paramTable.BossOffset then
             StageAPI.BossOffset = paramTable.BossOffset
         else
@@ -7913,13 +7909,13 @@ do -- Bosses
                 StageAPI.PlayingBossSpriteBg:Update()
                 StageAPI.PlayingBossSprite:Update()
             end
-            
+
             local centerPos = StageAPI.GetScreenCenterPosition()
             --local layerRenderOrder = {0,1,2,3,14,9,13,4,5,6,7,8,10}       --ab+ classy vs screen's compability layer order
             local layerRenderOrder = {0,1,2,3,9,14,13,4,5,12,11,6,7,8,10}
-            
+
             StageAPI.PlayingBossSpriteBg:RenderLayer(0, centerPos)
-            
+
             for _, layer in ipairs(layerRenderOrder) do
                 local pos = centerPos
                 if StageAPI.BossOffset then
