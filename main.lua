@@ -7679,14 +7679,14 @@ do -- Bosses
         [PlayerType.PLAYER_CAIN] = {name = "cain", id = "03"},
         [PlayerType.PLAYER_JUDAS] = {name = "judas", id = "04"},
         [PlayerType.PLAYER_EVE] = {name = "eve", id = "05"},
-        [PlayerType.PLAYER_BLUEBABY] = {name = "???", id = "06"},
+        [PlayerType.PLAYER_BLUEBABY] = {name = "bluebaby", id = "06"},
         [PlayerType.PLAYER_SAMSON] = {name = "samson", id = "07"},
         [PlayerType.PLAYER_AZAZEL] = {name = "azazel", id = "08"},
         [PlayerType.PLAYER_LAZARUS] = {name = "lazarus", id = "09"},
         [PlayerType.PLAYER_EDEN] = {name = "eden", id = "09"},
         [PlayerType.PLAYER_THELOST] = {name = "thelost", id = "12"},
         [PlayerType.PLAYER_LILITH] = {name = "lilith", id = "13"},
-        [PlayerType.PLAYER_KEEPER] = {name = "keeper", id = "14"},
+        [PlayerType.PLAYER_KEEPER] = {name = "keeper", bossname = "thekeeper", id = "14"},
         [PlayerType.PLAYER_APOLLYON] = {name = "apollyon", id = "15"},
         [PlayerType.PLAYER_THEFORGOTTEN] = {name = "theforgotten", id = "16"},
         [PlayerType.PLAYER_THESOUL] = {name = "theforgotten", id = "16"},
@@ -7698,14 +7698,14 @@ do -- Bosses
         [PlayerType.PLAYER_CAIN_B] = {name = "cain", id = "03", b = true},
         [PlayerType.PLAYER_JUDAS_B] = {name = "judas", id = "04", b = true},
         [PlayerType.PLAYER_EVE_B] = {name = "eve", id = "05", b = true},
-        [PlayerType.PLAYER_BLUEBABY_B] = {name = "???", id = "06", b = true},
+        [PlayerType.PLAYER_BLUEBABY_B] = {name = "bluebaby", id = "06", b = true},
         [PlayerType.PLAYER_SAMSON_B] = {name = "samson", id = "07", b = true},
         [PlayerType.PLAYER_AZAZEL_B] = {name = "azazel", id = "08", b = true},
         [PlayerType.PLAYER_LAZARUS_B] = {name = "lazarus", id = "09", b = true},
         [PlayerType.PLAYER_EDEN_B] = {name = "eden", id = "09", b = true},
         [PlayerType.PLAYER_THELOST_B] = {name = "thelost", id = "12", b = true},
         [PlayerType.PLAYER_LILITH_B] = {name = "lilith", id = "13", b = true},
-        [PlayerType.PLAYER_KEEPER_B] = {name = "keeper", id = "14", b = true},
+        [PlayerType.PLAYER_KEEPER_B] = {name = "keeper", bossname = "thekeeper", id = "14", b = true},
         [PlayerType.PLAYER_APOLLYON_B] = {name = "apollyon", id = "15", b = true},
         [PlayerType.PLAYER_THEFORGOTTEN_B] = {name = "theforgotten", id = "16", b = true},
         [PlayerType.PLAYER_THESOUL_B] = {name = "theforgotten", id = "16", b = true},
@@ -7714,13 +7714,9 @@ do -- Bosses
 
     for k, v in pairs(StageAPI.PlayerBossInfo) do
         local use = v.name
-        if k == "???" then
-            use = "bluebaby"
-        end
-
         local name
-        if k == "keeper" then
-            name = "gfx/ui/boss/playername_" .. v.id .. "_the" .. use .. ".png"
+        if v.bossname then
+            name = "gfx/ui/boss/playername_" .. v.id .. "_" .. v.bossname .. ".png"
         else
             name = "gfx/ui/boss/playername_" .. v.id .. "_" .. use .. ".png"
         end
@@ -8348,11 +8344,6 @@ do -- Transition
         end
         StageAPI.TransitionAnimation:ReplaceSpritesheet(7, icon)
         StageAPI.TransitionAnimation:LoadGraphics()
-        --if noshake then
-        --    StageAPI.TransitionAnimation:Play("SceneNoShake", true)
-        --else
-        --    StageAPI.TransitionAnimation:Play("Scene", true)
-        --end
         StageAPI.TransitionAnimation:Play("Intro", true)
         
         StageAPI.Music:Play(transitionmusic, 0)
