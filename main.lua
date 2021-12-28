@@ -7259,10 +7259,11 @@ do -- Custom Stage
         self.FloorTextColor = color
     end
 
-    function StageAPI.CustomStage:SetSpots(bossSpot, playerSpot, bgColor)
+    function StageAPI.CustomStage:SetSpots(bossSpot, playerSpot, bgColor, dirtColor)
         self.BossSpot = bossSpot
         self.PlayerSpot = playerSpot
-        self.BackgroundColor = bgColor
+        self.BackgroundColor = bgColor      --info: https://imgur.com/a/HFigk7d
+        self.DirtColor = dirtColor
     end
 
     function StageAPI.CustomStage:SetTrueCoopSpots(twoPlayersSpot, fourPlayersSpot, threePlayersSpot) -- if a three player spot is not defined, uses four instead.
@@ -7471,8 +7472,10 @@ do -- Custom Stage
         self.OverridingTrapdoors = true
     end
 
-    function StageAPI.CustomStage:SetTransitionIcon(icon)
+    function StageAPI.CustomStage:SetTransitionIcon(icon, ground, bg)
         self.TransitionIcon = icon
+        self.TransitionGround = ground
+        self.TransitionBackground = bg
     end
 
     function StageAPI.IsSameStage(base, comp, noAlias)
@@ -7776,10 +7779,13 @@ do -- Bosses
 
     function StageAPI.GetStageSpot()
         if StageAPI.InNewStage() then
-            return StageAPI.CurrentStage.BossSpot or "gfx/ui/boss/bossspot.png", StageAPI.CurrentStage.PlayerSpot or "gfx/ui/boss/playerspot.png", StageAPI.CurrentStage.BackgroundColor or Color(30/255, 18/255, 15/255, 1, 0, 0, 0)
+            return StageAPI.CurrentStage.BossSpot or "gfx/ui/boss/bossspot.png",
+              StageAPI.CurrentStage.PlayerSpot or "gfx/ui/boss/playerspot.png",
+              StageAPI.CurrentStage.BackgroundColor or Color(30/255, 18/255, 15/255, 1, 0, 0, 0),
+              StageAPI.CurrentStage.DirtColor or Color(94/255, 56/255, 54/255, 1, 0, 0, 0)
         else
             local spot = StageAPI.GetBaseFloorInfo().Prefix
-            return "gfx/ui/boss/bossspot_" .. spot .. ".png", "gfx/ui/boss/playerspot_" .. spot .. ".png", StageAPI.GetBaseFloorInfo().VsBgColor
+            return "gfx/ui/boss/bossspot_" .. spot .. ".png", "gfx/ui/boss/playerspot_" .. spot .. ".png", StageAPI.GetBaseFloorInfo().VsBgColor, StageAPI.GetBaseFloorInfo().VsDirtColor
         end
     end
 
@@ -7832,13 +7838,20 @@ do -- Bosses
     for i=1, 14 do
       StageAPI.BossSpriteBg:ReplaceSpritesheet(i, "none.png")
     end
-
+    
+    StageAPI.BossSpriteDirt = Sprite()
+    StageAPI.BossSpriteDirt:Load("gfx/ui/boss/versusscreen.anm2", true)    
+    for i=0, 14 do
+      StageAPI.BossSpriteDirt:ReplaceSpritesheet(i, "none.png")
+    end
+    
     StageAPI.PlayingBossSprite = nil
     StageAPI.PlayingBossSpriteBg = nil
+    StageAPI.PlayingBossSpriteDirt = nil
     StageAPI.UnskippableBossAnim = nil
     StageAPI.BossOffset = nil
-
-    function StageAPI.PlayBossAnimationManual(portrait, name, spot, playerPortrait, playerName, playerSpot, portraitTwo, unskippable, bgColor, noSkake)
+    
+    function StageAPI.PlayBossAnimationManual(portrait, name, spot, playerPortrait, playerName, playerSpot, portraitTwo, unskippable, bgColor, dirtColor, noSkake)
         local paramTable = portrait
         if type(paramTable) ~= "table" then
             paramTable = {
@@ -7851,6 +7864,7 @@ do -- Bosses
                 PlayerSpot = playerSpot,
                 Unskippable = unskippable,
                 BackgroundColor = bgColor,
+                DirtColor = dirtColor,
                 NoShake = noShake
             }
         end
@@ -7859,12 +7873,15 @@ do -- Bosses
             StageAPI.PlayingBossSprite = paramTable.Sprite
         else
             StageAPI.PlayingBossSprite = StageAPI.BossSprite
+            StageAPI.PlayingBossSpriteBg = StageAPI.BossSpriteBg
+            StageAPI.PlayingBossSpriteDirt = StageAPI.BossSpriteDirt
         end
 
         if not paramTable.NoLoadGraphics then
             StageAPI.PlayingBossSprite:ReplaceSpritesheet(2, paramTable.BossSpot or "gfx/ui/boss/bossspot.png")
             StageAPI.PlayingBossSprite:ReplaceSpritesheet(3, paramTable.PlayerSpot or "gfx/ui/boss/bossspot.png")
             StageAPI.PlayingBossSprite:ReplaceSpritesheet(4, paramTable.BossPortrait or "gfx/ui/boss/portrait_20.0_monstro.png")
+            StageAPI.PlayingBossSpriteDirt:ReplaceSpritesheet(13, paramTable.BossPortrait or "gfx/ui/boss/portrait_20.0_monstro.png")
             StageAPI.PlayingBossSprite:ReplaceSpritesheet(6, paramTable.PlayerName or "gfx/ui/boss/bossname_20.0_monstro.png")
             StageAPI.PlayingBossSprite:ReplaceSpritesheet(7, paramTable.BossName or "gfx/ui/boss/bossname_20.0_monstro.png")
             if paramTable.NoShake then
@@ -7877,18 +7894,21 @@ do -- Bosses
 
             if paramTable.BossPortraitTwo then
                 StageAPI.PlayingBossSprite:ReplaceSpritesheet(9, paramTable.BossPortraitTwo)
+                StageAPI.PlayingBossSpriteDirt:ReplaceSpritesheet(14, paramTable.BossPortraitTwo)
                 paramTable.Animation = paramTable.Animation or "DoubleTrouble"
             end
-
-            StageAPI.PlayingBossSprite:Play(paramTable.Animation or "Scene", true)
-
+            
+            StageAPI.PlayingBossSprite:Play(paramTable.Animation or "Scene", true)            
             StageAPI.PlayingBossSprite:LoadGraphics()
+            
+            StageAPI.PlayingBossSpriteBg.Color = paramTable.BackgroundColor or Color(0, 0, 0, 1, 0, 0, 0)
+            StageAPI.PlayingBossSpriteBg:Play(paramTable.Animation or "Scene", true)
+            
+            StageAPI.PlayingBossSpriteDirt.Color = paramTable.DirtColor or Color(1, 1, 1, 1, 0, 0, 0)
+            StageAPI.PlayingBossSpriteDirt:Play(paramTable.Animation or "Scene", true)
+            StageAPI.PlayingBossSpriteDirt:LoadGraphics()
         end
-
-        StageAPI.PlayingBossSpriteBg = StageAPI.BossSpriteBg
-        StageAPI.PlayingBossSpriteBg.Color = paramTable.BackgroundColor or Color(0, 0, 0, 1, 0, 0, 0)
-        StageAPI.PlayingBossSpriteBg:Play("Scene", true)
-
+      
         if paramTable.BossOffset then
             StageAPI.BossOffset = paramTable.BossOffset
         else
@@ -7905,9 +7925,10 @@ do -- Bosses
         local isPlaying = StageAPI.PlayingBossSprite
 
         if isPlaying and ((game:IsPaused() and not menuConfirmTriggered) or StageAPI.UnskippableBossAnim) then
-            if StageAPI.IsOddRenderFrame then
-                StageAPI.PlayingBossSpriteBg:Update()
+            if StageAPI.IsOddRenderFrame then                
                 StageAPI.PlayingBossSprite:Update()
+                StageAPI.PlayingBossSpriteBg:Update()
+                StageAPI.PlayingBossSpriteDirt:Update()
             end
 
             local centerPos = StageAPI.GetScreenCenterPosition()
@@ -7921,23 +7942,29 @@ do -- Bosses
                 if StageAPI.BossOffset then
                     local isDoubleTrouble = StageAPI.BossOffset.One or StageAPI.BossOffset.Two
                     if isDoubleTrouble then  -- Double trouble, table {One = Vector, Two = Vector}
-                        if layer == 4 then
+                        if layer == 4 or layer == 13 then
                             pos = pos + StageAPI.BossOffset.One or zeroVector
-                        elseif layer == 9 then
+                        elseif layer == 9 or layer == 14 then
                             pos = pos + StageAPI.BossOffset.Two or zeroVector
                         end
-                    elseif layer == 4 then
+                    elseif layer == 4 or layer == 13 then
                         pos = pos + StageAPI.BossOffset
                     end
                 end
-
-                StageAPI.PlayingBossSprite:RenderLayer(layer, pos)
+                
+                if layer == 13 or layer == 14 then
+                  StageAPI.PlayingBossSpriteDirt:RenderLayer(layer, pos)
+                else
+                  StageAPI.PlayingBossSprite:RenderLayer(layer, pos)
+                end
             end
         elseif isPlaying then
              StageAPI.PlayingBossSprite:Stop()
              StageAPI.PlayingBossSprite = nil
              StageAPI.PlayingBossSpriteBg:Stop()
              StageAPI.PlayingBossSpriteBg = nil
+             StageAPI.PlayingBossSpriteDirt:Stop()
+             StageAPI.PlayingBossSpriteDirt = nil
         end
 
         if not isPlaying then
@@ -7974,7 +8001,7 @@ do -- Bosses
     end
 
     function StageAPI.PlayBossAnimation(boss, unskippable)
-        local bSpot, pSpot, bgColor = StageAPI.GetStageSpot()
+        local bSpot, pSpot, bgColor, dirtColor = StageAPI.GetStageSpot()
         local gfxData = StageAPI.TryGetPlayerGraphicsInfo(StageAPI.Players[1])
         StageAPI.PlayBossAnimationManual({
             BossPortrait = boss.Portrait,
@@ -7987,6 +8014,7 @@ do -- Bosses
             Unskippable = unskippable,
             BossOffset = boss.Offset,
             BackgroundColor = bgColor,
+            DirtColor = dirtColor,
             NoShake = gfxData.NoShake
         })
     end
@@ -8206,7 +8234,7 @@ do -- Transition
     end
 
     mod:AddCallback(ModCallbacks.MC_POST_RENDER, function()
-        if StageAPI.TransitionAnimation:IsPlaying("Scene") or StageAPI.TransitionAnimation:IsPlaying("SceneNoShake") then
+        if StageAPI.TransitionAnimation:IsPlaying("Scene") or StageAPI.TransitionAnimation:IsPlaying("SceneNoShake") or StageAPI.TransitionAnimation:IsPlaying("Intro") then
             if StageAPI.IsOddRenderFrame then
                 StageAPI.TransitionAnimation:Update()
             end
@@ -8255,6 +8283,7 @@ do -- Transition
     function StageAPI.IsHUDAnimationPlaying(spriteOnly)
         return StageAPI.TransitionAnimation:IsPlaying("Scene")
         or StageAPI.TransitionAnimation:IsPlaying("SceneNoShake")
+        or StageAPI.TransitionAnimation:IsPlaying("Intro")
         or StageAPI.BossSprite:IsPlaying("Scene")
         or StageAPI.BossSprite:IsPlaying("DoubleTrouble")
         or (
@@ -8293,24 +8322,30 @@ do -- Transition
         return "stageapi/transition/levelicons/" .. base .. ".png"
     end
 
-    function StageAPI.PlayTransitionAnimationManual(portrait, icon, transitionmusic, queue, noshake)
+    function StageAPI.PlayTransitionAnimationManual(portrait, icon, ground, bg, transitionmusic, queue, noshake)
         portrait = portrait or "gfx/ui/stage/playerportrait_isaac.png"
         icon = icon or "stageapi/transition/levelicons/unknown.png"
+        ground = ground or "stageapi/transition/bossspot_01_basement.png"
+        bg = bg or "stageapi/transition/nightmares_bg_mask.png"
         transitionmusic = transitionmusic or Music.MUSIC_JINGLE_NIGHTMARE
 
         if queue ~= false then
             queue = queue or StageAPI.Music:GetCurrentMusicID()
         end
-
-        StageAPI.TransitionAnimation:ReplaceSpritesheet(1, portrait)
-        StageAPI.TransitionAnimation:ReplaceSpritesheet(2, icon)
-        StageAPI.TransitionAnimation:LoadGraphics()
+        
+        StageAPI.TransitionAnimation:ReplaceSpritesheet(3, ground)
+        StageAPI.TransitionAnimation:ReplaceSpritesheet(1, bg)
         if noshake then
-            StageAPI.TransitionAnimation:Play("SceneNoShake", true)
+            StageAPI.TransitionAnimation:ReplaceSpritesheet(6, portrait)
+            StageAPI.TransitionAnimation:ReplaceSpritesheet(2, "none.png")
         else
-            StageAPI.TransitionAnimation:Play("Scene", true)
+            StageAPI.TransitionAnimation:ReplaceSpritesheet(2, portrait)
+            StageAPI.TransitionAnimation:ReplaceSpritesheet(6, "none.png")
         end
-
+        StageAPI.TransitionAnimation:ReplaceSpritesheet(7, icon)
+        StageAPI.TransitionAnimation:LoadGraphics()
+        StageAPI.TransitionAnimation:Play("Intro", true)
+        
         StageAPI.Music:Play(transitionmusic, 0)
         StageAPI.Music:UpdateVolume()
 
@@ -8321,7 +8356,7 @@ do -- Transition
 
     function StageAPI.PlayTransitionAnimation(stage)
         local gfxData = StageAPI.TryGetPlayerGraphicsInfo(players[1])
-        StageAPI.PlayTransitionAnimationManual(gfxData.Portrait, stage.TransitionIcon, stage.TransitionMusic, stage.Music and stage.Music[RoomType.ROOM_DEFAULT], gfxData.NoShake)
+        StageAPI.PlayTransitionAnimationManual(gfxData.Portrait, stage.TransitionIcon, stage.TransitionGround, stage.TransitionBackground, stage.TransitionMusic, stage.Music and stage.Music[RoomType.ROOM_DEFAULT], gfxData.NoShake)
     end
 
     StageAPI.StageRNG = RNG()
@@ -8346,7 +8381,9 @@ do -- Transition
 
             if playTransition then
                 local gfxData = StageAPI.TryGetPlayerGraphicsInfo(players[1])
-                StageAPI.PlayTransitionAnimationManual(gfxData.Portrait, StageAPI.GetLevelTransitionIcon(stage.Stage, stageType), nil, nil, gfxData.NoShake)
+                local ground = "gfx/ui/boss/bossspot_" .. StageAPI.GetBaseFloorInfo().Prefix .. ".png"
+                local bg = "stageapi/transition/nightmares_bg_mask.png"
+                StageAPI.PlayTransitionAnimationManual(gfxData.Portrait, StageAPI.GetLevelTransitionIcon(stage.Stage, stageType), ground, bg, nil, nil, gfxData.NoShake)
             end
 
             Isaac.ExecuteCommand("stage " .. tostring(stage.Stage) .. StageAPI.StageTypeToString[stageType])
