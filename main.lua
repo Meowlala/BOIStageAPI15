@@ -7262,7 +7262,7 @@ do -- Custom Stage
     function StageAPI.CustomStage:SetSpots(bossSpot, playerSpot, bgColor, dirtColor)
         self.BossSpot = bossSpot
         self.PlayerSpot = playerSpot
-        self.BackgroundColor = bgColor
+        self.BackgroundColor = bgColor      --info: https://imgur.com/a/HFigk7d
         self.DirtColor = dirtColor
     end
 
