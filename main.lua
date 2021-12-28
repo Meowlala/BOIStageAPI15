@@ -7832,9 +7832,9 @@ do -- Bosses
     StageAPI.BossSprite:Load("gfx/ui/boss/versusscreen.anm2", false)
     StageAPI.BossSprite:ReplaceSpritesheet(0, "none.png")
     StageAPI.BossSprite:ReplaceSpritesheet(11, "stageapi/boss/overlay.png")
-    
+
     StageAPI.BossSpriteBg = Sprite()
-    StageAPI.BossSpriteBg:Load("gfx/ui/boss/versusscreen.anm2", true)    
+    StageAPI.BossSpriteBg:Load("gfx/ui/boss/versusscreen.anm2", true)
     for i=1, 14 do
       StageAPI.BossSpriteBg:ReplaceSpritesheet(i, "none.png")
     end
@@ -7843,7 +7843,7 @@ do -- Bosses
     StageAPI.BossSpriteDirt:Load("gfx/ui/boss/versusscreen.anm2", true)    
     for i=0, 14 do
       StageAPI.BossSpriteDirt:ReplaceSpritesheet(i, "none.png")
-    end 
+    end
     
     StageAPI.PlayingBossSprite = nil
     StageAPI.PlayingBossSpriteBg = nil
@@ -7868,7 +7868,7 @@ do -- Bosses
                 NoShake = noShake
             }
         end
-        
+
         if paramTable.Sprite then -- if you need to use a different sprite (ex for a special boss animation) this could help
             StageAPI.PlayingBossSprite = paramTable.Sprite
         else
@@ -7908,7 +7908,7 @@ do -- Bosses
             StageAPI.PlayingBossSpriteDirt:Play(paramTable.Animation or "Scene", true)
             StageAPI.PlayingBossSpriteDirt:LoadGraphics()
         end
-        
+      
         if paramTable.BossOffset then
             StageAPI.BossOffset = paramTable.BossOffset
         else
@@ -7930,13 +7930,13 @@ do -- Bosses
                 StageAPI.PlayingBossSpriteBg:Update()
                 StageAPI.PlayingBossSpriteDirt:Update()
             end
-            
+
             local centerPos = StageAPI.GetScreenCenterPosition()
             --local layerRenderOrder = {0,1,2,3,14,9,13,4,5,6,7,8,10}       --ab+ classy vs screen's compability layer order
             local layerRenderOrder = {0,1,2,3,9,14,13,4,5,12,11,6,7,8,10}
-            
+
             StageAPI.PlayingBossSpriteBg:RenderLayer(0, centerPos)
-            
+
             for _, layer in ipairs(layerRenderOrder) do
                 local pos = centerPos
                 if StageAPI.BossOffset then
