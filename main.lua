@@ -1186,6 +1186,10 @@ do -- Core Functions
 
         return eff
     end
+
+    function StageAPI.InStartingRoom()
+        return level:GetCurrentRoomDesc().SafeGridIndex == level:GetStartingRoomIndex()
+    end
 end
 
 StageAPI.LogMinor("Loading Overlay System")
@@ -5218,7 +5222,7 @@ do -- Extra Rooms
             if needsToLoad then
                 local resetRun
                 local currentIndex = level:GetCurrentRoomIndex()
-                if currentIndex == level:GetStartingRoomIndex() and room:IsFirstVisit() and level:GetStage() == LevelStage.STAGE1_1 then
+                if StageAPI.InStartingRoom() and room:IsFirstVisit() and level:GetStage() == LevelStage.STAGE1_1 then
                     resetRun = true
                 end
 
@@ -5402,7 +5406,7 @@ do -- Extra Rooms
                 elseif idx == GridRooms.ROOM_ANGEL_SHOP_IDX then
                     if not anyPlayerHas(CollectibleType.COLLECTIBLE_STAIRWAY)
                     or (
-                        level:GetStartingRoomIndex() ~= level:GetCurrentRoomIndex()
+                        not StageAPI.InStartingRoom()
                         and level:GetRoomByIdx(level:GetStartingRoomIndex()).VisitedCount > 0
                     )  then
                         outIdx = idx
@@ -8919,7 +8923,7 @@ do -- Callbacks
 
     function StageAPI.ShouldOverrideRoom(inStartingRoom, currentRoom)
         if inStartingRoom == nil then
-            inStartingRoom = level:GetCurrentRoomIndex() == level:GetStartingRoomIndex()
+            inStartingRoom = StageAPI.InStartingRoom()
         end
 
         if currentRoom == nil then
@@ -9431,7 +9435,7 @@ do -- Callbacks
         StageAPI.DoubleTransitioning = false
 
         local isNewStage, override = StageAPI.InOverriddenStage()
-        local inStartingRoom = level:GetCurrentRoomIndex() == level:GetStartingRoomIndex()
+        local inStartingRoom = StageAPI.InStartingRoom()
 
         for _, customGrid in ipairs(StageAPI.GetCustomGrids()) do
             if customGrid.RoomIndex and customGrid.RoomIndex ~= StageAPI.GetCurrentRoomID() then
