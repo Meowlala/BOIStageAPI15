@@ -3803,7 +3803,6 @@ do -- RoomsList
         if setIfNot and not tbl[dimension] then
             tbl[dimension] = {}
         end
-
         return tbl[dimension]
     end
 
@@ -7215,6 +7214,14 @@ do -- Custom Stage
             Boss = bossChallengeRooms
         }
     end
+	
+	function StageAPI.CustomStage:SetGreedModeWaves(rooms, bossRooms, nightmareRooms)
+        self.GreedWaves = {
+            Normal = rooms,
+            Boss = bossRooms,
+			Nightmare = nightmareRooms
+        }
+    end
 
     function StageAPI.CustomStage:SetMusic(music, rtype)
         if not self.Music then
@@ -7300,7 +7307,11 @@ do -- Custom Stage
             self.SinRooms = sins
         end
     end
-
+	
+    function StageAPI.CustomStage:SetStartingRooms(starting)
+        self.StartingRooms = starting
+    end
+	
     function StageAPI.CustomStage:GenerateRoom(roomDescriptor, isStartingRoom, fromLevelGenerator, roomArgs)
         StageAPI.LogMinor("Generating room for stage " .. self:GetDisplayName())
 
@@ -7368,15 +7379,22 @@ do -- Custom Stage
             end
         end
 
-        if not isStartingRoom and StageAPI.CurrentStage.Rooms and StageAPI.CurrentStage.Rooms[rtype] then
-            local newRoom = StageAPI.LevelRoom(StageAPI.Merged({
-                RoomsList = StageAPI.CurrentStage.Rooms[rtype],
-                RoomDescriptor = roomDescriptor,
-                RequireRoomType = self.RequireRoomTypeMatching
-            }, roomArgs))
+		if not isStartingRoom and StageAPI.CurrentStage.Rooms and StageAPI.CurrentStage.Rooms[rtype] then
+			
+			local newRoom = StageAPI.LevelRoom(StageAPI.Merged({
+				RoomsList = StageAPI.CurrentStage.Rooms[rtype],
+				RoomDescriptor = roomDescriptor,
+				RequireRoomType = self.RequireRoomTypeMatching
+			}, roomArgs))
+			return newRoom
+		elseif isStartingRoom and StageAPI.CurrentStage.StartingRooms then
 
-            return newRoom
-        end
+			local newRoom = StageAPI.LevelRoom(StageAPI.Merged({
+				RoomsList = StageAPI.CurrentStage.StartingRooms,
+				RoomDescriptor = roomDescriptor
+			}, roomArgs))
+			return newRoom
+		end
 
         if self.Bosses and rtype == RoomType.ROOM_BOSS then
             local newRoom, boss = StageAPI.GenerateBossRoom({
@@ -8256,10 +8274,14 @@ do -- Transition
                     stop = true
                 end
             end
-
+			--animate stufff transitionsfor next stage
             if stop or StageAPI.TransitionAnimation:IsEventTriggered("LastFrame") then
                 for _, player in ipairs(players) do
-                    player.Position = room:GetCenterPos()
+					if not game:IsGreedMode() then
+					    player.Position = room:GetCenterPos()
+					else
+						player.Position = room:GetGridPosition(67)
+					end
                     player:AnimateAppear()
                 end
 
@@ -8857,9 +8879,9 @@ do -- Callbacks
         end
     end)
 
-    mod:AddCallback(ModCallbacks.MC_POST_NEW_LEVEL, function()
+    --[[mod:AddCallback(ModCallbacks.MC_POST_NEW_LEVEL, function()
         StageAPI.RoomGrids = {}
-    end)
+    end)]]
 
     StageAPI.RoomNamesEnabled = false
     StageAPI.PreviousGridCount = nil
@@ -8920,21 +8942,43 @@ do -- Callbacks
             end
         end
     end)
+	
+    function StageAPI.ShouldOverrideRoom(inStartingRoom, currentRoom) --lol
+	    if inStartingRoom == nil then
+			inStartingRoom = StageAPI.InStartingRoom()
+		end
 
-    function StageAPI.ShouldOverrideRoom(inStartingRoom, currentRoom)
-        if inStartingRoom == nil then
-            inStartingRoom = StageAPI.InStartingRoom()
-        end
+		if currentRoom == nil then
+			currentRoom = StageAPI.GetCurrentRoom()
+	    end
+		if currentRoom then
+		    return true
+		elseif StageAPI.InNewStage() then
+		    local shouldGenerateDefaultRoom = (StageAPI.CurrentStage.Rooms and StageAPI.CurrentStage.Rooms[room:GetType()])
+		    local shouldGenerateBossRoom = (StageAPI.CurrentStage.Bosses and room:GetType() == RoomType.ROOM_BOSS)
+		    local shouldGenerateStartingRoom = StageAPI.CurrentStage.StartingRooms
 
-        if currentRoom == nil then
-            currentRoom = StageAPI.GetCurrentRoom()
-        end
+			if (not inStartingRoom and (shouldGenerateDefaultRoom or shouldGenerateBossRoom)) or (inStartingRoom and shouldGenerateStartingRoom ) then
 
-        if currentRoom or (not inStartingRoom and StageAPI.InNewStage() and ((StageAPI.CurrentStage.Rooms and StageAPI.CurrentStage.Rooms[room:GetType()]) or (StageAPI.CurrentStage.Bosses and room:GetType() == RoomType.ROOM_BOSS))) then
-            return true
-        end
+			    return true
+			end
+		end
     end
-
+	
+	StageAPI.IsJustNewLevel = nil
+	
+	mod:AddCallback(ModCallbacks.MC_POST_CURSE_EVAL, function()
+		if game:GetFrameCount() > 30 then
+		    StageAPI.IsJustNewLevel = true
+		end
+    end)
+	
+	mod:AddCallback(ModCallbacks.MC_POST_UPDATE, function()
+        if StageAPI.IsJustNewLevel and room:GetFrameCount() > 1 then
+		    StageAPI.IsJustNewLevel = false
+		end
+    end)
+	
     StageAPI.AddCallback("StageAPI", "POST_SELECT_BOSS_MUSIC", 0, function(stage, usingMusic, isCleared)
         if not isCleared then
             if stage.Name == "Necropolis" or stage.Alias == "Necropolis" then
@@ -9457,6 +9501,7 @@ do -- Callbacks
 
         if (inStartingRoom and StageAPI.GetDimension() == 0 and room:IsFirstVisit()) or (isNewStage and not StageAPI.CurrentStage) then
             if inStartingRoom then
+				StageAPI.RoomGrids = {}
                 local maintainGrids = {}
                 for dimension, rooms in pairs(StageAPI.LevelRooms) do
                     maintainGrids[dimension] = {}
@@ -9552,8 +9597,8 @@ do -- Callbacks
             justGenerated = currentRoom.FirstLoad
             currentRoom:Load(true)
         elseif StageAPI.InNewStage() then
-            if not currentRoom and not inStartingRoom and StageAPI.CurrentStage.GenerateRoom then
-                local newRoom, newBoss = StageAPI.CurrentStage:GenerateRoom(level:GetCurrentRoomDesc(), false, false)
+            if not currentRoom and StageAPI.CurrentStage.GenerateRoom then
+                local newRoom, newBoss = StageAPI.CurrentStage:GenerateRoom(level:GetCurrentRoomDesc(), inStartingRoom, false)
                 if newRoom then
                     StageAPI.SetCurrentRoom(newRoom)
                     newRoom:Load()
@@ -9860,26 +9905,28 @@ do -- Callbacks
     }
 
     mod:AddCallback(ModCallbacks.MC_PRE_ROOM_ENTITY_SPAWN, function(_, t, v, s, index, seed)
-        if StageAPI.ShouldOverrideRoom() and (t >= 1000 or StageAPI.RoomEntitySpawnGridBlacklist[t] or StageAPI.IsMetadataEntity(t, v)) and not StageAPI.ActiveTransitionToExtraRoom then
-            local shouldReturn
-            if room:IsFirstVisit() or StageAPI.IsMetadataEntity(t, v) then
-                shouldReturn = true
-            else
-                local currentListIndex = StageAPI.GetCurrentRoomID()
-                local roomGrids = StageAPI.GetTableIndexedByDimension(StageAPI.RoomGrids, true)
-                if roomGrids[currentListIndex] and not roomGrids[currentListIndex][index] then
-                    shouldReturn = true
-                end
-            end
+	    if not StageAPI.IsJustNewLevel then
+			if StageAPI.ShouldOverrideRoom() and (t >= 1000 or StageAPI.RoomEntitySpawnGridBlacklist[t] or StageAPI.IsMetadataEntity(t, v)) and not StageAPI.ActiveTransitionToExtraRoom then
+				local shouldReturn
+				if room:IsFirstVisit() or StageAPI.IsMetadataEntity(t, v) then
+					shouldReturn = true
+				else
+					local currentListIndex = StageAPI.GetCurrentRoomID()
+					local roomGrids = StageAPI.GetTableIndexedByDimension(StageAPI.RoomGrids, true)
+					if roomGrids[currentListIndex] and not roomGrids[currentListIndex][index] then
+						shouldReturn = true
+					end
+				end
 
-            if shouldReturn then
-                return {
-                    999,
-                    StageAPI.E.DeleteMeEffect.V,
-                    0
-                }
-            end
-        end
+				if shouldReturn then
+					return {
+						999,
+						StageAPI.E.DeleteMeEffect.V,
+						0
+					}
+				end
+			end
+		end
     end)
 
     StageAPI.LoadedMods = {}
@@ -10771,6 +10818,161 @@ do -- Challenge Rooms
         end
     end)
 end
+
+
+do -- Greed Mode Floor Waves
+    --[[
+    Custom Greed Mode Waves
+
+    CustomStage:SetGreedModeWaves(RoomsList, BossRoomsList, NightmareRoomsList)
+
+    Greed Mode waves must be rooms with only entities, and no metadata entities, to properly merge into the existing room.
+
+    Works like challenge waves 
+    ]]
+
+    StageAPI.GreedMode = {
+        WaveChanged = false,
+        WaveSpawnFrame = nil,
+        WaveSubtype = nil,
+		WaveIsPlaying = false,
+		LastWave = 0
+    }
+    mod:AddCallback(ModCallbacks.MC_POST_NPC_INIT, function(_, npc)
+		print(level.GreedModeWave)
+		
+        if level:GetCurrentRoomDesc().GridIndex == level:GetStartingRoomIndex() --[[room:GetType() == RoomType.ROOM_CHALLENGE]] and not StageAPI.GreedMode.WaveSpawnFrame
+        and --[[room:IsAmbushActive() and not room:IsAmbushDone()]] StageAPI.GreedMode.LastWave ~= level.GreedModeWave then
+            if (--[[npc.CanShutDoors
+            and ]] not (npc:HasEntityFlags(EntityFlag.FLAG_FRIENDLY) or npc:HasEntityFlags(EntityFlag.FLAG_PERSISTENT) or npc:HasEntityFlags(EntityFlag.FLAG_NO_TARGET))) or (npc.Type == EntityType.ENTITY_BOMBDROP and (npc.Variant == BombVariant.BOMB_TROLL or npc.Variant == BombVariant.BOMB_SUPERTROLL) )then
+                local preventCounting
+
+                if not preventCounting then
+                    StageAPI.GreedMode.WaveChanged = true
+                end
+
+                if StageAPI.GreedMode.WaveChanged and StageAPI.CurrentStage and StageAPI.CurrentStage.GreedWaves then
+                    npc:ClearEntityFlags(EntityFlag.FLAG_APPEAR)
+                    npc.Visible = false
+                    for _, effect in ipairs(Isaac.FindByType(EntityType.ENTITY_EFFECT, EffectVariant.POOF01, -1, false, false)) do
+                        if effect.Position.X == npc.Position.X and effect.Position.Y == npc.Position.Y then
+                            effect:Remove()
+                        end
+                    end
+
+                    npc:Remove()
+                end
+            end
+        end
+    end)
+	
+	mod:AddCallback(ModCallbacks.MC_POST_BOMB_INIT, function(_, npc)
+		print(level.GreedModeWave)
+		
+        if level:GetCurrentRoomDesc().GridIndex == level:GetStartingRoomIndex() --[[room:GetType() == RoomType.ROOM_CHALLENGE]] and not StageAPI.GreedMode.WaveSpawnFrame
+        and --[[room:IsAmbushActive() and not room:IsAmbushDone()]] StageAPI.GreedMode.LastWave ~= level.GreedModeWave then
+            if ((npc.Variant == BombVariant.BOMB_TROLL or npc.Variant == BombVariant.BOMB_SUPERTROLL) )then
+                local preventCounting
+				
+                if StageAPI.GreedMode.WaveChanged and StageAPI.CurrentStage and StageAPI.CurrentStage.GreedWaves then
+                    npc:ClearEntityFlags(EntityFlag.FLAG_APPEAR)
+                    npc.Visible = false
+                    for _, effect in ipairs(Isaac.FindByType(EntityType.ENTITY_EFFECT, EffectVariant.POOF01, -1, false, false)) do
+                        if effect.Position.X == npc.Position.X and effect.Position.Y == npc.Position.Y then
+                            effect:Remove()
+                        end
+                    end
+
+                    npc:Remove()
+                end
+            end
+        end
+    end)
+
+    StageAPI.GreedWaveRNG = RNG()
+    mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, function()
+        for k, v in pairs(StageAPI.GreedMode) do
+            StageAPI.GreedMode[k] = nil
+        end
+        StageAPI.GreedWaveRNG:SetSeed(room:GetSpawnSeed(), 0)
+
+        local currentRoom = StageAPI.GetCurrentRoom()
+        if currentRoom and currentRoom.Data.GreedWaveIDs then
+            currentRoom.Data.GreedWaveIDs = nil
+        end
+    end)
+
+    -- prevent waves of the wrong subtype from appearing
+    StageAPI.AddCallback("StageAPI", "POST_CHECK_VALID_ROOM", 0, function(layout)
+        if StageAPI.GreedMode.WaveSubtype then
+            if not (layout.SubType == 0 or layout.SubType == StageAPI.GreedMode.WaveSubtype) then
+                return 0
+            end
+        end
+    end)
+
+    mod:AddCallback(ModCallbacks.MC_POST_UPDATE, function()
+        if StageAPI.GreedMode.WaveSpawnFrame and game:GetFrameCount() > StageAPI.GreedMode.WaveSpawnFrame then
+            StageAPI.GreedMode.WaveSpawnFrame = nil
+        end
+
+        if StageAPI.GreedMode.WaveChanged then
+            --[[if room:GetType() ~= RoomType.ROOM_CHALLENGE then
+                StageAPI.GreedMode.WaveChanged = false
+                StageAPI.GreedMode.WaveSubtype = nil
+                return
+            end]]
+
+            if StageAPI.CurrentStage and StageAPI.CurrentStage.GreedWaves then
+                StageAPI.GreedMode.WaveSpawnFrame = game:GetFrameCount()
+                local currentRoom = StageAPI.GetCurrentRoom()
+
+                local GreedWaveIDs
+                if currentRoom then
+                    if not StageAPI.GreedMode.WaveSubtype and currentRoom.Layout.SubType ~= 0 then
+                        StageAPI.GreedMode.WaveSubtype = currentRoom.Layout.SubType
+                    end
+
+                    if not currentRoom.Data.GreedWaveIDs then
+                        currentRoom.Data.GreedWaveIDs = {}
+                    end
+
+                    GreedWaveIDs = currentRoom.Data.GreedWaveIDs
+                end
+
+                local seed = StageAPI.ChallengeWaveRNG:Next()
+
+                local useWaves = StageAPI.CurrentStage.GreedWaves.Normal
+                if (game.Difficulty == Difficulty.DIFFICULTY_GREED and level.GreedModeWave > 8 and level.GreedModeWave < 11) or (game.Difficulty == Difficulty.DIFFICULTY_GREEDIER and level.GreedModeWave > 9 and level.GreedModeWave < 12) then
+                    useWaves = StageAPI.CurrentStage.GreedWaves.Boss
+				elseif (game.Difficulty == Difficulty.DIFFICULTY_GREED and level.GreedModeWave == 11) or (game.Difficulty == Difficulty.DIFFICULTY_GREEDIER and level.GreedModeWave <= 12) then
+                    useWaves = StageAPI.CurrentStage.GreedWaves.Nightmare
+                end
+
+                local wave = StageAPI.ChooseRoomLayout(useWaves, seed, room:GetRoomShape(), room:GetType(), false, false, nil, GreedWaveIDs)
+                if currentRoom then
+                    table.insert(currentRoom.Data.GreedWaveIDs, wave.StageAPIID)
+
+                    if not StageAPI.GreedMode.WaveSubtype
+                    and currentRoom.Layout.SubType == 0 and wave.SubType ~= 0 then
+                        StageAPI.GreedMode.WaveSubtype = wave.SubType
+                    end
+                end
+
+                local spawnEntities = StageAPI.ObtainSpawnObjects(wave, seed)
+                StageAPI.SpawningChallengeEnemies = true
+                StageAPI.LoadRoomLayout(nil, {spawnEntities}, false, true, false, true, nil, nil, nil, true)
+                StageAPI.SpawningChallengeEnemies = false
+            end
+
+            StageAPI.CallCallbacks("GREED_WAVE_CHANGED")
+
+            StageAPI.GreedMode.WaveChanged = false
+			StageAPI.GreedMode.LastWave = level.GreedModeWave
+        end
+    end)
+end
+
 
 do -- Custom Floor Generation
     StageAPI.LevelMaps = {}
