@@ -1052,8 +1052,8 @@ do -- Base Floor Info
         }
     }, settingStage, StageType.STAGETYPE_REPENTANCE_B)
 
-    local downpourTwo = StageAPI.GetBaseFloorInfo(settingStage + 1, StageType.STAGETYPE_REPENTANCE_B, false)
-    downpourTwo.HasMirrorLevel = true
+    local drossTwo = StageAPI.GetBaseFloorInfo(settingStage + 1, StageType.STAGETYPE_REPENTANCE_B, false)
+    drossTwo.HasMirrorLevel = true
 
     settingStage = LevelStage.STAGE2_1
     StageAPI.SetFloorInfo({
