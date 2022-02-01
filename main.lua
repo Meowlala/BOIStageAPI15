@@ -204,6 +204,10 @@ Callback List:
 -- Return false to not play "<player> VS <boss.Name>" as would be
 -- normally done, return a string to use that as the streak text instead
 
+- POST_STREAK_RENDER(streakPos, streakPlaying)
+-- After rendering a streak played with
+-- StageAPI.PlayTextStreak
+
 -- StageAPI Structures:
 EntityData {
     Type = integer,
@@ -1099,6 +1103,14 @@ do -- Core Functions
         return streak
     end
 
+    function StageAPI.GetTextStreakPosForFrame(frame)
+        return TextStreakPositions[frame] or 0
+    end
+
+    function StageAPI.GetTextStreakScaleForFrame(frame)
+        return TextStreakScales[frame] or oneVector
+    end
+
     function StageAPI.UpdateTextStreak()
         for index, streakPlaying in StageAPI.ReverseIterate(Streaks) do
             local sprite = StreakSprites[streakPlaying.SpriteIndex].Sprite
@@ -1156,6 +1168,8 @@ do -- Core Functions
                 if streakPlaying.ExtraText then
                     streakPlaying.SmallFont:DrawStringScaled(streakPlaying.ExtraText, streakPlaying.ExtraPositionX + streakPlaying.ExtraOffset.X, (streakPlaying.RenderPos.Y - 9) + streakPlaying.ExtraOffset.Y, streakPlaying.FontScale.X * streakPlaying.ExtraFontScale.X, 1 * streakPlaying.ExtraFontScale.Y, streakPlaying.Color, 0, true)
                 end
+
+                StageAPI.CallCallbacks("POST_STREAK_RENDER", false, streakPlaying.RenderPos, streakPlaying)
             end
         end
     end
