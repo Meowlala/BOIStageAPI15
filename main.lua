@@ -8003,7 +8003,7 @@ do -- Bosses
                     StageAPI.PlayingBossSprite:RenderLayer(layer, pos)
                 end
             end
-        elseif isPlaying then
+        elseif isPlaying or StageAPI.PlayingBossSprite then
             StageAPI.PlayingBossSprite:Stop()
             StageAPI.PlayingBossSprite = nil
             StageAPI.PlayingBossSpriteBg:Stop()
