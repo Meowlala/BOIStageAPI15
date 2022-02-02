@@ -7873,7 +7873,7 @@ do -- Bosses
     StageAPI.BossSpriteDirt = Sprite()
     StageAPI.BossSpriteDirt:Load("gfx/ui/boss/versusscreen.anm2", true)
     for i=0, 14 do
-      StageAPI.BossSpriteDirt:ReplaceSpritesheet(i, "none.png")
+        StageAPI.BossSpriteDirt:ReplaceSpritesheet(i, "none.png")
     end
 
     StageAPI.PlayingBossSprite = nil
@@ -7916,11 +7916,11 @@ do -- Bosses
             StageAPI.PlayingBossSprite:ReplaceSpritesheet(6, paramTable.PlayerName or "gfx/ui/boss/bossname_20.0_monstro.png")
             StageAPI.PlayingBossSprite:ReplaceSpritesheet(7, paramTable.BossName or "gfx/ui/boss/bossname_20.0_monstro.png")
             if paramTable.NoShake then
-              StageAPI.PlayingBossSprite:ReplaceSpritesheet(5, "none.png")
-              StageAPI.PlayingBossSprite:ReplaceSpritesheet(12, paramTable.PlayerPortrait or "gfx/ui/boss/portrait_20.0_monstro.png")
+                StageAPI.PlayingBossSprite:ReplaceSpritesheet(5, "none.png")
+                StageAPI.PlayingBossSprite:ReplaceSpritesheet(12, paramTable.PlayerPortrait or "gfx/ui/boss/portrait_20.0_monstro.png")
             else
-              StageAPI.PlayingBossSprite:ReplaceSpritesheet(5, paramTable.PlayerPortrait or "gfx/ui/boss/portrait_20.0_monstro.png")
-              StageAPI.PlayingBossSprite:ReplaceSpritesheet(12, "none.png")
+                StageAPI.PlayingBossSprite:ReplaceSpritesheet(5, paramTable.PlayerPortrait or "gfx/ui/boss/portrait_20.0_monstro.png")
+                StageAPI.PlayingBossSprite:ReplaceSpritesheet(12, "none.png")
             end
 
             if paramTable.BossPortraitTwo then
@@ -7946,14 +7946,14 @@ do -- Bosses
             StageAPI.BossOffset = nil
         end
 
-        StageAPI.UnskippableBossAnim = unskippable
+        StageAPI.UnskippableBossAnim = paramTable.Unskippable
     end
 
     StageAPI.IsOddRenderFrame = nil
     local menuConfirmTriggered
     mod:AddCallback(ModCallbacks.MC_POST_RENDER, function()
         StageAPI.IsOddRenderFrame = not StageAPI.IsOddRenderFrame
-        local isPlaying = StageAPI.PlayingBossSprite
+        local isPlaying = StageAPI.PlayingBossSprite and StageAPI.PlayingBossSprite:IsPlaying()
 
         if isPlaying and ((game:IsPaused() and not menuConfirmTriggered) or StageAPI.UnskippableBossAnim) then
             if StageAPI.IsOddRenderFrame then
@@ -7984,18 +7984,18 @@ do -- Bosses
                 end
 
                 if layer == 13 or layer == 14 then
-                  StageAPI.PlayingBossSpriteDirt:RenderLayer(layer, pos)
+                    StageAPI.PlayingBossSpriteDirt:RenderLayer(layer, pos)
                 else
-                  StageAPI.PlayingBossSprite:RenderLayer(layer, pos)
+                    StageAPI.PlayingBossSprite:RenderLayer(layer, pos)
                 end
             end
         elseif isPlaying then
-             StageAPI.PlayingBossSprite:Stop()
-             StageAPI.PlayingBossSprite = nil
-             StageAPI.PlayingBossSpriteBg:Stop()
-             StageAPI.PlayingBossSpriteBg = nil
-             StageAPI.PlayingBossSpriteDirt:Stop()
-             StageAPI.PlayingBossSpriteDirt = nil
+            StageAPI.PlayingBossSprite:Stop()
+            StageAPI.PlayingBossSprite = nil
+            StageAPI.PlayingBossSpriteBg:Stop()
+            StageAPI.PlayingBossSpriteBg = nil
+            StageAPI.PlayingBossSpriteDirt:Stop()
+            StageAPI.PlayingBossSpriteDirt = nil
         end
 
         if not isPlaying then
