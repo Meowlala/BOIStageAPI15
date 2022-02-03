@@ -1078,15 +1078,27 @@ do -- Core Functions
         streak.ExtraWidth = streak.SmallFont:GetStringWidth(streak.ExtraText or "") / 2
 
         local index = #Streaks + 1
-        streak.SpriteIndex = index
+        local spriteIndex
+        -- First free streak sprite, in case indices between
+        -- Streaks and StreakSprites got mixed because of 
+        -- streaks being removed from Streaks
+        for i = 1, #Streaks + 1 do
+            if not StreakSprites[i] or StreakSprites[i].Free then
+                spriteIndex = i
+                break
+            end
+        end
 
-        local streakSprite = StreakSprites[index]
+        streak.SpriteIndex = spriteIndex
+
+        local streakSprite = StreakSprites[spriteIndex]
         if not streakSprite then -- this system loads as many sprites as it has to play at once
-            StreakSprites[index] = {}
-            streakSprite = StreakSprites[index]
+            StreakSprites[spriteIndex] = {}
+            streakSprite = StreakSprites[spriteIndex]
             streakSprite.Sprite = Sprite()
             streakSprite.Sprite:Load("stageapi/streak.anm2", true)
             streakSprite.Spritesheet = streakDefaultSpritesheet
+            streakSprite.Free = false
         end
 
         if streak.Spritesheet ~= streakSprite.Spritesheet then
@@ -1097,11 +1109,14 @@ do -- Core Functions
 
         streakSprite.Sprite.Offset = streak.SpriteOffset
         streakSprite.Sprite:Play("Text", true)
+        streakSprite.Free = false
 
         Streaks[index] = streak
 
         return streak
     end
+
+    StageAPI.Streaks = Streaks
 
     function StageAPI.GetTextStreakPosForFrame(frame)
         return TextStreakPositions[frame] or 0
@@ -1113,7 +1128,8 @@ do -- Core Functions
 
     function StageAPI.UpdateTextStreak()
         for index, streakPlaying in StageAPI.ReverseIterate(Streaks) do
-            local sprite = StreakSprites[streakPlaying.SpriteIndex].Sprite
+            local streakSprite = StreakSprites[streakPlaying.SpriteIndex]
+            local sprite = streakSprite.Sprite
 
             if streakPlaying.Frame == 8 then
                 if streakPlaying.Hold then
@@ -1133,6 +1149,7 @@ do -- Core Functions
                 sprite:Stop()
                 table.remove(Streaks, index)
                 streakPlaying.Finished = true
+                streakSprite.Free = true
             end
 
             streakPlaying.FontScale = (TextStreakScales[streakPlaying.Frame] or oneVector)
