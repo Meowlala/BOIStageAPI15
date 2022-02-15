@@ -9591,6 +9591,8 @@ do -- Callbacks
                     StageAPI.CurrentStage = StageAPI.CurrentStage.XLStage
                 end
 
+                StageAPI.Game:GetHUD():ShowItemText(StageAPI.CurrentStage:GetDisplayName(), level:GetCurseName(), level:GetCurses() > 0)
+
                 StageAPI.CurrentStage:GenerateLevel()
             else
                 StageAPI.GenerateBaseLevel()
