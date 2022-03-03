@@ -10492,6 +10492,13 @@ do
         local currentRoom = StageAPI.GetCurrentRoom()
         if currentRoom and ent:ToPickup() then
             local pickup = ent:ToPickup()
+
+            -- Fix for tainted keeper items getting set to 99 price
+            if pickup.ShopItemId == 0 and pickup:IsShopItem()
+            and room:GetType() ~= RoomType.ROOM_SHOP then
+                pickup.ShopItemId = -1
+            end
+
             local pickupModifiers = currentRoom.Metadata:Search({Tag = "StageAPIPickupEditorFeature", Index = index})
             for _, metaEntity in ipairs(pickupModifiers) do
                 if metaEntity.Name == "ShopItem" then
