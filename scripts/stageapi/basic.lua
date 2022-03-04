@@ -111,7 +111,7 @@ StageAPI.UnsupportedTypes = {
     [6001] = true, -- rail over pit
 }
 
-StageAPI.E = {
+local EntityNames = {
     MetaEntity = "StageAPIMetaEntity",
     Backdrop = "StageAPIBackdrop",
     StageShadow = "StageAPIStageShadow",
@@ -125,6 +125,22 @@ StageAPI.E = {
     DeleteMeProjectile = "StageAPIDeleteMeProjectile",
     DeleteMePickup = "StageAPIDeleteMePickup",
     RandomRune = "StageAPIRandomRune"
+}
+
+StageAPI.E = {}
+
+for k, v in pairs(EntityNames) do
+    StageAPI.E[k] = {
+        T = Isaac.GetEntityTypeByName(v),
+        V = Isaac.GetEntityVariantByName(v),
+        S = 0
+    }
+end
+
+StageAPI.E.FloorEffectCreep = {
+    T = EntityType.ENTITY_EFFECT,
+    V = EffectVariant.CREEP_RED,
+    S = 12545
 }
 
 StageAPI.S = {
