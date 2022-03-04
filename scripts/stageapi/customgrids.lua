@@ -1,3 +1,5 @@
+local shared = require("scripts.stageapi.shared")
+
 StageAPI.LogMinor("Loading Custom Grid System")
 
 StageAPI.CustomGridTypes = {}
@@ -66,9 +68,9 @@ function StageAPI.CustomGrid:SpawnBaseGrid(grindex, force, respawning)
         local grid
         if not respawning then
             force = force or self.ForceSpawning
-            grid = Isaac.GridSpawn(self.BaseType, self.BaseVariant or 0, room:GetGridPosition(grindex), force)
+            grid = Isaac.GridSpawn(self.BaseType, self.BaseVariant or 0, shared.Room:GetGridPosition(grindex), force)
         else
-            grid = room:GetGridEntity(grindex)
+            grid = shared.Room:GetGridEntity(grindex)
         end
 
         if self.Anm2 and grid then
@@ -171,7 +173,7 @@ function StageAPI.CustomGridEntity:Update()
 
     if self:IsOnGrid() then
         if self.GridConfig.BaseType then
-            self.GridEntity = room:GetGridEntity(self.GridIndex)
+            self.GridEntity = shared.Room:GetGridEntity(self.GridIndex)
             if not self.GridEntity then
                 self:Remove(true)
                 return
@@ -204,7 +206,7 @@ function StageAPI.CustomGridEntity:Update()
         if self.Lifted and not self.RecentlyLifted then
             self:RemoveFromGrid()
         elseif self.GridConfig.OverrideGridSpawns then
-            local grid = self.GridEntity or room:GetGridEntity(self.GridIndex)
+            local grid = self.GridEntity or shared.Room:GetGridEntity(self.GridIndex)
             if grid then
                 local overrideState = self.GridConfig.OverrideGridSpawnsState or StageAPI.DefaultBrokenGridStateByType[grid.Desc.Type] or 2
                 if grid.State ~= overrideState then
@@ -322,7 +324,7 @@ end
 
 function StageAPI.CustomGridEntity:Remove(keepBaseGrid)
     if not keepBaseGrid and self.GridEntity then
-        room:RemoveGridEntity(self.GridIndex, 0, false)
+        shared.Room:RemoveGridEntity(self.GridIndex, 0, false)
     end
 
     self:RemoveFromGrid()
@@ -355,7 +357,7 @@ function StageAPI.GetLiftedCustomGrids(ignoreMarked, includeRecent)
     local customGrids = StageAPI.GetCustomGrids()
     local lifted = {}
     for _, grid in ipairs(customGrids) do
-        local gridEnt = room:GetGridEntity(grid.GridIndex)
+        local gridEnt = shared.Room:GetGridEntity(grid.GridIndex)
         if gridEnt and (ignoreMarked or (not grid.Lifted or (includeRecent and grid.RecentlyLifted))) then
             local sprite = gridEnt:GetSprite()
             if sprite:GetFilename() == "" and sprite:GetAnimation() == "" then
@@ -371,7 +373,7 @@ function StageAPI.GetClosestLiftedCustomGrid(position, ignoreMarked, includeRece
     local liftedGrids = StageAPI.GetLiftedCustomGrids(ignoreMarked, includeRecent)
     local closest, closestDist
     for _, grid in ipairs(liftedGrids) do
-        local pos = room:GetGridPosition(grid.GridIndex)
+        local pos = shared.Room:GetGridPosition(grid.GridIndex)
         local dist = pos:DistanceSquared(position)
         if not closestDist or dist < closestDist then
             closest = grid
@@ -392,7 +394,7 @@ end
 
 mod:AddCallback(ModCallbacks.MC_POST_UPDATE, function()
     local currentRoom = StageAPI.GetCurrentRoom()
-    if room:GetFrameCount() <= 0 or (currentRoom and not currentRoom.Loaded) then
+    if shared.Room:GetFrameCount() <= 0 or (currentRoom and not currentRoom.Loaded) then
         return
     end
 
@@ -413,7 +415,7 @@ local function customGridPoopGibs(_, eff)
         for _, grid in ipairs(customGrids) do
             local gridConfig = grid.GridConfig
             if gridConfig.PoopExplosionColor or gridConfig.PoopExplosionAnm2 or gridConfig.PoopExplosionSheet or gridConfig.PoopGibColor or gridConfig.PoopGibAnm2 or gridConfig.PoopGibSheet or gridConfig.CustomPoopGibs then
-                if not grid.Lifted and grid.GridIndex == room:GetGridIndex(eff.Position) then
+                if not grid.Lifted and grid.GridIndex == shared.Room:GetGridIndex(eff.Position) then
                     customGrid = grid
                 end
 
@@ -442,7 +444,7 @@ mod:AddCallback(ModCallbacks.MC_FAMILIAR_INIT, function(_, familiar)
         local customGrids = StageAPI.GetCustomGrids()
         local customGrid
         for _, grid in ipairs(customGrids) do
-            if not grid.Lifted and grid.GridIndex == room:GetGridIndex(familiar.Position) then
+            if not grid.Lifted and grid.GridIndex == shared.Room:GetGridIndex(familiar.Position) then
                 customGrid = grid
             end
 
@@ -482,7 +484,7 @@ mod:AddCallback(ModCallbacks.MC_USE_ITEM, function(_, collectible, rng, player)
 end, CollectibleType.COLLECTIBLE_MOMS_BRACELET)
 
 mod:AddCallback(ModCallbacks.MC_POST_ENTITY_REMOVE, function(_, entity)
-    if entity.Variant ~= EffectVariant.GRID_ENTITY_PROJECTILE_HELPER or room:GetFrameCount() <= 1 then return end
+    if entity.Variant ~= EffectVariant.GRID_ENTITY_PROJECTILE_HELPER or shared.Room:GetFrameCount() <= 1 then return end
 
     local data = entity:GetData()
 

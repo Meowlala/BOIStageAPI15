@@ -470,34 +470,13 @@ local function fixInclude(...)
     end
 end
 
+if not StageAPI then
+    StageAPI = {}
+end
+
 do -- Core Definitions
 
 end
-
--- local, so needs to be outside of do/end
-local localToStageAPIMap = {
-    game = "Game",
-    room = "Room",
-    level = "Level",
-    players = "Players",
-}
-
-local sfx = SFXManager()
-
-local oldENV = _ENV
-local _ENV = {}
-
-oldENV.setmetatable(_ENV, {
-    __index = function(tbl, k)
-        if localToStageAPIMap[k] then
-            return StageAPI[localToStageAPIMap[k]]
-        elseif oldENV[k] then
-            return oldENV[k]
-        end
-    end
-})
-
---local game, room, level, players = StageAPI.Game, StageAPI.Room, StageAPI.Level, StageAPI.Players
 
 do -- Core Functions
 

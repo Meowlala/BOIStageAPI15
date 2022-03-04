@@ -1,3 +1,5 @@
+local shared = require("scripts.stageapi.shared")
+
 StageAPI.LogMinor("Loading Boss Handler")
 
 StageAPI.FloorInfo = {}
@@ -74,7 +76,7 @@ end
 
 function StageAPI.GetBaseFloorInfo(stage, stageType, isGreed)
     if stage == nil and stageType == nil and isGreed == nil then
-        stage, stageType, isGreed = level:GetStage(), level:GetStageType(), game:IsGreedMode()
+        stage, stageType, isGreed = shared.Level:GetStage(), shared.Level:GetStageType(), shared.Game:IsGreedMode()
     end
 
     if isGreed then
@@ -335,7 +337,7 @@ mod:AddCallback(ModCallbacks.MC_POST_RENDER, function()
     StageAPI.IsOddRenderFrame = not StageAPI.IsOddRenderFrame
     local isPlaying = StageAPI.PlayingBossSprite and StageAPI.PlayingBossSprite:IsPlaying()
 
-    if isPlaying and ((game:IsPaused() and not menuConfirmTriggered) or StageAPI.UnskippableBossAnim) then
+    if isPlaying and ((shared.Game:IsPaused() and not menuConfirmTriggered) or StageAPI.UnskippableBossAnim) then
         if StageAPI.IsOddRenderFrame then
             StageAPI.PlayingBossSprite:Update()
             StageAPI.PlayingBossSpriteBg:Update()
@@ -384,7 +386,7 @@ mod:AddCallback(ModCallbacks.MC_POST_RENDER, function()
     end
 
     menuConfirmTriggered = nil
-    for _, player in ipairs(players) do
+    for _, player in ipairs(shared.Players) do
         if Input.IsActionTriggered(ButtonAction.ACTION_MENUCONFIRM, player.ControllerIndex) then
             menuConfirmTriggered = true
             break
@@ -413,7 +415,7 @@ end
 
 function StageAPI.PlayBossAnimation(boss, unskippable)
     local bSpot, pSpot, bgColor, dirtColor = StageAPI.GetStageSpot()
-    local gfxData = StageAPI.TryGetPlayerGraphicsInfo(StageAPI.Players[1])
+    local gfxData = StageAPI.TryGetPlayerGraphicsInfo(shared.Players[1])
     StageAPI.PlayBossAnimationManual({
         BossPortrait = boss.Portrait,
         BossPortraitTwo = boss.PortraitTwo,
@@ -467,7 +469,7 @@ function StageAPI.SelectBoss(bosses, rng, roomDesc, ignoreNoOptions)
     end
 
     if not bossID then
-        roomDesc = roomDesc or level:GetCurrentRoomDesc()
+        roomDesc = roomDesc or shared.Level:GetCurrentRoomDesc()
         local roomSubtype = roomDesc.Data.Subtype
         local isHorsemanRoom = StageAPI.IsIn(horsemanRoomSubtypes, roomSubtype)
 

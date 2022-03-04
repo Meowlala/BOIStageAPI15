@@ -1,3 +1,5 @@
+local shared = require("scripts.stageapi.shared")
+
 StageAPI.LogMinor("Loading Backdrop & RoomGfx Handling")
 
 StageAPI.BackdropRNG = RNG()
@@ -44,7 +46,7 @@ function StageAPI.LoadBackdropSprite(sprite, backdrop, mode) -- modes are 1 (wal
     sprite = sprite or Sprite()
 
     local needsExtra
-    local roomShape = room:GetRoomShape()
+    local roomShape = shared.Room:GetRoomShape()
     local shapeName = StageAPI.ShapeToName[roomShape]
     if StageAPI.ShapeToWallAnm2Layers[shapeName .. "X"] then
         needsExtra = true
@@ -135,7 +137,7 @@ function StageAPI.LoadBackdropSprite(sprite, backdrop, mode) -- modes are 1 (wal
 
     sprite:LoadGraphics()
 
-    local renderPos = room:GetTopLeftPos()
+    local renderPos = shared.Room:GetTopLeftPos()
     if mode ~= 2 then
         renderPos = renderPos - Vector(80, 80)
     end
@@ -147,13 +149,13 @@ end
 
 function StageAPI.ChangeBackdrop(backdrop, justWalls, storeBackdropEnts)
     if type(backdrop) == "number" then
-        game:ShowHallucination(0, backdrop)
-        sfx:Stop(SoundEffect.SOUND_DEATH_CARD)
+        shared.Game:ShowHallucination(0, backdrop)
+        shared.Sfx:Stop(SoundEffect.SOUND_DEATH_CARD)
 
         return
     end
 
-    StageAPI.BackdropRNG:SetSeed(room:GetDecorationSeed(), 1)
+    StageAPI.BackdropRNG:SetSeed(shared.Room:GetDecorationSeed(), 1)
     local needsExtra, backdropEnts
     if storeBackdropEnts then
         backdropEnts = {}
@@ -199,7 +201,7 @@ function StageAPI.ChangeStageShadow(prefix, count)
         e:Remove()
     end
 
-    local roomShape = room:GetRoomShape()
+    local roomShape = shared.Room:GetRoomShape()
     local anim
 
     if roomShape == RoomShape.ROOMSHAPE_1x1 or roomShape == RoomShape.ROOMSHAPE_IH or roomShape == RoomShape.ROOMSHAPE_IV then anim = "1x1"
@@ -209,20 +211,20 @@ function StageAPI.ChangeStageShadow(prefix, count)
     end
 
     if anim then
-        StageAPI.StageShadowRNG:SetSeed(room:GetDecorationSeed(), 0)
+        StageAPI.StageShadowRNG:SetSeed(shared.Room:GetDecorationSeed(), 0)
         local usingShadow = StageAPI.Random(1, count, StageAPI.StageShadowRNG)
         local sheet = prefix .. anim .. "_overlay_" .. tostring(usingShadow) .. ".png"
 
         local shadowEntity = Isaac.Spawn(StageAPI.E.StageShadow.T, StageAPI.E.StageShadow.V, 0, Vector.Zero, Vector.Zero, nil)
         shadowEntity:GetData().Sheet = sheet
         shadowEntity:GetData().Animation = anim
-        shadowEntity.Position = StageAPI.Lerp(room:GetTopLeftPos(), room:GetBottomRightPos(), 0.5)
+        shadowEntity.Position = StageAPI.Lerp(shared.Room:GetTopLeftPos(), shared.Room:GetBottomRightPos(), 0.5)
         shadowEntity:AddEntityFlags(EntityFlag.FLAG_DONT_OVERWRITE)
     end
 end
 
 function StageAPI.ChangeRoomGfx(roomgfx)
-    StageAPI.BackdropRNG:SetSeed(room:GetDecorationSeed(), 0)
+    StageAPI.BackdropRNG:SetSeed(shared.Room:GetDecorationSeed(), 0)
     if roomgfx.Backdrops then
         if type(roomgfx.Backdrops) ~= "number" and #roomgfx.Backdrops > 0 then
             local backdrop = StageAPI.Random(1, #roomgfx.Backdrops, StageAPI.BackdropRNG)

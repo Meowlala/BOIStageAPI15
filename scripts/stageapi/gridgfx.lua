@@ -1,3 +1,5 @@
+local shared = require("scripts.stageapi.shared")
+
 StageAPI.LogMinor("Loading GridGfx Handler")
 
 StageAPI.GridGfx = StageAPI.Class("GridGfx")
@@ -103,7 +105,7 @@ function StageAPI.ChangePit(pit, pitFile, bridgefilename, alt)
             gsprite:Load("stageapi/pit.anm2", true)
         end
 
-        if alt and room:HasWaterPits() then
+        if alt and shared.Room:HasWaterPits() then
             gsprite:ReplaceSpritesheet(0, alt.File)
         else
             gsprite:ReplaceSpritesheet(0, pitFile.File)
@@ -396,7 +398,8 @@ StageAPI.DoorSprite = Sprite()
 function StageAPI.ChangeDoor(door, doors, payToPlay)
     local grid = door.Grid:ToDoor()
     local gsprite = grid:GetSprite()
-    local current, target, isBossAmbush, isPayToPlay = grid.CurrentRoomType, grid.TargetRoomType, level:HasBossChallenge(), grid:IsTargetRoomArcade() and target ~= RoomType.ROOM_ARCADE
+    local current, target = grid.CurrentRoomType, grid.TargetRoomType
+    local isBossAmbush, isPayToPlay = shared.Level:HasBossChallenge(), grid:IsTargetRoomArcade() and target ~= RoomType.ROOM_ARCADE
 
     if isPayToPlay then
         if payToPlay then
@@ -440,8 +443,9 @@ function StageAPI.CheckDoorSpawns(door, doorSpawns, doorSprites, roomType)
     local useSprite
     if door.ToDoor then
         door = door:ToDoor()
-        local current, target, isBossAmbush, isPayToPlay = door.CurrentRoomType, door.TargetRoomType, level:HasBossChallenge(), door:IsTargetRoomArcade() and target ~= RoomType.ROOM_ARCADE
-        local isSurpriseMiniboss = level:GetCurrentRoomDesc().SurpriseMiniboss
+        local current, target = door.CurrentRoomType, door.TargetRoomType
+        local isBossAmbush, isPayToPlay = shared.Level:HasBossChallenge(), door:IsTargetRoomArcade() and target ~= RoomType.ROOM_ARCADE
+        local isSurpriseMiniboss = shared.Level:GetCurrentRoomDesc().SurpriseMiniboss
 
         useSprite = StageAPI.CompareDoorSpawns(doorSpawns, current, target, isBossAmbush, isPayToPlay, isSurpriseMiniboss)
     else
@@ -537,7 +541,7 @@ function StageAPI.ChangeDoors(doors)
 
         if doorSpawns or doorSprites then
             for i = 0, 7 do
-                local door = room:GetDoor(i)
+                local door = shared.Room:GetDoor(i)
                 if door then
                     StageAPI.CheckDoorSpawns(door, doorSpawns, doorSprites)
                 end
@@ -548,7 +552,7 @@ function StageAPI.ChangeDoors(doors)
             end
         elseif doors then
             for i = 0, 7 do
-                local door = room:GetDoor(i)
+                local door = shared.Room:GetDoor(i)
                 if door then
                     StageAPI.ChangeDoor({Grid = door}, doors, payToPlay)
                 end
@@ -558,7 +562,7 @@ function StageAPI.ChangeDoors(doors)
 end
 
 function StageAPI.ChangeGrids(grids)
-    StageAPI.GridGfxRNG:SetSeed(room:GetDecorationSeed(), 0)
+    StageAPI.GridGfxRNG:SetSeed(shared.Room:GetDecorationSeed(), 0)
 
     local doneDoors
     if grids.Doors or grids.DoorSpawns or grids.DoorSprites then
@@ -573,12 +577,12 @@ function StageAPI.ChangeGrids(grids)
         grids.AltPits = grids.AltPitFiles[StageAPI.Random(1, #grids.AltPitFiles, StageAPI.GridGfxRNG)]
     end
 
-    local pitsToUse = room:HasWaterPits() and grids.AltPits or grids.Pits
+    local pitsToUse = shared.Room:HasWaterPits() and grids.AltPits or grids.Pits
     local hasExtraPitFrames = pitsToUse and pitsToUse.HasExtraFrames
 
     local gridCount = 0
     local pits = {}
-    for i = 0, room:GetGridSize() do
+    for i = 0, shared.Room:GetGridSize() do
         local customGrids = StageAPI.GetCustomGrids(i)
         local customGridBlocking = false
         for _, cgrid in ipairs(customGrids) do
@@ -588,7 +592,7 @@ function StageAPI.ChangeGrids(grids)
         end
 
         if not customGridBlocking then
-            local grid = room:GetGridEntity(i)
+            local grid = shared.Room:GetGridEntity(i)
             if grid then
                 if hasExtraPitFrames and grid.Desc.Type == GridEntityType.GRID_PIT then
                     pits[i] = grid
@@ -602,7 +606,7 @@ function StageAPI.ChangeGrids(grids)
     StageAPI.CallGridPostInit()
 
     if hasExtraPitFrames and next(pits) then
-        local width = room:GetGridWidth()
+        local width = shared.Room:GetGridWidth()
         for index, pit in pairs(pits) do
             StageAPI.ChangePit({Grid = pit, Index = index}, grids.Pits, grids.Bridges, grids.AltPits)
             local sprite = pit:GetSprite()
@@ -610,7 +614,7 @@ function StageAPI.ChangeGrids(grids)
             local adj = {index - 1, index + 1, index - width, index + width, index - width - 1, index + width - 1, index - width + 1, index + width + 1}
             local adjPits = {}
             for _, ind in ipairs(adj) do
-                local grid = room:GetGridEntity(ind)
+                local grid = shared.Room:GetGridEntity(ind)
                 adjPits[#adjPits + 1] = not not (grid and grid.Desc.Type == GridEntityType.GRID_PIT)
             end
 

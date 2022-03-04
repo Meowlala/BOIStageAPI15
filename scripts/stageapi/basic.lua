@@ -1,8 +1,8 @@
+local shared = require("scripts.stageapi.shared")
+
 Isaac.DebugString("[StageAPI] Loading Core Definitions")
 
-if not StageAPI then
-    StageAPI = {}
-end
+-- Log
 
 function StageAPI.LogConcat(prefix, ...)
     local str = prefix
@@ -39,6 +39,8 @@ function StageAPI.LogMinor(...)
 
     Isaac.DebugString(str)
 end
+
+-- definitions
 
 StageAPI.RockTypes = {
     [GridEntityType.GRID_ROCK] = true,
@@ -128,9 +130,6 @@ StageAPI.S = {
     BossIntro = Isaac.GetSoundIdByName("StageAPI Boss Intro")
 }
 
-StageAPI.Game = Game()
-StageAPI.Players = {}
-
 function StageAPI.TryLoadModData(continued)
     if Isaac.HasModData(mod) and continued then
         local data = Isaac.LoadModData(mod)
@@ -152,56 +151,55 @@ function StageAPI.SaveModData()
 end
 
 if Isaac.GetPlayer(0) then
-    StageAPI.Room = StageAPI.Game:GetRoom()
-    StageAPI.Level = StageAPI.Game:GetLevel()
-    local numPlayers = StageAPI.Game:GetNumPlayers()
+    shared.Room = shared.Game:GetRoom()
+    shared.Level = shared.Game:GetLevel()
+    local numPlayers = shared.Game:GetNumPlayers()
     if numPlayers > 0 then
         for i = 1, numPlayers do
-            StageAPI.Players[i] = Isaac.GetPlayer(i - 1)
+            shared.Players[i] = Isaac.GetPlayer(i - 1)
         end
     end
 end
 
-StageAPI.ZeroVector = Vector(0, 0)
 StageAPI.LastGameSeedLoaded = -1
 StageAPI.LoadedModDataSinceLastUpdate = false
 StageAPI.RecentlyStartedGame = false
 
 mod:AddCallback(ModCallbacks.MC_POST_PLAYER_INIT, function()
-    StageAPI.Level = StageAPI.Game:GetLevel()
-    StageAPI.Room = StageAPI.Game:GetRoom()
+    shared.Level = shared.Game:GetLevel()
+    shared.Room = shared.Game:GetRoom()
     local highestPlayerFrame
-    for i = 1, StageAPI.Game:GetNumPlayers() do
-        StageAPI.Players[i] = Isaac.GetPlayer(i - 1)
-        local frame = StageAPI.Players[i].FrameCount
+    for i = 1, shared.Game:GetNumPlayers() do
+        shared.Players[i] = Isaac.GetPlayer(i - 1)
+        local frame = shared.Players[i].FrameCount
         if not highestPlayerFrame or frame > highestPlayerFrame then
             highestPlayerFrame = frame
         end
     end
 
     if highestPlayerFrame < 3 then
-        local seed = StageAPI.Game:GetSeeds():GetStartSeed()
+        local seed = shared.Game:GetSeeds():GetStartSeed()
         if not StageAPI.LoadedModDataSinceLastUpdate or StageAPI.LastGameSeedLoaded ~= seed then
             StageAPI.RecentlyStartedGame = true
             StageAPI.LoadedModDataSinceLastUpdate = true
             StageAPI.LastGameSeedLoaded = seed
-            StageAPI.TryLoadModData(StageAPI.Game:GetFrameCount() > 2)
+            StageAPI.TryLoadModData(shared.Game:GetFrameCount() > 2)
         end
     end
 end)
 
 mod:AddCallback(ModCallbacks.MC_POST_UPDATE, function()
     StageAPI.LoadedModDataSinceLastUpdate = false
-    local numPlayers = StageAPI.Game:GetNumPlayers()
-    if numPlayers ~= #StageAPI.Players then
-        StageAPI.Players = {}
+    local numPlayers = shared.Game:GetNumPlayers()
+    if numPlayers ~= #shared.Players then
+        shared.Players = {}
         for i = 1, numPlayers do
-            StageAPI.Players[i] = Isaac.GetPlayer(i - 1)
+            shared.Players[i] = Isaac.GetPlayer(i - 1)
         end
     end
 end)
 
 mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, function()
-    StageAPI.Level = StageAPI.Game:GetLevel()
-    StageAPI.Room = StageAPI.Game:GetRoom()
+    shared.Level = shared.Game:GetLevel()
+    shared.Room = shared.Game:GetRoom()
 end)

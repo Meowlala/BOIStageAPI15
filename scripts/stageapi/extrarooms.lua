@@ -1,3 +1,5 @@
+local shared = require("scripts.stageapi.shared")
+
 StageAPI.LogMinor("Loading Extra Room Handler")
 
 StageAPI.RoomTypeToGotoPrefix = {
@@ -200,8 +202,8 @@ mod:AddCallback(ModCallbacks.MC_POST_GAME_STARTED, function()
 
         if needsToLoad then
             local resetRun
-            local currentIndex = level:GetCurrentRoomIndex()
-            if StageAPI.InStartingRoom() and room:IsFirstVisit() and level:GetStage() == LevelStage.STAGE1_1 then
+            local currentIndex = shared.Level:GetCurrentRoomIndex()
+            if StageAPI.InStartingRoom() and shared.Room:IsFirstVisit() and shared.Level:GetStage() == LevelStage.STAGE1_1 then
                 resetRun = true
             end
 
@@ -209,14 +211,14 @@ mod:AddCallback(ModCallbacks.MC_POST_GAME_STARTED, function()
                 for _, shape in ipairs(roomShapes) do
                     local cmd, lockedCmd = StageAPI.GetGotoCommandForTypeShape(roomType, shape, true)
                     Isaac.ExecuteCommand(cmd)
-                    local desc = level:GetRoomByIdx(GridRooms.ROOM_DEBUG_IDX)
+                    local desc = shared.Level:GetRoomByIdx(GridRooms.ROOM_DEBUG_IDX)
 
                     local shapeData = StageAPI.RoomShapeToGotoData[shape]
                     shapeData.Data[roomType] = desc.Data
 
                     if lockedCmd and shapeData.LockedData then
                         Isaac.ExecuteCommand(lockedCmd)
-                        local desc = level:GetRoomByIdx(GridRooms.ROOM_DEBUG_IDX)
+                        local desc = shared.Level:GetRoomByIdx(GridRooms.ROOM_DEBUG_IDX)
                         shapeData.LockedData[roomType] = desc.Data
                     end
 
@@ -228,7 +230,7 @@ mod:AddCallback(ModCallbacks.MC_POST_GAME_STARTED, function()
                 StageAPI.DataLoadNeedsRestart = true
             end
 
-            game:StartRoomTransition(currentIndex, Direction.NO_DIRECTION, 0)
+            shared.Game:StartRoomTransition(currentIndex, Direction.NO_DIRECTION, 0)
         end
     end
 
@@ -306,7 +308,7 @@ StageAPI.LargeRoomShapes = {
 }
 
 local function anyPlayerHas(id, trinket)
-    for _, player in ipairs(players) do
+    for _, player in ipairs(shared.Players) do
         if trinket then
             if player:HasTrinket(id) then
                 return true
@@ -337,21 +339,21 @@ StageAPI.BaseLGridRoomPriority = {
 
 function StageAPI.GetNextFreeBaseGridRoom(priorityList, taken, nextIsBoss)
     local outIdx
-    local stage = level:GetStage()
+    local stage = shared.Level:GetStage()
     for _, idx in ipairs(priorityList) do
         if not StageAPI.IsIn(taken, idx) then
             if idx == GridRooms.ROOM_MEGA_SATAN_IDX then
-                if stage ~= LevelStage.STAGE6 or game:IsGreedMode() then
+                if stage ~= LevelStage.STAGE6 or shared.Game:IsGreedMode() then
                     outIdx = idx
                     break
                 end
             elseif idx == GridRooms.ROOM_BOSSRUSH_IDX then
-                if stage ~= LevelStage.STAGE3_2 or game:IsGreedMode() then
+                if stage ~= LevelStage.STAGE3_2 or shared.Game:IsGreedMode() then
                     outIdx = idx
                     break
                 end
             elseif idx == GridRooms.ROOM_ROTGUT_DUNGEON1_IDX or idx == GridRooms.ROOM_ROTGUT_DUNGEON2_IDX then
-                local rooms = level:GetRooms()
+                local rooms = shared.Level:GetRooms()
                 local hasRotgutRoom
                 for i = 0, rooms.Size - 1 do
                     local desc = rooms:Get(i)
@@ -362,7 +364,7 @@ function StageAPI.GetNextFreeBaseGridRoom(priorityList, taken, nextIsBoss)
                 end
 
                 if not hasRotgutRoom then
-                    local rotgutRoomSpawned = level:GetRoomByIdx(GridRooms.ROOM_ROTGUT_DUNGEON1_IDX).SpawnSeed ~= 0
+                    local rotgutRoomSpawned = shared.Level:GetRoomByIdx(GridRooms.ROOM_ROTGUT_DUNGEON1_IDX).SpawnSeed ~= 0
                     if not rotgutRoomSpawned then
                         local rotgut = Isaac.Spawn(EntityType.ENTITY_ROTGUT, 0, 0, Vector.Zero, Vector.Zero, nil)
                         rotgut:Update()
@@ -386,13 +388,13 @@ function StageAPI.GetNextFreeBaseGridRoom(priorityList, taken, nextIsBoss)
                 if not anyPlayerHas(CollectibleType.COLLECTIBLE_STAIRWAY)
                 or (
                     not StageAPI.InStartingRoom()
-                    and level:GetRoomByIdx(level:GetStartingRoomIndex()).VisitedCount > 0
+                    and shared.Level:GetRoomByIdx(shared.Level:GetStartingRoomIndex()).VisitedCount > 0
                 )  then
                     outIdx = idx
                     break
                 end
             elseif idx == GridRooms.ROOM_BLACK_MARKET_IDX then
-                local dungeonRoom = level:GetRoomByIdx(GridRooms.ROOM_DUNGEON_IDX)
+                local dungeonRoom = shared.Level:GetRoomByIdx(GridRooms.ROOM_DUNGEON_IDX)
                 if not dungeonRoom or dungeonRoom.Data.Doors & StageAPI.DoorsBitwise[DoorSlot.RIGHT0] == 0 then
                     outIdx = idx
                     break
@@ -400,7 +402,7 @@ function StageAPI.GetNextFreeBaseGridRoom(priorityList, taken, nextIsBoss)
             elseif idx ~= GridRooms.ROOM_ERROR_IDX then
                 if not nextIsBoss then
                     if idx == GridRooms.ROOM_THE_VOID_IDX then
-                        if level:GetStage() ~= LevelStage.STAGE3_4 or game:IsGreedMode() then
+                        if shared.Level:GetStage() ~= LevelStage.STAGE3_4 or shared.Game:IsGreedMode() then
                             outIdx = idx
                             break
                         end
@@ -444,7 +446,7 @@ function StageAPI.ExtraRoomTransition(levelMapRoomID, direction, transitionType,
         end
     end
 
-    local transitionFrom = level:GetCurrentRoomIndex()
+    local transitionFrom = shared.Level:GetCurrentRoomIndex()
     local transitionTo
     if not levelMapID then
         transitionTo = levelMapRoomID
@@ -455,8 +457,8 @@ function StageAPI.ExtraRoomTransition(levelMapRoomID, direction, transitionType,
     if transitionFrom >= 0 then
         StageAPI.LastNonExtraRoom = transitionFrom
     else
-        local currentRoomDesc = level:GetRoomByIdx(transitionFrom)
-        local currentGotoData, currentGotoLockedData = StageAPI.GetGotoDataForTypeShape(room:GetType(), room:GetRoomShape())
+        local currentRoomDesc = shared.Level:GetRoomByIdx(transitionFrom)
+        local currentGotoData, currentGotoLockedData = StageAPI.GetGotoDataForTypeShape(shared.Room:GetType(), shared.Room:GetRoomShape())
         if currentGotoLockedData and StageAPI.DoorOneSlots[leaveDoor] then
             currentRoomDesc.Data = currentGotoLockedData
         else
@@ -475,10 +477,10 @@ function StageAPI.ExtraRoomTransition(levelMapRoomID, direction, transitionType,
         local roomData = levelMap:GetRoomData(levelMapRoomID)
         targetLevelRoom = levelMap:GetRoom(levelMapRoomID)
 
-        local curStage, currentStageType = level:GetStage(), level:GetStageType()
+        local curStage, currentStageType = shared.Level:GetStage(), shared.Level:GetStageType()
         local stage, stageType = roomData.Stage or curStage, roomData.StageType or currentStageType
         if stage ~= curStage or stageType ~= currentStageType then
-            level:SetStage(stage, stageType)
+            shared.Level:SetStage(stage, stageType)
         end
     else
         StageAPI.TransitioningToExtraRoom = false
@@ -530,7 +532,7 @@ function StageAPI.ExtraRoomTransition(levelMapRoomID, direction, transitionType,
         end
     end
 
-    local targetRoomDesc = level:GetRoomByIdx(transitionTo)
+    local targetRoomDesc = shared.Level:GetRoomByIdx(transitionTo)
 
     if setDataForShape then
         local targetGotoData, targetGotoLockedData = StageAPI.GetGotoDataForTypeShape(extraRoomBaseType, setDataForShape)
@@ -573,12 +575,12 @@ function StageAPI.ExtraRoomTransition(levelMapRoomID, direction, transitionType,
         targetRoomDesc.AwardSeed = setAwardSeed
     end
 
-    level.LeaveDoor = leaveDoor
-    level.EnterDoor = enterDoor
+    shared.Level.LeaveDoor = leaveDoor
+    shared.Level.EnterDoor = enterDoor
 
     if transitionType == -1 then -- StageAPI special, instant transition
         StageAPI.ForcePlayerDoorSlot = (enterDoor == -1 and nil) or enterDoor
-        level:ChangeRoom(transitionTo)
+        shared.Level:ChangeRoom(transitionTo)
     else
         if enterDoor ~= -1 then
             StageAPI.ForcePlayerDoorSlot = enterDoor
@@ -586,12 +588,12 @@ function StageAPI.ExtraRoomTransition(levelMapRoomID, direction, transitionType,
             StageAPI.ForcePlayerDoorSlot = nil
         end
 
-        game:StartRoomTransition(transitionTo, direction, transitionType)
+        shared.Game:StartRoomTransition(transitionTo, direction, transitionType)
     end
 end
 
 mod:AddCallback(ModCallbacks.MC_POST_RENDER, function()
-    if not game:IsPaused() then
+    if not shared.Game:IsPaused() then
         StageAPI.StoredExtraRoomThisPause = false
     elseif StageAPI.InExtraRoom() and not StageAPI.StoredExtraRoomThisPause and not StageAPI.TransitioningToExtraRoom then
         StageAPI.StoredExtraRoomThisPause = true
@@ -603,10 +605,10 @@ mod:AddCallback(ModCallbacks.MC_POST_RENDER, function()
 
     if not StageAPI.IsHUDAnimationPlaying() then
         if not StageAPI.InNewStage() then
-            local btype, stage, stype = room:GetBackdropType(), level:GetStage(), level:GetStageType()
+            local btype, stage, stype = shared.Room:GetBackdropType(), shared.Level:GetStage(), shared.Level:GetStageType()
             if (btype == 7 or btype == 8 or btype == 16) and (stage == LevelStage.STAGE3_1 or stage == LevelStage.STAGE3_2 or stage == LevelStage.STAGE6) then
                 for _, overlay in ipairs(StageAPI.NecropolisOverlays) do
-                    if not game:IsPaused() then
+                    if not shared.Game:IsPaused() then
                         overlay:Update()
                     end
 
@@ -629,7 +631,7 @@ mod:AddCallback(ModCallbacks.MC_POST_RENDER, function()
                 shadowSprite:Play(shadowAnim, true)
             end
 
-            shadowSprite:Render(Isaac.WorldToRenderPosition(shadow.Position) + room:GetRenderScrollOffset(), Vector.Zero, Vector.Zero)
+            shadowSprite:Render(Isaac.WorldToRenderPosition(shadow.Position) + shared.Room:GetRenderScrollOffset(), Vector.Zero, Vector.Zero)
         end
     end
 

@@ -1,3 +1,5 @@
+local shared = require("scripts.stageapi.shared")
+
 StageAPI.LogMinor("Loading Editor Features")
 
 local d12Used = false
@@ -144,17 +146,17 @@ StageAPI.AddCallback("StageAPI", "POST_ROOM_LOAD", 0, function(currentRoom, firs
         elseif loadFeature.Name == "SetPlayerPosition" then
             local unclearedOnly = loadFeature.BitValues.UnclearedOnly == 1
             if not unclearedOnly or not currentRoom.IsClear or firstLoad then
-                StageAPI.ForcePlayerNewRoomPosition = room:GetGridPosition(loadFeature.Index)
+                StageAPI.ForcePlayerNewRoomPosition = shared.Room:GetGridPosition(loadFeature.Index)
             end
         elseif loadFeature.Name == "EnteredFromTrigger" then
             local checkPos = StageAPI.ForcePlayerNewRoomPosition
             if not checkPos and StageAPI.ForcePlayerDoorSlot then
-                checkPos = room:GetClampedPosition(room:GetDoorSlotPosition(StageAPI.ForcePlayerDoorSlot), 16)
+                checkPos = shared.Room:GetClampedPosition(shared.Room:GetDoorSlotPosition(StageAPI.ForcePlayerDoorSlot), 16)
             end
 
-            checkPos = checkPos or players[1].Position
+            checkPos = checkPos or shared.Players[1].Position
 
-            local triggerPos = room:GetGridPosition(loadFeature.Index)
+            local triggerPos = shared.Room:GetGridPosition(loadFeature.Index)
             if checkPos:DistanceSquared(triggerPos) < (40 ^ 2) then
                 local triggerable = currentRoom.Metadata:Search({
                     Groups = currentRoom.Metadata:GroupsWithIndex(loadFeature.Index),
@@ -196,7 +198,7 @@ StageAPI.AddCallback("StageAPI", "POST_SPAWN_ENTITY", 0, function(ent, entityInf
 
         -- Fix for tainted keeper items getting set to 99 price
         if pickup.ShopItemId == 0 and pickup:IsShopItem()
-        and room:GetType() ~= RoomType.ROOM_SHOP then
+        and shared.Room:GetType() ~= RoomType.ROOM_SHOP then
             pickup.ShopItemId = -1
         end
 
@@ -221,7 +223,7 @@ end)
 StageAPI.AddCallback("StageAPI", "POST_SPAWN_CUSTOM_GRID", 0, function(customGrid)
     local index = customGrid.GridIndex
     local persistData = customGrid.PersistentData
-    local button = StageAPI.SpawnFloorEffect(room:GetGridPosition(index), Vector.Zero, nil, "gfx/grid/grid_pressureplate.anm2", false, StageAPI.E.Button.V)
+    local button = StageAPI.SpawnFloorEffect(shared.Room:GetGridPosition(index), Vector.Zero, nil, "gfx/grid/grid_pressureplate.anm2", false, StageAPI.E.Button.V)
     local sprite = button:GetSprite()
     sprite:ReplaceSpritesheet(0, "gfx/grid/grid_button_output.png")
     sprite:LoadGraphics()
@@ -248,7 +250,7 @@ mod:AddCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, function(_, button)
         end
     else
         local pressed
-        for _, player in ipairs(players) do
+        for _, player in ipairs(shared.Players) do
             if player.Position:DistanceSquared(button.Position) < (20 + player.Size) ^ 2 then
                 pressed = true
                 break
@@ -284,7 +286,7 @@ mod:AddCallback(ModCallbacks.MC_POST_UPDATE, function()
         return
     end
 
-    local width = room:GetGridWidth()
+    local width = shared.Room:GetGridWidth()
     local metadataEntities = currentRoom.Metadata:Search({Tag = "StageAPIEditorFeature"})
     for _, metadataEntity in ipairs(metadataEntities) do
         local trigger
@@ -294,16 +296,16 @@ mod:AddCallback(ModCallbacks.MC_POST_UPDATE, function()
                 trigger = true
             end
         elseif metadataEntity.Name == "BridgeFailsafe" then
-            if room:GetGridCollision(index) ~= 0 then
+            if shared.Room:GetGridCollision(index) ~= 0 then
                 if d12Used then
-                    local grid = room:GetGridEntity(index)
+                    local grid = shared.Room:GetGridEntity(index)
                     grid:ToPit():MakeBridge(grid)
                 else
                     local adjacent = {index - 1, index + 1, index - width, index + width}
                     for _, index2 in ipairs(adjacent) do
-                        local grid = room:GetGridEntity(index2)
-                        if grid and room:GetGridCollision(index2) == 0 and (StageAPI.RockTypes[grid.Desc.Type] or grid.Desc.Type == GridEntityType.GRID_POOP) then
-                            local pit = room:GetGridEntity(index)
+                        local grid = shared.Room:GetGridEntity(index2)
+                        if grid and shared.Room:GetGridCollision(index2) == 0 and (StageAPI.RockTypes[grid.Desc.Type] or grid.Desc.Type == GridEntityType.GRID_POOP) then
+                            local pit = shared.Room:GetGridEntity(index)
                             pit:ToPit():MakeBridge(pit)
                             break
                         end
@@ -312,8 +314,8 @@ mod:AddCallback(ModCallbacks.MC_POST_UPDATE, function()
             end
         elseif metadataEntity.Name == "GridDestroyer" then
             if metadataEntity.Triggered then
-                local grid = room:GetGridEntity(index)
-                if grid and room:GetGridCollision(index) ~= 0 then
+                local grid = shared.Room:GetGridEntity(index)
+                if grid and shared.Room:GetGridCollision(index) ~= 0 then
                     if StageAPI.RockTypes[grid.Desc.Type] then
                         grid:Destroy()
                     elseif grid.Desc.Type == GridEntityType.GRID_PIT then
@@ -331,15 +333,15 @@ mod:AddCallback(ModCallbacks.MC_POST_UPDATE, function()
                 end
             end
 
-            if room:GetGridCollision(index) ~= 0 then
-                local checking = room:GetGridEntity(index)
+            if shared.Room:GetGridCollision(index) ~= 0 then
+                local checking = shared.Room:GetGridEntity(index)
                 local destroySelf = metadataEntity.Triggered
                 if not destroySelf then
                     local adjacent = {index - 1, index + 1, index - width, index + width}
                     local adjDetonators = currentRoom.Metadata:Search({Indices = adjacent, Name = "Detonator"}, metadataEntities)
                     for _, detonator in ipairs(adjDetonators) do
-                        if not detonator.RecentlyTriggered and room:GetGridCollision(detonator.Index) == 0 then
-                            local grid = room:GetGridEntity(detonator.Index)
+                        if not detonator.RecentlyTriggered and shared.Room:GetGridCollision(detonator.Index) == 0 then
+                            local grid = shared.Room:GetGridEntity(detonator.Index)
                             if grid then
                                 destroySelf = true
                             end
@@ -353,14 +355,14 @@ mod:AddCallback(ModCallbacks.MC_POST_UPDATE, function()
                     elseif checking.Desc.Type == GridEntityType.GRID_PIT then
                         checking:ToPit():MakeBridge(checking)
                     end
-                    Isaac.Spawn(EntityType.ENTITY_EFFECT, EffectVariant.POOF01, 0, room:GetGridPosition(index), Vector.Zero, nil)
+                    Isaac.Spawn(EntityType.ENTITY_EFFECT, EffectVariant.POOF01, 0, shared.Room:GetGridPosition(index), Vector.Zero, nil)
                     metadataEntity.RecentlyTriggered = 4
                 end
 
                 metadataEntity.Triggered = nil
             end
         elseif metadataEntity.Name == "DetonatorTrigger" and not metadataEntity.Triggered then
-            if room:GetGridCollision(index) == 0 then
+            if shared.Room:GetGridCollision(index) == 0 then
                 if metadataEntity.HadGrid then
                     trigger = true
                     metadataEntity.Triggered = true
@@ -384,7 +386,7 @@ mod:AddCallback(ModCallbacks.MC_POST_UPDATE, function()
                         end
 
                         for _, spawn in ipairs(toSpawn) do
-                            local ent = Isaac.Spawn(spawn.Type or 20, spawn.Variant or 0, spawn.SubType or 0, room:GetGridPosition(index), Vector.Zero, nil)
+                            local ent = Isaac.Spawn(spawn.Type or 20, spawn.Variant or 0, spawn.SubType or 0, shared.Room:GetGridPosition(index), Vector.Zero, nil)
                             StageAPI.CallCallbacks("POST_SPAWN_ENTITY", false, ent, {Data = spawn}, {}, index)
                         end
 

@@ -1,3 +1,5 @@
+local shared = require("scripts.stageapi.shared")
+
 StageAPI.LogMinor("Loading Custom Door Handler")
 
 StageAPI.DoorToDirection = {
@@ -124,7 +126,7 @@ function StageAPI.SpawnCustomDoor(slot, leadsTo, levelMapID, doorDataName, data,
         persistData.ExitSlot = nil
     end
 
-    local index = room:GetGridIndex(room:GetDoorSlotPosition(slot))
+    local index = shared.Room:GetGridIndex(shared.Room:GetDoorSlotPosition(slot))
     StageAPI.CustomDoorGrid:Spawn(index, nil, false, persistData)
 end
 
@@ -151,7 +153,7 @@ StageAPI.AddCallback("StageAPI", "POST_SPAWN_CUSTOM_GRID", 0, function(customGri
         doorData = StageAPI.BaseDoors.Default
     end
 
-    local door = Isaac.Spawn(StageAPI.E.Door.T, StageAPI.E.Door.V, 0, room:GetGridPosition(index), Vector.Zero, nil)
+    local door = Isaac.Spawn(StageAPI.E.Door.T, StageAPI.E.Door.V, 0, shared.Room:GetGridPosition(index), Vector.Zero, nil)
     local data, sprite = door:GetData(), door:GetSprite()
     sprite:Load(doorData.Anm2, true)
 
@@ -180,7 +182,7 @@ StageAPI.AddCallback("StageAPI", "POST_SPAWN_CUSTOM_GRID", 0, function(customGri
         data.State = persistData.State
         if not data.State then
             data.State = "Default"
-            if room:IsClear() then
+            if shared.Room:IsClear() then
                 if doorData.States.DefaultCleared then
                     data.State = "DefaultCleared"
                 end
@@ -213,7 +215,7 @@ StageAPI.AddCallback("StageAPI", "POST_SPAWN_CUSTOM_GRID", 0, function(customGri
         elseif doorData.AlwaysOpen == false then
             sprite:Play(doorData.ClosedAnim, true)
         else
-            if room:IsClear() then
+            if shared.Room:IsClear() then
                 sprite:Play(doorData.OpenedAnim, true)
             else
                 sprite:Play(doorData.ClosedAnim, true)
@@ -223,7 +225,7 @@ StageAPI.AddCallback("StageAPI", "POST_SPAWN_CUSTOM_GRID", 0, function(customGri
 
     opened = opened or (opened == nil and (sprite:IsPlaying(doorData.OpenedAnim) or sprite:IsFinished(doorData.OpenedAnim)))
 
-    local grid = room:GetGridEntity(index)
+    local grid = shared.Room:GetGridEntity(index)
     if not grid then
         StageAPI.LogErr("Custom door not find grid at", index, "slot",persistData.Slot)
     end
@@ -249,13 +251,13 @@ end, "CustomDoor")
 mod:AddCallback(ModCallbacks.MC_POST_EFFECT_RENDER, function(_, door)
     local data = door:GetData()
     if data.OverlaySprite and data.RenderOverlay then
-        local rpos = Isaac.WorldToRenderPosition(door.Position) + room:GetRenderScrollOffset()
+        local rpos = Isaac.WorldToRenderPosition(door.Position) + shared.Room:GetRenderScrollOffset()
         data.OverlaySprite:Render(rpos, Vector.Zero, Vector.Zero)
     end
 end, StageAPI.E.Door.V)
 
 function StageAPI.SetDoorOpen(open, door)
-    local grid = room:GetGridEntityFromPos(door.Position)
+    local grid = shared.Room:GetGridEntityFromPos(door.Position)
     if open then
         grid.CollisionClass = GridCollisionClass.COLLISION_WALL_EXCEPT_PLAYER
     else
@@ -264,11 +266,11 @@ function StageAPI.SetDoorOpen(open, door)
 end
 
 function StageAPI.IsRoomTopLeftShifted()
-    local tlPos = room:GetTopLeftPos()
-    local shape = room:GetRoomShape()
+    local tlPos = shared.Room:GetTopLeftPos()
+    local shape = shared.Room:GetRoomShape()
     local data = StageAPI.WallData[shape]
     if data then
-        local trueTL = room:GetGridPosition(data.TopLeft) + Vector(20, 20)
+        local trueTL = shared.Room:GetGridPosition(data.TopLeft) + Vector(20, 20)
         if trueTL.X ~= tlPos.X or trueTL.Y ~= tlPos.Y then
             return true
         end
@@ -318,9 +320,9 @@ mod:AddCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, function(_, door)
 
             if stateData.StartSound then
                 if type(stateData.StartSound) == "table" then
-                    sfx:Play(stateData.StartSound[1], stateData.StartSound[2] or 1, stateData.StartSound[3] or 0, stateData.StartSound[4] or false, stateData.StartSound[5] or 1)
+                    shared.Sfx:Play(stateData.StartSound[1], stateData.StartSound[2] or 1, stateData.StartSound[3] or 0, stateData.StartSound[4] or false, stateData.StartSound[5] or 1)
                 else
-                    sfx:Play(stateData.StartSound, 1, 0, false, 1)
+                    shared.Sfx:Play(stateData.StartSound, 1, 0, false, 1)
                 end
             end
 
@@ -366,21 +368,21 @@ mod:AddCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, function(_, door)
                 end
             end
 
-            if stateData.Triggers.EnteredThrough and level.EnterDoor == data.DoorGridData.Slot then
+            if stateData.Triggers.EnteredThrough and shared.Level.EnterDoor == data.DoorGridData.Slot then
                 trigger = stateData.Triggers.EnteredThrough
             end
 
-            if stateData.Triggers.Unclear and not room:IsClear() then
+            if stateData.Triggers.Unclear and not shared.Room:IsClear() then
                 trigger = stateData.Triggers.Unclear
             end
 
-            if stateData.Triggers.Clear and room:IsClear() then
+            if stateData.Triggers.Clear and shared.Room:IsClear() then
                 trigger = stateData.Triggers.Clear
             end
 
-            if (stateData.Triggers.Key or stateData.Triggers.Coin or stateData.Triggers.GoldKey) and room:IsClear() then
+            if (stateData.Triggers.Key or stateData.Triggers.Coin or stateData.Triggers.GoldKey) and shared.Room:IsClear() then
                 local touched = {}
-                for _, player in ipairs(players) do
+                for _, player in ipairs(shared.Players) do
                     if player:CollidesWithGrid() and player.Position:DistanceSquared(door.Position) < 40 * 40 then
                         touched[#touched + 1] = player
                     end
@@ -483,7 +485,7 @@ mod:AddCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, function(_, door)
 
                             for i = 1,count do
                                 local direction = Vector.FromAngle(sprite.Rotation + StageAPI.Random(-90, 90))
-                                if not room:IsPositionInRoom(door.Position + direction * 40, 0) then
+                                if not shared.Room:IsPositionInRoom(door.Position + direction * 40, 0) then
                                     direction = -direction
                                 end
 
@@ -536,19 +538,19 @@ mod:AddCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, function(_, door)
             sprite:Play(doorData.ClosedAnim, true)
         end
 
-        if room:IsClear() and not data.Opened then
+        if shared.Room:IsClear() and not data.Opened then
             data.Opened = true
             sprite:Play(doorData.OpenAnim, true)
-        elseif not room:IsClear() and data.Opened then
+        elseif not shared.Room:IsClear() and data.Opened then
             data.Opened = false
             sprite:Play(doorData.CloseAnim, true)
         end
     end
 
     local transitionStarted
-    for _, player in ipairs(players) do
+    for _, player in ipairs(shared.Players) do
         local size = 32 + player.Size
-        if not room:IsPositionInRoom(player.Position, -16) and player.Position:DistanceSquared(door.Position) < size * size then
+        if not shared.Room:IsPositionInRoom(player.Position, -16) and player.Position:DistanceSquared(door.Position) < size * size then
             if doorData.ExitFunction then
                 doorData.ExitFunction(door, data, sprite, doorData, data.DoorGridData)
             end
@@ -563,7 +565,7 @@ mod:AddCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, function(_, door)
     end
 
     if transitionStarted then
-        for _, player in ipairs(players) do
+        for _, player in ipairs(shared.Players) do
             player.Velocity = Vector.Zero
         end
     end

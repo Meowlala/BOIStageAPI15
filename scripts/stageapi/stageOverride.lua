@@ -1,3 +1,5 @@
+local shared = require("scripts.stageapi.shared")
+
 StageAPI.LogMinor("Loading Stage Override Definitions")
 
 function StageAPI.BackdropHelper(backdrop, prefix, suffix)
@@ -35,9 +37,9 @@ end
 
 function StageAPI.InOverriddenStage()
     for name, override in pairs(StageAPI.StageOverride) do
-        if (not not override.GreedMode) == game:IsGreedMode() then
-            local isStage = level:GetStage() == override.OverrideStage and
-                            level:GetStageType() == override.OverrideStageType
+        if (not not override.GreedMode) == shared.Game:IsGreedMode() then
+            local isStage = shared.Level:GetStage() == override.OverrideStage and
+                            shared.Level:GetStageType() == override.OverrideStageType
             if isStage then
                 return true, override, name
             end
@@ -75,5 +77,5 @@ function StageAPI.GetCurrentStageDisplayName()
 end
 
 function StageAPI.GetCurrentListIndex()
-    return level:GetCurrentRoomDesc().ListIndex
+    return shared.Level:GetCurrentRoomDesc().ListIndex
 end

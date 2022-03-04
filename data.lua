@@ -1,3 +1,5 @@
+local shared = require("scripts.stageapi.shared")
+
 StageAPI.LogMinor("Loading Reimplementation Data")
 
 do -- Base Game Doors, Door Spawns
@@ -235,7 +237,7 @@ StageAPI.BaseDoorStates = {
             Triggers = {
                 Unclear = "Closed",
                 Function = function(door, data, sprite, doorData, gridData)
-                    for _, player in ipairs(StageAPI.Players) do
+                    for _, player in ipairs(shared.Players) do
                         if player.Position:DistanceSquared(door.Position) < (player.Size) ^ 2 then
                             player:TakeDamage(1, DamageFlag.DAMAGE_CURSED_DOOR, EntityRef(player), 0)
                         end
@@ -255,7 +257,7 @@ StageAPI.BaseDoorStates = {
             Triggers = {
                 Unclear = "Closed",
                 Function = function(door, data, sprite, doorData, gridData)
-                    for _, player in ipairs(StageAPI.Players) do
+                    for _, player in ipairs(shared.Players) do
                         if not player.CanFly and player.Position:DistanceSquared(door.Position) < (player.Size) ^ 2 then
                             player:TakeDamage(1, DamageFlag.DAMAGE_CURSED_DOOR, EntityRef(player), 0)
                         end
@@ -275,7 +277,7 @@ StageAPI.BaseDoorStates = {
             Triggers = {
                 Unclear = "Closed",
                 Function = function(door, data, sprite, doorData, gridData)
-                    local p1 = StageAPI.Players[1]
+                    local p1 = shared.Players[1]
                     if (p1:GetHearts() + p1:GetSoulHearts()) < p1:GetMaxHearts() then
                         return "Closed"
                     end
@@ -289,11 +291,11 @@ StageAPI.BaseDoorStates = {
             StartSound = SoundEffect.SOUND_DOOR_HEAVY_CLOSE,
             Triggers = {
                 Function = function(door, data, sprite, doorData, gridData)
-                    if not StageAPI.Room:IsClear() then
+                    if not shared.Room:IsClear() then
                         return
                     end
 
-                    local p1 = StageAPI.Players[1]
+                    local p1 = shared.Players[1]
                     if (p1:GetHearts() + p1:GetSoulHearts()) >= p1:GetMaxHearts() then
                         return "Opened"
                     end
@@ -310,7 +312,7 @@ StageAPI.BaseDoorStates = {
             Triggers = {
                 Unclear = "Closed",
                 Function = function(door, data, sprite, doorData, gridData)
-                    local p1 = StageAPI.Players[1]
+                    local p1 = shared.Players[1]
                     if p1:GetHearts() > 2 then
                         return "Closed"
                     end
@@ -324,11 +326,11 @@ StageAPI.BaseDoorStates = {
             StartSound = SoundEffect.SOUND_DOOR_HEAVY_CLOSE,
             Triggers = {
                 Function = function(door, data, sprite, doorData, gridData)
-                    if not StageAPI.Room:IsClear() then
+                    if not shared.Room:IsClear() then
                         return
                     end
 
-                    local p1 = StageAPI.Players[1]
+                    local p1 = shared.Players[1]
                     if p1:GetHearts() <= 2 then
                         return "Opened"
                     end

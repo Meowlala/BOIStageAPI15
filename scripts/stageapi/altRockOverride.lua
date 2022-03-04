@@ -1,3 +1,5 @@
+local shared = require("scripts.stageapi.shared")
+
 StageAPI.LogMinor("Loading Rock Alt Breaking Override")
 
 StageAPI.SpawnOverriddenGrids = {}
@@ -6,15 +8,15 @@ StageAPI.RecentFarts = {}
 StageAPI.LastRockAltCheckedRoom = nil
 StageAPI.TemporaryIgnoreSpawnOverride = false
 mod:AddCallback(ModCallbacks.MC_PRE_ENTITY_SPAWN, function(_, id, variant, subtype, position, velocity, spawner, seed)
-    if StageAPI.LastRockAltCheckedRoom ~= level:GetCurrentRoomIndex() then
-        StageAPI.LastRockAltCheckedRoom = level:GetCurrentRoomIndex()
+    if StageAPI.LastRockAltCheckedRoom ~= shared.Level:GetCurrentRoomIndex() then
+        StageAPI.LastRockAltCheckedRoom = shared.Level:GetCurrentRoomIndex()
         StageAPI.SpawnOverriddenGrids = {}
     end
 
     local shouldOverride
-    local grindex = room:GetGridIndex(position)
+    local grindex = shared.Room:GetGridIndex(position)
     if StageAPI.SpawnOverriddenGrids[grindex] then
-        local grid = room:GetGridEntity(grindex)
+        local grid = shared.Room:GetGridEntity(grindex)
 
         local stateCheck
         if type(StageAPI.SpawnOverriddenGrids[grindex]) == "number" then
@@ -52,7 +54,7 @@ mod:AddCallback(ModCallbacks.MC_PRE_ENTITY_SPAWN, function(_, id, variant, subty
         or id == EntityType.ENTITY_MUSHROOM then
             if id == EntityType.ENTITY_EFFECT and variant == EffectVariant.FART then
                 StageAPI.RecentFarts[grindex] = 2
-                sfx:Stop(SoundEffect.SOUND_FART)
+                shared.Sfx:Stop(SoundEffect.SOUND_FART)
             end
 
             local dat = {
@@ -128,7 +130,7 @@ mod:AddCallback(ModCallbacks.MC_POST_PLAYER_RENDER, function(_, npc)
     if data.Farted then
         local stoppedFart
         for fart, timer in pairs(StageAPI.RecentFarts) do
-            if room:GetGridPosition(fart):Distance(npc.Position) < 150 + npc.Size then
+            if shared.Room:GetGridPosition(fart):Distance(npc.Position) < 150 + npc.Size then
                 stoppedFart = true
                 break
             end
@@ -149,7 +151,7 @@ mod:AddCallback(ModCallbacks.MC_POST_NPC_RENDER, function(_, npc)
     if data.Farted then
         local stoppedFart
         for fart, timer in pairs(StageAPI.RecentFarts) do
-            if room:GetGridPosition(fart):Distance(npc.Position) < 150 + npc.Size then
+            if shared.Room:GetGridPosition(fart):Distance(npc.Position) < 150 + npc.Size then
                 stoppedFart = true
                 break
             end
@@ -165,7 +167,7 @@ mod:AddCallback(ModCallbacks.MC_POST_NPC_RENDER, function(_, npc)
     end
 
     for fart, timer in pairs(StageAPI.RecentFarts) do
-        if npc:HasEntityFlags(EntityFlag.FLAG_POISON) and room:GetGridPosition(fart):Distance(npc.Position) < 150 + npc.Size then
+        if npc:HasEntityFlags(EntityFlag.FLAG_POISON) and shared.Room:GetGridPosition(fart):Distance(npc.Position) < 150 + npc.Size then
             npc:RemoveStatusEffects()
             break
         end
@@ -195,12 +197,12 @@ mod:AddCallback(ModCallbacks.MC_POST_PICKUP_INIT, StageAPI.DeleteEntity, StageAP
 
 StageAPI.PickupChooseRNG = RNG()
 mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, function()
-    StageAPI.PickupChooseRNG:SetSeed(room:GetSpawnSeed(), 0)
+    StageAPI.PickupChooseRNG:SetSeed(shared.Room:GetSpawnSeed(), 0)
 end)
 
 mod:AddCallback(ModCallbacks.MC_POST_PICKUP_UPDATE, function(_, pickup)
     if not pickup:Exists() then return end
-    local card = game:GetItemPool():GetCard(StageAPI.PickupChooseRNG:Next(), false, true, true)
+    local card = shared.Game:GetItemPool():GetCard(StageAPI.PickupChooseRNG:Next(), false, true, true)
     local spawned = Isaac.Spawn(EntityType.ENTITY_PICKUP, PickupVariant.PICKUP_TAROTCARD, card, pickup.Position, Vector.Zero, nil)
     spawned:Update() -- get the spawned pickup up to speed with the original
     StageAPI.DeleteEntity(pickup)
@@ -215,7 +217,7 @@ mod:AddCallback(ModCallbacks.MC_POST_UPDATE, function()
     end
 
     for grindex, exists in pairs(StageAPI.SpawnOverriddenGrids) do
-        local grid = room:GetGridEntity(grindex)
+        local grid = shared.Room:GetGridEntity(grindex)
         local stateCheck = 2
         if type(exists) == "number" then
             stateCheck = exists
@@ -256,8 +258,8 @@ end)
 
 StageAPI.AddCallback("StageAPI", "POST_GRID_UPDATE", 0, function()
     if StageAPI.AreRockAltEffectsOverridden() then
-        for i = room:GetGridWidth(), room:GetGridSize() do
-            local grid = room:GetGridEntity(i)
+        for i = shared.Room:GetGridWidth(), shared.Room:GetGridSize() do
+            local grid = shared.Room:GetGridEntity(i)
             if not StageAPI.SpawnOverriddenGrids[i] and grid and (grid.Desc.Type == GridEntityType.GRID_ROCK_ALT and grid.State ~= 2) then
                 StageAPI.SpawnOverriddenGrids[i] = true
             end

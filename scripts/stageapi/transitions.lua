@@ -1,3 +1,5 @@
+local shared = require("scripts.stageapi.shared")
+
 StageAPI.LogMinor("Loading Transition Handler")
 
 StageAPI.StageTypeToString = {
@@ -22,7 +24,7 @@ StageAPI.TransitionAnimation:Load("stageapi/transition/customnightmare.anm2", tr
 StageAPI.RemovedHUD = false
 StageAPI.TransitionIsPlaying = false
 
-StageAPI.Seeds = game:GetSeeds()
+StageAPI.Seeds = shared.Game:GetSeeds()
 
 StageAPI.BlackScreenOverlay = Sprite()
 StageAPI.BlackScreenOverlay:Load("stageapi/overlay_black.anm2", false)
@@ -43,7 +45,7 @@ mod:AddCallback(ModCallbacks.MC_POST_RENDER, function()
         end
 
         local stop
-        for _, player in ipairs(players) do
+        for _, player in ipairs(shared.Players) do
             player.ControlsCooldown = 80
 
             if Input.IsActionTriggered(ButtonAction.ACTION_MENUCONFIRM, player.ControllerIndex) or
@@ -54,11 +56,11 @@ mod:AddCallback(ModCallbacks.MC_POST_RENDER, function()
 
         -- Animate player appearance after stage transition animation is finished playing or cancelled
         if stop or StageAPI.TransitionAnimation:IsEventTriggered("LastFrame") then
-            for _, player in ipairs(players) do
-                if not game:IsGreedMode() then
-                    player.Position = room:GetCenterPos()
+            for _, player in ipairs(shared.Players) do
+                if not shared.Game:IsGreedMode() then
+                    player.Position = shared.Room:GetCenterPos()
                 else
-                    player.Position = room:GetGridPosition(67)
+                    player.Position = shared.Room:GetGridPosition(67)
                 end
                 player:AnimateAppear()
             end
@@ -95,10 +97,10 @@ function StageAPI.IsHUDAnimationPlaying(spriteOnly)
     or StageAPI.BossSprite:IsPlaying("Scene")
     or StageAPI.BossSprite:IsPlaying("DoubleTrouble")
     or (
-        room:GetType() == RoomType.ROOM_BOSS
-        and room:GetFrameCount() <= 0
-        and not room:IsClear()
-        and game:IsPaused()
+        shared.Room:GetType() == RoomType.ROOM_BOSS
+        and shared.Room:GetFrameCount() <= 0
+        and not shared.Room:IsClear()
+        and shared.Game:IsPaused()
         and not spriteOnly
     )
 end
@@ -163,7 +165,7 @@ function StageAPI.PlayTransitionAnimationManual(portrait, icon, ground, bg, tran
 end
 
 function StageAPI.PlayTransitionAnimation(stage)
-    local gfxData = StageAPI.TryGetPlayerGraphicsInfo(players[1])
+    local gfxData = StageAPI.TryGetPlayerGraphicsInfo(shared.Players[1])
     StageAPI.PlayTransitionAnimationManual(gfxData.Portrait, stage.TransitionIcon, stage.TransitionGround, stage.TransitionBackground, stage.TransitionMusic, stage.Music and stage.Music[RoomType.ROOM_DEFAULT], gfxData.NoShake)
 end
 
@@ -188,7 +190,7 @@ function StageAPI.GotoCustomStage(stage, playTransition, noForgetSeed)
         end
 
         if playTransition then
-            local gfxData = StageAPI.TryGetPlayerGraphicsInfo(players[1])
+            local gfxData = StageAPI.TryGetPlayerGraphicsInfo(shared.Players[1])
             local ground = "gfx/ui/boss/bossspot_" .. StageAPI.GetBaseFloorInfo().Prefix .. ".png"
             local bg = "stageapi/transition/nightmares_bg_mask.png"
             StageAPI.PlayTransitionAnimationManual(gfxData.Portrait, StageAPI.GetLevelTransitionIcon(stage.Stage, stageType), ground, bg, nil, nil, gfxData.NoShake)
@@ -220,7 +222,7 @@ function StageAPI.SpawnCustomTrapdoor(position, goesTo, anm2, size, alreadyEnter
     if alreadyEntering then
         sprite:Play("Opened", true)
         data.BeingEntered = true
-        for _, player in ipairs(players) do
+        for _, player in ipairs(shared.Players) do
             player:AnimateTrapdoor()
         end
     else
@@ -235,9 +237,9 @@ mod:AddCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, function(_, eff)
     local sprite, data = eff:GetSprite(), eff:GetData()
     if sprite:IsFinished("Open Animation") then
         sprite:Play("Opened", true)
-    elseif (sprite:IsPlaying("Closed") or sprite:IsFinished("Closed")) and room:IsClear() then
+    elseif (sprite:IsPlaying("Closed") or sprite:IsFinished("Closed")) and shared.Room:IsClear() then
         local playerTooClose
-        for _, player in ipairs(players) do
+        for _, player in ipairs(shared.Players) do
             local size = (eff.Size + player.Size + 40)
             if player.Position:DistanceSquared(eff.Position) < size * size then
                 playerTooClose = true
@@ -250,7 +252,7 @@ mod:AddCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, function(_, eff)
     elseif sprite:IsPlaying("Opened") or sprite:IsFinished("Opened") then
         if not data.BeingEntered then
             local touchingTrapdoor
-            for _, player in ipairs(players) do
+            for _, player in ipairs(shared.Players) do
                 local size = (eff.Size + player.Size)
                 if player.Position:DistanceSquared(eff.Position) < size * size then
                     touchingTrapdoor = true
@@ -259,13 +261,13 @@ mod:AddCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, function(_, eff)
 
             if touchingTrapdoor then
                 data.BeingEntered = true
-                for _, player in ipairs(players) do
+                for _, player in ipairs(shared.Players) do
                     player:AnimateTrapdoor()
                 end
             end
         else
             local animationOver
-            for _, player in ipairs(players) do
+            for _, player in ipairs(shared.Players) do
                 player.ControlsCooldown = 5
                 player.Velocity = (StageAPI.Lerp(player.Position, eff.Position, 0.5) - player.Position) / 2
                 if player:IsExtraAnimationFinished() then

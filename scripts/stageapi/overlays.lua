@@ -1,3 +1,5 @@
+local shared = require("scripts.stageapi.shared")
+
 StageAPI.LogMinor("Loading Overlay System")
 
 StageAPI.DebugTiling = false

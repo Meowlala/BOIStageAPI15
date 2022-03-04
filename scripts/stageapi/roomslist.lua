@@ -1,3 +1,5 @@
+local shared = require("scripts.stageapi.shared")
+
 StageAPI.LogMinor("Loading Room Handler")
 
 StageAPI.RemappedEntities = {}
@@ -327,7 +329,7 @@ end
 
 -- convenience function for testing if an entity exists anywhere in a stage's room layouts
 function StageAPI.EntityInLevel(id, variant, subtype, defaultRoomsOnly)
-    local roomsList = level:GetRooms()
+    local roomsList = shared.Level:GetRooms()
     for i = 0, roomsList.Size - 1 do
         local roomDesc = roomsList:Get(i)
         if roomDesc and (not defaultRoomsOnly or roomDesc.Data.Type == RoomType.ROOM_DEFAULT) then
@@ -893,27 +895,27 @@ for name, shape in pairs(RoomShape) do
 end
 
 function StageAPI.FixWalls()
-    local shape = room:GetRoomShape()
+    local shape = shared.Room:GetRoomShape()
     local data = StageAPI.WallData[shape]
     if data then
         for index, _ in pairs(data.Indices) do
-            local grid = room:GetGridEntity(index)
+            local grid = shared.Room:GetGridEntity(index)
             if not grid or (grid.Desc.Type ~= GridEntityType.GRID_WALL and grid.Desc.Type ~= GridEntityType.GRID_DOOR) then
-                room:SpawnGridEntity(index, GridEntityType.GRID_WALL, 0, 1, 0)
+                shared.Room:SpawnGridEntity(index, GridEntityType.GRID_WALL, 0, 1, 0)
             end
         end
 
-        for i = 0, room:GetGridSize() do
-            local grid = room:GetGridEntity(i)
+        for i = 0, shared.Room:GetGridSize() do
+            local grid = shared.Room:GetGridEntity(i)
             if not data.Indices[i] and grid and grid.Desc.Type == GridEntityType.GRID_WALL then
-                room:RemoveGridEntity(i, 0, false)
+                shared.Room:RemoveGridEntity(i, 0, false)
             end
         end
     end
 end
 
 function StageAPI.ClearRoomLayout(keepDecoration, doGrids, doEnts, doPersistentEnts, onlyRemoveTheseDecorations, doWalls, doDoors, skipIndexedGrids)
-    if StageAPI.InOrTransitioningToExtraRoom() and room:GetType() ~= RoomType.ROOM_DUNGEON then
+    if StageAPI.InOrTransitioningToExtraRoom() and shared.Room:GetType() ~= RoomType.ROOM_DUNGEON then
         StageAPI.FixWalls()
     end
 
@@ -939,21 +941,21 @@ function StageAPI.ClearRoomLayout(keepDecoration, doGrids, doEnts, doPersistentE
             roomGrids[lindex] = {}
         end
 
-        for i = 0, room:GetGridSize() do
-            local grid = room:GetGridEntity(i)
+        for i = 0, shared.Room:GetGridSize() do
+            local grid = shared.Room:GetGridEntity(i)
             if grid then
                 local gtype = grid.Desc.Type
-                if (doWalls or gtype ~= GridEntityType.GRID_WALL or room:IsPositionInRoom(grid.Position, 0)) -- this allows custom wall grids to exist
+                if (doWalls or gtype ~= GridEntityType.GRID_WALL or shared.Room:IsPositionInRoom(grid.Position, 0)) -- this allows custom wall grids to exist
                 and (doDoors or gtype ~= GridEntityType.GRID_DOOR)
                 and (not onlyRemoveTheseDecorations or gtype ~= GridEntityType.GRID_DECORATION or onlyRemoveTheseDecorations[i]) then
-                    StageAPI.Room:RemoveGridEntity(i, 0, keepDecoration)
+                    shared.Room:RemoveGridEntity(i, 0, keepDecoration)
                 end
             end
         end
     end
 
     StageAPI.CalledRoomUpdate = true
-    room:Update()
+    shared.Room:Update()
     StageAPI.CalledRoomUpdate = false
 end
 
@@ -962,7 +964,7 @@ function StageAPI.DoLayoutDoorsMatch(layout, doors)
     local doesLayoutMatch = true
     for _, door in ipairs(layout.Doors) do
         if door.Slot and not door.Exists then
-            if ((not doors and room:GetDoor(door.Slot)) or (doors and doors[door.Slot])) then
+            if ((not doors and shared.Room:GetDoor(door.Slot)) or (doors and doors[door.Slot])) then
                 doesLayoutMatch = false
             end
             numNonExistingDoors = numNonExistingDoors + 1
@@ -975,7 +977,7 @@ end
 -- returns list of rooms, error message if no rooms valid
 function StageAPI.GetValidRoomsForLayout(args)
     local roomList = args.RoomList
-    local roomDesc = args.RoomDescriptor or level:GetCurrentRoomDesc()
+    local roomDesc = args.RoomDescriptor or shared.Level:GetCurrentRoomDesc()
     local shape = -1
     if not args.IgnoreShape then
         shape = args.Shape or roomDesc.Data.Shape
@@ -1872,7 +1874,7 @@ function StageAPI.RoomMetadata:GetDirections(index)
 end
 
 function StageAPI.SeparateEntityMetadata(entities, grids, seed)
-    StageAPI.RoomLoadRNG:SetSeed(seed or room:GetSpawnSeed(), 1)
+    StageAPI.RoomLoadRNG:SetSeed(seed or shared.Room:GetSpawnSeed(), 1)
     local outEntities = {}
     local roomMetadata = StageAPI.RoomMetadata()
 
@@ -1992,7 +1994,7 @@ function StageAPI.AddEntityToSpawnList(tbl, entData, persistentIndex, index)
         if currentRoom and currentRoom.Layout and currentRoom.Layout.Width then
             width = currentRoom.Layout.Width
         else
-            width = room:GetGridWidth()
+            width = shared.Room:GetGridWidth()
         end
 
         entData.GridX, entData.GridY = StageAPI.GridToVector(index, width)
@@ -2012,7 +2014,7 @@ function StageAPI.AddEntityToSpawnList(tbl, entData, persistentIndex, index)
 end
 
 function StageAPI.SelectSpawnEntities(entities, seed, roomMetadata, lastPersistentIndex)
-    StageAPI.RoomLoadRNG:SetSeed(seed or room:GetSpawnSeed(), 1)
+    StageAPI.RoomLoadRNG:SetSeed(seed or shared.Room:GetSpawnSeed(), 1)
     local entitiesToSpawn = {}
     local callbacks = StageAPI.GetCallbacks("PRE_SELECT_ENTITY_LIST")
     local persistentIndex = (lastPersistentIndex and lastPersistentIndex + 1) or 0
@@ -2065,7 +2067,7 @@ function StageAPI.SelectSpawnEntities(entities, seed, roomMetadata, lastPersiste
 end
 
 function StageAPI.SelectSpawnGrids(gridsByIndex, seed)
-    StageAPI.RoomLoadRNG:SetSeed(seed or room:GetSpawnSeed(), 1)
+    StageAPI.RoomLoadRNG:SetSeed(seed or shared.Room:GetSpawnSeed(), 1)
     local spawnGrids = {}
 
     local callbacks = StageAPI.GetCallbacks("PRE_SELECT_GRIDENTITY_LIST")
@@ -2165,7 +2167,7 @@ function StageAPI.LoadEntitiesFromEntitySets(entitysets, doGrids, doPersistentOn
                 end
 
                 if shouldSpawn and #entityList > 0 then
-                    local roomType = room:GetType()
+                    local roomType = shared.Room:GetType()
                     for _, entityInfo in ipairs(entityList) do
                         local shouldSpawnEntity = true
 
@@ -2200,7 +2202,7 @@ function StageAPI.LoadEntitiesFromEntitySets(entitysets, doGrids, doPersistentOn
                         end
 
                         if not entityInfo.Position then
-                            entityInfo.Position = room:GetGridPosition(index)
+                            entityInfo.Position = shared.Room:GetGridPosition(index)
                         end
 
                         for _, callback in ipairs(entCallbacks) do
@@ -2249,7 +2251,7 @@ function StageAPI.LoadEntitiesFromEntitySets(entitysets, doGrids, doPersistentOn
                                             end
 
                                             local isShopItem
-                                            for _, player in ipairs(players) do
+                                            for _, player in ipairs(shared.Players) do
                                                 if player:GetPlayerType() == PlayerType.PLAYER_KEEPER_B then
                                                     isShopItem = true
                                                     break
@@ -2272,7 +2274,7 @@ function StageAPI.LoadEntitiesFromEntitySets(entitysets, doGrids, doPersistentOn
                                 end
 
                                 if not loadingWave and ent:CanShutDoors() then
-                                    StageAPI.Room:SetClear(false)
+                                    shared.Room:SetClear(false)
                                 end
 
                                 StageAPI.CallCallbacks("POST_SPAWN_ENTITY", false, ent, entityInfo, entityList, index, doGrids, doPersistentOnly, doAutoPersistent, avoidSpawning, persistenceData, shouldSpawnEntity)
@@ -2290,8 +2292,8 @@ function StageAPI.LoadEntitiesFromEntitySets(entitysets, doGrids, doPersistentOn
 end
 
 function StageAPI.CallGridPostInit()
-    for i = 0, room:GetGridSize() do
-        local grid = room:GetGridEntity(i)
+    for i = 0, shared.Room:GetGridSize() do
+        local grid = shared.Room:GetGridEntity(i)
         if grid then
             grid:PostInit()
 
@@ -2305,7 +2307,7 @@ end
 StageAPI.GridSpawnRNG = RNG()
 function StageAPI.LoadGridsFromDataList(grids, gridInformation, entities)
     local grids_spawned = {}
-    StageAPI.GridSpawnRNG:SetSeed(room:GetSpawnSeed(), 0)
+    StageAPI.GridSpawnRNG:SetSeed(shared.Room:GetSpawnSeed(), 0)
     local callbacks = StageAPI.GetCallbacks("PRE_SPAWN_GRID")
 
     local iterList = gridInformation or grids
@@ -2322,9 +2324,9 @@ function StageAPI.LoadGridsFromDataList(grids, gridInformation, entities)
             end
         end
 
-        if shouldSpawn and room:IsPositionInRoom(StageAPI.Room:GetGridPosition(index), 0) then
-            room:RemoveGridEntity(index, 0, false)
-            local grid = Isaac.GridSpawn(gridData.Type, gridData.Variant, StageAPI.Room:GetGridPosition(index), true)
+        if shouldSpawn and shared.Room:IsPositionInRoom(shared.Room:GetGridPosition(index), 0) then
+            shared.Room:RemoveGridEntity(index, 0, false)
+            local grid = Isaac.GridSpawn(gridData.Type, gridData.Variant, shared.Room:GetGridPosition(index), true)
             if grid then
                 if gridInformation and gridInformation[index] then
                     local grinformation = gridInformation[index]
@@ -2402,7 +2404,7 @@ function StageAPI.LoadGridsFromDataList(grids, gridInformation, entities)
                 end
 
                 if gridData.Type == GridEntityType.GRID_PRESSURE_PLATE and gridData.Variant == 0 and grid.State ~= 3 then
-                    StageAPI.Room:SetClear(false)
+                    shared.Room:SetClear(false)
                 end
 
                 grids_spawned[#grids_spawned + 1] = grid
@@ -2415,9 +2417,9 @@ end
 
 function StageAPI.GetGridInformation()
     local gridInformation = {}
-    for i = 0, room:GetGridSize() do
-        local grid = room:GetGridEntity(i)
-        if grid and grid.Desc.Type ~= GridEntityType.GRID_DOOR and (grid.Desc.Type ~= GridEntityType.GRID_WALL or room:IsPositionInRoom(grid.Position, 0)) then
+    for i = 0, shared.Room:GetGridSize() do
+        local grid = shared.Room:GetGridEntity(i)
+        if grid and grid.Desc.Type ~= GridEntityType.GRID_DOOR and (grid.Desc.Type ~= GridEntityType.GRID_WALL or shared.Room:IsPositionInRoom(grid.Position, 0)) then
             gridInformation[i] = {
                 State = grid.State,
                 VarData = grid.VarData,
@@ -2469,14 +2471,14 @@ function StageAPI.GetDimension(roomDesc)
         end
     end
 
-    roomDesc = roomDesc or level:GetCurrentRoomDesc()
+    roomDesc = roomDesc or shared.Level:GetCurrentRoomDesc()
     if roomDesc.GridIndex < 0 then -- Off-grid rooms
         return -2
     end
 
     local hash = GetPtrHash(roomDesc)
     for dimension = 0, 2 do
-        local dimensionDesc = level:GetRoomByIdx(roomDesc.SafeGridIndex, dimension)
+        local dimensionDesc = shared.Level:GetRoomByIdx(roomDesc.SafeGridIndex, dimension)
         if GetPtrHash(dimensionDesc) == hash then
             return dimension
         end
@@ -2545,9 +2547,9 @@ end
 function StageAPI.GetCurrentRoomType()
     local currentRoom = StageAPI.GetCurrentRoom()
     if currentRoom then
-        return currentRoom.TypeOverride or currentRoom.RoomType or room:GetType()
+        return currentRoom.TypeOverride or currentRoom.RoomType or shared.Room:GetType()
     else
-        return room:GetType()
+        return shared.Room:GetType()
     end
 end
 
@@ -2557,7 +2559,7 @@ end
 
 function StageAPI.CloseDoors()
     for i = 0, 7 do
-        local door = room:GetDoor(i)
+        local door = shared.Room:GetDoor(i)
         if door then
             door:Close()
         end
@@ -2567,7 +2569,7 @@ end
 function StageAPI.GetDoorsForRoom()
     local doors = {}
     for i = 0, 7 do
-        doors[i] = not not room:GetDoor(i)
+        doors[i] = not not shared.Room:GetDoor(i)
     end
     return doors
 end
@@ -2686,7 +2688,7 @@ end
 
 function StageAPI.LevelRoom:GetLayout()
     if self.FromData and not self.Layout then
-        local roomDesc = level:GetRooms():Get(self.FromData)
+        local roomDesc = shared.Level:GetRooms():Get(self.FromData)
         if roomDesc then
             self.Layout = StageAPI.GenerateRoomLayoutFromData(roomDesc.Data)
         end
@@ -2857,7 +2859,7 @@ function StageAPI.LevelRoom:SavePersistentEntities()
             if persistData then
                 if not persistData.StoreCheck or not persistData.StoreCheck(entity, data) then
                     local index = self:GetNextPersistentIndex()
-                    local grindex = room:GetGridIndex(entity.Position)
+                    local grindex = shared.Room:GetGridIndex(entity.Position)
                     if not self.ExtraSpawn[grindex] then
                         self.ExtraSpawn[grindex] = {}
                     end
@@ -2914,7 +2916,7 @@ function StageAPI.LevelRoom:Load(isExtraRoom, noIncrementVisit)
         isExtraRoom = self.IsExtraRoom
     end
 
-    room:SetClear(true)
+    shared.Room:SetClear(true)
 
     if not noIncrementVisit then
         self.VisitCount = self.VisitCount + 1
@@ -2924,17 +2926,17 @@ function StageAPI.LevelRoom:Load(isExtraRoom, noIncrementVisit)
     StageAPI.ClearRoomLayout(false, self.FirstLoad or isExtraRoom, true, self.FirstLoad or isExtraRoom, self.GridTakenIndices, nil, nil, not self.FirstLoad)
     if self.FirstLoad then
         StageAPI.LoadRoomLayout(self.SpawnGrids, {self.SpawnEntities, self.ExtraSpawn}, true, true, self.IsClear, true, self.GridInformation, self.AvoidSpawning, self.PersistenceData)
-        self.WasClearAtStart = room:IsClear()
+        self.WasClearAtStart = shared.Room:IsClear()
         self.IsClear = self.WasClearAtStart
         self.FirstLoad = false
-        self.HasEnemies = room:GetAliveEnemiesCount() > 0
+        self.HasEnemies = shared.Room:GetAliveEnemiesCount() > 0
     else
         StageAPI.LoadRoomLayout(self.SpawnGrids, {self.SpawnEntities, self.ExtraSpawn}, isExtraRoom, true, self.IsClear, isExtraRoom, self.GridInformation, self.AvoidSpawning, self.PersistenceData)
-        self.IsClear = room:IsClear()
+        self.IsClear = shared.Room:IsClear()
     end
 
     StageAPI.CalledRoomUpdate = true
-    room:Update()
+    shared.Room:Update()
     StageAPI.CalledRoomUpdate = false
     if not self.IsClear then
         StageAPI.CloseDoors()
@@ -3099,7 +3101,7 @@ end
 mod:AddCallback(ModCallbacks.MC_POST_ENTITY_REMOVE, function(_, ent)
     local index, data = StageAPI.GetEntityPersistenceData(ent)
     -- Entities are removed whenever you exit the room, in this time the game is paused, which we can use to stop removing persistent entities on room exit.
-    if data and data.RemoveOnRemove and not game:IsPaused() then
+    if data and data.RemoveOnRemove and not shared.Game:IsPaused() then
         StageAPI.RemovePersistentEntity(ent)
     end
 end)
@@ -3120,7 +3122,7 @@ function StageAPI.IsDoorSlotAllowed(slot)
             end
         end
     else
-        return room:IsDoorSlotAllowed(slot)
+        return shared.Room:IsDoorSlotAllowed(slot)
     end
 end
 

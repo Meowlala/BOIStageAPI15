@@ -1,3 +1,5 @@
+local shared = require("scripts.stageapi.shared")
+
 StageAPI.LevelMaps = {}
 StageAPI.DefaultLevelMapID = nil
 StageAPI.CurrentLevelMapID = nil
@@ -437,7 +439,7 @@ function StageAPI.CreateMapFromRoomsList(roomsList, useMapID)
             roomsByID[roomID][#roomsByID[roomID] + 1] = roomPosition
         end
 
-        StageAPI.StageRNG:SetSeed(StageAPI.Seeds:GetStageSeed(level:GetStage()), 32)
+        StageAPI.StageRNG:SetSeed(StageAPI.Seeds:GetStageSeed(shared.Level:GetStage()), 32)
 
         local levelMap = StageAPI.LevelMap()
         for roomID, roomPositions in pairs(roomsByID) do
@@ -622,13 +624,13 @@ function StageAPI.GetMapSegmentsFromRoomObject(roomObject, noCaching)
         local shape = roomObject.Data.Shape
         return StageAPI.GetRoomMapSegments(x, y, shape)
     elseif typ == "number" then
-        return StageAPI.GetMapSegmentsFromRoomObject(level:GetRoomByIdx(roomObject), noCaching)
+        return StageAPI.GetMapSegmentsFromRoomObject(shared.Level:GetRoomByIdx(roomObject), noCaching)
     end
 end
 
 function StageAPI.CopyCurrentLevelMap()
     local levelMap = StageAPI.LevelMap()
-    local roomsList = level:GetRooms()
+    local roomsList = shared.Level:GetRooms()
     for i = 0, roomsList.Size do
         local roomDesc = roomsList:Get(i)
         if roomDesc then
@@ -651,7 +653,7 @@ function StageAPI.CopyCurrentLevelMap()
             }
 
             local addedRoomData = levelMap:AddRoom(newRoom, {GridIndex = roomDesc.GridIndex, AutoDoors = true}, true)
-            if level:GetStartingRoomIndex() == roomDesc.SafeGridIndex then
+            if shared.Level:GetStartingRoomIndex() == roomDesc.SafeGridIndex then
                 levelMap.StartingRoom = addedRoomData.MapID
             end
         end
@@ -750,7 +752,7 @@ end)
 StageAPI.AddCallback("StageAPI", "POST_CHANGE_ROOM_GFX", -1, function(currentRoom)
     if StageAPI.InExtraRoom() and currentRoom and currentRoom.IsExtraRoom and not StageAPI.CurrentStage then
         local baseFloorInfo = StageAPI.GetBaseFloorInfo()
-        if room:GetBackdropType() == baseFloorInfo.Backdrop and baseFloorInfo.RoomGfx then
+        if shared.Room:GetBackdropType() == baseFloorInfo.Backdrop and baseFloorInfo.RoomGfx then
             StageAPI.ChangeDoors(baseFloorInfo.RoomGfx)
         end
     end
@@ -783,8 +785,8 @@ end)
 
 mod:AddCallback(ModCallbacks.MC_POST_RENDER, function()
     if testingStage then
-        local baseStage = level:GetStage()
-        local baseStageType = level:GetStageType()
+        local baseStage = shared.Level:GetStage()
+        local baseStageType = shared.Level:GetStageType()
         Isaac.ExecuteCommand("stage " .. testingStage)
         testingStage = nil
         local levelMap = StageAPI.CopyCurrentLevelMap()

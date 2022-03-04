@@ -1,3 +1,5 @@
+local shared = require("scripts.stageapi.shared")
+
 StageAPI.LogMinor("Loading CustomStage Handler")
 
 StageAPI.CustomStages = {}
@@ -250,7 +252,7 @@ function StageAPI.CustomStage:GenerateRoom(roomDescriptor, isStartingRoom, fromL
         end
 
         if usingRoomsList then
-            local shape = room:GetRoomShape()
+            local shape = shared.Room:GetRoomShape()
             if usingRoomsList:GetRooms(shape) then
                 local newRoom = StageAPI.LevelRoom(StageAPI.Merged({
                     RoomsList = usingRoomsList,
@@ -303,8 +305,8 @@ function StageAPI.CustomStage:GenerateLevel()
         return
     end
 
-    local startingRoomIndex = level:GetStartingRoomIndex()
-    local roomsList = level:GetRooms()
+    local startingRoomIndex = shared.Level:GetStartingRoomIndex()
+    local roomsList = shared.Level:GetRooms()
     for i = 0, roomsList.Size - 1 do
         local roomDesc = roomsList:Get(i)
         if roomDesc then
@@ -319,7 +321,7 @@ function StageAPI.CustomStage:GenerateLevel()
 end
 
 function StageAPI.CustomStage:GetPlayingMusic()
-    local roomType = room:GetType()
+    local roomType = shared.Room:GetType()
     local id = StageAPI.Music:GetCurrentMusicID()
     if roomType == RoomType.ROOM_BOSS then
         if self.BossMusic then
@@ -336,7 +338,7 @@ function StageAPI.CustomStage:GetPlayingMusic()
 
                 disregardNonOverride = true
             else
-                local isCleared = room:GetAliveBossesCount() < 1 or room:IsClear()
+                local isCleared = shared.Room:GetAliveBossesCount() < 1 or shared.Room:IsClear()
                 if isCleared then
                     musicID = music.Cleared
                 else
@@ -345,7 +347,7 @@ function StageAPI.CustomStage:GetPlayingMusic()
             end
 
             if type(musicID) == "table" then
-                StageAPI.MusicRNG:SetSeed(room:GetDecorationSeed(), 0)
+                StageAPI.MusicRNG:SetSeed(shared.Room:GetDecorationSeed(), 0)
                 musicID = musicID[StageAPI.Random(1, #musicID, StageAPI.MusicRNG)]
             end
 
@@ -355,10 +357,10 @@ function StageAPI.CustomStage:GetPlayingMusic()
             end
 
             if musicID then
-                return musicID, not room:IsClear(), queue, disregardNonOverride
+                return musicID, not shared.Room:IsClear(), queue, disregardNonOverride
             end
         end
-    elseif roomType ~= RoomType.ROOM_CHALLENGE or not room:IsAmbushActive() then
+    elseif roomType ~= RoomType.ROOM_CHALLENGE or not shared.Room:IsAmbushActive() then
         local music = self.Music
         if music then
             local musicID = music[roomType]
@@ -368,7 +370,7 @@ function StageAPI.CustomStage:GetPlayingMusic()
             end
 
             if musicID then
-                return musicID, not room:IsClear()
+                return musicID, not shared.Room:IsClear()
             end
         end
     end
@@ -415,5 +417,5 @@ function StageAPI.CustomStage:SetRequireRoomTypeSin()
 end
 
 function StageAPI.ShouldPlayStageMusic()
-    return room:GetType() == RoomType.ROOM_DEFAULT or room:GetType() == RoomType.ROOM_TREASURE, not room:IsClear()
+    return shared.Room:GetType() == RoomType.ROOM_DEFAULT or shared.Room:GetType() == RoomType.ROOM_TREASURE, not shared.Room:IsClear()
 end

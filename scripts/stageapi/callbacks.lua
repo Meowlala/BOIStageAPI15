@@ -1,3 +1,5 @@
+local shared = require("scripts.stageapi.shared")
+
 StageAPI.LogMinor("Loading Core Callbacks")
 
 StageAPI.NonOverrideMusic = {
@@ -54,7 +56,7 @@ mod:AddCallback(ModCallbacks.MC_POST_UPDATE, function()
     local currentRoom = StageAPI.GetCurrentRoom()
     if currentRoom and currentRoom.Loaded then
         local isClear = currentRoom.IsClear
-        currentRoom.IsClear = room:IsClear()
+        currentRoom.IsClear = shared.Room:IsClear()
         currentRoom.JustCleared = nil
         if not isClear and currentRoom.IsClear then
             currentRoom.ClearCount = currentRoom.ClearCount + 1
@@ -74,8 +76,8 @@ end
 function StageAPI.StoreRoomGrids()
     local roomIndex = StageAPI.GetCurrentRoomID()
     local grids = {}
-    for i = 0, room:GetGridSize() do
-        local grid = room:GetGridEntity(i)
+    for i = 0, shared.Room:GetGridSize() do
+        local grid = shared.Room:GetGridEntity(i)
         if grid and grid.Desc.Type ~= GridEntityType.GRID_WALL and grid.Desc.Type ~= GridEntityType.GRID_DOOR then
             grids[i] = true
         end
@@ -86,17 +88,17 @@ function StageAPI.StoreRoomGrids()
 end
 
 function StageAPI.RemoveExtraGrids(grids)
-    for i = 0, room:GetGridSize() do
+    for i = 0, shared.Room:GetGridSize() do
         if not grids[i] then
-            local grid = room:GetGridEntity(i)
+            local grid = shared.Room:GetGridEntity(i)
             if grid and grid.Desc.Type ~= GridEntityType.GRID_WALL and grid.Desc.Type ~= GridEntityType.GRID_DOOR then
-                room:RemoveGridEntity(i, 0, false)
+                shared.Room:RemoveGridEntity(i, 0, false)
             end
         end
     end
 
     StageAPI.CalledRoomUpdate = true
-    room:Update()
+    shared.Room:Update()
     StageAPI.CalledRoomUpdate = false
 end
 
@@ -118,13 +120,13 @@ mod:AddCallback(ModCallbacks.MC_PRE_USE_ITEM, StageAPI.ReprocessRoomGrids, Colle
 function StageAPI.UseD7()
     local currentRoom = StageAPI.GetCurrentRoom()
     if currentRoom then
-        if room:GetType() == RoomType.ROOM_BOSS then
-            game:MoveToRandomRoom(false, room:GetSpawnSeed())
+        if shared.Room:GetType() == RoomType.ROOM_BOSS then
+            shared.Game:MoveToRandomRoom(false, shared.Room:GetSpawnSeed())
         else
             StageAPI.JustUsedD7 = true
         end
 
-        for _, player in ipairs(players) do
+        for _, player in ipairs(shared.Players) do
             if player:HasCollectible(CollectibleType.COLLECTIBLE_D7) and Input.IsActionTriggered(ButtonAction.ACTION_ITEM, player.ControllerIndex) then
                 player:AnimateCollectible(CollectibleType.COLLECTIBLE_D7, "UseItem", "PlayerPickup")
             end
@@ -138,7 +140,7 @@ mod:AddCallback(ModCallbacks.MC_PRE_USE_ITEM, StageAPI.UseD7, CollectibleType.CO
 
 mod:AddCallback(ModCallbacks.MC_PRE_USE_ITEM, function()
     if StageAPI.InNewStage() then
-        for _, player in ipairs(players) do
+        for _, player in ipairs(shared.Players) do
             if player:HasCollectible(CollectibleType.COLLECTIBLE_FORGET_ME_NOW) and Input.IsActionTriggered(ButtonAction.ACTION_ITEM, player.ControllerIndex) then
                 player:RemoveCollectible(CollectibleType.COLLECTIBLE_FORGET_ME_NOW)
             end
@@ -178,8 +180,8 @@ function StageAPI.ShouldOverrideRoom(inStartingRoom, currentRoom)
     if currentRoom then
         return true
     elseif StageAPI.InNewStage() then
-        local shouldGenerateDefaultRoom = (StageAPI.CurrentStage.Rooms and StageAPI.CurrentStage.Rooms[room:GetType()])
-        local shouldGenerateBossRoom = (StageAPI.CurrentStage.Bosses and room:GetType() == RoomType.ROOM_BOSS)
+        local shouldGenerateDefaultRoom = (StageAPI.CurrentStage.Rooms and StageAPI.CurrentStage.Rooms[shared.Room:GetType()])
+        local shouldGenerateBossRoom = (StageAPI.CurrentStage.Bosses and shared.Room:GetType() == RoomType.ROOM_BOSS)
         local shouldGenerateStartingRoom = StageAPI.CurrentStage.StartingRooms
 
         if (not inStartingRoom and (shouldGenerateDefaultRoom or shouldGenerateBossRoom)) or (inStartingRoom and shouldGenerateStartingRoom) then
@@ -199,11 +201,11 @@ end)
 StageAPI.AddCallback("StageAPI", "POST_SELECT_BOSS_MUSIC", 0, function(stage, usingMusic, isCleared)
     if not isCleared then
         if stage.Name == "Necropolis" or stage.Alias == "Necropolis" then
-            if room:IsCurrentRoomLastBoss() and (level:GetCurses() & LevelCurse.CURSE_OF_LABYRINTH ~= 0 or level:GetStage() == LevelStage.STAGE3_2) then
+            if shared.Room:IsCurrentRoomLastBoss() and (shared.Level:GetCurses() & LevelCurse.CURSE_OF_LABYRINTH ~= 0 or shared.Level:GetStage() == LevelStage.STAGE3_2) then
                 return Music.MUSIC_MOM_BOSS
             end
         elseif stage.Name == "Utero" or stage.Alias == "Utero" then
-            if room:IsCurrentRoomLastBoss() and (level:GetCurses() & LevelCurse.CURSE_OF_LABYRINTH ~= 0 or level:GetStage() == LevelStage.STAGE4_2) then
+            if shared.Room:IsCurrentRoomLastBoss() and (shared.Level:GetCurses() & LevelCurse.CURSE_OF_LABYRINTH ~= 0 or shared.Level:GetStage() == LevelStage.STAGE4_2) then
                 return Music.MUSIC_MOMS_HEART_BOSS
             end
         end
@@ -222,7 +224,7 @@ function StageAPI.CheckStageTrapdoor(grid, index)
     end
 
     local entering = false
-    for _, player in ipairs(players) do
+    for _, player in ipairs(shared.Players) do
         local dist = player.Position:DistanceSquared(grid.Position)
         local size = player.Size + 32
         if dist < size * size then
@@ -236,8 +238,8 @@ function StageAPI.CheckStageTrapdoor(grid, index)
     local currStage = StageAPI.CurrentStage or {}
     local nextStage = StageAPI.CallCallbacks("PRE_SELECT_NEXT_STAGE", true, StageAPI.CurrentStage) or currStage.NextStage
     if nextStage and not currStage.OverridingTrapdoors then
-        StageAPI.SpawnCustomTrapdoor(room:GetGridPosition(index), nextStage, grid:GetSprite():GetFilename(), 32, true)
-        room:RemoveGridEntity(index, 0, false)
+        StageAPI.SpawnCustomTrapdoor(shared.Room:GetGridPosition(index), nextStage, grid:GetSprite():GetFilename(), 32, true)
+        shared.Room:RemoveGridEntity(index, 0, false)
     end
 end
 
@@ -246,18 +248,18 @@ StageAPI.LastBackdropType = nil
 StageAPI.Music = MusicManager()
 StageAPI.MusicRNG = RNG()
 mod:AddCallback(ModCallbacks.MC_POST_RENDER, function()
-    if game:GetFrameCount() <= 0 then
+    if shared.Game:GetFrameCount() <= 0 then
         return
     end
 
     local currentListIndex = StageAPI.GetCurrentRoomID()
-    local stage = level:GetStage()
-    local stype = level:GetStageType()
+    local stage = shared.Level:GetStage()
+    local stype = shared.Level:GetStageType()
     local updatedGrids
     local gridCount = 0
     local pits = {}
-    for i = 0, room:GetGridSize() do
-        local grid = room:GetGridEntity(i)
+    for i = 0, shared.Room:GetGridSize() do
+        local grid = shared.Room:GetGridEntity(i)
         if grid then
             if grid.Desc.Type == GridEntityType.GRID_PIT then
                 pits[#pits + 1] = {grid, i}
@@ -281,13 +283,13 @@ mod:AddCallback(ModCallbacks.MC_POST_RENDER, function()
         StageAPI.PreviousGridCount = gridCount
     end
 
-    if sfx:IsPlaying(SoundEffect.SOUND_CASTLEPORTCULLIS) and not (StageAPI.CurrentStage and StageAPI.CurrentStage.BossMusic and StageAPI.CurrentStage.BossMusic.Intro) then
-        sfx:Stop(SoundEffect.SOUND_CASTLEPORTCULLIS)
-        sfx:Play(StageAPI.S.BossIntro, 1, 0, false, 1)
+    if shared.Sfx:IsPlaying(SoundEffect.SOUND_CASTLEPORTCULLIS) and not (StageAPI.CurrentStage and StageAPI.CurrentStage.BossMusic and StageAPI.CurrentStage.BossMusic.Intro) then
+        shared.Sfx:Stop(SoundEffect.SOUND_CASTLEPORTCULLIS)
+        shared.Sfx:Play(StageAPI.S.BossIntro, 1, 0, false, 1)
     end
 
     if StageAPI.InOverriddenStage() and StageAPI.CurrentStage then
-        local roomType = room:GetType()
+        local roomType = shared.Room:GetType()
         local rtype = StageAPI.GetCurrentRoomType()
         local grids
 
@@ -349,7 +351,7 @@ mod:AddCallback(ModCallbacks.MC_POST_RENDER, function()
         StageAPI.RoomRendered = true
     end
 
-    local backdropType = room:GetBackdropType()
+    local backdropType = shared.Room:GetBackdropType()
     if StageAPI.LastBackdropType ~= backdropType then
         local currentRoom = StageAPI.GetCurrentRoom()
         local usingGfx
@@ -375,7 +377,7 @@ mod:AddCallback(ModCallbacks.MC_POST_RENDER, function()
 
     if StageAPI.RoomNamesEnabled then
         local currentRoom = StageAPI.GetCurrentRoom()
-        local roomDescriptorData = level:GetCurrentRoomDesc().Data
+        local roomDescriptorData = shared.Level:GetCurrentRoomDesc().Data
         local scale = 0.5
         local base, custom
 
@@ -402,12 +404,12 @@ mod:AddCallback(ModCallbacks.MC_POST_RENDER, function()
 
     if StageAPI.GlobalCommandMode then
         _G.slog = StageAPI.Log
-        _G.game = game
-        _G.level = level
-        _G.room = room
-        _G.desc = level:GetRoomByIdx(level:GetCurrentRoomIndex())
+        _G.game = shared.Game
+        _G.level = shared.Level
+        _G.room = shared.Room
+        _G.desc = shared.Level:GetRoomByIdx(shared.Level:GetCurrentRoomIndex())
         _G.apiroom = StageAPI.GetCurrentRoom()
-        _G.player = players[1]
+        _G.player = shared.Players[1]
     end
 end)
 
@@ -477,12 +479,12 @@ end
 function StageAPI.GenerateBaseRoom(roomDesc)
     local baseFloorInfo = StageAPI.GetBaseFloorInfo()
     local xlFloorInfo
-    if level:GetCurses() & LevelCurse.CURSE_OF_LABYRINTH ~= 0 then
-        xlFloorInfo = StageAPI.GetBaseFloorInfo(level:GetStage() + 1)
+    if shared.Level:GetCurses() & LevelCurse.CURSE_OF_LABYRINTH ~= 0 then
+        xlFloorInfo = StageAPI.GetBaseFloorInfo(shared.Level:GetStage() + 1)
     end
 
-    local lastBossRoomListIndex = level:GetLastBossRoomListIndex()
-    local backwards = game:GetStateFlag(GameStateFlag.STATE_BACKWARDS_PATH_INIT) or game:GetStateFlag(GameStateFlag.STATE_BACKWARDS_PATH)
+    local lastBossRoomListIndex = shared.Level:GetLastBossRoomListIndex()
+    local backwards = shared.Game:GetStateFlag(GameStateFlag.STATE_BACKWARDS_PATH_INIT) or shared.Game:GetStateFlag(GameStateFlag.STATE_BACKWARDS_PATH)
     local dimension = StageAPI.GetDimension(roomDesc)
     local newRoom
     if baseFloorInfo and baseFloorInfo.HasCustomBosses and roomDesc.Data.Type == RoomType.ROOM_BOSS and dimension == 0 and not backwards then
@@ -503,7 +505,7 @@ function StageAPI.GenerateBaseRoom(roomDesc)
                 })
 
                 if roomDesc.Data.Subtype == 82 or roomDesc.Data.Subtype == 83 then -- Remove Great Gideon special health bar & Hornfel room properties
-                    local overwritableRoomDesc = level:GetRoomByIdx(roomDesc.SafeGridIndex, dimension)
+                    local overwritableRoomDesc = shared.Level:GetRoomByIdx(roomDesc.SafeGridIndex, dimension)
                     local replaceData = StageAPI.GetGotoDataForTypeShape(RoomType.ROOM_BOSS, roomDesc.Data.Shape)
                     overwritableRoomDesc.Data = replaceData
                 end
@@ -538,14 +540,14 @@ function StageAPI.GenerateBaseRoom(roomDesc)
         if roomDesc.Data.Type == RoomType.ROOM_BOSS and baseFloorInfo.HasMirrorLevel and dimension == 0 then
             StageAPI.Log("Mirroring!")
             local mirroredRoom = newRoom:Copy(roomDesc)
-            local mirroredDesc = level:GetRoomByIdx(roomDesc.SafeGridIndex, 1)
+            local mirroredDesc = shared.Level:GetRoomByIdx(roomDesc.SafeGridIndex, 1)
             StageAPI.SetLevelRoom(mirroredRoom, mirroredDesc.ListIndex, 1)
         end
     end
 end
 
 function StageAPI.GenerateBaseLevel()
-    local roomsList = level:GetRooms()
+    local roomsList = shared.Level:GetRooms()
     for i = 0, roomsList.Size - 1 do
         local roomDesc = roomsList:Get(i)
         if roomDesc then
@@ -564,7 +566,7 @@ local uniqueBossDropRoomSubtypes = {
 
 -- Re-randomize fixed boss drops in StageAPI boss rooms
 StageAPI.AddCallback("StageAPI", "POST_ROOM_CLEAR", 0, function()
-    if room:GetType() == RoomType.ROOM_BOSS then
+    if shared.Room:GetType() == RoomType.ROOM_BOSS then
         local currentRoom = StageAPI.GetCurrentRoom()
         local collectibles = Isaac.FindByType(5, 100, -1)
         local spawnedFromBoss = {}
@@ -579,7 +581,7 @@ StageAPI.AddCallback("StageAPI", "POST_ROOM_CLEAR", 0, function()
                 local pickup = collectible:ToPickup()
                 local alreadyChanged = StageAPI.CallCallbacks("PRE_STAGEAPI_SELECT_BOSS_ITEM", true, pickup, currentRoom)
                 if not alreadyChanged then
-                    local roomData = level:GetCurrentRoomDesc().Data
+                    local roomData = shared.Level:GetCurrentRoomDesc().Data
                     if StageAPI.IsIn(uniqueBossDropRoomSubtypes, roomData.Subtype) then
                         pickup:Morph(collectible.Type, collectible.Variant, 0, false, true, false)
                     end
@@ -592,7 +594,7 @@ end)
 StageAPI.PreviousBaseLevelLayout = {}
 
 function StageAPI.DetectBaseLayoutChanges(generateNewRooms)
-    local roomsList = level:GetRooms()
+    local roomsList = shared.Level:GetRooms()
     local changedRooms = {}
     for i = 0, roomsList.Size - 1 do
         local roomDesc = roomsList:Get(i)
@@ -613,7 +615,7 @@ function StageAPI.DetectBaseLayoutChanges(generateNewRooms)
             if not previous and generateNewRooms then
                 if StageAPI.CurrentStage then
                     if StageAPI.CurrentStage.PregenerationEnabled then
-                        StageAPI.CurrentStage:GenerateRoom(roomDesc, roomDesc.SafeGridIndex == level:GetStartingRoomIndex(), true)
+                        StageAPI.CurrentStage:GenerateRoom(roomDesc, roomDesc.SafeGridIndex == shared.Level:GetStartingRoomIndex(), true)
                     end
                 else
                     StageAPI.GenerateBaseRoom(roomDesc)
@@ -646,10 +648,10 @@ function StageAPI.DetectBaseLayoutChanges(generateNewRooms)
         else
             StageAPI.SetLevelRoom(nil, changed.ListIndex, dimension)
             if generateNewRooms then
-                local roomDesc = level:GetRooms():Get(changed.ListIndex)
+                local roomDesc = shared.Level:GetRooms():Get(changed.ListIndex)
                 if StageAPI.CurrentStage then
                     if StageAPI.CurrentStage.PregenerationEnabled then
-                        StageAPI.CurrentStage:GenerateRoom(roomDesc, roomDesc.SafeGridIndex == level:GetStartingRoomIndex(), true)
+                        StageAPI.CurrentStage:GenerateRoom(roomDesc, roomDesc.SafeGridIndex == shared.Level:GetStartingRoomIndex(), true)
                     end
                 else
                     StageAPI.GenerateBaseRoom(roomDesc)
@@ -677,21 +679,21 @@ mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, function()
         StageAPI.DoubleTransitioning = true
         local defaultGridRoom, alternateGridRoom, defaultLargeGridRoom, alternateLargeGridRoom = StageAPI.GetExtraRoomBaseGridRooms(extraRoomBaseType == RoomType.ROOM_BOSS)
         local targetRoom
-        if level:GetCurrentRoomIndex() == defaultGridRoom then
+        if shared.Level:GetCurrentRoomIndex() == defaultGridRoom then
             targetRoom = alternateGridRoom
         else
             targetRoom = defaultGridRoom
         end
 
-        local targetRoomDesc = level:GetRoomByIdx(targetRoom)
-        local targetGotoData, targetGotoLockedData = StageAPI.GetGotoDataForTypeShape(room:GetType(), room:GetRoomShape())
-        if targetGotoLockedData and StageAPI.DoorOneSlots[level.EnterDoor] then
+        local targetRoomDesc = shared.Level:GetRoomByIdx(targetRoom)
+        local targetGotoData, targetGotoLockedData = StageAPI.GetGotoDataForTypeShape(shared.Room:GetType(), shared.Room:GetRoomShape())
+        if targetGotoLockedData and StageAPI.DoorOneSlots[shared.Level.EnterDoor] then
             targetRoomDesc.Data = targetGotoLockedData
         else
             targetRoomDesc.Data = targetGotoData
         end
 
-        level:ChangeRoom(targetRoom)
+        shared.Level:ChangeRoom(targetRoom)
 
         return
     end
@@ -719,7 +721,7 @@ mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, function()
         StageAPI.CurrentLevelMapRoomID = nil
     end
 
-    if (inStartingRoom and StageAPI.GetDimension() == 0 and room:IsFirstVisit()) or (isNewStage and not StageAPI.CurrentStage) then
+    if (inStartingRoom and StageAPI.GetDimension() == 0 and shared.Room:IsFirstVisit()) or (isNewStage and not StageAPI.CurrentStage) then
         if inStartingRoom then
             StageAPI.RoomGrids = {}
             local maintainGrids = {}
@@ -777,11 +779,11 @@ mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, function()
                 StageAPI.CurrentStage = StageAPI.NextStage
             end
 
-            if level:GetCurses() & LevelCurse.CURSE_OF_LABYRINTH ~= 0 and StageAPI.CurrentStage.XLStage then
+            if shared.Level:GetCurses() & LevelCurse.CURSE_OF_LABYRINTH ~= 0 and StageAPI.CurrentStage.XLStage then
                 StageAPI.CurrentStage = StageAPI.CurrentStage.XLStage
             end
 
-            -- shared.Game:GetHUD():ShowItemText(StageAPI.CurrentStage:GetDisplayName(), level:GetCurseName(), level:GetCurses() > 0)
+            -- shared.Game:GetHUD():ShowItemText(StageAPI.CurrentStage:GetDisplayName(), shared.Level:GetCurseName(), shared.Level:GetCurses() > 0)
 
             StageAPI.CurrentStage:GenerateLevel()
         else
@@ -811,8 +813,8 @@ mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, function()
 
     if StageAPI.InExtraRoom() then
         for i = 0, 7 do
-            if room:GetDoor(i) then
-                room:RemoveDoor(i)
+            if shared.Room:GetDoor(i) then
+                shared.Room:RemoveDoor(i)
             end
         end
 
@@ -820,7 +822,7 @@ mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, function()
         currentRoom:Load(true)
     elseif StageAPI.InNewStage() then
         if not currentRoom and StageAPI.CurrentStage.GenerateRoom then
-            local newRoom, newBoss = StageAPI.CurrentStage:GenerateRoom(level:GetCurrentRoomDesc(), inStartingRoom, false)
+            local newRoom, newBoss = StageAPI.CurrentStage:GenerateRoom(shared.Level:GetCurrentRoomDesc(), inStartingRoom, false)
             if newRoom then
                 StageAPI.SetCurrentRoom(newRoom)
                 newRoom:Load()
@@ -849,11 +851,11 @@ mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, function()
         currentRoom:Load()
     end
 
-    if boss and not room:IsClear() then
+    if boss and not shared.Room:IsClear() then
         if not boss.IsMiniboss then
             StageAPI.PlayBossAnimation(boss)
         else
-            local text = players[1]:GetName() .. " VS " .. boss.Name
+            local text = shared.Players[1]:GetName() .. " VS " .. boss.Name
 
             local ret = StageAPI.CallCallbacks("PRE_PLAY_MINIBOSS_STREAK", true, currentRoom, boss, text)
 
@@ -882,13 +884,13 @@ mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, function()
     end
 
     if StageAPI.ForcePlayerDoorSlot or StageAPI.ForcePlayerNewRoomPosition then
-        local pos = StageAPI.ForcePlayerNewRoomPosition or room:GetClampedPosition(room:GetDoorSlotPosition(StageAPI.ForcePlayerDoorSlot), 16)
-        for _, player in ipairs(players) do
+        local pos = StageAPI.ForcePlayerNewRoomPosition or shared.Room:GetClampedPosition(shared.Room:GetDoorSlotPosition(StageAPI.ForcePlayerDoorSlot), 16)
+        for _, player in ipairs(shared.Players) do
             player.Position = pos
         end
 
         if StageAPI.ForcePlayerDoorSlot then
-            level.EnterDoor = StageAPI.ForcePlayerDoorSlot
+            shared.Level.EnterDoor = StageAPI.ForcePlayerDoorSlot
         end
 
         StageAPI.ForcePlayerDoorSlot = nil
@@ -898,7 +900,7 @@ mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, function()
         local validDoors = {}
         for _, door in ipairs(currentRoom.Layout.Doors) do
             if door.Slot then
-                if not door.Exists and level.EnterDoor == door.Slot then
+                if not door.Exists and shared.Level.EnterDoor == door.Slot then
                     invalidEntrance = true
                 elseif door.Exists then
                     validDoors[#validDoors + 1] = door.Slot
@@ -908,18 +910,18 @@ mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, function()
 
         if invalidEntrance and #validDoors > 0 and not currentRoom.Data.PreventDoorFix then
             local changeEntrance = validDoors[StageAPI.Random(1, #validDoors)]
-            level.EnterDoor = changeEntrance
-            for _, player in ipairs(players) do
-                player.Position = room:GetClampedPosition(room:GetDoorSlotPosition(changeEntrance), 16)
+            shared.Level.EnterDoor = changeEntrance
+            for _, player in ipairs(shared.Players) do
+                player.Position = shared.Room:GetClampedPosition(shared.Room:GetDoorSlotPosition(changeEntrance), 16)
             end
         end
     end
 
     StageAPI.TransitioningToExtraRoom = false
 
-    local stageType = level:GetStageType()
+    local stageType = shared.Level:GetStageType()
     if not StageAPI.InNewStage() and stageType ~= StageType.STAGETYPE_REPENTANCE and stageType ~= StageType.STAGETYPE_REPENTANCE_B then
-        local stage = level:GetStage()
+        local stage = shared.Level:GetStage()
         if stage == LevelStage.STAGE2_1 or stage == LevelStage.STAGE2_2 then
             StageAPI.ChangeStageShadow("stageapi/floors/catacombs/overlays/", 5)
         elseif stage == LevelStage.STAGE3_1 or stage == LevelStage.STAGE3_2 then
@@ -954,7 +956,7 @@ mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, function()
 
     StageAPI.CallCallbacks("POST_CHANGE_ROOM_GFX", false, currentRoom, usingGfx, false)
 
-    StageAPI.LastBackdropType = room:GetBackdropType()
+    StageAPI.LastBackdropType = shared.Room:GetBackdropType()
     StageAPI.RoomRendered = false
 
     StageAPI.CallCallbacks("POST_STAGEAPI_NEW_ROOM", false, justGenerated)
@@ -1084,11 +1086,11 @@ mod:AddCallback(ModCallbacks.MC_EXECUTE_CMD, function(_, cmd, params)
             end
         end
     elseif cmd == "roomtest" then
-        local roomsList = level:GetRooms()
+        local roomsList = shared.Level:GetRooms()
         for i = 0, roomsList.Size - 1 do
             local roomDesc = roomsList:Get(i)
             if roomDesc and roomDesc.Data.Type == RoomType.ROOM_DEFAULT then
-                game:ChangeRoom(roomDesc.SafeGridIndex)
+                shared.Game:ChangeRoom(roomDesc.SafeGridIndex)
             end
         end
     elseif cmd == "clearroom" then
@@ -1096,7 +1098,7 @@ mod:AddCallback(ModCallbacks.MC_EXECUTE_CMD, function(_, cmd, params)
     elseif cmd == "superclearroom" then
         StageAPI.ClearRoomLayout(false, true, true, true, nil, true, true)
     elseif cmd == "crashit" then
-        game:ShowHallucination(0, 0)
+        shared.Game:ShowHallucination(0, 0)
     elseif cmd == "commandglobals" then
         if StageAPI.GlobalCommandMode then
             Isaac.ConsoleOutput("Disabled StageAPI global command mode")
@@ -1109,7 +1111,7 @@ mod:AddCallback(ModCallbacks.MC_EXECUTE_CMD, function(_, cmd, params)
             _G.player = nil
             StageAPI.GlobalCommandMode = nil
         else
-            Isaac.ConsoleOutput("Enabled StageAPI global command mode\nslog: Prints any number of args, parses some userdata\ngame, room, level: Correspond to respective objects\nplayer: Corresponds to player 0\ndesc: Current room descriptor, mutable\napiroom: Current StageAPI room, if applicable\nFor use with the lua command!")
+            Isaac.ConsoleOutput("Enabled StageAPI global command mode\nslog: Prints any number of args, parses some userdata\ngame, room, shared.Level: Correspond to respective objects\nplayer: Corresponds to player 0\ndesc: Current room descriptor, mutable\napiroom: Current StageAPI room, if applicable\nFor use with the lua command!")
             StageAPI.GlobalCommandMode = true
         end
     end
@@ -1133,7 +1135,7 @@ mod:AddCallback(ModCallbacks.MC_PRE_ROOM_ENTITY_SPAWN, function(_, t, v, s, inde
 
     if StageAPI.ShouldOverrideRoom() and (t >= 1000 or StageAPI.RoomEntitySpawnGridBlacklist[t] or StageAPI.IsMetadataEntity(t, v)) and not StageAPI.ActiveTransitionToExtraRoom then
         local shouldReturn
-        if room:IsFirstVisit() or StageAPI.IsMetadataEntity(t, v) then
+        if shared.Room:IsFirstVisit() or StageAPI.IsMetadataEntity(t, v) then
             shouldReturn = true
         else
             local currentListIndex = StageAPI.GetCurrentRoomID()

@@ -1,3 +1,5 @@
+local shared = require("scripts.stageapi.shared")
+
 StageAPI.LogMinor("Loading Challenge Room / Greed Mode waves")
 
 --[[
@@ -26,9 +28,9 @@ StageAPI.Challenge = {
 }
 
 local function checkShouldRemoveGreedEntity()
-    if game:IsGreedMode() then
-        if level.GreedModeWave ~= StageAPI.Challenge.LastGreedWave then
-            StageAPI.Challenge.LastGreedWave = level.GreedModeWave
+    if shared.Game:IsGreedMode() then
+        if shared.Level.GreedModeWave ~= StageAPI.Challenge.LastGreedWave then
+            StageAPI.Challenge.LastGreedWave = shared.Level.GreedModeWave
             StageAPI.Challenge.WaveChanged = true
         end
 
@@ -52,8 +54,8 @@ end
 
 mod:AddCallback(ModCallbacks.MC_POST_NPC_INIT, function(_, npc)
     local removeEntity
-    if room:GetType() == RoomType.ROOM_CHALLENGE and not StageAPI.Challenge.WaveSpawnFrame
-    and room:IsAmbushActive() and not room:IsAmbushDone() then
+    if shared.Room:GetType() == RoomType.ROOM_CHALLENGE and not StageAPI.Challenge.WaveSpawnFrame
+    and shared.Room:IsAmbushActive() and not shared.Room:IsAmbushDone() then
         if not (npc:HasEntityFlags(EntityFlag.FLAG_FRIENDLY) or npc:HasEntityFlags(EntityFlag.FLAG_PERSISTENT) or npc:HasEntityFlags(EntityFlag.FLAG_NO_TARGET)) then
             local preventCounting
             for _, entity in ipairs(Isaac.FindInRadius(Vector.Zero, 9999, EntityPartition.ENEMY)) do
@@ -93,8 +95,8 @@ mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, function()
     StageAPI.Challenge.WaveChanged = nil
     StageAPI.Challenge.WaveSpawnFrame = nil
     StageAPI.Challenge.WaveSubtype = nil
-    StageAPI.Challenge.LastGreedWave = level.GreedModeWave
-    StageAPI.ChallengeWaveRNG:SetSeed(room:GetSpawnSeed(), 0)
+    StageAPI.Challenge.LastGreedWave = shared.Level.GreedModeWave
+    StageAPI.ChallengeWaveRNG:SetSeed(shared.Room:GetSpawnSeed(), 0)
 
     local currentRoom = StageAPI.GetCurrentRoom()
     if currentRoom and currentRoom.Data.ChallengeWaveIDs then
@@ -103,7 +105,7 @@ mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, function()
 end)
 
 mod:AddCallback(ModCallbacks.MC_POST_NEW_LEVEL, function()
-    StageAPI.Challenge.LastGreedWave = level.GreedModeWave
+    StageAPI.Challenge.LastGreedWave = shared.Level.GreedModeWave
 end)
 
 -- prevent waves of the wrong subtype from appearing
@@ -116,13 +118,13 @@ StageAPI.AddCallback("StageAPI", "POST_CHECK_VALID_ROOM", 0, function(layout)
 end)
 
 mod:AddCallback(ModCallbacks.MC_POST_UPDATE, function()
-    if StageAPI.Challenge.WaveSpawnFrame and game:GetFrameCount() > StageAPI.Challenge.WaveSpawnFrame then
+    if StageAPI.Challenge.WaveSpawnFrame and shared.Game:GetFrameCount() > StageAPI.Challenge.WaveSpawnFrame then
         StageAPI.Challenge.WaveSpawnFrame = nil
     end
 
     if StageAPI.Challenge.WaveChanged then
         StageAPI.Challenge.WaveChanged = false
-        if room:GetType() ~= RoomType.ROOM_CHALLENGE and not game:IsGreedMode() then
+        if shared.Room:GetType() ~= RoomType.ROOM_CHALLENGE and not shared.Game:IsGreedMode() then
             StageAPI.Challenge.WaveChanged = false
             StageAPI.Challenge.WaveSubtype = nil
             return
@@ -130,30 +132,30 @@ mod:AddCallback(ModCallbacks.MC_POST_UPDATE, function()
 
         if StageAPI.CurrentStage then
             local useWaves
-            if game:IsGreedMode() and StageAPI.CurrentStage.GreedWaves then
+            if shared.Game:IsGreedMode() and StageAPI.CurrentStage.GreedWaves then
                 useWaves = StageAPI.CurrentStage.GreedWaves.Normal
-                if game.Difficulty == Difficulty.DIFFICULTY_GREED then
-                    if level.GreedModeWave > 8 and level.GreedModeWave < 11 then
+                if shared.Game.Difficulty == Difficulty.DIFFICULTY_GREED then
+                    if shared.Level.GreedModeWave > 8 and shared.Level.GreedModeWave < 11 then
                         useWaves = StageAPI.CurrentStage.GreedWaves.Boss
-                    elseif level.GreedModeWave == 11 then
+                    elseif shared.Level.GreedModeWave == 11 then
                         useWaves = StageAPI.CurrentStage.GreedWaves.Devil
                     end
-                elseif game.Difficulty == Difficulty.DIFFICULTY_GREEDIER then
-                    if level.GreedModeWave > 9 and level.GreedModeWave < 12 then
+                elseif shared.Game.Difficulty == Difficulty.DIFFICULTY_GREEDIER then
+                    if shared.Level.GreedModeWave > 9 and shared.Level.GreedModeWave < 12 then
                         useWaves = StageAPI.CurrentStage.GreedWaves.Boss
-                    elseif level.GreedModeWave == 12 then
+                    elseif shared.Level.GreedModeWave == 12 then
                         useWaves = StageAPI.CurrentStage.GreedWaves.Devil
                     end
                 end
-            elseif room:GetType() == RoomType.ROOM_CHALLENGE and StageAPI.CurrentStage.ChallengeWaves then
+            elseif shared.Room:GetType() == RoomType.ROOM_CHALLENGE and StageAPI.CurrentStage.ChallengeWaves then
                 useWaves = StageAPI.CurrentStage.ChallengeWaves.Normal
-                if level:HasBossChallenge() then
+                if shared.Level:HasBossChallenge() then
                     useWaves = StageAPI.CurrentStage.ChallengeWaves.Boss
                 end
             end
 
             if useWaves then
-                StageAPI.Challenge.WaveSpawnFrame = game:GetFrameCount()
+                StageAPI.Challenge.WaveSpawnFrame = shared.Game:GetFrameCount()
                 local currentRoom = StageAPI.GetCurrentRoom()
 
                 local challengeWaveIDs
@@ -168,7 +170,7 @@ mod:AddCallback(ModCallbacks.MC_POST_UPDATE, function()
                 end
 
                 local seed = StageAPI.ChallengeWaveRNG:Next()
-                local wave = StageAPI.ChooseRoomLayout(useWaves, seed, room:GetRoomShape(), room:GetType(), false, false, nil, challengeWaveIDs)
+                local wave = StageAPI.ChooseRoomLayout(useWaves, seed, shared.Room:GetRoomShape(), shared.Room:GetType(), false, false, nil, challengeWaveIDs)
                 if currentRoom then
                     table.insert(currentRoom.Data.ChallengeWaveIDs, wave.StageAPIID)
                 end
@@ -182,7 +184,7 @@ mod:AddCallback(ModCallbacks.MC_POST_UPDATE, function()
             end
         end
 
-        if game:IsGreedMode() then
+        if shared.Game:IsGreedMode() then
             StageAPI.CallCallbacks("GREED_WAVE_CHANGED")
         else
             StageAPI.CallCallbacks("CHALLENGE_WAVE_CHANGED")

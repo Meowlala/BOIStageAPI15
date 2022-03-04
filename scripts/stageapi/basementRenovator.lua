@@ -1,3 +1,5 @@
+local shared = require("scripts.stageapi.shared")
+
 StageAPI.LogMinor("Loading BR Compatibility")
 
 StageAPI.InTestMode = false
@@ -63,7 +65,7 @@ elseif brTestRooms then
 
         if not StageAPI.OverrideTestRoom then return end
 
-        if BasementRenovator.InTestStage() and room:IsFirstVisit() then
+        if BasementRenovator.InTestStage() and shared.Room:IsFirstVisit() then
             local brRoom = BasementRenovator.InTestRoom()
             if brRoom then
                 return brRoom
@@ -74,7 +76,7 @@ elseif brTestRooms then
     StageAPI.AddCallback("StageAPI", "PRE_STAGEAPI_NEW_ROOM_GENERATION", 0, function()
         local brRoom = GetBRRoom()
         if brRoom then
-            local testRoom = StageAPI.LevelRoom("BRTest-" .. (brRoom.Index or 1), nil, room:GetSpawnSeed(), brRoom.Shape, brRoom.Type, nil, nil, nil, nil, nil, StageAPI.GetCurrentRoomID())
+            local testRoom = StageAPI.LevelRoom("BRTest-" .. (brRoom.Index or 1), nil, shared.Room:GetSpawnSeed(), brRoom.Shape, brRoom.Type, nil, nil, nil, nil, nil, StageAPI.GetCurrentRoomID())
             return testRoom
         end
     end)

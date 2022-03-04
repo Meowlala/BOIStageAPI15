@@ -1,3 +1,5 @@
+local shared = require("scripts.stageapi.shared")
+
 StageAPI.LogMinor("Loading Miscellaneous Functions")
 
 -- Takes whether or not there is a pit in each adjacent space, returns frame to set pit sprite to.
@@ -107,8 +109,8 @@ function StageAPI.GetIndicesWithEntity(t, v, s, entities)
 end
 
 function StageAPI.GetPitFramesForLayoutEntities(t, v, s, entities, width, height, hasExtraFrames)
-    width = width or room:GetGridWidth()
-    height = height or room:GetGridHeight()
+    width = width or shared.Room:GetGridWidth()
+    height = height or shared.Room:GetGridHeight()
     local indicesWithEntity = StageAPI.GetIndicesWithEntity(t, v, s, entities)
 
     return StageAPI.GetPitFramesFromIndices(indicesWithEntity, width, height, hasExtraFrames)
