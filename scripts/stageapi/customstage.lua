@@ -322,7 +322,7 @@ end
 
 function StageAPI.CustomStage:GetPlayingMusic()
     local roomType = shared.Room:GetType()
-    local id = StageAPI.Music:GetCurrentMusicID()
+    local id = shared.Music:GetCurrentMusicID()
     if roomType == RoomType.ROOM_BOSS then
         if self.BossMusic then
             local music = self.BossMusic

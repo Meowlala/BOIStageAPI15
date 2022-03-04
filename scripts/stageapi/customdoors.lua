@@ -463,10 +463,10 @@ mod:AddCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, function(_, door)
                     end
 
                     if trigger.Jingle then
-                        local currentMusic = StageAPI.Music:GetCurrentMusicID()
-                        StageAPI.Music:Play(trigger.Jingle, 1)
-                        StageAPI.Music:UpdateVolume()
-                        StageAPI.Music:Queue(currentMusic)
+                        local currentMusic = shared.Music:GetCurrentMusicID()
+                        shared.Music:Play(trigger.Jingle, 1)
+                        shared.Music:UpdateVolume()
+                        shared.Music:Queue(currentMusic)
                     end
 
                     if trigger.Particle then

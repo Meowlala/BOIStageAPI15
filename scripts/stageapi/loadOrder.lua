@@ -14,6 +14,7 @@ return {
     "scripts.stageapi.transitions",
     "scripts.stageapi.altRockOverride",
     "scripts.stageapi.callbacks",
+    "scripts.stageapi.commands",
     "scripts.stageapi.saveSystem",
     "scripts.stageapi.library",
     "scripts.stageapi.roomEditorFeatures",

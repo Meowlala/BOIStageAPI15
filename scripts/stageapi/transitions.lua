@@ -141,7 +141,7 @@ function StageAPI.PlayTransitionAnimationManual(portrait, icon, ground, bg, tran
     transitionmusic = transitionmusic or Music.MUSIC_JINGLE_NIGHTMARE
 
     if queue ~= false then
-        queue = queue or StageAPI.Music:GetCurrentMusicID()
+        queue = queue or shared.Music:GetCurrentMusicID()
     end
 
     StageAPI.TransitionAnimation:ReplaceSpritesheet(3, ground)
@@ -157,11 +157,11 @@ function StageAPI.PlayTransitionAnimationManual(portrait, icon, ground, bg, tran
     StageAPI.TransitionAnimation:LoadGraphics()
     StageAPI.TransitionAnimation:Play("Intro", true)
 
-    StageAPI.Music:Play(transitionmusic, 0)
-    StageAPI.Music:UpdateVolume()
+    shared.Music:Play(transitionmusic, 0)
+    shared.Music:UpdateVolume()
 
     if queue ~= false then
-        StageAPI.Music:Queue(queue)
+        shared.Music:Queue(queue)
     end
 end
 
