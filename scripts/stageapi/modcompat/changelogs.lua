@@ -1,3 +1,4 @@
+local mod = require("scripts.stageapi.mod")
 
 local addedChangelogs
 local latestChangelog

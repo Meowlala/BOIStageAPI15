@@ -1,4 +1,5 @@
 local shared = require("scripts.stageapi.shared")
+local mod = require("scripts.stageapi.mod")
 
 StageAPI.LevelMaps = {}
 StageAPI.DefaultLevelMapID = nil

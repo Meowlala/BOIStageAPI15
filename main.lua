@@ -1,4 +1,4 @@
-local mod = RegisterMod("StageAPI", 1)
+local mod = require("scripts.stageapi.mod")
 
 --[[ FUNCTIONALITY
 
@@ -474,90 +474,8 @@ if not StageAPI then
     StageAPI = {}
 end
 
-do -- Core Definitions
-
-end
-
-do -- Core Functions
-
-end
-
-do -- Overlays
-
-end
-
-do -- RoomsList
-
-end
-
-do -- Custom Grid Entities
-
-end
-
-do -- Extra Rooms
-
-end
-
-do -- Custom Doors
-
-end
-
-do -- GridGfx
-
-end
-
-do -- Backdrop & RoomGfx
-
-end
-
-do -- Custom Stage
-
-end
-
-do -- Definitions
-
-end
-
-do -- Bosses
-end
-
-do -- Transition
-end
-
-do -- Rock Alt Override
-
-end
-
-do -- Callbacks
-
-end
-
-do -- Misc helpful functions
-
-end
-
-do
-
-end
-
-do -- Challenge Rooms / Greed Mode Waves
-
-end
-
-do -- Custom Floor Generation
-
-end
-
 -- Load base game reimplementation data
 fixInclude("data")
-
-do -- BR Compatibility
-
-end
-
-do -- Mod Compatibility
-
-end
 
 StageAPI.LogMinor("Fully Loaded, loading dependent mods.")
 StageAPI.MarkLoaded("StageAPI", "2.02", true, true)

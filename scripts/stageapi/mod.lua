@@ -1,0 +1,1 @@
+return RegisterMod("StageAPI", 1)
