@@ -221,3 +221,15 @@ mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, function()
     shared.Level = shared.Game:GetLevel()
     shared.Room = shared.Game:GetRoom()
 end)
+
+mod:AddCallback(ModCallbacks.MC_PRE_GAME_EXIT, function(_, shouldSave)
+    shared.Players = {}
+
+    if shouldSave then
+        StageAPI.SaveModData()
+    end
+end)
+
+mod:AddCallback(ModCallbacks.MC_POST_NEW_LEVEL, function()
+    StageAPI.SaveModData()
+end)

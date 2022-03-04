@@ -3,19 +3,6 @@ local mod = require("scripts.stageapi.mod")
 
 StageAPI.LogMinor("Loading Core Functions")
 
-mod:AddCallback(ModCallbacks.MC_PRE_GAME_EXIT, function(_, shouldSave)
-    StageAPI.Players = {}
-    shared.Players = StageAPI.Players
-
-    if shouldSave then
-        StageAPI.SaveModData()
-    end
-end)
-
-mod:AddCallback(ModCallbacks.MC_POST_NEW_LEVEL, function()
-    StageAPI.SaveModData()
-end)
-
 StageAPI.RandomRNG = RNG()
 StageAPI.RandomRNG:SetSeed(Random(), 0)
 function StageAPI.Random(a, b, rng)
@@ -246,17 +233,17 @@ function StageAPI.GetPlayingAnimation(sprite, animations)
 end
 
 function StageAPI.VectorToGrid(x, y, width)
-    width = width or room:GetGridWidth()
+    width = width or shared.Room:GetGridWidth()
     return width + 1 + (x + width * y)
 end
 
 function StageAPI.GridToVector(index, width)
-    width = width or room:GetGridWidth()
+    width = width or shared.Room:GetGridWidth()
     return (index % width) - 1, (math.floor(index / width)) - 1
 end
 
 function StageAPI.GetScreenBottomRight()
-    return room:GetRenderSurfaceTopLeft() * 2 + Vector(442,286)
+    return shared.Room:GetRenderSurfaceTopLeft() * 2 + Vector(442,286)
 end
 
 function StageAPI.GetScreenCenterPosition()
@@ -503,5 +490,5 @@ function StageAPI.SpawnFloorEffect(pos, velocity, spawner, anm2, loadGraphics, v
 end
 
 function StageAPI.InStartingRoom()
-    return level:GetCurrentRoomDesc().SafeGridIndex == level:GetStartingRoomIndex()
+    return shared.Level:GetCurrentRoomDesc().SafeGridIndex == shared.Level:GetStartingRoomIndex()
 end

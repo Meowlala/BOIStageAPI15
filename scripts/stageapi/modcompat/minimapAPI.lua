@@ -1,3 +1,5 @@
+local mod = require("scripts.stageapi.mod")
+
 function StageAPI.UpdateMinimapAPIPlayerPosition()
     if StageAPI.InExtraRoom() then
         local currentLevelMap = StageAPI.GetCurrentLevelMap()
