@@ -20,7 +20,7 @@ return {
     "scripts.stageapi.waves",
     "scripts.stageapi.customFloorGen",
     "scripts.stageapi.basementRenovator",
-    "data", -- to be split too
+    "scripts.stageapi.data",
     "scripts.stageapi.modcompat.minimapAPI",
     "scripts.stageapi.modcompat.changelogs",
 }
