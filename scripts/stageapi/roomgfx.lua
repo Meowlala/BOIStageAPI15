@@ -168,7 +168,7 @@ function StageAPI.ChangeBackdrop(backdrop, justWalls, storeBackdropEnts)
             break
         end
 
-        local backdropEntity = Isaac.Spawn(StageAPI.E.Backdrop.T, StageAPI.E.Backdrop.V, 0, zeroVector, zeroVector, nil)
+        local backdropEntity = Isaac.Spawn(StageAPI.E.Backdrop.T, StageAPI.E.Backdrop.V, 0, Vector.Zero, Vector.Zero, nil)
         local sprite = backdropEntity:GetSprite()
 
         local renderPos
@@ -213,7 +213,7 @@ function StageAPI.ChangeStageShadow(prefix, count)
         local usingShadow = StageAPI.Random(1, count, StageAPI.StageShadowRNG)
         local sheet = prefix .. anim .. "_overlay_" .. tostring(usingShadow) .. ".png"
 
-        local shadowEntity = Isaac.Spawn(StageAPI.E.StageShadow.T, StageAPI.E.StageShadow.V, 0, zeroVector, zeroVector, nil)
+        local shadowEntity = Isaac.Spawn(StageAPI.E.StageShadow.T, StageAPI.E.StageShadow.V, 0, Vector.Zero, Vector.Zero, nil)
         shadowEntity:GetData().Sheet = sheet
         shadowEntity:GetData().Animation = anim
         shadowEntity.Position = StageAPI.Lerp(room:GetTopLeftPos(), room:GetBottomRightPos(), 0.5)

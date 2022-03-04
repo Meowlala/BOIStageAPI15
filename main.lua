@@ -480,7 +480,6 @@ local localToStageAPIMap = {
     room = "Room",
     level = "Level",
     players = "Players",
-    zeroVector = "ZeroVector"
 }
 
 local sfx = SFXManager()
@@ -498,7 +497,7 @@ oldENV.setmetatable(_ENV, {
     end
 })
 
---local game, room, level, players, zeroVector = StageAPI.Game, StageAPI.Room, StageAPI.Level, StageAPI.Players, StageAPI.ZeroVector
+--local game, room, level, players = StageAPI.Game, StageAPI.Room, StageAPI.Level, StageAPI.Players
 
 do -- Core Functions
 

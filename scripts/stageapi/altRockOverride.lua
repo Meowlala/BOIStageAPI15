@@ -201,7 +201,7 @@ end)
 mod:AddCallback(ModCallbacks.MC_POST_PICKUP_UPDATE, function(_, pickup)
     if not pickup:Exists() then return end
     local card = game:GetItemPool():GetCard(StageAPI.PickupChooseRNG:Next(), false, true, true)
-    local spawned = Isaac.Spawn(EntityType.ENTITY_PICKUP, PickupVariant.PICKUP_TAROTCARD, card, pickup.Position, zeroVector, nil)
+    local spawned = Isaac.Spawn(EntityType.ENTITY_PICKUP, PickupVariant.PICKUP_TAROTCARD, card, pickup.Position, Vector.Zero, nil)
     spawned:Update() -- get the spawned pickup up to speed with the original
     StageAPI.DeleteEntity(pickup)
 end, StageAPI.E.RandomRune.V)

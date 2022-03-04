@@ -629,7 +629,7 @@ mod:AddCallback(ModCallbacks.MC_POST_RENDER, function()
                 shadowSprite:Play(shadowAnim, true)
             end
 
-            shadowSprite:Render(Isaac.WorldToRenderPosition(shadow.Position) + room:GetRenderScrollOffset(), zeroVector, zeroVector)
+            shadowSprite:Render(Isaac.WorldToRenderPosition(shadow.Position) + room:GetRenderScrollOffset(), Vector.Zero, Vector.Zero)
         end
     end
 

@@ -354,9 +354,9 @@ mod:AddCallback(ModCallbacks.MC_POST_RENDER, function()
                 local isDoubleTrouble = StageAPI.BossOffset.One or StageAPI.BossOffset.Two
                 if isDoubleTrouble then  -- Double trouble, table {One = Vector, Two = Vector}
                     if layer == 4 or layer == 13 then
-                        pos = pos + StageAPI.BossOffset.One or zeroVector
+                        pos = pos + StageAPI.BossOffset.One or Vector.Zero
                     elseif layer == 9 or layer == 14 then
-                        pos = pos + StageAPI.BossOffset.Two or zeroVector
+                        pos = pos + StageAPI.BossOffset.Two or Vector.Zero
                     end
                 elseif layer == 4 or layer == 13 then
                     pos = pos + StageAPI.BossOffset

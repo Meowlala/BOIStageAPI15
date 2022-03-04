@@ -33,7 +33,7 @@ function StageAPI.RenderBlackScreen(alpha)
     alpha = alpha or 1
     StageAPI.BlackScreenOverlay.Scale = StageAPI.GetScreenScale(true) * 8
     StageAPI.BlackScreenOverlay.Color = Color(1, 1, 1, alpha, 0, 0, 0)
-    StageAPI.BlackScreenOverlay:Render(StageAPI.GetScreenCenterPosition(), zeroVector, zeroVector)
+    StageAPI.BlackScreenOverlay:Render(StageAPI.GetScreenCenterPosition(), Vector.Zero, Vector.Zero)
 end
 
 mod:AddCallback(ModCallbacks.MC_POST_RENDER, function()
@@ -68,7 +68,7 @@ mod:AddCallback(ModCallbacks.MC_POST_RENDER, function()
 
         StageAPI.TransitionIsPlaying = true
         StageAPI.RenderBlackScreen()
-        StageAPI.TransitionAnimation:Render(StageAPI.GetScreenCenterPosition(), zeroVector, zeroVector)
+        StageAPI.TransitionAnimation:Render(StageAPI.GetScreenCenterPosition(), Vector.Zero, Vector.Zero)
     elseif StageAPI.TransitionIsPlaying then -- Finished transition
         StageAPI.TransitionIsPlaying = false
         if StageAPI.CurrentStage then
@@ -210,7 +210,7 @@ end
 function StageAPI.SpawnCustomTrapdoor(position, goesTo, anm2, size, alreadyEntering)
     anm2 = anm2 or "gfx/grid/door_11_trapdoor.anm2"
     size = size or 24
-    local trapdoor = Isaac.Spawn(StageAPI.E.FloorEffectCreep.T, StageAPI.E.FloorEffectCreep.V, StageAPI.E.FloorEffectCreep.S, position, zeroVector, nil)
+    local trapdoor = Isaac.Spawn(StageAPI.E.FloorEffectCreep.T, StageAPI.E.FloorEffectCreep.V, StageAPI.E.FloorEffectCreep.S, position, Vector.Zero, nil)
     trapdoor.Variant = StageAPI.E.Trapdoor.V
     trapdoor.SubType = StageAPI.E.Trapdoor.S
     trapdoor.Size = size

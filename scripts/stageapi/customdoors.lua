@@ -151,7 +151,7 @@ StageAPI.AddCallback("StageAPI", "POST_SPAWN_CUSTOM_GRID", 0, function(customGri
         doorData = StageAPI.BaseDoors.Default
     end
 
-    local door = Isaac.Spawn(StageAPI.E.Door.T, StageAPI.E.Door.V, 0, room:GetGridPosition(index), zeroVector, nil)
+    local door = Isaac.Spawn(StageAPI.E.Door.T, StageAPI.E.Door.V, 0, room:GetGridPosition(index), Vector.Zero, nil)
     local data, sprite = door:GetData(), door:GetSprite()
     sprite:Load(doorData.Anm2, true)
 
@@ -250,7 +250,7 @@ mod:AddCallback(ModCallbacks.MC_POST_EFFECT_RENDER, function(_, door)
     local data = door:GetData()
     if data.OverlaySprite and data.RenderOverlay then
         local rpos = Isaac.WorldToRenderPosition(door.Position) + room:GetRenderScrollOffset()
-        data.OverlaySprite:Render(rpos, zeroVector, zeroVector)
+        data.OverlaySprite:Render(rpos, Vector.Zero, Vector.Zero)
     end
 end, StageAPI.E.Door.V)
 
@@ -564,7 +564,7 @@ mod:AddCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, function(_, door)
 
     if transitionStarted then
         for _, player in ipairs(players) do
-            player.Velocity = zeroVector
+            player.Velocity = Vector.Zero
         end
     end
 

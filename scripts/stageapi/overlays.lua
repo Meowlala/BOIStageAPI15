@@ -16,7 +16,7 @@ function StageAPI.RenderSpriteTiled(sprite, position, size, centerCorrect)
                 ):Rotated(sprite.Rotation)
             end
 
-            sprite:Render(pos, zeroVector, zeroVector)
+            sprite:Render(pos, Vector.Zero, Vector.Zero)
             if StageAPI.DebugTiling then
                 timesRendered = timesRendered + 1
                 Isaac.RenderText("RenderPoint (" .. tostring(timesRendered) .. "): " .. tostring(x) .. ", " .. tostring(y), pos.X, pos.Y, 255, 0, 0, 1)
@@ -31,9 +31,9 @@ function StageAPI.Overlay:Init(file, velocity, offset, size, alpha)
     self.Sprite = Sprite()
     self.Sprite:Load(file, true)
     self.Sprite:Play("Idle", true)
-    self.Position = zeroVector
-    self.Velocity = velocity or zeroVector
-    self.Offset = offset or zeroVector
+    self.Position = Vector.Zero
+    self.Velocity = velocity or Vector.Zero
+    self.Offset = offset or Vector.Zero
     self.Size = size or StageAPI.OverlayDefaultSize
     if alpha then
         self:SetAlpha(alpha, true)
@@ -111,7 +111,7 @@ function StageAPI.Overlay:Render(noCenterCorrect, additionalOffset, noUpdate)
         self:Update()
     end
 
-    StageAPI.RenderSpriteTiled(self.Sprite, self.Position + (self.Offset or zeroVector) + (additionalOffset or zeroVector), self.Size, centerCorrect)
+    StageAPI.RenderSpriteTiled(self.Sprite, self.Position + (self.Offset or Vector.Zero) + (additionalOffset or Vector.Zero), self.Size, centerCorrect)
 
     if StageAPI.DebugTiling then
         Isaac.RenderText("OriginPoint: " .. tostring(self.Position.X) .. ", " .. tostring(self.Position.Y), self.Position.X, self.Position.Y, 0, 255, 0, 1)

@@ -353,7 +353,7 @@ mod:AddCallback(ModCallbacks.MC_POST_UPDATE, function()
                     elseif checking.Desc.Type == GridEntityType.GRID_PIT then
                         checking:ToPit():MakeBridge(checking)
                     end
-                    Isaac.Spawn(EntityType.ENTITY_EFFECT, EffectVariant.POOF01, 0, room:GetGridPosition(index), zeroVector, nil)
+                    Isaac.Spawn(EntityType.ENTITY_EFFECT, EffectVariant.POOF01, 0, room:GetGridPosition(index), Vector.Zero, nil)
                     metadataEntity.RecentlyTriggered = 4
                 end
 
@@ -384,7 +384,7 @@ mod:AddCallback(ModCallbacks.MC_POST_UPDATE, function()
                         end
 
                         for _, spawn in ipairs(toSpawn) do
-                            local ent = Isaac.Spawn(spawn.Type or 20, spawn.Variant or 0, spawn.SubType or 0, room:GetGridPosition(index), zeroVector, nil)
+                            local ent = Isaac.Spawn(spawn.Type or 20, spawn.Variant or 0, spawn.SubType or 0, room:GetGridPosition(index), Vector.Zero, nil)
                             StageAPI.CallCallbacks("POST_SPAWN_ENTITY", false, ent, {Data = spawn}, {}, index)
                         end
 

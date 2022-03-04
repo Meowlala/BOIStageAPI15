@@ -2231,8 +2231,8 @@ function StageAPI.LoadEntitiesFromEntitySets(entitysets, doGrids, doPersistentOn
                                     entityData.Type or 20,
                                     entityData.Variant or 0,
                                     entityData.SubType or 0,
-                                    entityInfo.Position or StageAPI.ZeroVector,
-                                    StageAPI.ZeroVector,
+                                    entityInfo.Position or Vector.Zero,
+                                    Vector.Zero,
                                     nil
                                 )
 
@@ -2264,7 +2264,7 @@ function StageAPI.LoadEntitiesFromEntitySets(entitysets, doGrids, doPersistentOn
                                     end
                                 end
 
-                                ent:GetData().StageAPISpawnedPosition = entityInfo.Position or StageAPI.ZeroVector
+                                ent:GetData().StageAPISpawnedPosition = entityInfo.Position or Vector.Zero
                                 ent:GetData().StageAPIEntityListIndex = index
 
                                 if entityInfo.Persistent then
