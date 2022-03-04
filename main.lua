@@ -459,25 +459,14 @@ Lerp(first, second, percent)
 ReverseIterate() -- in place of ipairs / pairs.
 ]]
 
-local function fixInclude(...)
-    local includeFunc = include or require
-
-    local status, ret = pcall(includeFunc, ...)
-    if status then
-        return ret
-    else
-        return require(...)
-    end
-end
-
 if not StageAPI then
     StageAPI = {}
 end
 
-local loadOrder = fixInclude("scripts.stageapi.loadOrder")
+local loadOrder = include("scripts.stageapi.loadOrder")
 
 for _, module in ipairs(loadOrder) do
-    fixInclude(module)
+    include(module)
 end
 
 StageAPI.LogMinor("Fully Loaded, loading dependent mods.")

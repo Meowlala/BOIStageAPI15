@@ -873,7 +873,7 @@ local excludeTypesFromClearing = {
 
 -- These rooms consist purely of wall entities placed where the walls of the room should be
 -- Used to fix the occasional broken walls when entering extra rooms
-StageAPI.WallDataLayouts = StageAPI.RoomsList("StageAPIWallData", fixInclude("resources.stageapi.luarooms.walldata"))
+StageAPI.WallDataLayouts = StageAPI.RoomsList("StageAPIWallData", include("resources.stageapi.luarooms.walldata"))
 StageAPI.WallData = {}
 for name, shape in pairs(RoomShape) do
     local layouts = StageAPI.WallDataLayouts.ByShape[shape]

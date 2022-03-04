@@ -771,7 +771,7 @@ end
 
 local testingStage
 local testingRoomsList
-local testSuite = fixInclude("resources.stageapi.luarooms.testsuite")
+local testSuite = include("resources.stageapi.luarooms.testsuite")
 local mapLayoutTestRoomsList = StageAPI.RoomsList("MapLayoutTest", testSuite)
 mod:AddCallback(ModCallbacks.MC_EXECUTE_CMD, function(_, cmd, params)
     if cmd == "teststage" then
