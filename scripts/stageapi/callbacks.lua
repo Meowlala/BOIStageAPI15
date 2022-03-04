@@ -781,7 +781,7 @@ mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, function()
                 StageAPI.CurrentStage = StageAPI.CurrentStage.XLStage
             end
 
-            StageAPI.Game:GetHUD():ShowItemText(StageAPI.CurrentStage:GetDisplayName(), level:GetCurseName(), level:GetCurses() > 0)
+            -- shared.Game:GetHUD():ShowItemText(StageAPI.CurrentStage:GetDisplayName(), level:GetCurseName(), level:GetCurses() > 0)
 
             StageAPI.CurrentStage:GenerateLevel()
         else
