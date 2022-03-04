@@ -5,6 +5,8 @@ Isaac.DebugString("[StageAPI] Loading Core Definitions")
 
 -- Log
 
+StageAPI.DebugMinorLog = true
+
 function StageAPI.LogConcat(prefix, ...)
     local str = prefix
     local args = {...}
@@ -31,7 +33,6 @@ function StageAPI.LogErr(...)
     Isaac.DebugString(str)
 end
 
-StageAPI.DebugMinorLog = false
 function StageAPI.LogMinor(...)
     str = StageAPI.LogConcat('[StageAPI] ', ...)
     if StageAPI.DebugMinorLog then
