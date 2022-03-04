@@ -474,8 +474,11 @@ if not StageAPI then
     StageAPI = {}
 end
 
--- Load base game reimplementation data
-fixInclude("data")
+local loadOrder = fixInclude("scripts.stageapi.loadOrder")
+
+for _, module in ipairs(loadOrder) do
+    fixInclude(module)
+end
 
 StageAPI.LogMinor("Fully Loaded, loading dependent mods.")
 StageAPI.MarkLoaded("StageAPI", "2.02", true, true)
