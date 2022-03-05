@@ -3,56 +3,6 @@ local mod = require("scripts.stageapi.mod")
 
 StageAPI.LogMinor("Loading Core Callbacks")
 
-StageAPI.NonOverrideMusic = {
-    {Music.MUSIC_GAME_OVER, false, true},
-    Music.MUSIC_JINGLE_GAME_OVER,
-    Music.MUSIC_JINGLE_SECRETROOM_FIND,
-    {Music.MUSIC_JINGLE_NIGHTMARE, true},
-    Music.MUSIC_JINGLE_GAME_START,
-    Music.MUSIC_JINGLE_BOSS,
-    Music.MUSIC_JINGLE_BOSS_OVER,
-    Music.MUSIC_JINGLE_BOSS_OVER2,
-    Music.MUSIC_JINGLE_DEVILROOM_FIND,
-    Music.MUSIC_JINGLE_HOLYROOM_FIND,
-    Music.MUSIC_JINGLE_TREASUREROOM_ENTRY_0,
-    Music.MUSIC_JINGLE_TREASUREROOM_ENTRY_1,
-    Music.MUSIC_JINGLE_TREASUREROOM_ENTRY_2,
-    Music.MUSIC_JINGLE_TREASUREROOM_ENTRY_3,
-
-    -- Rep
-    Music.MUSIC_JINGLE_BOSS_RUSH_OUTRO,
-    Music.MUSIC_JINGLE_BOSS_OVER3,
-    Music.MUSIC_JINGLE_MOTHER_OVER,
-    Music.MUSIC_JINGLE_DOGMA_OVER,
-    Music.MUSIC_JINGLE_BEAST_OVER,
-    Music.MUSIC_JINGLE_CHALLENGE_ENTRY,
-    Music.MUSIC_JINGLE_CHALLENGE_OUTRO
-}
-
-function StageAPI.StopOverridingMusic(music, allowOverrideQueue, neverOverrideQueue)
-    if allowOverrideQueue ~= nil or neverOverrideQueue ~= nil then
-        StageAPI.NonOverrideMusic[#StageAPI.NonOverrideMusic + 1] = {music, allowOverrideQueue, neverOverrideQueue}
-    else
-        StageAPI.NonOverrideMusic[#StageAPI.NonOverrideMusic + 1] = music
-    end
-end
-
-function StageAPI.CanOverrideMusic(music)
-    for _, id in ipairs(StageAPI.NonOverrideMusic) do
-        if type(id) == "number" then
-            if music == id then
-                return false
-            end
-        else
-            if music == id[1] then
-                return false, id[2], id[3]
-            end
-        end
-    end
-
-    return true
-end
-
 mod:AddCallback(ModCallbacks.MC_POST_UPDATE, function()
     local currentRoom = StageAPI.GetCurrentRoom()
     if currentRoom and currentRoom.Loaded then

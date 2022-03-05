@@ -1,9 +1,30 @@
+local json = require("json")
+
 local shared = require("scripts.stageapi.shared")
 local mod = require("scripts.stageapi.mod")
 
 StageAPI.LogMinor("Loading Save System")
 
-StageAPI.json = require("json")
+function StageAPI.TryLoadModData(continued)
+    if Isaac.HasModData(mod) and continued then
+        local data = Isaac.LoadModData(mod)
+        StageAPI.LoadSaveString(data)
+    else
+        StageAPI.CurrentStage = nil
+        StageAPI.LevelRooms = {}
+        StageAPI.RoomGrids = {}
+        StageAPI.CustomGrids = {}
+        StageAPI.LevelMaps = {}
+        StageAPI.CurrentLevelMapID = nil
+        StageAPI.CurrentLevelMapRoomID = nil
+        StageAPI.DefaultLevelMapID = nil
+    end
+end
+
+function StageAPI.SaveModData()
+    Isaac.SaveModData(mod, StageAPI.GetSaveString())
+end
+
 function StageAPI.GetSaveString()
     local levelSaveData = {}
     for dimension, rooms in pairs(StageAPI.RoomGrids) do
@@ -81,7 +102,7 @@ function StageAPI.GetSaveString()
         levelMaps[#levelMaps + 1] = levelMap:GetSaveData()
     end
 
-    return StageAPI.json.encode({
+    return json.encode({
         LevelInfo = levelSaveData,
         LevelMaps = levelMaps,
         Stage = stage,
@@ -97,7 +118,7 @@ function StageAPI.LoadSaveString(str)
     local retRoomGrids = {}
     local retCustomGrids = {}
     local retEncounteredBosses = {}
-    local decoded = StageAPI.json.decode(str)
+    local decoded = json.decode(str)
 
     StageAPI.CurrentStage = nil
     if decoded.Stage then
@@ -154,3 +175,45 @@ function StageAPI.LoadSaveString(str)
     StageAPI.CustomGrids = retCustomGrids
     StageAPI.CallCallbacks("POST_STAGEAPI_LOAD_SAVE", false)
 end
+
+
+StageAPI.LastGameSeedLoaded = -1
+StageAPI.LoadedModDataSinceLastUpdate = false
+StageAPI.RecentlyStartedGame = false
+
+mod:AddCallback(ModCallbacks.MC_POST_PLAYER_INIT, function()
+    shared.Level = shared.Game:GetLevel()
+    shared.Room = shared.Game:GetRoom()
+    local highestPlayerFrame
+    for i = 1, shared.Game:GetNumPlayers() do
+        shared.Players[i] = Isaac.GetPlayer(i - 1)
+        local frame = shared.Players[i].FrameCount
+        if not highestPlayerFrame or frame > highestPlayerFrame then
+            highestPlayerFrame = frame
+        end
+    end
+
+    if highestPlayerFrame < 3 then
+        local seed = shared.Game:GetSeeds():GetStartSeed()
+        if not StageAPI.LoadedModDataSinceLastUpdate or StageAPI.LastGameSeedLoaded ~= seed then
+            StageAPI.RecentlyStartedGame = true
+            StageAPI.LoadedModDataSinceLastUpdate = true
+            StageAPI.LastGameSeedLoaded = seed
+            StageAPI.TryLoadModData(shared.Game:GetFrameCount() > 2)
+        end
+    end
+end)
+
+mod:AddCallback(ModCallbacks.MC_POST_UPDATE, function()
+    StageAPI.LoadedModDataSinceLastUpdate = false
+end)
+
+mod:AddCallback(ModCallbacks.MC_PRE_GAME_EXIT, function(_, shouldSave)
+    if shouldSave then
+        StageAPI.SaveModData()
+    end
+end)
+
+mod:AddCallback(ModCallbacks.MC_POST_NEW_LEVEL, function()
+    StageAPI.SaveModData()
+end)

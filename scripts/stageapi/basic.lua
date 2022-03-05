@@ -22,19 +22,19 @@ function StageAPI.LogConcat(prefix, ...)
 end
 
 function StageAPI.Log(...)
-    str = StageAPI.LogConcat('[StageAPI] ', ...)
+    local str = StageAPI.LogConcat('[StageAPI] ', ...)
     Isaac.ConsoleOutput(str .. '\n')
     Isaac.DebugString(str)
 end
 
 function StageAPI.LogErr(...)
-    str = StageAPI.LogConcat('[StageAPI:ERROR] ', ...)
+    local str = StageAPI.LogConcat('[StageAPI:ERROR] ', ...)
     Isaac.ConsoleOutput(str .. '\n')
     Isaac.DebugString(str)
 end
 
 function StageAPI.LogMinor(...)
-    str = StageAPI.LogConcat('[StageAPI] ', ...)
+    local str = StageAPI.LogConcat('[StageAPI] ', ...)
     if StageAPI.DebugMinorLog then
         Isaac.ConsoleOutput(str .. "\n")
     end
@@ -148,25 +148,59 @@ StageAPI.S = {
     BossIntro = Isaac.GetSoundIdByName("StageAPI Boss Intro")
 }
 
-function StageAPI.TryLoadModData(continued)
-    if Isaac.HasModData(mod) and continued then
-        local data = Isaac.LoadModData(mod)
-        StageAPI.LoadSaveString(data)
+-- music definition functions
+
+StageAPI.NonOverrideMusic = {
+    {Music.MUSIC_GAME_OVER, false, true},
+    Music.MUSIC_JINGLE_GAME_OVER,
+    Music.MUSIC_JINGLE_SECRETROOM_FIND,
+    {Music.MUSIC_JINGLE_NIGHTMARE, true},
+    Music.MUSIC_JINGLE_GAME_START,
+    Music.MUSIC_JINGLE_BOSS,
+    Music.MUSIC_JINGLE_BOSS_OVER,
+    Music.MUSIC_JINGLE_BOSS_OVER2,
+    Music.MUSIC_JINGLE_DEVILROOM_FIND,
+    Music.MUSIC_JINGLE_HOLYROOM_FIND,
+    Music.MUSIC_JINGLE_TREASUREROOM_ENTRY_0,
+    Music.MUSIC_JINGLE_TREASUREROOM_ENTRY_1,
+    Music.MUSIC_JINGLE_TREASUREROOM_ENTRY_2,
+    Music.MUSIC_JINGLE_TREASUREROOM_ENTRY_3,
+
+    -- Rep
+    Music.MUSIC_JINGLE_BOSS_RUSH_OUTRO,
+    Music.MUSIC_JINGLE_BOSS_OVER3,
+    Music.MUSIC_JINGLE_MOTHER_OVER,
+    Music.MUSIC_JINGLE_DOGMA_OVER,
+    Music.MUSIC_JINGLE_BEAST_OVER,
+    Music.MUSIC_JINGLE_CHALLENGE_ENTRY,
+    Music.MUSIC_JINGLE_CHALLENGE_OUTRO
+}
+
+function StageAPI.StopOverridingMusic(music, allowOverrideQueue, neverOverrideQueue)
+    if allowOverrideQueue ~= nil or neverOverrideQueue ~= nil then
+        StageAPI.NonOverrideMusic[#StageAPI.NonOverrideMusic + 1] = {music, allowOverrideQueue, neverOverrideQueue}
     else
-        StageAPI.CurrentStage = nil
-        StageAPI.LevelRooms = {}
-        StageAPI.RoomGrids = {}
-        StageAPI.CustomGrids = {}
-        StageAPI.LevelMaps = {}
-        StageAPI.CurrentLevelMapID = nil
-        StageAPI.CurrentLevelMapRoomID = nil
-        StageAPI.DefaultLevelMapID = nil
+        StageAPI.NonOverrideMusic[#StageAPI.NonOverrideMusic + 1] = music
     end
 end
 
-function StageAPI.SaveModData()
-    Isaac.SaveModData(mod, StageAPI.GetSaveString())
+function StageAPI.CanOverrideMusic(music)
+    for _, id in ipairs(StageAPI.NonOverrideMusic) do
+        if type(id) == "number" then
+            if music == id then
+                return false
+            end
+        else
+            if music == id[1] then
+                return false, id[2], id[3]
+            end
+        end
+    end
+
+    return true
 end
+
+-- shared variable setting
 
 if Isaac.GetPlayer(0) then
     shared.Room = shared.Game:GetRoom()
@@ -179,35 +213,7 @@ if Isaac.GetPlayer(0) then
     end
 end
 
-StageAPI.LastGameSeedLoaded = -1
-StageAPI.LoadedModDataSinceLastUpdate = false
-StageAPI.RecentlyStartedGame = false
-
-mod:AddCallback(ModCallbacks.MC_POST_PLAYER_INIT, function()
-    shared.Level = shared.Game:GetLevel()
-    shared.Room = shared.Game:GetRoom()
-    local highestPlayerFrame
-    for i = 1, shared.Game:GetNumPlayers() do
-        shared.Players[i] = Isaac.GetPlayer(i - 1)
-        local frame = shared.Players[i].FrameCount
-        if not highestPlayerFrame or frame > highestPlayerFrame then
-            highestPlayerFrame = frame
-        end
-    end
-
-    if highestPlayerFrame < 3 then
-        local seed = shared.Game:GetSeeds():GetStartSeed()
-        if not StageAPI.LoadedModDataSinceLastUpdate or StageAPI.LastGameSeedLoaded ~= seed then
-            StageAPI.RecentlyStartedGame = true
-            StageAPI.LoadedModDataSinceLastUpdate = true
-            StageAPI.LastGameSeedLoaded = seed
-            StageAPI.TryLoadModData(shared.Game:GetFrameCount() > 2)
-        end
-    end
-end)
-
 mod:AddCallback(ModCallbacks.MC_POST_UPDATE, function()
-    StageAPI.LoadedModDataSinceLastUpdate = false
     local numPlayers = shared.Game:GetNumPlayers()
     if numPlayers ~= #shared.Players then
         shared.Players = {}
@@ -224,12 +230,4 @@ end)
 
 mod:AddCallback(ModCallbacks.MC_PRE_GAME_EXIT, function(_, shouldSave)
     shared.Players = {}
-
-    if shouldSave then
-        StageAPI.SaveModData()
-    end
-end)
-
-mod:AddCallback(ModCallbacks.MC_POST_NEW_LEVEL, function()
-    StageAPI.SaveModData()
 end)
