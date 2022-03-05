@@ -4,6 +4,11 @@ local shared = require("scripts.stageapi.shared")
 StageAPI.RoomNamesEnabled = false
 StageAPI.GlobalCommandMode = false
 
+local testingStage
+local testingRoomsList
+local testSuite = include("resources.stageapi.luarooms.testsuite")
+local mapLayoutTestRoomsList = StageAPI.RoomsList("MapLayoutTest", testSuite)
+
 mod:AddCallback(ModCallbacks.MC_EXECUTE_CMD, function(_, cmd, params)
     if (cmd == "cstage" or cmd == "customstage") and StageAPI.CustomStages[params] then
         if StageAPI.CustomStages[params] then
@@ -149,6 +154,14 @@ mod:AddCallback(ModCallbacks.MC_EXECUTE_CMD, function(_, cmd, params)
             Isaac.ConsoleOutput("Enabled StageAPI global command mode\nslog: Prints any number of args, parses some userdata\ngame, room, shared.Level: Correspond to respective objects\nplayer: Corresponds to player 0\ndesc: Current room descriptor, mutable\napiroom: Current StageAPI room, if applicable\nFor use with the lua command!")
             StageAPI.GlobalCommandMode = true
         end
+
+    elseif cmd == "teststage" then
+        testingStage = params
+    elseif cmd == "loadtestsuite" then
+        testingRoomsList = tonumber(params)
+        if not testingRoomsList then
+            testingRoomsList = true
+        end
     end
 end)
 
@@ -188,5 +201,26 @@ mod:AddCallback(ModCallbacks.MC_POST_RENDER, function()
         _G.desc = shared.Level:GetRoomByIdx(shared.Level:GetCurrentRoomIndex())
         _G.apiroom = StageAPI.GetCurrentRoom()
         _G.player = shared.Players[1]
+    end
+
+    -- Custom floor gen commands
+    if testingStage then
+        local baseStage = shared.Level:GetStage()
+        local baseStageType = shared.Level:GetStageType()
+        Isaac.ExecuteCommand("stage " .. testingStage)
+        testingStage = nil
+        local levelMap = StageAPI.CopyCurrentLevelMap()
+        Isaac.ExecuteCommand("stage " .. tostring(baseStage) .. StageAPI.StageTypeToString[baseStageType])
+        StageAPI.InitCustomLevel(levelMap, true)
+    elseif testingRoomsList then
+        local levelMap
+        if testingRoomsList == true then
+            levelMap = StageAPI.CreateMapFromRoomsList(mapLayoutTestRoomsList)
+        else
+            levelMap = StageAPI.CreateMapFromRoomsList(mapLayoutTestRoomsList, testingRoomsList)
+        end
+
+        testingRoomsList = nil
+        StageAPI.InitCustomLevel(levelMap, true)
     end
 end)
