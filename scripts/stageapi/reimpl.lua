@@ -13,6 +13,8 @@ local subModules = {
     "music",
 }
 
+local moduleName = "reimpl"
+
 for _, subModule in ipairs(subModules) do
-    include("scripts.stageapi.reimpl." .. subModule)
+    include("scripts.stageapi." .. moduleName .. "." .. subModule)
 end

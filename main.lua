@@ -1,4 +1,4 @@
-local mod = require("scripts.stageapi.mod")
+require("scripts.stageapi.mod")
 
 --[[ FUNCTIONALITY
 

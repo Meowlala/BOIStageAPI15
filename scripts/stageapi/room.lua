@@ -10,6 +10,8 @@ local subModules = {
     "roomHandler",
 }
 
+local moduleName = "room"
+
 for _, subModule in ipairs(subModules) do
-    include("scripts.stageapi.rooms." .. subModule)
+    include("scripts.stageapi." .. moduleName .. "." .. subModule)
 end

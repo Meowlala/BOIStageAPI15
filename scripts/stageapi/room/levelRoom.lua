@@ -1,5 +1,4 @@
 local shared = require("scripts.stageapi.shared")
-local mod = require("scripts.stageapi.mod")
 
 function StageAPI.LevelRoomArgPacker(layoutName, roomsList, seed, shape, roomType, isExtraRoom, fromSaveData, requireRoomType, ignoreDoors, doors, levelIndex, ignoreRoomRules)
     return {

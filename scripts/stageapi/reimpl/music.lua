@@ -1,5 +1,4 @@
 local shared = require("scripts.stageapi.shared")
-local mod = require("scripts.stageapi.mod")
 
 StageAPI.AddCallback("StageAPI", "POST_SELECT_BOSS_MUSIC", 0, function(stage, usingMusic, isCleared)
     if not isCleared then
