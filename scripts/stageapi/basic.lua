@@ -5,7 +5,7 @@ Isaac.DebugString("[StageAPI] Loading Core Definitions")
 
 -- Log
 
-StageAPI.DebugMinorLog = true
+StageAPI.DebugMinorLog = false
 
 function StageAPI.LogConcat(prefix, ...)
     local str = prefix
