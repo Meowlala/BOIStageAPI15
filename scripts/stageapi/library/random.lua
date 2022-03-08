@@ -56,7 +56,7 @@ function StageAPI.WeightedRNG(args, rng, key, preCalculatedWeight, floatWeights)
     if weight_value % 1 == 0 and not floatWeights then
         random_chance = StageAPI.Random(1, weight_value, rng)
     else
-        random_chance = StageAPI.RandomFloat(1, weight_value, rng)
+        random_chance = StageAPI.RandomFloat(1, weight_value + 1, rng)
     end
 
     for i, potentialObject in ipairs(args) do
