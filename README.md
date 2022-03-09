@@ -2,7 +2,7 @@
 Custom StageAPI 1.5 for the Binding of Isaac Afterbirth+, allows overlaying custom stages on top of existing floors.
 Currently supports Catacombs, Necropolis, and Utero.
 
-DOCUMENTATION AT THE TOP OF MAIN.LUA
+DOCUMENTATION IN [doc.md](doc.md)
 
 #### If you're using the workshop version:
 Before following the steps below, double-click `setup.bat` in the `basementrenovator` folder
