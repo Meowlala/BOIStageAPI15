@@ -46,6 +46,6 @@ local Callbacks = {
     POST_STREAK_RENDER = "POST_STREAK_RENDER", -- (streakPos, streakPlaying)
 }
 
-StageAPI.Callbacks = Callbacks
+StageAPI.Enum.Callbacks = Callbacks
 
 return Callbacks
