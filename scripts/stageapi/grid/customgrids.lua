@@ -1,5 +1,6 @@
 local shared = require("scripts.stageapi.shared")
 local mod = require("scripts.stageapi.mod")
+local Callbacks = require("scripts.stageapi.enums.Callbacks")
 
 StageAPI.LogMinor("Loading Custom Grid System")
 
@@ -147,7 +148,7 @@ function StageAPI.CustomGridEntity:Init(gridConfig, index, force, respawning, se
 
     self.RoomIndex = StageAPI.GetCurrentRoomID()
 
-    self:CallCallbacks("POST_SPAWN_CUSTOM_GRID", force, respawning)
+    self:CallCallbacks(Callbacks.POST_SPAWN_CUSTOM_GRID, force, respawning)
 end
 
 function StageAPI.CustomGridEntity:Update()
@@ -197,7 +198,7 @@ function StageAPI.CustomGridEntity:Update()
                         elseif self.GridEntity.State == StageAPI.DefaultBrokenGridStateByType[self.GridConfig.BaseType] and not self.PersistentData.Destroyed then
                             self.PersistentData.Destroyed = true
                             StageAPI.TemporaryIgnoreSpawnOverride = true
-                            self:CallCallbacks("POST_CUSTOM_GRID_DESTROY")
+                            self:CallCallbacks(Callbacks.POST_CUSTOM_GRID_DESTROY)
                             StageAPI.TemporaryIgnoreSpawnOverride = false
                         end
                     end
@@ -223,7 +224,7 @@ function StageAPI.CustomGridEntity:Update()
         end
     end
 
-    self:CallCallbacks("POST_CUSTOM_GRID_UPDATE")
+    self:CallCallbacks(Callbacks.POST_CUSTOM_GRID_UPDATE)
 
     if self:IsOnGrid() and self.GridConfig.BaseType then
         self.LastFilename = self.GridEntity:GetSprite():GetFilename()
@@ -235,10 +236,10 @@ end
 function StageAPI.CustomGridEntity:UpdateProjectile(projectile)
     self.Projectile = projectile
     StageAPI.TemporaryIgnoreSpawnOverride = true
-    self:CallCallbacks("POST_CUSTOM_GRID_PROJECTILE_UPDATE", projectile)
+    self:CallCallbacks(Callbacks.POST_CUSTOM_GRID_PROJECTILE_UPDATE, projectile)
     if self.Projectile:IsDead() and not self.PersistentData.Destroyed then
         self.PersistentData.Destroyed = true
-        self:CallCallbacks("POST_CUSTOM_GRID_DESTROY", projectile)
+        self:CallCallbacks(Callbacks.POST_CUSTOM_GRID_DESTROY, projectile)
     end
 
     StageAPI.TemporaryIgnoreSpawnOverride = false
@@ -246,7 +247,7 @@ end
 
 function StageAPI.CustomGridEntity:UpdateProjectileHelper(projectileHelper)
     self.ProjectileHelper = projectileHelper
-    self:CallCallbacks("POST_CUSTOM_GRID_PROJECTILE_HELPER_UPDATE", projectileHelper, projectileHelper.Parent)
+    self:CallCallbacks(Callbacks.POST_CUSTOM_GRID_PROJECTILE_HELPER_UPDATE, projectileHelper, projectileHelper.Parent)
 end
 
 function StageAPI.CustomGridEntity:CheckPoopGib(effect)
@@ -292,13 +293,13 @@ function StageAPI.CustomGridEntity:CheckPoopGib(effect)
     end
 
     StageAPI.IgnorePoopGibsSpawned = true
-    self:CallCallbacks("POST_CUSTOM_GRID_POOP_GIB_SPAWN", effect)
+    self:CallCallbacks(Callbacks.POST_CUSTOM_GRID_POOP_GIB_SPAWN, effect)
     StageAPI.IgnorePoopGibsSpawned = false
 end
 
 function StageAPI.CustomGridEntity:CheckDirtyMind(familiar)
     StageAPI.IgnoreDirtyMindSpawned = true
-    self:CallCallbacks("POST_CUSTOM_GRID_DIRTY_MIND_SPAWN", familiar)
+    self:CallCallbacks(Callbacks.POST_CUSTOM_GRID_DIRTY_MIND_SPAWN, familiar)
     StageAPI.IgnoreDirtyMindSpawned = false
 end
 
@@ -333,7 +334,7 @@ function StageAPI.CustomGridEntity:Remove(keepBaseGrid)
 
     self:Unload()
 
-    self:CallCallbacks("POST_REMOVE_CUSTOM_GRID", keepBaseGrid)
+    self:CallCallbacks(Callbacks.POST_REMOVE_CUSTOM_GRID, keepBaseGrid)
 end
 
 function StageAPI.CustomGridEntity:CallCallbacks(callback, ...)

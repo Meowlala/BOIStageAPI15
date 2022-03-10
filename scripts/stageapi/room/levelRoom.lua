@@ -1,4 +1,5 @@
 local shared = require("scripts.stageapi.shared")
+local Callbacks = require("scripts.stageapi.enums.Callbacks")
 
 function StageAPI.LevelRoomArgPacker(layoutName, roomsList, seed, shape, roomType, isExtraRoom, fromSaveData, requireRoomType, ignoreDoors, doors, levelIndex, ignoreRoomRules)
     return {
@@ -75,7 +76,7 @@ function StageAPI.LevelRoom:Init(args, ...)
         self:PostGetLayout(self.SpawnSeed)
     end
 
-    StageAPI.CallCallbacks("POST_ROOM_INIT", false, self, not not args.FromSave, args.FromSave)
+    StageAPI.CallCallbacks(Callbacks.POST_ROOM_INIT, false, self, not not args.FromSave, args.FromSave)
     StageAPI.CurrentlyInitializing = nil
 end
 
@@ -121,11 +122,11 @@ function StageAPI.LevelRoom:GetLayout()
     end
 
     if self.RoomsListName and not self.Layout then
-        local roomsList = StageAPI.CallCallbacks("PRE_ROOMS_LIST_USE", true, self) or StageAPI.RoomsLists[self.RoomsListName]
+        local roomsList = StageAPI.CallCallbacks(Callbacks.PRE_ROOMS_LIST_USE, true, self) or StageAPI.RoomsLists[self.RoomsListName]
         if roomsList then
             self.RoomsListName = roomsList.Name
 
-            local retLayout = StageAPI.CallCallbacks("PRE_ROOM_LAYOUT_CHOOSE", true, self, roomsList)
+            local retLayout = StageAPI.CallCallbacks(Callbacks.PRE_ROOM_LAYOUT_CHOOSE, true, self, roomsList)
             if retLayout then
                 self.Layout = retLayout
             else
@@ -356,7 +357,7 @@ function StageAPI.LevelRoom:Load(isExtraRoom, noIncrementVisit)
 
     self.Loaded = true
 
-    StageAPI.CallCallbacks("POST_ROOM_LOAD", false, self, wasFirstLoad, isExtraRoom)
+    StageAPI.CallCallbacks(Callbacks.POST_ROOM_LOAD, false, self, wasFirstLoad, isExtraRoom)
     StageAPI.StoreRoomGrids()
 end
 

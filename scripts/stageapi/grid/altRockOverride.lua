@@ -1,5 +1,6 @@
 local shared = require("scripts.stageapi.shared")
 local mod = require("scripts.stageapi.mod")
+local Callbacks = require("scripts.stageapi.enums.Callbacks")
 
 StageAPI.LogMinor("Loading Rock Alt Breaking Override")
 
@@ -226,7 +227,7 @@ mod:AddCallback(ModCallbacks.MC_POST_UPDATE, function()
 
         if not grid or grid.State == stateCheck then
             StageAPI.SpawnOverriddenGrids[grindex] = nil
-            StageAPI.CallCallbacks("POST_OVERRIDDEN_GRID_BREAK", true, grindex, grid, StageAPI.JustBrokenGridSpawns[grindex])
+            StageAPI.CallCallbacks(Callbacks.POST_OVERRIDDEN_GRID_BREAK, true, grindex, grid, StageAPI.JustBrokenGridSpawns[grindex])
         end
     end
 
@@ -257,7 +258,7 @@ mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, function()
     StageAPI.JustBrokenGridSpawns = {}
 end)
 
-StageAPI.AddCallback("StageAPI", "POST_GRID_UPDATE", 0, function()
+StageAPI.AddCallback("StageAPI", Callbacks.POST_GRID_UPDATE, 0, function()
     if StageAPI.AreRockAltEffectsOverridden() then
         for i = shared.Room:GetGridWidth(), shared.Room:GetGridSize() do
             local grid = shared.Room:GetGridEntity(i)

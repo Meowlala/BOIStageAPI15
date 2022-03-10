@@ -1,5 +1,6 @@
 local shared = require("scripts.stageapi.shared")
 local mod = require("scripts.stageapi.mod")
+local Callbacks = require("scripts.stageapi.enums.Callbacks")
 
 -- Room handler
 -- Actually uses the elements defined in the other lua files
@@ -127,7 +128,7 @@ function StageAPI.GetValidRoomsForLayout(args)
         shape = args.Shape or roomDesc.Data.Shape
     end
 
-    local callbacks = StageAPI.GetCallbacks("POST_CHECK_VALID_ROOM")
+    local callbacks = StageAPI.GetCallbacks(Callbacks.POST_CHECK_VALID_ROOM)
     local validRooms = {}
     local validRoomWeights = 0
 
@@ -277,7 +278,7 @@ end
 function StageAPI.SelectSpawnEntities(entities, seed, roomMetadata, lastPersistentIndex)
     StageAPI.RoomLoadRNG:SetSeed(seed or shared.Room:GetSpawnSeed(), 1)
     local entitiesToSpawn = {}
-    local callbacks = StageAPI.GetCallbacks("PRE_SELECT_ENTITY_LIST")
+    local callbacks = StageAPI.GetCallbacks(Callbacks.PRE_SELECT_ENTITY_LIST)
     local persistentIndex = (lastPersistentIndex and lastPersistentIndex + 1) or 0
     for index, entityList in pairs(entities) do
         if #entityList > 0 then
@@ -331,7 +332,7 @@ function StageAPI.SelectSpawnGrids(gridsByIndex, seed)
     StageAPI.RoomLoadRNG:SetSeed(seed or shared.Room:GetSpawnSeed(), 1)
     local spawnGrids = {}
 
-    local callbacks = StageAPI.GetCallbacks("PRE_SELECT_GRIDENTITY_LIST")
+    local callbacks = StageAPI.GetCallbacks(Callbacks.PRE_SELECT_GRIDENTITY_LIST)
     for index, grids in pairs(gridsByIndex) do
         if #grids > 0 then
             local spawnGrid, noSpawnGrid
@@ -406,8 +407,8 @@ end
 
 function StageAPI.LoadEntitiesFromEntitySets(entitysets, doGrids, doPersistentOnly, doAutoPersistent, avoidSpawning, persistenceData, loadingWave)
     local ents_spawned = {}
-    local listCallbacks = StageAPI.GetCallbacks("PRE_SPAWN_ENTITY_LIST")
-    local entCallbacks = StageAPI.GetCallbacks("PRE_SPAWN_ENTITY")
+    local listCallbacks = StageAPI.GetCallbacks(Callbacks.PRE_SPAWN_ENTITY_LIST)
+    local entCallbacks = StageAPI.GetCallbacks(Callbacks.PRE_SPAWN_ENTITY)
     if type(entitysets) ~= "table" then
         entitysets = {entitysets}
     end
@@ -538,7 +539,7 @@ function StageAPI.LoadEntitiesFromEntitySets(entitysets, doGrids, doPersistentOn
                                     shared.Room:SetClear(false)
                                 end
 
-                                StageAPI.CallCallbacks("POST_SPAWN_ENTITY", false, ent, entityInfo, entityList, index, doGrids, doPersistentOnly, doAutoPersistent, avoidSpawning, persistenceData, shouldSpawnEntity)
+                                StageAPI.CallCallbacks(Callbacks.POST_SPAWN_ENTITY, false, ent, entityInfo, entityList, index, doGrids, doPersistentOnly, doAutoPersistent, avoidSpawning, persistenceData, shouldSpawnEntity)
 
                                 ents_spawned[#ents_spawned + 1] = ent
                             end
@@ -569,7 +570,7 @@ StageAPI.GridSpawnRNG = RNG()
 function StageAPI.LoadGridsFromDataList(grids, gridInformation, entities)
     local grids_spawned = {}
     StageAPI.GridSpawnRNG:SetSeed(shared.Room:GetSpawnSeed(), 0)
-    local callbacks = StageAPI.GetCallbacks("PRE_SPAWN_GRID")
+    local callbacks = StageAPI.GetCallbacks(Callbacks.PRE_SPAWN_GRID)
 
     local iterList = gridInformation or grids
 

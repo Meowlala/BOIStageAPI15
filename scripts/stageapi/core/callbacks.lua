@@ -1,5 +1,6 @@
 local shared = require("scripts.stageapi.shared")
 local mod = require("scripts.stageapi.mod")
+local Callbacks = require("scripts.stageapi.enums.Callbacks")
 
 StageAPI.LogMinor("Loading Core Callbacks")
 
@@ -11,7 +12,7 @@ mod:AddCallback(ModCallbacks.MC_POST_UPDATE, function()
         currentRoom.JustCleared = nil
         if not isClear and currentRoom.IsClear then
             currentRoom.ClearCount = currentRoom.ClearCount + 1
-            StageAPI.CallCallbacks("POST_ROOM_CLEAR", false)
+            StageAPI.CallCallbacks(Callbacks.POST_ROOM_CLEAR, false)
             currentRoom.JustCleared = true
         end
     end
@@ -148,7 +149,7 @@ mod:AddCallback(ModCallbacks.MC_POST_CURSE_EVAL, function()
     end
 end)
 
-StageAPI.AddCallback("StageAPI", "POST_SELECT_BOSS_MUSIC", 0, function(stage, usingMusic, isCleared)
+StageAPI.AddCallback("StageAPI", Callbacks.POST_SELECT_BOSS_MUSIC, 0, function(stage, usingMusic, isCleared)
     if not isCleared then
         if stage.Name == "Necropolis" or stage.Alias == "Necropolis" then
             if shared.Room:IsCurrentRoomLastBoss() and (shared.Level:GetCurses() & LevelCurse.CURSE_OF_LABYRINTH ~= 0 or shared.Level:GetStage() == LevelStage.STAGE3_2) then
@@ -186,7 +187,7 @@ function StageAPI.CheckStageTrapdoor(grid, index)
     if not entering then return end
 
     local currStage = StageAPI.CurrentStage or {}
-    local nextStage = StageAPI.CallCallbacks("PRE_SELECT_NEXT_STAGE", true, StageAPI.CurrentStage) or currStage.NextStage
+    local nextStage = StageAPI.CallCallbacks(Callbacks.PRE_SELECT_NEXT_STAGE, true, StageAPI.CurrentStage) or currStage.NextStage
     if nextStage and not currStage.OverridingTrapdoors then
         StageAPI.SpawnCustomTrapdoor(shared.Room:GetGridPosition(index), nextStage, grid:GetSprite():GetFilename(), 32, true)
         shared.Room:RemoveGridEntity(index, 0, false)
@@ -220,7 +221,7 @@ mod:AddCallback(ModCallbacks.MC_POST_RENDER, function()
     end
 
     if gridCount ~= StageAPI.PreviousGridCount then
-        local gridCallbacks = StageAPI.CallCallbacks("POST_GRID_UPDATE")
+        local gridCallbacks = StageAPI.CallCallbacks(Callbacks.POST_GRID_UPDATE)
 
         updatedGrids = true
         local roomGrids = StageAPI.GetTableIndexedByDimension(StageAPI.RoomGrids, true)
@@ -241,7 +242,7 @@ mod:AddCallback(ModCallbacks.MC_POST_RENDER, function()
         local rtype = StageAPI.GetCurrentRoomType()
         local grids
 
-        local gridsOverride = StageAPI.CallCallbacks("PRE_UPDATE_GRID_GFX", false)
+        local gridsOverride = StageAPI.CallCallbacks(Callbacks.PRE_UPDATE_GRID_GFX, false)
 
         local currentRoom = StageAPI.GetCurrentRoom()
         if gridsOverride then
@@ -303,7 +304,7 @@ mod:AddCallback(ModCallbacks.MC_POST_RENDER, function()
     if StageAPI.LastBackdropType ~= backdropType then
         local currentRoom = StageAPI.GetCurrentRoom()
         local usingGfx
-        local callbacks = StageAPI.GetCallbacks("PRE_CHANGE_ROOM_GFX")
+        local callbacks = StageAPI.GetCallbacks(Callbacks.PRE_CHANGE_ROOM_GFX)
         for _, callback in ipairs(callbacks) do
             local ret = callback.Function(currentRoom, usingGfx, true)
             if ret ~= nil then
@@ -318,7 +319,7 @@ mod:AddCallback(ModCallbacks.MC_POST_RENDER, function()
             end
         end
 
-        StageAPI.CallCallbacks("POST_CHANGE_ROOM_GFX", false, currentRoom, usingGfx, true)
+        StageAPI.CallCallbacks(Callbacks.POST_CHANGE_ROOM_GFX, false, currentRoom, usingGfx, true)
 
         StageAPI.LastBackdropType = backdropType
     end
@@ -332,7 +333,7 @@ function StageAPI.SetCurrentBossRoomInPlace(bossID, room)
     end
 
     room.PersistentData.BossID = bossID
-    StageAPI.CallCallbacks("POST_BOSS_ROOM_INIT", false, room, boss, bossID)
+    StageAPI.CallCallbacks(Callbacks.POST_BOSS_ROOM_INIT, false, room, boss, bossID)
 end
 
 function StageAPI.GenerateBossRoom(bossID, checkEncountered, bosses, hasHorseman, requireRoomTypeBoss, noPlayBossAnim, unskippableBossAnim, isExtraRoom, shape, ignoreDoors, doors, roomType)
@@ -382,7 +383,7 @@ function StageAPI.GenerateBossRoom(bossID, checkEncountered, bosses, hasHorseman
 
     local newRoom = StageAPI.LevelRoom(StageAPI.Merged({RoomsList = boss.Rooms}, roomArgs))
     newRoom.PersistentData.BossID = bossID
-    StageAPI.CallCallbacks("POST_BOSS_ROOM_INIT", false, newRoom, boss, bossID)
+    StageAPI.CallCallbacks(Callbacks.POST_BOSS_ROOM_INIT, false, newRoom, boss, bossID)
 
     return newRoom, boss
 end
@@ -476,7 +477,7 @@ local uniqueBossDropRoomSubtypes = {
 }
 
 -- Re-randomize fixed boss drops in StageAPI boss rooms
-StageAPI.AddCallback("StageAPI", "POST_ROOM_CLEAR", 0, function()
+StageAPI.AddCallback("StageAPI", Callbacks.POST_ROOM_CLEAR, 0, function()
     if shared.Room:GetType() == RoomType.ROOM_BOSS then
         local currentRoom = StageAPI.GetCurrentRoom()
         local collectibles = Isaac.FindByType(5, 100, -1)
@@ -490,7 +491,7 @@ StageAPI.AddCallback("StageAPI", "POST_ROOM_CLEAR", 0, function()
         if #spawnedFromBoss > 0 then
             for _, collectible in ipairs(spawnedFromBoss) do
                 local pickup = collectible:ToPickup()
-                local alreadyChanged = StageAPI.CallCallbacks("PRE_STAGEAPI_SELECT_BOSS_ITEM", true, pickup, currentRoom)
+                local alreadyChanged = StageAPI.CallCallbacks(Callbacks.PRE_STAGEAPI_SELECT_BOSS_ITEM, true, pickup, currentRoom)
                 if not alreadyChanged then
                     local roomData = shared.Level:GetCurrentRoomDesc().Data
                     if StageAPI.IsIn(uniqueBossDropRoomSubtypes, roomData.Subtype) then
@@ -581,7 +582,7 @@ mod:AddCallback(ModCallbacks.MC_USE_ITEM, function()
 end, CollectibleType.COLLECTIBLE_BOOK_OF_REVELATIONS)
 
 mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, function()
-    StageAPI.CallCallbacks("PRE_STAGEAPI_NEW_ROOM", false)
+    StageAPI.CallCallbacks(Callbacks.PRE_STAGEAPI_NEW_ROOM, false)
 
     StageAPI.RecentlyChangedLevel = false
     StageAPI.RecentlyStartedGame = false
@@ -715,7 +716,7 @@ mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, function()
     local currentListIndex = StageAPI.GetCurrentRoomID()
     local currentRoom, justGenerated, boss = StageAPI.GetCurrentRoom(), nil, nil
 
-    local retCurrentRoom, retJustGenerated, retBoss = StageAPI.CallCallbacks("PRE_STAGEAPI_NEW_ROOM_GENERATION", true, currentRoom, justGenerated, currentListIndex)
+    local retCurrentRoom, retJustGenerated, retBoss = StageAPI.CallCallbacks(Callbacks.PRE_STAGEAPI_NEW_ROOM_GENERATION, true, currentRoom, justGenerated, currentListIndex)
     local prevRoom = currentRoom
     currentRoom, justGenerated, boss = retCurrentRoom or currentRoom, retJustGenerated or justGenerated, retBoss or boss
     if prevRoom ~= currentRoom then
@@ -768,7 +769,7 @@ mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, function()
         else
             local text = shared.Players[1]:GetName() .. " VS " .. boss.Name
 
-            local ret = StageAPI.CallCallbacks("PRE_PLAY_MINIBOSS_STREAK", true, currentRoom, boss, text)
+            local ret = StageAPI.CallCallbacks(Callbacks.PRE_PLAY_MINIBOSS_STREAK, true, currentRoom, boss, text)
 
             if ret ~= false then
                 if ret then
@@ -850,7 +851,7 @@ mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, function()
         usingGfx = StageAPI.CurrentStage.RoomGfx[rtype]
     end
 
-    local callbacks = StageAPI.GetCallbacks("PRE_CHANGE_ROOM_GFX")
+    local callbacks = StageAPI.GetCallbacks(Callbacks.PRE_CHANGE_ROOM_GFX)
     for _, callback in ipairs(callbacks) do
         local ret = callback.Function(currentRoom, usingGfx, false)
         if ret ~= nil then
@@ -865,12 +866,12 @@ mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, function()
         end
     end
 
-    StageAPI.CallCallbacks("POST_CHANGE_ROOM_GFX", false, currentRoom, usingGfx, false)
+    StageAPI.CallCallbacks(Callbacks.POST_CHANGE_ROOM_GFX, false, currentRoom, usingGfx, false)
 
     StageAPI.LastBackdropType = shared.Room:GetBackdropType()
     StageAPI.RoomRendered = false
 
-    StageAPI.CallCallbacks("POST_STAGEAPI_NEW_ROOM", false, justGenerated)
+    StageAPI.CallCallbacks(Callbacks.POST_STAGEAPI_NEW_ROOM, false, justGenerated)
 end)
 
 function StageAPI.GetGridPosition(index, width)

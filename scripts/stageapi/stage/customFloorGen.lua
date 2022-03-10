@@ -1,5 +1,6 @@
 local shared = require("scripts.stageapi.shared")
 local mod = require("scripts.stageapi.mod")
+local Callbacks = require("scripts.stageapi.enums.Callbacks")
 
 StageAPI.LevelMaps = {}
 StageAPI.DefaultLevelMapID = nil
@@ -742,7 +743,7 @@ function StageAPI.LoadCustomMapRoomDoors(levelRoom, roomData, levelMap)
     end
 end
 
-StageAPI.AddCallback("StageAPI", "POST_ROOM_LOAD", -1, function(newRoom, firstLoad)
+StageAPI.AddCallback("StageAPI", Callbacks.POST_ROOM_LOAD, -1, function(newRoom, firstLoad)
     local levelMap = StageAPI.GetCurrentLevelMap()
     local roomData = levelMap:GetCurrentRoomData()
     if roomData and roomData.AutoDoors and firstLoad then
@@ -750,7 +751,7 @@ StageAPI.AddCallback("StageAPI", "POST_ROOM_LOAD", -1, function(newRoom, firstLo
     end
 end)
 
-StageAPI.AddCallback("StageAPI", "POST_CHANGE_ROOM_GFX", -1, function(currentRoom)
+StageAPI.AddCallback("StageAPI", Callbacks.POST_CHANGE_ROOM_GFX, -1, function(currentRoom)
     if StageAPI.InExtraRoom() and currentRoom and currentRoom.IsExtraRoom and not StageAPI.CurrentStage then
         local baseFloorInfo = StageAPI.GetBaseFloorInfo()
         if shared.Room:GetBackdropType() == baseFloorInfo.Backdrop and baseFloorInfo.RoomGfx then

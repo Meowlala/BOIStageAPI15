@@ -1,5 +1,6 @@
 local shared = require("scripts.stageapi.shared")
 local mod = require("scripts.stageapi.mod")
+local Callbacks = require("scripts.stageapi.enums.Callbacks")
 
 StageAPI.LogMinor("Loading Custom Door Handler")
 
@@ -143,7 +144,7 @@ function StageAPI.GetCustomDoors(doorDataName)
     return ret
 end
 
-StageAPI.AddCallback("StageAPI", "POST_SPAWN_CUSTOM_GRID", 0, function(customGrid, force, respawning)
+StageAPI.AddCallback("StageAPI", Callbacks.POST_SPAWN_CUSTOM_GRID, 0, function(customGrid, force, respawning)
     local index = customGrid.GridIndex
     local persistData = customGrid.PersistentData
 
@@ -241,7 +242,7 @@ StageAPI.AddCallback("StageAPI", "POST_SPAWN_CUSTOM_GRID", 0, function(customGri
     data.DoorData = doorData
     data.Opened = opened
 
-    local callbacks = StageAPI.GetCallbacks("POST_SPAWN_CUSTOM_DOOR")
+    local callbacks = StageAPI.GetCallbacks(Callbacks.POST_SPAWN_CUSTOM_DOOR)
     for _, callback in ipairs(callbacks) do
         if not callback.Params[1] or callback.Params[1] == persistData.DoorDataName then
             callback.Function(door, data, sprite, doorData, customGrid, force, respawning)
@@ -571,7 +572,7 @@ mod:AddCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, function(_, door)
         end
     end
 
-    local callbacks = StageAPI.GetCallbacks("POST_CUSTOM_DOOR_UPDATE")
+    local callbacks = StageAPI.GetCallbacks(Callbacks.POST_CUSTOM_DOOR_UPDATE)
     for _, callback in ipairs(callbacks) do
         if not callback.Params[1] or callback.Params[1] == data.DoorGridData.DoorDataName then
             callback.Function(door, data, sprite, doorData, data.DoorGridData)

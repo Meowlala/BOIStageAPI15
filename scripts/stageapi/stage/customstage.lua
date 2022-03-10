@@ -1,4 +1,5 @@
 local shared = require("scripts.stageapi.shared")
+local Callbacks = require("scripts.stageapi.enums.Callbacks")
 
 StageAPI.LogMinor("Loading CustomStage Handler")
 
@@ -351,7 +352,7 @@ function StageAPI.CustomStage:GetPlayingMusic()
                 musicID = musicID[StageAPI.Random(1, #musicID, StageAPI.MusicRNG)]
             end
 
-            local newMusicID = StageAPI.CallCallbacks("POST_SELECT_BOSS_MUSIC", true, self, musicID, isCleared, StageAPI.MusicRNG)
+            local newMusicID = StageAPI.CallCallbacks(Callbacks.POST_SELECT_BOSS_MUSIC, true, self, musicID, isCleared, StageAPI.MusicRNG)
             if newMusicID then
                 musicID = newMusicID
             end
@@ -364,7 +365,7 @@ function StageAPI.CustomStage:GetPlayingMusic()
         local music = self.Music
         if music then
             local musicID = music[roomType]
-            local newMusicID = StageAPI.CallCallbacks("POST_SELECT_STAGE_MUSIC", true, self, musicID, roomType, StageAPI.MusicRNG)
+            local newMusicID = StageAPI.CallCallbacks(Callbacks.POST_SELECT_STAGE_MUSIC, true, self, musicID, roomType, StageAPI.MusicRNG)
             if newMusicID then
                 musicID = newMusicID
             end

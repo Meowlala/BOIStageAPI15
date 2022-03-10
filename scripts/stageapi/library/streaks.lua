@@ -1,5 +1,6 @@
 local shared = require("scripts.stageapi.shared")
 local mod = require("scripts.stageapi.mod")
+local Callbacks = require("scripts.stageapi.enums.Callbacks")
 
 local TextStreakScales = {
     [0] = Vector(3,0.2),     [1] = Vector(2.6,0.36),
@@ -195,7 +196,7 @@ function StageAPI.RenderTextStreak()
                 streakPlaying.SmallFont:DrawStringScaled(streakPlaying.ExtraText, streakPlaying.ExtraPositionX + streakPlaying.ExtraOffset.X, (streakPlaying.RenderPos.Y - 9) + streakPlaying.ExtraOffset.Y, streakPlaying.FontScale.X * streakPlaying.ExtraFontScale.X, 1 * streakPlaying.ExtraFontScale.Y, streakPlaying.Color, 0, true)
             end
 
-            StageAPI.CallCallbacks("POST_STREAK_RENDER", false, streakPlaying.RenderPos, streakPlaying)
+            StageAPI.CallCallbacks(Callbacks.POST_STREAK_RENDER, false, streakPlaying.RenderPos, streakPlaying)
         end
     end
 end

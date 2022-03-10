@@ -1,6 +1,7 @@
 local shared = require("scripts.stageapi.shared")
+local Callbacks = require("scripts.stageapi.enums.Callbacks")
 
-StageAPI.AddCallback("StageAPI", "POST_SELECT_BOSS_MUSIC", 0, function(stage, usingMusic, isCleared)
+StageAPI.AddCallback("StageAPI", Callbacks.POST_SELECT_BOSS_MUSIC, 0, function(stage, usingMusic, isCleared)
     if not isCleared then
         if stage.Name == "Necropolis" or stage.Alias == "Necropolis" then
             if shared.Room:IsCurrentRoomLastBoss() 

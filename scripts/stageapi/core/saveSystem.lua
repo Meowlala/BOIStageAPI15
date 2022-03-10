@@ -2,6 +2,7 @@ local json = require("json")
 
 local shared = require("scripts.stageapi.shared")
 local mod = require("scripts.stageapi.mod")
+local Callbacks = require("scripts.stageapi.enums.Callbacks")
 
 StageAPI.LogMinor("Loading Save System")
 
@@ -113,7 +114,7 @@ function StageAPI.GetSaveString()
 end
 
 function StageAPI.LoadSaveString(str)
-    StageAPI.CallCallbacks("PRE_STAGEAPI_LOAD_SAVE", false)
+    StageAPI.CallCallbacks(Callbacks.PRE_STAGEAPI_LOAD_SAVE, false)
     local retLevelRooms = {}
     local retRoomGrids = {}
     local retCustomGrids = {}
@@ -173,7 +174,7 @@ function StageAPI.LoadSaveString(str)
 
     StageAPI.RoomGrids = retRoomGrids
     StageAPI.CustomGrids = retCustomGrids
-    StageAPI.CallCallbacks("POST_STAGEAPI_LOAD_SAVE", false)
+    StageAPI.CallCallbacks(Callbacks.POST_STAGEAPI_LOAD_SAVE, false)
 end
 
 
