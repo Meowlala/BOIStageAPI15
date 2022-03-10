@@ -3,6 +3,8 @@ local shared = require("scripts.stageapi.shared")
 StageAPI.LogMinor("Loading Backdrop & RoomGfx Handling")
 
 StageAPI.BackdropRNG = RNG()
+
+-- These two are unused, remove or unintended?
 local backdropDefaultOffset = Vector(260,0)
 local backdropIvOffset = Vector(113,0)
 
@@ -73,7 +75,7 @@ function StageAPI.LoadBackdropSprite(sprite, backdrop, mode) -- modes are 1 (wal
         local corners
         local walls
         if backdrop.WallVariants then
-            walls = backdrop.WallVariants[StageAPI.Random(1, #backdrop.WallVariants, backdropRNG)]
+            walls = backdrop.WallVariants[StageAPI.Random(1, #backdrop.WallVariants, StageAPI.BackdropRNG)]
             corners = walls.Corners or backdrop.Corners
         else
             walls = backdrop.Walls
@@ -82,13 +84,13 @@ function StageAPI.LoadBackdropSprite(sprite, backdrop, mode) -- modes are 1 (wal
 
         if walls then
             for num = 1, StageAPI.ShapeToWallAnm2Layers[shapeName] do
-                local wall_to_use = walls[StageAPI.Random(1, #walls, backdropRNG)]
+                local wall_to_use = walls[StageAPI.Random(1, #walls, StageAPI.BackdropRNG)]
                 sprite:ReplaceSpritesheet(num, wall_to_use)
             end
         end
 
         if corners and string.sub(shapeName, 1, 1) == "L" then
-            local corner_to_use = corners[StageAPI.Random(1, #corners, backdropRNG)]
+            local corner_to_use = corners[StageAPI.Random(1, #corners, StageAPI.BackdropRNG)]
             sprite:ReplaceSpritesheet(0, corner_to_use)
         end
     elseif mode == 2 then
@@ -100,7 +102,7 @@ function StageAPI.LoadBackdropSprite(sprite, backdrop, mode) -- modes are 1 (wal
 
         local floors
         if backdrop.FloorVariants then
-            floors = backdrop.FloorVariants[StageAPI.Random(1, #backdrop.FloorVariants, backdropRNG)]
+            floors = backdrop.FloorVariants[StageAPI.Random(1, #backdrop.FloorVariants, StageAPI.BackdropRNG)]
         else
             floors = backdrop.Floors or backdrop.Walls
         end
@@ -117,20 +119,20 @@ function StageAPI.LoadBackdropSprite(sprite, backdrop, mode) -- modes are 1 (wal
 
             if numFloors then
                 for i = 0, numFloors - 1 do
-                    sprite:ReplaceSpritesheet(i, floors[StageAPI.Random(1, #floors, backdropRNG)])
+                    sprite:ReplaceSpritesheet(i, floors[StageAPI.Random(1, #floors, StageAPI.BackdropRNG)])
                 end
             end
         end
 
         if backdrop.NFloors and string.sub(shapeName, 1, 1) == "I" then
             for num = 18, 19 do
-                sprite:ReplaceSpritesheet(num, backdrop.NFloors[StageAPI.Random(1, #backdrop.NFloors, backdropRNG)])
+                sprite:ReplaceSpritesheet(num, backdrop.NFloors[StageAPI.Random(1, #backdrop.NFloors, StageAPI.BackdropRNG)])
             end
         end
 
         if backdrop.LFloors and string.sub(shapeName, 1, 1) == "L" then
             for num = 16, 17 do
-                sprite:ReplaceSpritesheet(num, backdrop.LFloors[StageAPI.Random(1, #backdrop.LFloors, backdropRNG)])
+                sprite:ReplaceSpritesheet(num, backdrop.LFloors[StageAPI.Random(1, #backdrop.LFloors, StageAPI.BackdropRNG)])
             end
         end
     end

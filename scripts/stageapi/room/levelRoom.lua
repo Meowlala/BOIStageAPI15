@@ -75,7 +75,7 @@ function StageAPI.LevelRoom:Init(args, ...)
         self:PostGetLayout(self.SpawnSeed)
     end
 
-    StageAPI.CallCallbacks("POST_ROOM_INIT", false, self, not not fromSaveData, fromSaveData)
+    StageAPI.CallCallbacks("POST_ROOM_INIT", false, self, not not args.FromSave, args.FromSave)
     StageAPI.CurrentlyInitializing = nil
 end
 
@@ -166,7 +166,7 @@ function StageAPI.LevelRoom:PostGetLayout(seed)
     end
 
     StageAPI.LogMinor("Initialized room " .. self.Layout.Name .. "." .. tostring(self.Layout.Variant) .. " from file " .. tostring(self.Layout.RoomFilename)
-                        .. (roomsList and (' from list ' .. roomsList.Name) or ''))
+                        .. (self.RoomsListName and (' from list ' .. self.RoomsListName) or ''))
 
     if self.Shape == -1 then
         self.Shape = self.Layout.Shape
@@ -483,7 +483,7 @@ function StageAPI.LevelRoom:LoadSaveData(saveData)
     end
 
     if saveData.PersistenceData then
-        for pindex, persistData in pairs(saveData.PersistenceData) do
+        for strindex, persistData in pairs(saveData.PersistenceData) do
             self.PersistenceData[tonumber(strindex)] = persistData
         end
     end
