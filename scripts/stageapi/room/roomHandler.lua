@@ -9,6 +9,7 @@ local excludeTypesFromClearing = {
     [EntityType.ENTITY_FAMILIAR] = true,
     [EntityType.ENTITY_PLAYER] = true,
     [EntityType.ENTITY_KNIFE] = true,
+    [EntityType.ENTITY_BLOOD_PUPPY] = true,
     [EntityType.ENTITY_DARK_ESAU] = true,
     [EntityType.ENTITY_MOTHERS_SHADOW] = true
 }
