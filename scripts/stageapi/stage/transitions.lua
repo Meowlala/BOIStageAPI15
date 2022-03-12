@@ -76,7 +76,10 @@ mod:AddCallback(ModCallbacks.MC_POST_RENDER, function()
         StageAPI.TransitionIsPlaying = false
         if StageAPI.CurrentStage then
             local name = StageAPI.CurrentStage:GetDisplayName()
-            StageAPI.PlayTextStreak(name)
+            StageAPI.PlayTextStreak{
+                Text = name,
+                AboveHud = true,
+            }
         end
     end
 
