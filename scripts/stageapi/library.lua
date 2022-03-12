@@ -10,6 +10,7 @@ local subModules = {
     "streaks",
     "tables",
     "misc",
+    "pauseDetection",
 }
 
 for _, subModule in ipairs(subModules) do

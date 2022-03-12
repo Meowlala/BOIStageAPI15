@@ -201,9 +201,14 @@ Callback List:
 - POST_STREAK_RENDER(streakPos, streakPlaying)
   - After rendering a streak played with StageAPI.PlayTextStreak
 
-- POST_HUD_RENDER()
+- POST_HUD_RENDER(isPauseMenuOpen, pauseMenuDarkPct)
   - Runs after the vanilla hud is rendered
   - Uses a workaround with the shader callback
+  - Use isPauseMenuOpen and pauseMenuDarkPct to work around the pause menu, as 
+  the things rendered now will render over that too; either disable 
+  them or darken them.
+  - Handy constant: StageAPI.PAUSE_DARK_BG_COLOR, the color of the dark background
+  rendered above the hud normally when paused
 
 ## StageAPI Structures:
 
@@ -450,6 +455,9 @@ params = {
     Hold = set to true to hold streak indefinitely once it reaches default position, set to false when ready to continue
     HoldFrames = number of frames to hold the streak, defaults to 52
 }
+IsPauseMenuOpen()
+GetPauseMenuAppearPct()
+GetPauseMenuDarkPct()
 
 IsIn(table, value, iterator): iterator defaults to ipairs
 GetPlayingAnimation(sprite, animationList)

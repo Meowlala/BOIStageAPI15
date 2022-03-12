@@ -44,7 +44,7 @@ local Callbacks = {
     POST_STAGEAPI_LOAD_SAVE = "POST_STAGEAPI_LOAD_SAVE", -- ()
     PRE_PLAY_MINIBOSS_STREAK = "PRE_PLAY_MINIBOSS_STREAK", -- (currentRoom, boss, text)
     POST_STREAK_RENDER = "POST_STREAK_RENDER", -- (streakPos, streakPlaying)
-    POST_HUD_RENDER = "POST_HUD_RENDER", -- ()
+    POST_HUD_RENDER = "POST_HUD_RENDER", -- (isPauseMenuOpen, pauseMenuDarkPct)
 }
 
 StageAPI.Enum.Callbacks = Callbacks
