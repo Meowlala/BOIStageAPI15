@@ -454,6 +454,7 @@ params = {
     RenderPos = Position the streak will be rendered at, defaults to item/new floor streak position
     Hold = set to true to hold streak indefinitely once it reaches default position, set to false when ready to continue
     HoldFrames = number of frames to hold the streak, defaults to 52
+    AboveHud = true/false, if should render above the hud (and so vanilla streaks)
 }
 IsPauseMenuOpen()
 GetPauseMenuAppearPct()
