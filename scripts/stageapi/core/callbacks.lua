@@ -196,6 +196,11 @@ end
 
 StageAPI.LastBackdropType = nil
 StageAPI.MusicRNG = RNG()
+
+local FramesTabPressed = 0
+local StageNameTabStreak = nil
+local TAB_FRAMES_FOR_STREAK = 22
+
 mod:AddCallback(ModCallbacks.MC_POST_RENDER, function()
     if shared.Game:GetFrameCount() <= 0 then
         return
@@ -298,6 +303,30 @@ mod:AddCallback(ModCallbacks.MC_POST_RENDER, function()
         end
 
         StageAPI.RoomRendered = true
+
+        if Input.IsActionPressed(ButtonAction.ACTION_MAP, shared.Players[1].ControllerIndex) then
+            FramesTabPressed = FramesTabPressed + 1
+            -- Isaac.RenderText("Pressed for frames: " .. FramesTabPressed, 50, 50, 1, 1, 1, 1)
+            if FramesTabPressed == TAB_FRAMES_FOR_STREAK then
+                local renderPos = Vector(
+                    StageAPI.GetScreenCenterPosition().X,
+                    StageAPI.GetScreenBottomRight().Y - 48
+                )
+                StageNameTabStreak = StageAPI.PlayTextStreak{
+                    Text = StageAPI.CurrentStage:GetDisplayName(),
+                    AboveHud = true,
+                    Hold = true,
+                    HoldFrames = 0,
+                    RenderPos = renderPos,
+                }
+            end
+        else
+            FramesTabPressed = 0
+            if StageNameTabStreak then
+                StageNameTabStreak.Hold = false
+                StageNameTabStreak = nil
+            end
+        end
     end
 
     local backdropType = shared.Room:GetBackdropType()
