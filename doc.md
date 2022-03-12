@@ -201,6 +201,10 @@ Callback List:
 - POST_STREAK_RENDER(streakPos, streakPlaying)
   - After rendering a streak played with StageAPI.PlayTextStreak
 
+- POST_HUD_RENDER()
+  - Runs after the vanilla hud is rendered
+  - Uses a workaround with the shader callback
+
 ## StageAPI Structures:
 
 ```

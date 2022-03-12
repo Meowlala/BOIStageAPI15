@@ -1,6 +1,7 @@
 return {
     "scripts.stageapi.basic",
     "scripts.stageapi.library",
+    "scripts.stageapi.shadersfix",
     "scripts.stageapi.stage.overlays",
     "scripts.stageapi.room",
     "scripts.stageapi.grid.customgrids",
@@ -13,6 +14,7 @@ return {
     "scripts.stageapi.stage.bosses",
     "scripts.stageapi.stage.transitions",
     "scripts.stageapi.grid.altRockOverride",
+    "scripts.stageapi.core.hudRendering",
     "scripts.stageapi.core.callbacks",
     "scripts.stageapi.core.modLoading",
     "scripts.stageapi.core.commands",
