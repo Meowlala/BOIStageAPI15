@@ -304,7 +304,16 @@ mod:AddCallback(ModCallbacks.MC_POST_RENDER, function()
 
         StageAPI.RoomRendered = true
 
-        if Input.IsActionPressed(ButtonAction.ACTION_MAP, shared.Players[1].ControllerIndex) then
+        local anyPlayerPressingTab = false
+
+        for _, player in ipairs(shared.Players) do
+            anyPlayerPressingTab = anyPlayerPressingTab or Input.IsActionPressed(ButtonAction.ACTION_MAP, player.ControllerIndex) 
+            if anyPlayerPressingTab then
+                break
+            end
+        end
+
+        if anyPlayerPressingTab then
             FramesTabPressed = FramesTabPressed + 1
             -- Isaac.RenderText("Pressed for frames: " .. FramesTabPressed, 50, 50, 1, 1, 1, 1)
             if FramesTabPressed == TAB_FRAMES_FOR_STREAK then
