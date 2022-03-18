@@ -588,8 +588,7 @@ mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, function()
 
     if StageAPI.TransitioningToExtraRoom and StageAPI.IsRoomTopLeftShifted() and not StageAPI.DoubleTransitioning then
         StageAPI.DoubleTransitioning = true
-        -- extraRoom used but not set: what was it intended to do?
-        local defaultGridRoom, alternateGridRoom, defaultLargeGridRoom, alternateLargeGridRoom = StageAPI.GetExtraRoomBaseGridRooms(extraRoomBaseType == RoomType.ROOM_BOSS)
+        local defaultGridRoom, alternateGridRoom, defaultLargeGridRoom, alternateLargeGridRoom = StageAPI.GetExtraRoomBaseGridRooms(shared.Room:GetType() == RoomType.ROOM_BOSS)
         local targetRoom
         if shared.Level:GetCurrentRoomIndex() == defaultGridRoom then
             targetRoom = alternateGridRoom
