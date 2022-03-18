@@ -1,5 +1,6 @@
 local shared = require("scripts.stageapi.shared")
 local mod = require("scripts.stageapi.mod")
+local Callbacks = require("scripts.stageapi.enums.Callbacks")
 
 StageAPI.LogMinor("Loading Editor Features")
 
@@ -8,7 +9,7 @@ mod:AddCallback(ModCallbacks.MC_USE_ITEM, function()
     d12Used = true
 end, CollectibleType.COLLECTIBLE_D12)
 
-StageAPI.AddCallback("StageAPI", "POST_PARSE_METADATA", 0, function(roomMetadata, outEntities, outGrids, rng)
+StageAPI.AddCallback("StageAPI", Callbacks.POST_PARSE_METADATA, 0, function(roomMetadata, outEntities, outGrids, rng)
     local swapperIndices = {}
     local swappers = roomMetadata:Search({Name = "Swapper"})
     for _, swapper in ipairs(swappers) do
@@ -89,7 +90,7 @@ StageAPI.AddCallback("StageAPI", "POST_PARSE_METADATA", 0, function(roomMetadata
     end
 end)
 
-StageAPI.AddCallback("StageAPI", "POST_ROOM_INIT", 0, function(currentRoom, firstLoad)
+StageAPI.AddCallback("StageAPI", Callbacks.POST_ROOM_INIT, 0, function(currentRoom, firstLoad)
     if not currentRoom.PersistentData.BossID then
         local bossIdentifiers = currentRoom.Metadata:Search({Name = "BossIdentifier"})
         for _, bossIdentifier in ipairs(bossIdentifiers) do
@@ -135,7 +136,7 @@ end)
 
 StageAPI.CustomButtonGrid = StageAPI.CustomGrid("CustomButton")
 
-StageAPI.AddCallback("StageAPI", "POST_ROOM_LOAD", 0, function(currentRoom, firstLoad)
+StageAPI.AddCallback("StageAPI", Callbacks.POST_ROOM_LOAD, 0, function(currentRoom, firstLoad)
     local loadFeatures = currentRoom.Metadata:Search({Tag = "StageAPILoadEditorFeature"})
     for _, loadFeature in ipairs(loadFeatures) do
         if loadFeature.Name == "ButtonTrigger" then
@@ -192,7 +193,7 @@ StageAPI.AddCallback("StageAPI", "POST_ROOM_LOAD", 0, function(currentRoom, firs
     end
 end)
 
-StageAPI.AddCallback("StageAPI", "POST_SPAWN_ENTITY", 0, function(ent, entityInfo, entityList, index)
+StageAPI.AddCallback("StageAPI", Callbacks.POST_SPAWN_ENTITY, 0, function(ent, entityInfo, entityList, index)
     local currentRoom = StageAPI.GetCurrentRoom()
     if currentRoom and ent:ToPickup() then
         local pickup = ent:ToPickup()
@@ -221,7 +222,7 @@ StageAPI.AddCallback("StageAPI", "POST_SPAWN_ENTITY", 0, function(ent, entityInf
     end
 end)
 
-StageAPI.AddCallback("StageAPI", "POST_SPAWN_CUSTOM_GRID", 0, function(customGrid)
+StageAPI.AddCallback("StageAPI", Callbacks.POST_SPAWN_CUSTOM_GRID, 0, function(customGrid)
     local index = customGrid.GridIndex
     local persistData = customGrid.PersistentData
     local button = StageAPI.SpawnFloorEffect(shared.Room:GetGridPosition(index), Vector.Zero, nil, "gfx/grid/grid_pressureplate.anm2", false, StageAPI.E.Button.V)
@@ -388,7 +389,7 @@ mod:AddCallback(ModCallbacks.MC_POST_UPDATE, function()
 
                         for _, spawn in ipairs(toSpawn) do
                             local ent = Isaac.Spawn(spawn.Type or 20, spawn.Variant or 0, spawn.SubType or 0, shared.Room:GetGridPosition(index), Vector.Zero, nil)
-                            StageAPI.CallCallbacks("POST_SPAWN_ENTITY", false, ent, {Data = spawn}, {}, index)
+                            StageAPI.CallCallbacks(Callbacks.POST_SPAWN_ENTITY, false, ent, {Data = spawn}, {}, index)
                         end
 
                         local onlyOnce = metadataEntity.BitValues.SingleActivation == 1

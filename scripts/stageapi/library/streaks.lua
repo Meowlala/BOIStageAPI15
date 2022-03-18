@@ -1,5 +1,6 @@
 local shared = require("scripts.stageapi.shared")
 local mod = require("scripts.stageapi.mod")
+local Callbacks = require("scripts.stageapi.enums.Callbacks")
 
 local TextStreakScales = {
     [0] = Vector(3,0.2),     [1] = Vector(2.6,0.36),
@@ -29,6 +30,7 @@ local TextStreakPositions = {
 
 local StreakSprites = {}
 local Streaks = {}
+local HudStreaks = {} -- render above hud
 
 local streakFont = Font()
 streakFont:Load("font/upheaval.fnt")
@@ -42,7 +44,7 @@ local streakDefaultColor = KColor(1,1,1,1,0,0,0)
 local streakDefaultPos = Vector(240, 48)
 
 local oneVector = Vector(1, 1)
-function StageAPI.PlayTextStreak(text, extratext, extratextOffset, extratextScaleMulti, replaceSpritesheet, spriteOffset, font, smallFont, color)
+function StageAPI.PlayTextStreak(text, extratext, extratextOffset, extratextScaleMulti, replaceSpritesheet, spriteOffset, font, smallFont, color, aboveHud)
     local streak
     if type(text) == "table" then
         streak = text
@@ -56,7 +58,8 @@ function StageAPI.PlayTextStreak(text, extratext, extratextOffset, extratextScal
             SmallFont = smallFont,
             ExtraFontScale = extratextScaleMulti,
             ExtraOffset = extratextOffset,
-            Spritesheet = replaceSpritesheet
+            Spritesheet = replaceSpritesheet,
+            AboveHud = aboveHud,
         }
     end
 
@@ -86,12 +89,14 @@ function StageAPI.PlayTextStreak(text, extratext, extratextOffset, extratextScal
 
     streak.ExtraWidth = streak.SmallFont:GetStringWidth(streak.ExtraText or "") / 2
 
-    local index = #Streaks + 1
+    local streakTable = streak.AboveHud and HudStreaks or Streaks
+
+    local index = #streakTable + 1
     local spriteIndex
     -- First free streak sprite, in case indices between
     -- Streaks and StreakSprites got mixed because of 
     -- streaks being removed from Streaks
-    for i = 1, #Streaks + 1 do
+    for i = 1, #streakTable + 1 do
         if not StreakSprites[i] or StreakSprites[i].Free then
             spriteIndex = i
             break
@@ -120,12 +125,13 @@ function StageAPI.PlayTextStreak(text, extratext, extratextOffset, extratextScal
     streakSprite.Sprite:Play("Text", true)
     streakSprite.Free = false
 
-    Streaks[index] = streak
+    streakTable[index] = streak
 
     return streak
 end
 
 StageAPI.Streaks = Streaks
+StageAPI.HudStreaks = HudStreaks
 
 function StageAPI.GetTextStreakPosForFrame(frame)
     return TextStreakPositions[frame] or 0
@@ -135,50 +141,57 @@ function StageAPI.GetTextStreakScaleForFrame(frame)
     return TextStreakScales[frame] or oneVector
 end
 
+local function UpdateSingleStreak(streakTable, index, streakPlaying)
+    local streakSprite = StreakSprites[streakPlaying.SpriteIndex]
+    local sprite = streakSprite.Sprite
+
+    if streakPlaying.Frame == 8 then
+        if streakPlaying.Hold then
+            sprite.PlaybackSpeed = 0
+        elseif streakPlaying.HoldFrames > 0 then
+            sprite.PlaybackSpeed = 0
+            streakPlaying.HoldFrames = streakPlaying.HoldFrames - 1
+        else
+            sprite.PlaybackSpeed = 1
+        end
+    end
+
+    sprite:Update()
+
+    streakPlaying.Frame = sprite:GetFrame()
+    if streakPlaying.Frame >= 17 then
+        sprite:Stop()
+        table.remove(streakTable, index)
+        streakPlaying.Finished = true
+        streakSprite.Free = true
+    end
+
+    streakPlaying.FontScale = (TextStreakScales[streakPlaying.Frame] or oneVector)
+    if streakPlaying.BaseFontScale then
+        streakPlaying.FontScale = Vector(streakPlaying.FontScale.X * streakPlaying.BaseFontScale.X, streakPlaying.FontScale.X * streakPlaying.BaseFontScale.Y)
+    end
+
+    local screenX = StageAPI.GetScreenCenterPosition().X
+    streakPlaying.RenderPos.X = screenX
+    for _, line in ipairs(streakPlaying.Text) do
+        line.PositionX = (TextStreakPositions[streakPlaying.Frame] or 0) - line.Width * streakPlaying.FontScale.X + screenX + 0.25
+    end
+    streakPlaying.ExtraPositionX = (TextStreakPositions[streakPlaying.Frame] or 0) - (streakPlaying.ExtraWidth / 2) * streakPlaying.FontScale.X + screenX + 0.25
+
+    streakPlaying.Updated = true
+end
+
 function StageAPI.UpdateTextStreak()
     for index, streakPlaying in StageAPI.ReverseIterate(Streaks) do
-        local streakSprite = StreakSprites[streakPlaying.SpriteIndex]
-        local sprite = streakSprite.Sprite
-
-        if streakPlaying.Frame == 8 then
-            if streakPlaying.Hold then
-                sprite.PlaybackSpeed = 0
-            elseif streakPlaying.HoldFrames > 0 then
-                sprite.PlaybackSpeed = 0
-                streakPlaying.HoldFrames = streakPlaying.HoldFrames - 1
-            else
-                sprite.PlaybackSpeed = 1
-            end
-        end
-
-        sprite:Update()
-
-        streakPlaying.Frame = sprite:GetFrame()
-        if streakPlaying.Frame >= 17 then
-            sprite:Stop()
-            table.remove(Streaks, index)
-            streakPlaying.Finished = true
-            streakSprite.Free = true
-        end
-
-        streakPlaying.FontScale = (TextStreakScales[streakPlaying.Frame] or oneVector)
-        if streakPlaying.BaseFontScale then
-            streakPlaying.FontScale = Vector(streakPlaying.FontScale.X * streakPlaying.BaseFontScale.X, streakPlaying.FontScale.X * streakPlaying.BaseFontScale.Y)
-        end
-
-        local screenX = StageAPI.GetScreenCenterPosition().X
-        streakPlaying.RenderPos.X = screenX
-        for _, line in ipairs(streakPlaying.Text) do
-            line.PositionX = (TextStreakPositions[streakPlaying.Frame] or 0) - line.Width * streakPlaying.FontScale.X + screenX + 0.25
-        end
-        streakPlaying.ExtraPositionX = (TextStreakPositions[streakPlaying.Frame] or 0) - (streakPlaying.ExtraWidth / 2) * streakPlaying.FontScale.X + screenX + 0.25
-
-        streakPlaying.Updated = true
+        UpdateSingleStreak(Streaks, index, streakPlaying)
+    end
+    for index, streakPlaying in StageAPI.ReverseIterate(HudStreaks) do
+        UpdateSingleStreak(HudStreaks, index, streakPlaying)
     end
 end
 
-function StageAPI.RenderTextStreak()
-    for index, streakPlaying in StageAPI.ReverseIterate(Streaks) do
+local function RenderStreaksInTable(streakTable)
+    for index, streakPlaying in StageAPI.ReverseIterate(streakTable) do
         if streakPlaying.Updated then
             local sprite = StreakSprites[streakPlaying.SpriteIndex].Sprite
             sprite:Render(streakPlaying.RenderPos, Vector.Zero, Vector.Zero)
@@ -195,10 +208,24 @@ function StageAPI.RenderTextStreak()
                 streakPlaying.SmallFont:DrawStringScaled(streakPlaying.ExtraText, streakPlaying.ExtraPositionX + streakPlaying.ExtraOffset.X, (streakPlaying.RenderPos.Y - 9) + streakPlaying.ExtraOffset.Y, streakPlaying.FontScale.X * streakPlaying.ExtraFontScale.X, 1 * streakPlaying.ExtraFontScale.Y, streakPlaying.Color, 0, true)
             end
 
-            StageAPI.CallCallbacks("POST_STREAK_RENDER", false, streakPlaying.RenderPos, streakPlaying)
+            StageAPI.CallCallbacks(Callbacks.POST_STREAK_RENDER, false, streakPlaying.RenderPos, streakPlaying)
         end
     end
 end
 
+function StageAPI.RenderTextStreak()
+    RenderStreaksInTable(Streaks)
+end
+
+function StageAPI.RenderTextStreakHud(isPauseMenuOpen, pauseMenuDarkPct)
+    -- Do not render with pause menu open, as it would render above the menu
+    if isPauseMenuOpen then
+        return
+    end
+
+    RenderStreaksInTable(HudStreaks)
+end
+
 mod:AddCallback(ModCallbacks.MC_POST_UPDATE, StageAPI.UpdateTextStreak)
 mod:AddCallback(ModCallbacks.MC_POST_RENDER, StageAPI.RenderTextStreak)
+StageAPI.AddCallback("StageAPI", Callbacks.POST_HUD_RENDER, 0, StageAPI.RenderTextStreakHud)

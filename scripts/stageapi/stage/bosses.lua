@@ -1,5 +1,6 @@
 local shared = require("scripts.stageapi.shared")
 local mod = require("scripts.stageapi.mod")
+local Callbacks = require("scripts.stageapi.enums.Callbacks")
 
 StageAPI.LogMinor("Loading Boss Handler")
 
@@ -463,7 +464,7 @@ end)
 
 StageAPI.BossSelectRNG = RNG()
 function StageAPI.SelectBoss(bosses, rng, roomDesc, ignoreNoOptions)
-    local bossID = StageAPI.CallCallbacks("PRE_BOSS_SELECT", true, bosses, rng, roomDesc, ignoreNoOptions)
+    local bossID = StageAPI.CallCallbacks(Callbacks.PRE_BOSS_SELECT, true, bosses, rng, roomDesc, ignoreNoOptions)
     if type(bossID) == "table" then
         bosses = bossID
         bossID = nil

@@ -1,4 +1,5 @@
 local shared = require("scripts.stageapi.shared")
+local Callbacks = require("scripts.stageapi.enums.Callbacks")
 
 StageAPI.LogMinor("Loading BR Compatibility")
 
@@ -73,7 +74,7 @@ elseif brTestRooms then
         end
     end
 
-    StageAPI.AddCallback("StageAPI", "PRE_STAGEAPI_NEW_ROOM_GENERATION", 0, function()
+    StageAPI.AddCallback("StageAPI", Callbacks.PRE_STAGEAPI_NEW_ROOM_GENERATION, 0, function()
         local brRoom = GetBRRoom()
         if brRoom then
             local testRoom = StageAPI.LevelRoom("BRTest-" .. (brRoom.Index or 1), nil, shared.Room:GetSpawnSeed(), brRoom.Shape, brRoom.Type, nil, nil, nil, nil, nil, StageAPI.GetCurrentRoomID())
@@ -81,7 +82,7 @@ elseif brTestRooms then
         end
     end)
 
-    StageAPI.AddCallback("StageAPI", "POST_STAGEAPI_NEW_ROOM", 0, function()
+    StageAPI.AddCallback("StageAPI", Callbacks.POST_STAGEAPI_NEW_ROOM, 0, function()
         if GetBRRoom() then
             if BasementRenovator.RenderDoorSlots then
                 BasementRenovator.RenderDoorSlots()

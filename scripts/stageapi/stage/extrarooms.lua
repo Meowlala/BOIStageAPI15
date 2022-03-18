@@ -1,5 +1,6 @@
 local shared = require("scripts.stageapi.shared")
 local mod = require("scripts.stageapi.mod")
+local Callbacks = require("scripts.stageapi.enums.Callbacks")
 
 StageAPI.LogMinor("Loading Extra Room Handler")
 
@@ -636,5 +637,5 @@ mod:AddCallback(ModCallbacks.MC_POST_RENDER, function()
         end
     end
 
-    StageAPI.CallCallbacks("PRE_TRANSITION_RENDER")
+    StageAPI.CallCallbacks(Callbacks.PRE_TRANSITION_RENDER)
 end)

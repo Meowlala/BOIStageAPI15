@@ -1,5 +1,6 @@
 local shared = require("scripts.stageapi.shared")
 local mod = require("scripts.stageapi.mod")
+local Callbacks = require("scripts.stageapi.enums.Callbacks")
 
 StageAPI.RoomMetadata = StageAPI.Class("RoomMetadata")
 
@@ -681,7 +682,7 @@ function StageAPI.SeparateEntityMetadata(entities, grids, seed)
         outGrids[index] = gridList
     end
 
-    StageAPI.CallCallbacks("PRE_PARSE_METADATA", false, roomMetadata, outEntities, outGrids, StageAPI.RoomLoadRNG)
+    StageAPI.CallCallbacks(Callbacks.PRE_PARSE_METADATA, false, roomMetadata, outEntities, outGrids, StageAPI.RoomLoadRNG)
 
     for index, metadataEntities in pairs(roomMetadata.IndexMetadata) do
         local setsOfConflicting = {}
@@ -745,7 +746,7 @@ function StageAPI.SeparateEntityMetadata(entities, grids, seed)
         end
     end
 
-    StageAPI.CallCallbacks("POST_PARSE_METADATA", nil, roomMetadata, outEntities, outGrids)
+    StageAPI.CallCallbacks(Callbacks.POST_PARSE_METADATA, nil, roomMetadata, outEntities, outGrids)
 
     return outEntities, outGrids, roomMetadata, persistentIndex
 end

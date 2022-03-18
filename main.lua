@@ -8,6 +8,8 @@ end
 
 local loadOrder = include("scripts.stageapi.loadOrder")
 
+StageAPI.Enum = {}
+
 for _, module in ipairs(loadOrder) do
     include(module)
 end

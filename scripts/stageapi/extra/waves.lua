@@ -1,5 +1,6 @@
 local shared = require("scripts.stageapi.shared")
 local mod = require("scripts.stageapi.mod")
+local Callbacks = require("scripts.stageapi.enums.Callbacks")
 
 StageAPI.LogMinor("Loading Challenge Room / Greed Mode waves")
 
@@ -110,7 +111,7 @@ mod:AddCallback(ModCallbacks.MC_POST_NEW_LEVEL, function()
 end)
 
 -- prevent waves of the wrong subtype from appearing
-StageAPI.AddCallback("StageAPI", "POST_CHECK_VALID_ROOM", 0, function(layout)
+StageAPI.AddCallback("StageAPI", Callbacks.POST_CHECK_VALID_ROOM, 0, function(layout)
     if StageAPI.Challenge.WaveSubtype then
         if not (layout.SubType == 0 or layout.SubType == StageAPI.Challenge.WaveSubtype or StageAPI.Challenge.WaveSubtype == 0) then
             return 0
