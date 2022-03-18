@@ -607,7 +607,7 @@ function StageAPI.GetRoomMapSegments(roomX, roomY, shape)
     return onMap
 end
 
-function StageAPI.GetMapSegmentsFromRoomObject(roomObject, noCaching)
+function StageAPI.GetMapSegmentsFromRoomObject(roomObject, noCaching, noInterference)
     local typ = type(roomObject)
     if typ == "table" then
         if roomObject.MapSegments then

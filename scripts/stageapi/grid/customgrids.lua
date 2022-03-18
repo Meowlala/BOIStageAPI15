@@ -50,6 +50,7 @@ StageAPI.DefaultBrokenGridStateByType = {
     [GridEntityType.GRID_POOP]      = 1000,
 }
 
+-- { [dimension] = { [roomId] = { Grids = { [gridPersistIdx] = <grid data> }, LastPersistentIndex = N } } }
 StageAPI.CustomGrids = {}
 function StageAPI.GetRoomCustomGrids(dimension, roomID)
     local customGrids = StageAPI.GetTableIndexedByDimensionRoom(StageAPI.CustomGrids, true, dimension, roomID)

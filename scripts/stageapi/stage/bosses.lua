@@ -265,7 +265,7 @@ StageAPI.PlayingBossSpriteDirt = nil
 StageAPI.UnskippableBossAnim = nil
 StageAPI.BossOffset = nil
 
-function StageAPI.PlayBossAnimationManual(portrait, name, spot, playerPortrait, playerName, playerSpot, portraitTwo, unskippable, bgColor, dirtColor, noSkake)
+function StageAPI.PlayBossAnimationManual(portrait, name, spot, playerPortrait, playerName, playerSpot, portraitTwo, unskippable, bgColor, dirtColor, noShake)
     local paramTable = portrait
     if type(paramTable) ~= "table" then
         paramTable = {

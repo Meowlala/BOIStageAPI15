@@ -9,3 +9,4 @@ basementrenovator/Executables
 basementrenovator/*.bat
 !basementrenovator/setup.bat
 basementrenovator/*.py
+.vscode/settings.json

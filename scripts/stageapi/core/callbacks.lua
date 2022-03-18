@@ -588,7 +588,7 @@ mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, function()
 
     if StageAPI.TransitioningToExtraRoom and StageAPI.IsRoomTopLeftShifted() and not StageAPI.DoubleTransitioning then
         StageAPI.DoubleTransitioning = true
-        local defaultGridRoom, alternateGridRoom, defaultLargeGridRoom, alternateLargeGridRoom = StageAPI.GetExtraRoomBaseGridRooms(extraRoomBaseType == RoomType.ROOM_BOSS)
+        local defaultGridRoom, alternateGridRoom, defaultLargeGridRoom, alternateLargeGridRoom = StageAPI.GetExtraRoomBaseGridRooms(shared.Room:GetType() == RoomType.ROOM_BOSS)
         local targetRoom
         if shared.Level:GetCurrentRoomIndex() == defaultGridRoom then
             targetRoom = alternateGridRoom
@@ -642,15 +642,15 @@ mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, function()
                     if not (levelRoom and levelRoom.IsPersistentRoom) then
                         StageAPI.SetLevelRoom(nil, roomId, dimension)
                     else
-                        maintainGrids[dimension][index] = true
+                        maintainGrids[dimension][roomId] = true
                     end
                 end
             end
 
             for dimension, roomCustomGrids in pairs(StageAPI.CustomGrids) do
-                for index, grids in pairs(roomCustomGrids) do
-                    if not maintainGrids[dimension] or not maintainGrids[dimension][index] then
-                        roomCustomGrids[index] = nil
+                for roomId, grids in pairs(roomCustomGrids) do
+                    if not maintainGrids[dimension] or not maintainGrids[dimension][roomId] then
+                        roomCustomGrids[roomId] = nil
                     end
                 end
             end
@@ -874,7 +874,7 @@ mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, function()
 end)
 
 function StageAPI.GetGridPosition(index, width)
-    local x, y = StageAPI.GridToVector(i, width)
+    local x, y = StageAPI.GridToVector(index, width)
     y = y + 4
     x = x + 2
     return x * 40, y * 40

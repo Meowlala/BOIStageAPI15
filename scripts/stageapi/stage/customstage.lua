@@ -327,6 +327,7 @@ function StageAPI.CustomStage:GetPlayingMusic()
         if self.BossMusic then
             local music = self.BossMusic
             local musicID, queue, disregardNonOverride
+            local isCleared = shared.Room:GetAliveBossesCount() < 1 or shared.Room:IsClear()
 
             if (music.Outro and (id == Music.MUSIC_JINGLE_BOSS_OVER or id == Music.MUSIC_JINGLE_BOSS_OVER2 or id == music.Outro or (type(music.Outro) == "table" and StageAPI.IsIn(music.Outro, id))))
             or (music.Intro and (id == Music.MUSIC_JINGLE_BOSS or id == music.Intro or (type(music.Intro) == "table" and StageAPI.IsIn(music.Intro, id)))) then
@@ -338,7 +339,6 @@ function StageAPI.CustomStage:GetPlayingMusic()
 
                 disregardNonOverride = true
             else
-                local isCleared = shared.Room:GetAliveBossesCount() < 1 or shared.Room:IsClear()
                 if isCleared then
                     musicID = music.Cleared
                 else
