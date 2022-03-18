@@ -4,10 +4,6 @@ StageAPI.LogMinor("Loading Backdrop & RoomGfx Handling")
 
 StageAPI.BackdropRNG = RNG()
 
--- These two are unused, remove or unintended?
-local backdropDefaultOffset = Vector(260,0)
-local backdropIvOffset = Vector(113,0)
-
 StageAPI.ShapeToWallAnm2Layers = {
     ["1x2"] = 58,
     ["2x2"] = 63,
