@@ -178,6 +178,9 @@ Callback List:
 - POST_SELECT_BOSS_MUSIC(currentstage, musicID, isCleared, musicRNG)
   - Return a number to use that MusicID as music, not running further callbacks.
 
+- POST_SELECT_CHALLENGE_MUSIC(currentstage, musicID, isCleared, musicRNG)
+  - Return a number to use that MusicID as music, not running further callbacks.
+
 - POST_SELECT_STAGE_MUSIC(currentstage, musicID, roomType, musicRNG)
   - Return a number to use that MusicID as music, not running further callbacks.
 
@@ -355,7 +358,8 @@ SecretDoorSpawn = DoorInfo -- where secret room doors should spawn
   - SetRoomGfx(RoomGfx)
   - SetRooms(RoomsList)
   - SetMusic(musicID, RoomType)
-  - SetBossMusic(musicID, clearedMusicID)
+  - SetBossMusic(musicID, clearedMusicID, intro, outro)
+  - SetChallengeMusic(musicID, clearedMusicID, intro, outro)
   - SetSpots(bossSpot, playerSpot, bgColor)
   - SetBosses(Bosses)
   - GetPlayingMusic()

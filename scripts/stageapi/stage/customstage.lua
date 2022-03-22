@@ -153,6 +153,15 @@ function StageAPI.CustomStage:SetBossMusic(music, clearedMusic, intro, outro)
     }
 end
 
+function StageAPI.CustomStage:SetChallengeMusic(music, clearedMusic, intro, outro)
+    self.ChallengeMusic = {
+        Fight = music,
+        Cleared = clearedMusic,
+        Intro = intro,
+        Outro = outro
+    }
+end
+
 function StageAPI.CustomStage:SetRenderStartingRoomControls(doRender)
     self.RenderStartingRoomControls = doRender
 end
@@ -361,7 +370,9 @@ function StageAPI.CustomStage:GetPlayingMusic()
                 return musicID, not shared.Room:IsClear(), queue, disregardNonOverride
             end
         end
-    elseif roomType ~= RoomType.ROOM_CHALLENGE or not shared.Room:IsAmbushActive() then
+    elseif roomType ~= RoomType.ROOM_CHALLENGE 
+    or not (shared.Room:IsAmbushActive() or shared.Room:IsAmbushDone())
+    then
         local music = self.Music
         if music then
             local musicID = music[roomType]
@@ -372,6 +383,58 @@ function StageAPI.CustomStage:GetPlayingMusic()
 
             if musicID then
                 return musicID, not shared.Room:IsClear()
+            end
+        end
+    else -- challenge room active/done
+        if self.ChallengeMusic then
+            local music = self.ChallengeMusic
+            local musicID, queue, disregardNonOverride
+            local isCleared = shared.Room:IsAmbushDone()
+
+            if (
+                music.Outro and (
+                    id == Music.MUSIC_JINGLE_CHALLENGE_OUTRO 
+                    or id == music.Outro 
+                    or (type(music.Outro) == "table" and StageAPI.IsIn(music.Outro, id))
+                )
+            )
+            or (
+                music.Intro and (
+                    id == Music.MUSIC_JINGLE_CHALLENGE_ENTRY 
+                    or id == music.Intro 
+                    or (type(music.Intro) == "table" and StageAPI.IsIn(music.Intro, id))
+                )
+            ) 
+            then
+                if id == Music.MUSIC_JINGLE_CHALLENGE_ENTRY 
+                or id == music.Intro 
+                or (type(music.Intro) == "table" and StageAPI.IsIn(music.Intro, id)) then
+                    musicID, queue = music.Intro, music.Fight
+                else
+                    musicID, queue = music.Outro, music.Cleared
+                end
+
+                disregardNonOverride = true
+            else
+                if isCleared then
+                    musicID = music.Cleared
+                else
+                    musicID = music.Fight
+                end
+            end
+
+            if type(musicID) == "table" then
+                StageAPI.MusicRNG:SetSeed(shared.Room:GetDecorationSeed(), 0)
+                musicID = musicID[StageAPI.Random(1, #musicID, StageAPI.MusicRNG)]
+            end
+
+            local newMusicID = StageAPI.CallCallbacks(Callbacks.POST_SELECT_CHALLENGE_MUSIC, true, self, musicID, isCleared, StageAPI.MusicRNG)
+            if newMusicID then
+                musicID = newMusicID
+            end
+
+            if musicID then
+                return musicID, not shared.Room:IsClear(), queue, disregardNonOverride
             end
         end
     end
