@@ -6,13 +6,20 @@ local Callbacks = require("scripts.stageapi.enums.Callbacks")
 -- Actually uses the elements defined in the other lua files
 -- in this folder and does the game logic
 
+local EFFECT_SUBTYPE_MOONLIGHT = 1 -- Luna light beam in secret rooms
+
 local excludeTypesFromClearing = {
     [EntityType.ENTITY_FAMILIAR] = true,
     [EntityType.ENTITY_PLAYER] = true,
     [EntityType.ENTITY_KNIFE] = true,
     [EntityType.ENTITY_BLOOD_PUPPY] = true,
     [EntityType.ENTITY_DARK_ESAU] = true,
-    [EntityType.ENTITY_MOTHERS_SHADOW] = true
+    [EntityType.ENTITY_MOTHERS_SHADOW] = true,
+    [EntityType.ENTITY_EFFECT] = {
+        [EffectVariant.HEAVEN_LIGHT_DOOR] = {
+            [EFFECT_SUBTYPE_MOONLIGHT] = true,
+        },
+    },
 }
 
 -- These rooms consist purely of wall entities placed where the walls of the room should be
@@ -59,6 +66,19 @@ function StageAPI.FixWalls()
     end
 end
 
+local function ShouldExcludeEntityFromClearing(entity)
+    return excludeTypesFromClearing[entity.Type] == true
+        or (
+            type(excludeTypesFromClearing[entity.Type]) == "table"
+            and excludeTypesFromClearing[entity.Type][entity.Variant] == true
+        )
+        or (
+            type(excludeTypesFromClearing[entity.Type]) == "table"
+            and type(excludeTypesFromClearing[entity.Type][entity.Variant]) == "table"
+            and excludeTypesFromClearing[entity.Type][entity.Variant][entity.SubType]
+        )
+end
+
 function StageAPI.ClearRoomLayout(keepDecoration, doGrids, doEnts, doPersistentEnts, onlyRemoveTheseDecorations, doWalls, doDoors, skipIndexedGrids)
     if StageAPI.InOrTransitioningToExtraRoom() and shared.Room:GetType() ~= RoomType.ROOM_DUNGEON then
         StageAPI.FixWalls()
@@ -66,8 +86,7 @@ function StageAPI.ClearRoomLayout(keepDecoration, doGrids, doEnts, doPersistentE
 
     if doEnts or doPersistentEnts then
         for _, ent in ipairs(Isaac.GetRoomEntities()) do
-            local etype = ent.Type
-            if not excludeTypesFromClearing[etype] then
+            if not ShouldExcludeEntityFromClearing(ent) then
                 local persistentData = StageAPI.CheckPersistence(ent.Type, ent.Variant, ent.SubType)
                 if (doPersistentEnts or (ent:ToNPC() and (not persistentData or not persistentData.AutoPersists))) and not (ent:HasEntityFlags(EntityFlag.FLAG_CHARM) or ent:HasEntityFlags(EntityFlag.FLAG_FRIENDLY) or ent:HasEntityFlags(EntityFlag.FLAG_PERSISTENT)) then
                     ent:Remove()
