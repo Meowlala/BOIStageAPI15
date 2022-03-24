@@ -32,6 +32,44 @@ mod:AddCallback(ModCallbacks.MC_POST_GAME_STARTED, function()
             REVEL.AddedStageAPIChangelogs = true
         end
 
+        TryAddChangelog("v2.02", [[- Split StageAPI into
+multiple files.
+
+- Added support for
+custom stages in
+Greed Mode.
+
+- Added above-HUD
+rendering capabilities,
+which are used to
+render stage streaks now.
+This means stage streaks
+should now render
+properly at all times
+rather than as I or II.
+
+- Added custom challenge room
+music support for
+
+- StageAPI no longer
+overrides the names of
+Catacombs, Necropolis, and
+Utero.
+
+- Fixed a large number of
+typos that may have
+caused some bugs
+
+- Fixes for versus screen
+should make it more
+accurate to the base game
+
+- Fixed Blood Puppy and
+Luna light beams being
+removed when entering
+lua rooms.
+]])
+
         TryAddChangelog("v2.01", [[- Lots of bug fixes
 
 - Removed starting room
