@@ -77,8 +77,8 @@ end
 function StageAPI.CallCallbacks(id, breakOnFirstReturn, ...)
     local finalRet
     for _, callback in ipairs(StageAPI.GetCallbacks(id)) do
-        local ret = StageAPI.TryCallback(id, callback, ...)
-        if ret ~= nil then
+        local success, ret = StageAPI.TryCallback(id, callback, ...)
+        if success and ret ~= nil then
             if breakOnFirstReturn then
                 return ret
             end
@@ -114,8 +114,8 @@ function StageAPI.CallCallbacksWithParams(id, breakOnFirstReturn, matchParams, .
     local callbacks = StageAPI.GetCallbacks(id)
     for _, callback in ipairs(callbacks) do
         if MatchesParams(callback, matchParams) then
-            local ret = StageAPI.TryCallbackParams(id, callback, matchParams, ...)
-            if ret ~= nil then
+            local success, ret = StageAPI.TryCallbackParams(id, callback, matchParams, ...)
+            if success and ret ~= nil then
                 if breakOnFirstReturn then
                     return ret
                 end
@@ -137,8 +137,8 @@ end
 function StageAPI.CallCallbacksAccumulator(id, startValue, ...)
     local finalRet = startValue
     for _, callback in ipairs(StageAPI.GetCallbacks(id)) do
-        local ret = StageAPI.TryCallback(id, callback, finalRet, ...)
-        if ret ~= nil then
+        local success, ret = StageAPI.TryCallback(id, callback, finalRet, ...)
+        if success and ret ~= nil then
             finalRet = ret
         end
     end
@@ -162,8 +162,8 @@ function StageAPI.CallCallbacksAccumulatorParams(id, matchParams, startValue, ..
     local finalRet = startValue
     for _, callback in ipairs(StageAPI.GetCallbacks(id)) do
         if MatchesParams(callback, matchParams) then
-            local ret = StageAPI.TryCallbackParams(id, callback, matchParams, finalRet, ...)
-            if ret ~= nil then
+            local success, ret = StageAPI.TryCallbackParams(id, callback, matchParams, finalRet, ...)
+            if success and ret ~= nil then
                 finalRet = ret
             end
         end
@@ -173,22 +173,25 @@ end
 
 ---@param id callbackId
 ---@param callback StageAPICallback
+---@return boolean, any # returns success, return value of callback
 function StageAPI.TryCallback(id, callback, ...)
     local success, ret = pcall(callback.Function, ...)
     if success then
-        return ret
+        return true, ret
     else
         StageAPI.LogErr(("[Callback: %s]"):format(tostring(id)), ret)
+        return false
     end
 end
 
 ---@param id callbackId
 ---@param callback StageAPICallback
 ---@param params any
+---@return boolean, any # returns success, return value of callback
 function StageAPI.TryCallbackParams(id, callback, params, ...)
     local success, ret = pcall(callback.Function, ...)
     if success then
-        return ret
+        return true, ret
     else
         local paramString
         if type(params) == "table" then
@@ -201,6 +204,7 @@ function StageAPI.TryCallbackParams(id, callback, params, ...)
             paramString = tostring(params)
         end
         StageAPI.LogErr(("[Callback: %s <%s>]"):format(tostring(id), paramString), ret)
+        return false
     end
 end
 
