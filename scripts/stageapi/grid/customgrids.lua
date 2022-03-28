@@ -338,11 +338,7 @@ function StageAPI.CustomGridEntity:Remove(keepBaseGrid)
 end
 
 function StageAPI.CustomGridEntity:CallCallbacks(callback, ...)
-    for _, callback in ipairs(StageAPI.GetCallbacks(callback)) do
-        if not callback.Params[1] or callback.Params[1] == self.GridConfig.Name then
-            callback.Function(self, ...)
-        end
-    end
+    StageAPI.CallCallbacksWithParams(callback, false, self.GridConfig.Name, self, ...)
 end
 
 function StageAPI.GetCustomGrids(index, name)

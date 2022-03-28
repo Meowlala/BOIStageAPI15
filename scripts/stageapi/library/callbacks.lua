@@ -62,6 +62,8 @@ end
 
 StageAPI.UnregisterCallbacks("StageAPI")
 
+---Ideally callbacks obtained this way should be called with TryCallback/TryCallbackParams
+---to do the error check
 ---@param id callbackId
 ---@return table
 function StageAPI.GetCallbacks(id)
@@ -73,17 +75,33 @@ end
 ---@param ... any # callback args
 ---@return any # return type of the callback
 function StageAPI.CallCallbacks(id, breakOnFirstReturn, ...)
+    local finalRet
     for _, callback in ipairs(StageAPI.GetCallbacks(id)) do
-        local ret = callback.Function(...)
-        if breakOnFirstReturn and ret ~= nil then
-            return ret
+        local ret = StageAPI.TryCallback(id, callback, ...)
+        if ret ~= nil then
+            if breakOnFirstReturn then
+                return ret
+            end
+            finalRet = ret
         end
     end
+    return finalRet
 end
 
+---@param callback StageAPICallback
+---@param params table
+local function MatchesParams(callback, params)
+    local matches = true
+    for i, param in ipairs(params) do
+        matches = matches and (param == callback.Params[i] or not callback.Params[i])
+    end
+    return matches
+end
+
+---Calls callbacks that match params
 ---@param id callbackId
 ---@param breakOnFirstReturn boolean
----@param matchParams any | table # can be a single param, or a table of params to match
+---@param matchParams any # can be a single param, or a table of params to match
 ---@param ... any # callback args
 ---@return any # return type of the callback
 function StageAPI.CallCallbacksWithParams(id, breakOnFirstReturn, matchParams, ...)
@@ -91,17 +109,129 @@ function StageAPI.CallCallbacksWithParams(id, breakOnFirstReturn, matchParams, .
         matchParams = {matchParams}
     end
 
+    local finalRet
+
     local callbacks = StageAPI.GetCallbacks(id)
     for _, callback in ipairs(callbacks) do
-        local matches = true
-        for i, param in ipairs(matchParams) do
-            matches = matches and (param == callback.Params[i] or not callback.Params[i])
-        end
-        if matches then
-            local ret = callback.Function(...)
-            if breakOnFirstReturn and ret ~= nil then
-                return ret
+        if MatchesParams(callback, matchParams) then
+            local ret = StageAPI.TryCallbackParams(id, callback, matchParams, ...)
+            if ret ~= nil then
+                if breakOnFirstReturn then
+                    return ret
+                end
+                finalRet = ret
             end
         end
+    end
+
+    return finalRet
+end
+
+---Calls callbacks, passing the last non nil return value
+---as first argument to each (and starting with startValue)
+---@generic V
+---@param id callbackId
+---@param startValue V
+---@param ... any # callback args
+---@return V # return type of the callback
+function StageAPI.CallCallbacksAccumulator(id, startValue, ...)
+    local finalRet = startValue
+    for _, callback in ipairs(StageAPI.GetCallbacks(id)) do
+        local ret = StageAPI.TryCallback(id, callback, finalRet, ...)
+        if ret ~= nil then
+            finalRet = ret
+        end
+    end
+    return finalRet
+end
+
+---Calls callbacks, passing the last non nil return value
+---as first argument to each (and starting with startValue)
+---and also using params
+---@generic V
+---@param id callbackId
+---@param matchParams any # can be a single param, or a table of params to match
+---@param startValue V
+---@param ... any # callback args
+---@return V # return type of the callback
+function StageAPI.CallCallbacksAccumulatorParams(id, matchParams, startValue, ...)
+    if type(matchParams) ~= "table" then
+        matchParams = {matchParams}
+    end
+
+    local finalRet = startValue
+    for _, callback in ipairs(StageAPI.GetCallbacks(id)) do
+        if MatchesParams(callback, matchParams) then
+            local ret = StageAPI.TryCallbackParams(id, callback, matchParams, finalRet, ...)
+            if ret ~= nil then
+                finalRet = ret
+            end
+        end
+    end
+    return finalRet
+end
+
+---@param id callbackId
+---@param callback StageAPICallback
+function StageAPI.TryCallback(id, callback, ...)
+    local success, ret = pcall(callback.Function, ...)
+    if success then
+        return ret
+    else
+        StageAPI.LogErr(("[Callback: %s]"):format(tostring(id)), ret)
+    end
+end
+
+---@param id callbackId
+---@param callback StageAPICallback
+---@param params any
+function StageAPI.TryCallbackParams(id, callback, params, ...)
+    local success, ret = pcall(callback.Function, ...)
+    if success then
+        return ret
+    else
+        local paramString
+        if type(params) == "table" then
+            local stringParams = {}
+            for i, param in ipairs(params) do
+                stringParams[i] = tostring(param)
+            end
+            paramString = table.concat(stringParams, ", ")
+        else
+            paramString = tostring(params)
+        end
+        StageAPI.LogErr(("[Callback: %s <%s>]"):format(tostring(id), paramString), ret)
+    end
+end
+
+
+local TEST = false
+
+if TEST then
+    local TestModId = "TestCall"
+    local TestCallback = "TestCallback"
+
+    --use lua <funcname>() for these
+
+    function CallTestAccumulator()
+        StageAPI.UnregisterCallbacks(TestModId)
+        StageAPI.Log("Start test CallTestAccumulator:")
+        StageAPI.AddCallback(TestModId, TestCallback, 1, function(x, b) return x + b end)
+        StageAPI.AddCallback(TestModId, TestCallback, 1, function(x, b) return x + 2 * b end)
+        local result = StageAPI.CallCallbacksAccumulator(TestCallback, 1, 2)
+        assert(result == 7, "result wrong! " .. tostring(result))
+        StageAPI.Log("Success!")
+    end
+
+    function CallTestAccumulatorParams()
+        StageAPI.UnregisterCallbacks(TestModId)
+        StageAPI.Log("Start test CallTestAccumulatorParams:")
+        StageAPI.AddCallback(TestModId, TestCallback, 1, function(x, b) return x + b end, "A")
+        StageAPI.AddCallback(TestModId, TestCallback, 1, function(x, b) return x + 2 * b end)
+        local result = StageAPI.CallCallbacksAccumulatorParams(TestCallback, "A", 1, 2)
+        assert(result == 7, "result wrong! should be 7, is " .. tostring(result))
+        result       = StageAPI.CallCallbacksAccumulatorParams(TestCallback, "B", 1, 2)
+        assert(result == 5, "result wrong! should be 5, is " .. tostring(result))
+        StageAPI.Log("Success!")
     end
 end
