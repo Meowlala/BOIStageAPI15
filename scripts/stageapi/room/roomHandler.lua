@@ -189,7 +189,7 @@ function StageAPI.GetValidRoomsForLayout(args)
         local weight = layout.Weight
         if isValid then
             for _, callback in ipairs(callbacks) do
-                local success, ret = StageAPI.TryCallback(Callbacks.POST_CHECK_VALID_ROOM, callback, 
+                local success, ret = StageAPI.TryCallback(callback, 
                         layout, roomList, seed, shape, rtype, requireRoomType)
                 if success then
                     if ret == false then
@@ -365,7 +365,7 @@ function StageAPI.SelectSpawnGrids(gridsByIndex, seed)
         if #grids > 0 then
             local spawnGrid, noSpawnGrid
             for _, callback in ipairs(callbacks) do
-                local success, ret = StageAPI.TryCallback(Callbacks.PRE_SELECT_GRIDENTITY_LIST, callback, grids, index)
+                local success, ret = StageAPI.TryCallback(callback, grids, index)
                 if success then
                     if ret == false then
                         noSpawnGrid = true
@@ -448,7 +448,7 @@ function StageAPI.LoadEntitiesFromEntitySets(entitysets, doGrids, doPersistentOn
             if #entityList > 0 then
                 local shouldSpawn = true
                 for _, callback in ipairs(listCallbacks) do
-                    local success, ret = StageAPI.TryCallback(Callbacks.PRE_SPAWN_ENTITY_LIST, callback,
+                    local success, ret = StageAPI.TryCallback(callback,
                         entityList, index, doGrids, doPersistentOnly, doAutoPersistent, avoidSpawning, persistenceData)
                     if success then
                         if ret == false then
@@ -504,7 +504,7 @@ function StageAPI.LoadEntitiesFromEntitySets(entitysets, doGrids, doPersistentOn
                             if not callback.Params[1] or (entityInfo.Data.Type and callback.Params[1] == entityInfo.Data.Type)
                             and not callback.Params[2] or (entityInfo.Data.Variant and callback.Params[2] == entityInfo.Data.Variant)
                             and not callback.Params[3] or (entityInfo.Data.SubType and callback.Params[3] == entityInfo.Data.SubType) then
-                                local success, ret = StageAPI.TryCallback(Callbacks.PRE_SPAWN_ENTITY, callback,
+                                local success, ret = StageAPI.TryCallback(callback,
                                     entityInfo, entityList, index, doGrids, doPersistentOnly, doAutoPersistent, avoidSpawning, persistenceData, shouldSpawnEntity)
                                 if success then
                                     if ret == false or ret == true then
@@ -613,7 +613,7 @@ function StageAPI.LoadGridsFromDataList(grids, gridInformation, entities)
     for index, gridData in pairs(iterList) do
         local shouldSpawn = true
         for _, callback in ipairs(callbacks) do
-            local success, ret = StageAPI.TryCallback(Callbacks.PRE_SPAWN_GRID, callback, 
+            local success, ret = StageAPI.TryCallback(callback, 
                 gridData, gridInformation, entities, StageAPI.GridSpawnRNG)
             if success then
                 if ret == false then

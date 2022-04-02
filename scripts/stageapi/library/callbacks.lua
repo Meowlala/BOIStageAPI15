@@ -5,6 +5,7 @@ local shared = require("scripts.stageapi.shared")
 ---@field Function function
 ---@field Params table
 ---@field Priority number
+---@field CallbackID any # used for error printing
 
 ---@alias callbackId any
 
@@ -46,7 +47,8 @@ function StageAPI.AddCallback(modID, id, priority, fn, ...)
         Priority = priority,
         Function = fn,
         ModID = modID,
-        Params = {...}
+        Params = {...},
+        CallbackID = id,
     })
 end
 
@@ -77,7 +79,7 @@ end
 function StageAPI.CallCallbacks(id, breakOnFirstReturn, ...)
     local finalRet
     for _, callback in ipairs(StageAPI.GetCallbacks(id)) do
-        local success, ret = StageAPI.TryCallback(id, callback, ...)
+        local success, ret = StageAPI.TryCallback(callback, ...)
         if success and ret ~= nil then
             if breakOnFirstReturn then
                 return ret
@@ -114,7 +116,7 @@ function StageAPI.CallCallbacksWithParams(id, breakOnFirstReturn, matchParams, .
     local callbacks = StageAPI.GetCallbacks(id)
     for _, callback in ipairs(callbacks) do
         if MatchesParams(callback, matchParams) then
-            local success, ret = StageAPI.TryCallbackParams(id, callback, matchParams, ...)
+            local success, ret = StageAPI.TryCallbackParams(callback, matchParams, ...)
             if success and ret ~= nil then
                 if breakOnFirstReturn then
                     return ret
@@ -137,7 +139,7 @@ end
 function StageAPI.CallCallbacksAccumulator(id, startValue, ...)
     local finalRet = startValue
     for _, callback in ipairs(StageAPI.GetCallbacks(id)) do
-        local success, ret = StageAPI.TryCallback(id, callback, finalRet, ...)
+        local success, ret = StageAPI.TryCallback(callback, finalRet, ...)
         if success and ret ~= nil then
             finalRet = ret
         end
@@ -162,7 +164,7 @@ function StageAPI.CallCallbacksAccumulatorParams(id, matchParams, startValue, ..
     local finalRet = startValue
     for _, callback in ipairs(StageAPI.GetCallbacks(id)) do
         if MatchesParams(callback, matchParams) then
-            local success, ret = StageAPI.TryCallbackParams(id, callback, matchParams, finalRet, ...)
+            local success, ret = StageAPI.TryCallbackParams(callback, matchParams, finalRet, ...)
             if success and ret ~= nil then
                 finalRet = ret
             end
@@ -171,24 +173,22 @@ function StageAPI.CallCallbacksAccumulatorParams(id, matchParams, startValue, ..
     return finalRet
 end
 
----@param id callbackId
 ---@param callback StageAPICallback
 ---@return boolean, any # returns success, return value of callback
-function StageAPI.TryCallback(id, callback, ...)
+function StageAPI.TryCallback(callback, ...)
     local success, ret = pcall(callback.Function, ...)
     if success then
         return true, ret
     else
-        StageAPI.LogErr(("[Callback: %s]"):format(tostring(id)), ret)
+        StageAPI.LogErr(("[Callback: %s]"):format(tostring(callback.CallbackID)), ret)
         return false
     end
 end
 
----@param id callbackId
 ---@param callback StageAPICallback
 ---@param params any
 ---@return boolean, any # returns success, return value of callback
-function StageAPI.TryCallbackParams(id, callback, params, ...)
+function StageAPI.TryCallbackParams(callback, params, ...)
     local success, ret = pcall(callback.Function, ...)
     if success then
         return true, ret
@@ -203,7 +203,7 @@ function StageAPI.TryCallbackParams(id, callback, params, ...)
         else
             paramString = tostring(params)
         end
-        StageAPI.LogErr(("[Callback: %s <%s>]"):format(tostring(id), paramString), ret)
+        StageAPI.LogErr(("[Callback: %s <%s>]"):format(tostring(callback.CallbackID), paramString), ret)
         return false
     end
 end

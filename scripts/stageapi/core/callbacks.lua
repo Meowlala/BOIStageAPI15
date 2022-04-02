@@ -346,7 +346,7 @@ mod:AddCallback(ModCallbacks.MC_POST_RENDER, function()
         -- is the second arg, won't change for backwards compat
         local callbacks = StageAPI.GetCallbacks(Callbacks.PRE_CHANGE_ROOM_GFX)
         for _, callback in ipairs(callbacks) do
-            local success, ret = StageAPI.TryCallback(Callbacks.PRE_CHANGE_ROOM_GFX, callback, currentRoom, usingGfx, true)
+            local success, ret = StageAPI.TryCallback(callback, currentRoom, usingGfx, true)
             if success and ret ~= nil then
                 usingGfx = ret
             end
@@ -895,7 +895,7 @@ mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, function()
     -- is the second arg, won't change for backwards compat
     local callbacks = StageAPI.GetCallbacks(Callbacks.PRE_CHANGE_ROOM_GFX)
     for _, callback in ipairs(callbacks) do
-        local success, ret = StageAPI.TryCallback(Callbacks.PRE_CHANGE_ROOM_GFX, callback, currentRoom, usingGfx, false)
+        local success, ret = StageAPI.TryCallback(callback, currentRoom, usingGfx, false)
         if success and ret ~= nil then
             usingGfx = ret
         end
