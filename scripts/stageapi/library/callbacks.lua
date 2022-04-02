@@ -208,6 +208,51 @@ function StageAPI.TryCallbackParams(callback, params, ...)
     end
 end
 
+---Separate function as table packing/unpacking 
+---would be slower for generic-purpose calls (that
+---might be made for each room entitiy, multiple times, 
+---etc.); difference not too big, but might as well
+---@param callback StageAPICallback
+---@return boolean, any, ... # returns success, return value of callback
+function StageAPI.TryCallbackMultiReturn(callback, ...)
+    local rets = {pcall(callback.Function, ...)}
+    local success = rets[1]
+    if success then
+        return true, table.unpack(rets, 2)
+    else
+        StageAPI.LogErr(("[Callback: %s]"):format(tostring(callback.CallbackID)), rets[2])
+        return false
+    end
+end
+
+---Separate function as table packing/unpacking 
+---would be slower for generic-purpose calls (that
+---might be made for each room entitiy, multiple times, 
+---etc.); difference not too big, but might as well
+---@param callback StageAPICallback
+---@param params any
+---@return boolean, any, ... # returns success, return value of callback
+function StageAPI.TryCallbackMultiReturnParams(callback, params, ...)
+    local rets = {pcall(callback.Function, ...)}
+    local success = rets[1]
+    if success then
+        return true, table.unpack(rets, 2)
+    else
+        local paramString
+        if type(params) == "table" then
+            local stringParams = {}
+            for i, param in ipairs(params) do
+                stringParams[i] = tostring(param)
+            end
+            paramString = table.concat(stringParams, ", ")
+        else
+            paramString = tostring(params)
+        end
+        StageAPI.LogErr(("[Callback: %s <%s>]"):format(tostring(callback.CallbackID), paramString), rets[2])
+        return false
+    end
+end
+
 
 local TEST = false
 
