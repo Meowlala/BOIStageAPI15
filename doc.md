@@ -31,22 +31,47 @@ Classes are used for a majority of StageAPI objects.
 ## Callbacks:
 `StageAPI.AddCallback(modID, id, priority, function, params...)`: Stores a function and its params in a table indexed by ID and sorted by priority, where low priority is at the start.
 
-`StageAPI.GetCallbacks(id)`: Gets a list of callbacks from the table by the ID, sorted by priority.
-
 `StageAPI.UnregisterCallbacks(modID)`: Unregisters all mod callbacks, should be used when a mod loads, useful for luamod.
 
-Individual callbacks tables are arranged like so
+`StageAPI.CallCallbacks(id, breakOnFirstReturn, params...)`: Calls all callbacks with ID, passing in additional params. If breakOnFirstReturn is defined, breaks and returns the first non-nil return value.
+
+`StageAPI.CallCallbacksWithParams(id, breakOnFirstReturn, matchParams, params...)`: only call callbacks matching some params, usually entity IDs. matchParams can
+be a single param or a table of params. Callbacks with no param specified will be called, matching vanilla behavior. Example:
+
+```
+// Example callback: MY_POST_ENTITY_UPDATE, that can be added with a specified type, variant, subtype
+StageAPI.CallCallbacksWithParams("MY_POST_ENTITY_UPDATE", true, 15, entity) // Will be called for all entities with Type == 15, and any Variant/SubType
+StageAPI.CallCallbacksWithParams("MY_POST_ENTITY_UPDATE", true, {1, 2}, entity) // Will be called for all entities with Type == 1, Variant either == 1 or unspecified, and any SubType
+```
+
+`StageAPI.CallCallbacksAccumulator(id, startValue, params...)`: Calls callbacks passing an accumulator variable as the first parameter. The accumulator will be 
+replaced by every callback's return. So, callback 1 gets called with firstParam = startValue, returns secondValue; callback 2 gets called with firstParam = secondValue, returns thirdValue; etc.
+
+`StageAPI.CallCallbacksAccumulatorParams(id, matchParams, startValue, params...)`: Combines the previous two.
+
+StageAPI callbacks all use string IDs, i.e, `AddCallback("POST_CHECK_VALID_ROOM", 1, function, params)`
+
+`StageAPI.GetCallbacks(id)`: Gets a list of callbacks from the table by the ID, sorted by priority.
+It's recommended that if you use this functions you call the callbacks via one of the following functions:
+
+`StageAPI.TryCallback(callback, params...)` and `StageAPI.TryCallbackParams(callback, matchParams, params...)`: they will try to call the callback, 
+and print an error if it fails. Only difference is that Params will include the matchParams in the error log, to be used when you are only calling 
+params for a specific entityId or similar.
+
+`StageAPI.TryCallbackMultiReturn(callback, params...)` and `StageAPI.TryCallbackMultiReturnParams(callback, matchParams, params...)`: same as the previous 
+ones, but will allow returning multiple values in callback functions. They are slower, so use the previous ones for callbacks that are called many times 
+per frame.
+
+You can also directly use the callback tables, but it's not recommended. Individual callbacks tables are arranged like so
 ```
 {
     Priority = integer,
     Function = function,
     Params = {params...},
-    ModID = modID
+    ModID = modID,
+    CallbackID = callbackID
 }
 ```
-`StageAPI.CallCallbacks(id, breakOnFirstReturn, params...)`: Calls all callbacks with ID, passing in additional params. If breakOnFirstReturn is defined, breaks and returns the first non-nil return value.
-
-StageAPI callbacks all use string IDs, i.e, `AddCallback("POST_CHECK_VALID_ROOM", 1, function, params)`
 
 Callback List:
 - POST_CHECK_VALID_ROOM(layout, roomList, seed, shape, rtype, requireRoomType)
