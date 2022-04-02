@@ -307,9 +307,7 @@ function StageAPI.SelectSpawnEntities(entities, seed, roomMetadata, lastPersiste
             local addEntities = {}
             local overridden, stillAddRandom = false, nil
             for _, callback in ipairs(callbacks) do
-                -- Manualest handling, to make multiple returns still work
-                -- TODO: change TryCallback to have multiple returns work
-                local success, retAdd, retList, retRandom = pcall(callback.Function, entityList, index, roomMetadata)
+                local success, retAdd, retList, retRandom = StageAPI.TryCallbackMultiReturn(callback, entityList, index, roomMetadata)
                 if success then
                     if retRandom ~= nil and stillAddRandom == nil then
                         stillAddRandom = retRandom
@@ -332,8 +330,6 @@ function StageAPI.SelectSpawnEntities(entities, seed, roomMetadata, lastPersiste
                     if overridden then
                         break
                     end
-                else
-                    StageAPI.LogErr("PRE_SELECT_ENTITY_LIST error: " .. retAdd)
                 end
             end
 
@@ -505,7 +501,8 @@ function StageAPI.LoadEntitiesFromEntitySets(entitysets, doGrids, doPersistentOn
                             and not callback.Params[2] or (entityInfo.Data.Variant and callback.Params[2] == entityInfo.Data.Variant)
                             and not callback.Params[3] or (entityInfo.Data.SubType and callback.Params[3] == entityInfo.Data.SubType) then
                                 local success, ret = StageAPI.TryCallback(callback,
-                                    entityInfo, entityList, index, doGrids, doPersistentOnly, doAutoPersistent, avoidSpawning, persistenceData, shouldSpawnEntity)
+                                    entityInfo, entityList, index, doGrids, doPersistentOnly, 
+                                    doAutoPersistent, avoidSpawning, persistenceData, shouldSpawnEntity)
                                 if success then
                                     if ret == false or ret == true then
                                         shouldSpawnEntity = ret

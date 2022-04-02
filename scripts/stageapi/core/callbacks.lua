@@ -226,7 +226,7 @@ mod:AddCallback(ModCallbacks.MC_POST_RENDER, function()
     end
 
     if gridCount ~= StageAPI.PreviousGridCount then
-        local gridCallbacks = StageAPI.CallCallbacks(Callbacks.POST_GRID_UPDATE)
+        StageAPI.CallCallbacks(Callbacks.POST_GRID_UPDATE)
 
         updatedGrids = true
         local roomGrids = StageAPI.GetTableIndexedByDimension(StageAPI.RoomGrids, true)
