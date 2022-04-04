@@ -242,12 +242,10 @@ StageAPI.AddCallback("StageAPI", Callbacks.POST_SPAWN_CUSTOM_GRID, 0, function(c
     data.DoorData = doorData
     data.Opened = opened
 
-    local callbacks = StageAPI.GetCallbacks(Callbacks.POST_SPAWN_CUSTOM_DOOR)
-    for _, callback in ipairs(callbacks) do
-        if not callback.Params[1] or callback.Params[1] == persistData.DoorDataName then
-            callback.Function(door, data, sprite, doorData, customGrid, force, respawning)
-        end
-    end
+    StageAPI.CallCallbacksWithParams(
+        Callbacks.POST_SPAWN_CUSTOM_DOOR, false, persistData.DoorDataName, 
+        door, data, sprite, doorData, customGrid, force, respawning
+    )
 end, "CustomDoor")
 
 mod:AddCallback(ModCallbacks.MC_POST_EFFECT_RENDER, function(_, door)
@@ -572,12 +570,10 @@ mod:AddCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, function(_, door)
         end
     end
 
-    local callbacks = StageAPI.GetCallbacks(Callbacks.POST_CUSTOM_DOOR_UPDATE)
-    for _, callback in ipairs(callbacks) do
-        if not callback.Params[1] or callback.Params[1] == data.DoorGridData.DoorDataName then
-            callback.Function(door, data, sprite, doorData, data.DoorGridData)
-        end
-    end
+    StageAPI.CallCallbacksWithParams(
+        Callbacks.POST_CUSTOM_DOOR_UPDATE, false, data.DoorGridData.DoorDataName, 
+        door, data, sprite, doorData, data.DoorGridData
+    )
 end, StageAPI.E.Door.V)
 
 mod:AddCallback(ModCallbacks.MC_POST_UPDATE, function()

@@ -226,7 +226,7 @@ mod:AddCallback(ModCallbacks.MC_POST_RENDER, function()
     end
 
     if gridCount ~= StageAPI.PreviousGridCount then
-        local gridCallbacks = StageAPI.CallCallbacks(Callbacks.POST_GRID_UPDATE)
+        StageAPI.CallCallbacks(Callbacks.POST_GRID_UPDATE)
 
         updatedGrids = true
         local roomGrids = StageAPI.GetTableIndexedByDimension(StageAPI.RoomGrids, true)
@@ -342,10 +342,12 @@ mod:AddCallback(ModCallbacks.MC_POST_RENDER, function()
     if StageAPI.LastBackdropType ~= backdropType then
         local currentRoom = StageAPI.GetCurrentRoom()
         local usingGfx
+        -- Manual handling instead of CallCallbacksAccumulator needed as usingGfx 
+        -- is the second arg, won't change for backwards compat
         local callbacks = StageAPI.GetCallbacks(Callbacks.PRE_CHANGE_ROOM_GFX)
         for _, callback in ipairs(callbacks) do
-            local ret = callback.Function(currentRoom, usingGfx, true)
-            if ret ~= nil then
+            local success, ret = StageAPI.TryCallback(callback, currentRoom, usingGfx, true)
+            if success and ret ~= nil then
                 usingGfx = ret
             end
         end
@@ -889,10 +891,12 @@ mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, function()
         usingGfx = StageAPI.CurrentStage.RoomGfx[rtype]
     end
 
+    -- Manual handling instead of CallCallbacksAccumulator needed as usingGfx 
+    -- is the second arg, won't change for backwards compat
     local callbacks = StageAPI.GetCallbacks(Callbacks.PRE_CHANGE_ROOM_GFX)
     for _, callback in ipairs(callbacks) do
-        local ret = callback.Function(currentRoom, usingGfx, false)
-        if ret ~= nil then
+        local success, ret = StageAPI.TryCallback(callback, currentRoom, usingGfx, false)
+        if success and ret ~= nil then
             usingGfx = ret
         end
     end

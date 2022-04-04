@@ -185,16 +185,19 @@ function StageAPI.GetValidRoomsForLayout(args)
                 end
             end
         end
-
+    
         local weight = layout.Weight
         if isValid then
             for _, callback in ipairs(callbacks) do
-                local ret = callback.Function(layout, roomList, seed, shape, rtype, requireRoomType)
-                if ret == false then
-                    isValid = false
-                    break
-                elseif type(ret) == "number" then
-                    weight = ret
+                local success, ret = StageAPI.TryCallback(callback, 
+                        layout, roomList, seed, shape, rtype, requireRoomType)
+                if success then
+                    if ret == false then
+                        isValid = false
+                        break
+                    elseif type(ret) == "number" then
+                        weight = ret
+                    end
                 end
             end
         end
@@ -304,27 +307,29 @@ function StageAPI.SelectSpawnEntities(entities, seed, roomMetadata, lastPersiste
             local addEntities = {}
             local overridden, stillAddRandom = false, nil
             for _, callback in ipairs(callbacks) do
-                local retAdd, retList, retRandom = callback.Function(entityList, index, roomMetadata)
-                if retRandom ~= nil and stillAddRandom == nil then
-                    stillAddRandom = retRandom
-                end
-
-                if retAdd == false then
-                    overridden = true
-                else
-                    if retAdd and type(retAdd) == "table" then
-                        addEntities = retAdd
-                        overridden = true
+                local success, retAdd, retList, retRandom = StageAPI.TryCallbackMultiReturn(callback, entityList, index, roomMetadata)
+                if success then
+                    if retRandom ~= nil and stillAddRandom == nil then
+                        stillAddRandom = retRandom
                     end
 
-                    if retList and type(retList) == "table" then
-                        entityList = retList
+                    if retAdd == false then
                         overridden = true
-                    end
-                end
+                    else
+                        if retAdd and type(retAdd) == "table" then
+                            addEntities = retAdd
+                            overridden = true
+                        end
 
-                if overridden then
-                    break
+                        if retList and type(retList) == "table" then
+                            entityList = retList
+                            overridden = true
+                        end
+                    end
+
+                    if overridden then
+                        break
+                    end
                 end
             end
 
@@ -356,18 +361,20 @@ function StageAPI.SelectSpawnGrids(gridsByIndex, seed)
         if #grids > 0 then
             local spawnGrid, noSpawnGrid
             for _, callback in ipairs(callbacks) do
-                local ret = callback.Function(grids, index)
-                if ret == false then
-                    noSpawnGrid = true
-                    break
-                elseif type(ret) == "table" then
-                    if ret.Index then
-                        spawnGrid = ret
-                    else
-                        grids = ret
-                    end
+                local success, ret = StageAPI.TryCallback(callback, grids, index)
+                if success then
+                    if ret == false then
+                        noSpawnGrid = true
+                        break
+                    elseif type(ret) == "table" then
+                        if ret.Index then
+                            spawnGrid = ret
+                        else
+                            grids = ret
+                        end
 
-                    break
+                        break
+                    end
                 end
             end
 
@@ -437,13 +444,16 @@ function StageAPI.LoadEntitiesFromEntitySets(entitysets, doGrids, doPersistentOn
             if #entityList > 0 then
                 local shouldSpawn = true
                 for _, callback in ipairs(listCallbacks) do
-                    local ret = callback.Function(entityList, index, doGrids, doPersistentOnly, doAutoPersistent, avoidSpawning, persistenceData)
-                    if ret == false then
-                        shouldSpawn = false
-                        break
-                    elseif ret and type(ret) == "table" then
-                        entityList = ret
-                        break
+                    local success, ret = StageAPI.TryCallback(callback,
+                        entityList, index, doGrids, doPersistentOnly, doAutoPersistent, avoidSpawning, persistenceData)
+                    if success then
+                        if ret == false then
+                            shouldSpawn = false
+                            break
+                        elseif ret and type(ret) == "table" then
+                            entityList = ret
+                            break
+                        end
                     end
                 end
 
@@ -490,19 +500,23 @@ function StageAPI.LoadEntitiesFromEntitySets(entitysets, doGrids, doPersistentOn
                             if not callback.Params[1] or (entityInfo.Data.Type and callback.Params[1] == entityInfo.Data.Type)
                             and not callback.Params[2] or (entityInfo.Data.Variant and callback.Params[2] == entityInfo.Data.Variant)
                             and not callback.Params[3] or (entityInfo.Data.SubType and callback.Params[3] == entityInfo.Data.SubType) then
-                                local ret = callback.Function(entityInfo, entityList, index, doGrids, doPersistentOnly, doAutoPersistent, avoidSpawning, persistenceData, shouldSpawnEntity)
-                                if ret == false or ret == true then
-                                    shouldSpawnEntity = ret
-                                    break
-                                elseif ret and type(ret) == "table" then
-                                    if ret.Data then
-                                        entityInfo = ret
-                                    else
-                                        entityInfo.Data.Type = ret[1] == 999 and 1000 or ret[1]
-                                        entityInfo.Data.Variant = ret[2]
-                                        entityInfo.Data.SubType = ret[3]
+                                local success, ret = StageAPI.TryCallback(callback,
+                                    entityInfo, entityList, index, doGrids, doPersistentOnly, 
+                                    doAutoPersistent, avoidSpawning, persistenceData, shouldSpawnEntity)
+                                if success then
+                                    if ret == false or ret == true then
+                                        shouldSpawnEntity = ret
+                                        break
+                                    elseif ret and type(ret) == "table" then
+                                        if ret.Data then
+                                            entityInfo = ret
+                                        else
+                                            entityInfo.Data.Type = ret[1] == 999 and 1000 or ret[1]
+                                            entityInfo.Data.Variant = ret[2]
+                                            entityInfo.Data.SubType = ret[3]
+                                        end
+                                        break
                                     end
-                                    break
                                 end
                             end
                         end
@@ -596,12 +610,15 @@ function StageAPI.LoadGridsFromDataList(grids, gridInformation, entities)
     for index, gridData in pairs(iterList) do
         local shouldSpawn = true
         for _, callback in ipairs(callbacks) do
-            local ret = callback.Function(gridData, gridInformation, entities, StageAPI.GridSpawnRNG)
-            if ret == false then
-                shouldSpawn = false
-                break
-            elseif type(ret) == "table" then
-                gridData = ret
+            local success, ret = StageAPI.TryCallback(callback, 
+                gridData, gridInformation, entities, StageAPI.GridSpawnRNG)
+            if success then
+                if ret == false then
+                    shouldSpawn = false
+                    break
+                elseif type(ret) == "table" then
+                    gridData = ret
+                end
             end
         end
 
