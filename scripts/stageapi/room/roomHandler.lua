@@ -467,7 +467,7 @@ function StageAPI.LoadEntitiesFromEntitySets(entitysets, doGrids, doPersistentOn
                         end
 
                         local entityPersistData, persistData
-                        if entityInfo.Persistent then
+                        if entityInfo.Persistent and persistenceData then
                             if entityInfo.PersistentIndex then
                                 entityPersistData = persistenceData[entityInfo.PersistentIndex]
                                 if entityPersistData then
