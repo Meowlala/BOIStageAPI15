@@ -187,9 +187,9 @@ mod:AddCallback(ModCallbacks.MC_POST_UPDATE, function()
         end
 
         if shared.Game:IsGreedMode() then
-            StageAPI.CallCallbacks("GREED_WAVE_CHANGED")
+            StageAPI.CallCallbacks(Callbacks.GREED_WAVE_CHANGED)
         else
-            StageAPI.CallCallbacks("CHALLENGE_WAVE_CHANGED")
+            StageAPI.CallCallbacks(Callbacks.CHALLENGE_WAVE_CHANGED)
         end
     end
 end)
