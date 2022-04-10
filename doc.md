@@ -222,6 +222,7 @@ Callback List:
   - Before loading stageapi save data
 
 - CHALLENGE_WAVE_CHANGED()
+- GREED_WAVE_CHANGED()
 
 - PRE_PLAY_MINIBOSS_STREAK(currentRoom, boss, text)
   - Return false to not play "<player> VS <boss.Name>" as would be normally done, return a string to use that as the streak text instead
