@@ -389,6 +389,13 @@ StageAPI.SetFloorInfo({
     Backdrop = BackdropType.MORTIS
 }, settingStage, StageType.STAGETYPE_REPENTANCE_B)
 
+for stageType = StageType.STAGETYPE_REPENTANCE, StageType.STAGETYPE_REPENTANCE_B do
+    local floorInfo = StageAPI.GetBaseFloorInfo(LevelStage.STAGE4_2, stageType, false)
+    floorInfo.Bosses = poolWrap{
+        {BossID = "Mother"},
+    }
+end
+
 settingStage = LevelStage.STAGE5
 StageAPI.SetFloorInfo({
     Prefix = "09_sheol",
