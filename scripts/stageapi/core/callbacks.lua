@@ -307,7 +307,7 @@ mod:AddCallback(ModCallbacks.MC_POST_RENDER, function()
         local anyPlayerPressingTab = false
 
         for _, player in ipairs(shared.Players) do
-            anyPlayerPressingTab = anyPlayerPressingTab or Input.IsActionPressed(ButtonAction.ACTION_MAP, player.ControllerIndex) 
+            anyPlayerPressingTab = anyPlayerPressingTab or Input.IsActionPressed(ButtonAction.ACTION_MAP, player.ControllerIndex)
             if anyPlayerPressingTab then
                 break
             end
@@ -342,7 +342,7 @@ mod:AddCallback(ModCallbacks.MC_POST_RENDER, function()
     if StageAPI.LastBackdropType ~= backdropType then
         local currentRoom = StageAPI.GetCurrentRoom()
         local usingGfx
-        -- Manual handling instead of CallCallbacksAccumulator needed as usingGfx 
+        -- Manual handling instead of CallCallbacksAccumulator needed as usingGfx
         -- is the second arg, won't change for backwards compat
         local callbacks = StageAPI.GetCallbacks(Callbacks.PRE_CHANGE_ROOM_GFX)
         for _, callback in ipairs(callbacks) do
@@ -432,7 +432,7 @@ function StageAPI.GenerateBaseRoom(roomDesc)
     local baseFloorInfo = StageAPI.GetBaseFloorInfo()
     local xlFloorInfo
     if shared.Level:GetCurses() & LevelCurse.CURSE_OF_LABYRINTH ~= 0 then
-        xlFloorInfo = StageAPI.GetBaseFloorInfo(shared.Level:GetStage() + 1)
+        xlFloorInfo = StageAPI.GetBaseFloorInfo(shared.Level:GetStage() + 1, shared.Level:GetStageType())
     end
 
     local lastBossRoomListIndex = shared.Level:GetLastBossRoomListIndex()
@@ -891,7 +891,7 @@ mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, function()
         usingGfx = StageAPI.CurrentStage.RoomGfx[rtype]
     end
 
-    -- Manual handling instead of CallCallbacksAccumulator needed as usingGfx 
+    -- Manual handling instead of CallCallbacksAccumulator needed as usingGfx
     -- is the second arg, won't change for backwards compat
     local callbacks = StageAPI.GetCallbacks(Callbacks.PRE_CHANGE_ROOM_GFX)
     for _, callback in ipairs(callbacks) do
