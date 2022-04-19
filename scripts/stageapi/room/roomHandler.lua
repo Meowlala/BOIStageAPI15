@@ -103,6 +103,8 @@ function StageAPI.ClearRoomLayout(keepDecoration, doGrids, doEnts, doPersistentE
 
             local roomGrids = StageAPI.GetTableIndexedByDimension(StageAPI.RoomGrids, true)
             roomGrids[lindex] = {}
+
+            StageAPI.CustomGridEntities = {}
         end
 
         for i = 0, shared.Room:GetGridSize() do
@@ -185,11 +187,11 @@ function StageAPI.GetValidRoomsForLayout(args)
                 end
             end
         end
-    
+
         local weight = layout.Weight
         if isValid then
             for _, callback in ipairs(callbacks) do
-                local success, ret = StageAPI.TryCallback(callback, 
+                local success, ret = StageAPI.TryCallback(callback,
                         layout, roomList, seed, shape, rtype, requireRoomType)
                 if success then
                     if ret == false then
@@ -501,7 +503,7 @@ function StageAPI.LoadEntitiesFromEntitySets(entitysets, doGrids, doPersistentOn
                             and not callback.Params[2] or (entityInfo.Data.Variant and callback.Params[2] == entityInfo.Data.Variant)
                             and not callback.Params[3] or (entityInfo.Data.SubType and callback.Params[3] == entityInfo.Data.SubType) then
                                 local success, ret = StageAPI.TryCallback(callback,
-                                    entityInfo, entityList, index, doGrids, doPersistentOnly, 
+                                    entityInfo, entityList, index, doGrids, doPersistentOnly,
                                     doAutoPersistent, avoidSpawning, persistenceData, shouldSpawnEntity)
                                 if success then
                                     if ret == false or ret == true then
@@ -610,7 +612,7 @@ function StageAPI.LoadGridsFromDataList(grids, gridInformation, entities)
     for index, gridData in pairs(iterList) do
         local shouldSpawn = true
         for _, callback in ipairs(callbacks) do
-            local success, ret = StageAPI.TryCallback(callback, 
+            local success, ret = StageAPI.TryCallback(callback,
                 gridData, gridInformation, entities, StageAPI.GridSpawnRNG)
             if success then
                 if ret == false then
