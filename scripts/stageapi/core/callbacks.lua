@@ -456,7 +456,7 @@ function StageAPI.GenerateBaseRoom(roomDesc)
                     RoomDescriptor = roomDesc
                 })
 
-                if roomDesc.Data.Subtype == 82 or roomDesc.Data.Subtype == 83 then -- Remove Great Gideon special health bar & Hornfel room properties
+                if roomDesc.Data.Subtype == 82 or roomDesc.Data.Subtype == 83 or roomDesc.Data.Subtype == 81 then -- Remove Great Gideon special health bar, Hornfel room properties, and Heretic pentagram effect.
                     local overwritableRoomDesc = shared.Level:GetRoomByIdx(roomDesc.SafeGridIndex, dimension)
                     local replaceData = StageAPI.GetGotoDataForTypeShape(RoomType.ROOM_BOSS, roomDesc.Data.Shape)
                     overwritableRoomDesc.Data = replaceData
