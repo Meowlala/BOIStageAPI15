@@ -27,6 +27,7 @@ local Callbacks = {
     POST_OVERRIDDEN_GRID_BREAK = "POST_OVERRIDDEN_GRID_BREAK", -- (grindex, grid, justBrokenGridSpawns)
     POST_GRID_UPDATE = "POST_GRID_UPDATE", -- ()
     PRE_UPDATE_GRID_GFX = "PRE_UPDATE_GRID_GFX", -- ()
+    POST_UPDATE_GRID_GFX = "POST_UPDATE_GRID_GFX", -- (gridGfx)
     PRE_CHANGE_ROOM_GFX = "PRE_CHANGE_ROOM_GFX", -- (currentRoom, usingGfx, onRoomLoad)
     POST_CHANGE_ROOM_GFX = "POST_CHANGE_ROOM_GFX", -- (currentRoom, usingGfx, onRoomLoad)
     PRE_STAGEAPI_NEW_ROOM = "PRE_STAGEAPI_NEW_ROOM", -- ()

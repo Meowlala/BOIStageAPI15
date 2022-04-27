@@ -270,6 +270,10 @@ mod:AddCallback(ModCallbacks.MC_POST_RENDER, function()
             end
         end
 
+        if not StageAPI.RoomRendered and updatedGrids then
+            StageAPI.CallCallbacks(Callbacks.POST_UPDATE_GRID_GFX, false, grids)
+        end
+
         local id = shared.Music:GetCurrentMusicID()
         local musicID, shouldLayer, shouldQueue, disregardNonOverride = StageAPI.CurrentStage:GetPlayingMusic()
         if musicID then
