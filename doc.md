@@ -44,7 +44,7 @@ StageAPI.CallCallbacksWithParams("MY_POST_ENTITY_UPDATE", true, 15, entity) // W
 StageAPI.CallCallbacksWithParams("MY_POST_ENTITY_UPDATE", true, {1, 2}, entity) // Will be called for all entities with Type == 1, Variant either == 1 or unspecified, and any SubType
 ```
 
-`StageAPI.CallCallbacksAccumulator(id, startValue, params...)`: Calls callbacks passing an accumulator variable as the first parameter. The accumulator will be 
+`StageAPI.CallCallbacksAccumulator(id, startValue, params...)`: Calls callbacks passing an accumulator variable as the first parameter. The accumulator will be
 replaced by every callback's return. So, callback 1 gets called with firstParam = startValue, returns secondValue; callback 2 gets called with firstParam = secondValue, returns thirdValue; etc.
 
 `StageAPI.CallCallbacksAccumulatorParams(id, matchParams, startValue, params...)`: Combines the previous two.
@@ -54,12 +54,12 @@ StageAPI callbacks all use string IDs, i.e, `AddCallback("POST_CHECK_VALID_ROOM"
 `StageAPI.GetCallbacks(id)`: Gets a list of callbacks from the table by the ID, sorted by priority.
 It's recommended that if you use this functions you call the callbacks via one of the following functions:
 
-`StageAPI.TryCallback(callback, params...)` and `StageAPI.TryCallbackParams(callback, matchParams, params...)`: they will try to call the callback, 
-and print an error if it fails. Only difference is that Params will include the matchParams in the error log, to be used when you are only calling 
+`StageAPI.TryCallback(callback, params...)` and `StageAPI.TryCallbackParams(callback, matchParams, params...)`: they will try to call the callback,
+and print an error if it fails. Only difference is that Params will include the matchParams in the error log, to be used when you are only calling
 params for a specific entityId or similar.
 
-`StageAPI.TryCallbackMultiReturn(callback, params...)` and `StageAPI.TryCallbackMultiReturnParams(callback, matchParams, params...)`: same as the previous 
-ones, but will allow returning multiple values in callback functions. They are slower, so use the previous ones for callbacks that are called many times 
+`StageAPI.TryCallbackMultiReturn(callback, params...)` and `StageAPI.TryCallbackMultiReturnParams(callback, matchParams, params...)`: same as the previous
+ones, but will allow returning multiple values in callback functions. They are slower, so use the previous ones for callbacks that are called many times
 per frame.
 
 You can also directly use the callback tables, but it's not recommended. Individual callbacks tables are arranged like so
@@ -167,6 +167,9 @@ Callback List:
 - PRE_UPDATE_GRID_GFX()
   - Allows returning gridgfx to use in place of the stage's.
 
+- POST_UPDATE_GRID_GFX()
+  - Called when the number of grids changes or grids are reprocessed, after room grid graphics are changed. Good for postfixes.
+
 - PRE_CHANGE_ROOM_GFX(currentRoom, usingGfx, onRoomLoad)
   - Allows returning roomgfx to use in place of the stage's.
   - Runs both on room load and when the backdrop is changed
@@ -233,8 +236,8 @@ Callback List:
 - POST_HUD_RENDER(isPauseMenuOpen, pauseMenuDarkPct)
   - Runs after the vanilla hud is rendered
   - Uses a workaround with the shader callback
-  - Use isPauseMenuOpen and pauseMenuDarkPct to work around the pause menu, as 
-  the things rendered now will render over that too; either disable 
+  - Use isPauseMenuOpen and pauseMenuDarkPct to work around the pause menu, as
+  the things rendered now will render over that too; either disable
   them or darken them.
   - Handy constant: StageAPI.PAUSE_DARK_BG_COLOR, the color of the dark background
   rendered above the hud normally when paused
