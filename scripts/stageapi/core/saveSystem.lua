@@ -108,6 +108,7 @@ function StageAPI.GetSaveString()
         LevelMaps = levelMaps,
         Stage = stage,
         CurrentLevelMapID = StageAPI.CurrentLevelMapID,
+        DefaultLevelMapID = StageAPI.DefaultLevelMapID,
         CurrentLevelMapRoomID = StageAPI.CurrentLevelMapRoomID,
         EncounteredBosses = encounteredBosses
     })
@@ -170,7 +171,12 @@ function StageAPI.LoadSaveString(str)
     end
 
     StageAPI.CurrentLevelMapID = decoded.CurrentLevelMapID
+    StageAPI.DefaultLevelMapID = decoded.DefaultLevelMapID
     StageAPI.CurrentLevelMapRoomID = decoded.CurrentLevelMapRoomID
+
+    if StageAPI.CurrentLevelMapRoomID then
+        StageAPI.TransitioningToExtraRoom = true
+    end
 
     StageAPI.RoomGrids = retRoomGrids
     StageAPI.CustomGrids = retCustomGrids
