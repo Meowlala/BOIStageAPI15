@@ -59,7 +59,7 @@ function StageAPI.GetSaveString()
             levelSaveData[strDimension] = {}
         end
 
-        for lindex, customGrids in pairs(StageAPI.CustomGrids) do
+        for lindex, customGrids in pairs(rooms) do
             local strindex = tostring(lindex)
             if not levelSaveData[strDimension][strindex] then
                 levelSaveData[strDimension][strindex] = {}

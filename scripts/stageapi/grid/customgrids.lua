@@ -563,3 +563,9 @@ mod:AddCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, function(_, eff)
         data.CustomGrid:UpdateProjectileHelper(eff)
     end
 end, EffectVariant.GRID_ENTITY_PROJECTILE_HELPER)
+
+mod:AddCallback(ModCallbacks.MC_PRE_GAME_EXIT, function()
+    for _, customGrid in ipairs(StageAPI.GetCustomGrids()) do
+        customGrid:Unload()
+    end
+end)
