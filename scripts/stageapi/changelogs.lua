@@ -32,6 +32,25 @@ mod:AddCallback(ModCallbacks.MC_POST_GAME_STARTED, function()
             REVEL.AddedStageAPIChangelogs = true
         end
 
+        TryAddChangelog("v2.03", [[- Fixes for extra
+rooms and custom grids with
+save and continue.
+
+- POST_UPDATE_GRID_GFX callback.
+
+- Improved error handling with
+StageAPI callbacks.
+
+- Fixed challenge waves with
+persistent entities.
+
+- Fixes for boss pools on
+XL floors.
+
+- Bosses overriding The Heretic
+no longer spawn a pentagram.
+]])
+
         TryAddChangelog("v2.02", [[- Split StageAPI into
 multiple files.
 
@@ -50,6 +69,7 @@ rather than as I or II.
 
 - Added custom challenge room
 music support for
+custom stages.
 
 - StageAPI no longer
 overrides the names of
