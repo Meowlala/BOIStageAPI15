@@ -356,11 +356,13 @@ function StageAPI.GetLiftedCustomGrids(ignoreMarked, includeRecent)
     local customGrids = StageAPI.GetCustomGrids()
     local lifted = {}
     for _, grid in ipairs(customGrids) do
-        local gridEnt = shared.Room:GetGridEntity(grid.GridIndex)
-        if gridEnt and (ignoreMarked or (not grid.Lifted or (includeRecent and grid.RecentlyLifted))) then
-            local sprite = gridEnt:GetSprite()
-            if sprite:GetFilename() == "" and sprite:GetAnimation() == "" then
-                lifted[#lifted + 1] = grid
+        if grid:IsOnGrid() then
+            local gridEnt = shared.Room:GetGridEntity(grid.GridIndex)
+            if gridEnt and (ignoreMarked or (not grid.Lifted or (includeRecent and grid.RecentlyLifted))) then
+                local sprite = gridEnt:GetSprite()
+                if sprite:GetFilename() == "" and sprite:GetAnimation() == "" then
+                    lifted[#lifted + 1] = grid
+                end
             end
         end
     end
