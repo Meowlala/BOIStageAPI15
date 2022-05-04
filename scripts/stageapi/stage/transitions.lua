@@ -26,6 +26,7 @@ StageAPI.RemovedHUD = false
 StageAPI.TransitionIsPlaying = false
 
 StageAPI.Seeds = shared.Game:GetSeeds()
+StageAPI.HUD = shared.Game:GetHUD()
 
 StageAPI.BlackScreenOverlay = Sprite()
 StageAPI.BlackScreenOverlay:Load("stageapi/overlay_black.anm2", false)
@@ -84,12 +85,12 @@ mod:AddCallback(ModCallbacks.MC_POST_RENDER, function()
     end
 
     if StageAPI.IsHUDAnimationPlaying() then
-        if not StageAPI.Seeds:HasSeedEffect(SeedEffect.SEED_NO_HUD) then
-            StageAPI.Seeds:AddSeedEffect(SeedEffect.SEED_NO_HUD)
+        if StageAPI.HUD:IsVisible() then
+            StageAPI.HUD:SetVisible(false)
             StageAPI.RemovedHUD = true
         end
-    elseif StageAPI.Seeds:HasSeedEffect(SeedEffect.SEED_NO_HUD) and StageAPI.RemovedHUD then
-        StageAPI.Seeds:RemoveSeedEffect(SeedEffect.SEED_NO_HUD)
+    elseif not StageAPI.HUD:IsVisible() and StageAPI.RemovedHUD then
+        StageAPI.HUD:SetVisible(true)
         StageAPI.RemovedHUD = false
     end
 end)
