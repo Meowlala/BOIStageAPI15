@@ -1,5 +1,5 @@
 # BOIStageAPI15
-Custom StageAPI 1.5 for the Binding of Isaac Afterbirth+, allows overlaying custom stages on top of existing floors.
+Custom StageAPI 1.5 for the Binding of Isaac Repentance, allows overlaying custom stages on top of existing floors.
 Currently supports Catacombs, Necropolis, and Utero.
 
 DOCUMENTATION IN [doc.md](doc.md)
