@@ -25,9 +25,9 @@
         			</spinner>
         		</bitfield>
         	</entity>
-        	<entity Metadata="1" ID="199" Image="stageapi/shop_item.png" Name="Shop Item Modifier" Subtype="0" Variant="11" >
+        	<entity Metadata="1" ID="199" Image="stageapi/shop_item.png" Name="Shop Item Modifier" Subtype="5" Variant="11" >
         		<bitfield Key="Subtype">
-        			<spinner Name="Price" Length="7" ValueOffset="-5" Minimum="-5" Maximum="99">
+        			<spinner Name="Price" Length="7" ValueOffset="-5" Minimum="0" Maximum="104">
         				<tooltip>Prices above 0 are in cents, prices below 0 match PickupPrice:
         -1 is one heart container
         -2 is two heart containers
