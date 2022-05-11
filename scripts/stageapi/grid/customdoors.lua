@@ -243,7 +243,7 @@ StageAPI.AddCallback("StageAPI", Callbacks.POST_SPAWN_CUSTOM_GRID, 0, function(c
     data.Opened = opened
 
     StageAPI.CallCallbacksWithParams(
-        Callbacks.POST_SPAWN_CUSTOM_DOOR, false, persistData.DoorDataName, 
+        Callbacks.POST_SPAWN_CUSTOM_DOOR, false, persistData.DoorDataName,
         door, data, sprite, doorData, customGrid, force, respawning
     )
 end, "CustomDoor")
@@ -351,8 +351,11 @@ mod:AddCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, function(_, door)
         end
 
         if stateData.Triggers then
+            local currentRoom = StageAPI.GetCurrentRoom()
+            local doorLocked = currentRoom and currentRoom.Metadata:Has({Name = "DoorLocker", Index = shared.Room:GetGridIndex(door.Position)})
+
             local trigger
-            if stateData.Triggers.Bomb then
+            if stateData.Triggers.Bomb and not doorLocked then
                 if not data.CountedExplosions then
                     data.CountedExplosions = {}
                 end
@@ -368,19 +371,20 @@ mod:AddCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, function(_, door)
                 end
             end
 
-            if stateData.Triggers.EnteredThrough and shared.Level.EnterDoor == data.DoorGridData.Slot then
+            if stateData.Triggers.EnteredThrough and shared.Level.EnterDoor == data.DoorGridData.Slot and not doorLocked then
                 trigger = stateData.Triggers.EnteredThrough
             end
 
-            if stateData.Triggers.Unclear and not shared.Room:IsClear() then
+
+            if stateData.Triggers.Unclear and (not shared.Room:IsClear() or doorLocked) then
                 trigger = stateData.Triggers.Unclear
             end
 
-            if stateData.Triggers.Clear and shared.Room:IsClear() then
+            if stateData.Triggers.Clear and shared.Room:IsClear() and not doorLocked then
                 trigger = stateData.Triggers.Clear
             end
 
-            if (stateData.Triggers.Key or stateData.Triggers.Coin or stateData.Triggers.GoldKey) and shared.Room:IsClear() then
+            if (stateData.Triggers.Key or stateData.Triggers.Coin or stateData.Triggers.GoldKey) and shared.Room:IsClear() and not doorLocked then
                 local touched = {}
                 for _, player in ipairs(shared.Players) do
                     if player:CollidesWithGrid() and player.Position:DistanceSquared(door.Position) < 40 * 40 then
@@ -571,7 +575,7 @@ mod:AddCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, function(_, door)
     end
 
     StageAPI.CallCallbacksWithParams(
-        Callbacks.POST_CUSTOM_DOOR_UPDATE, false, data.DoorGridData.DoorDataName, 
+        Callbacks.POST_CUSTOM_DOOR_UPDATE, false, data.DoorGridData.DoorDataName,
         door, data, sprite, doorData, data.DoorGridData
     )
 end, StageAPI.E.Door.V)

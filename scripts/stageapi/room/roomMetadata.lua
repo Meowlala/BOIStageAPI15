@@ -489,7 +489,8 @@ StageAPI.MetadataEntities = {
             }
         },
         [27] = {
-            Name = "DoorLocker"
+            Name = "DoorLocker",
+            Tag = "StageAPIEditorFeature"
         },
         [28] = {
             Name = "GridDestroyer",
