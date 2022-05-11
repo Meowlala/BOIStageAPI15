@@ -59,8 +59,9 @@ function StageAPI.FixWalls()
 
         for i = 0, shared.Room:GetGridSize() do
             local grid = shared.Room:GetGridEntity(i)
-            if not data.Indices[i] and grid and grid.Desc.Type == GridEntityType.GRID_WALL then
+            if not data.Indices[i] and grid and grid.Desc.Type == GridEntityType.GRID_WALL and not shared.Room:IsPositionInRoom(grid.Position, 0) then
                 shared.Room:RemoveGridEntity(i, 0, false)
+                shared.Room:SetGridPath(i, 0)
             end
         end
     end
@@ -115,7 +116,10 @@ function StageAPI.ClearRoomLayout(keepDecoration, doGrids, doEnts, doPersistentE
                 and (doDoors or gtype ~= GridEntityType.GRID_DOOR)
                 and (not onlyRemoveTheseDecorations or gtype ~= GridEntityType.GRID_DECORATION or onlyRemoveTheseDecorations[i]) then
                     shared.Room:RemoveGridEntity(i, 0, keepDecoration)
+                    shared.Room:SetGridPath(i, 0)
                 end
+            else
+                shared.Room:SetGridPath(i, 0)
             end
         end
     end
@@ -625,7 +629,13 @@ function StageAPI.LoadGridsFromDataList(grids, gridInformation, entities)
         end
 
         if shouldSpawn and shared.Room:IsPositionInRoom(shared.Room:GetGridPosition(index), 0) then
-            shared.Room:RemoveGridEntity(index, 0, false)
+            local existingGrid = shared.Room:GetGridEntity(index)
+            if existingGrid then
+                shared.Room:RemoveGridEntity(index, 0, false)
+            end
+
+            shared.Room:SetGridPath(index, 0)
+
             local grid = Isaac.GridSpawn(gridData.Type, gridData.Variant, shared.Room:GetGridPosition(index), true)
             if grid then
                 if gridInformation and gridInformation[index] then

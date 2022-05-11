@@ -74,6 +74,12 @@ function StageAPI.CustomGrid:SpawnBaseGrid(grindex, force, respawning)
             grid = Isaac.GridSpawn(self.BaseType, self.BaseVariant or 0, shared.Room:GetGridPosition(grindex), force)
         else
             grid = shared.Room:GetGridEntity(grindex)
+            if not grid then
+                -- Ideally, this would be fixed in LoadGridsFromDataList in RoomHandler, but something there doesn't seem to work properly. This works for now for custom grids.
+                shared.Room:SetGridPath(grindex, 0)
+                force = force or self.ForceSpawning
+                grid = Isaac.GridSpawn(self.BaseType, self.BaseVariant or 0, shared.Room:GetGridPosition(grindex), force)
+            end
         end
 
         if self.Anm2 and grid then
