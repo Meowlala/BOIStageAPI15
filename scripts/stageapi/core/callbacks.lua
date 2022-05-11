@@ -494,10 +494,11 @@ function StageAPI.GenerateBaseRoom(roomDesc)
         local listIndex = roomDesc.ListIndex
         StageAPI.SetLevelRoom(newRoom, listIndex, dimension)
         if roomDesc.Data.Type == RoomType.ROOM_BOSS and baseFloorInfo.HasMirrorLevel and dimension == 0 then
-            StageAPI.Log("Mirroring!")
             local mirroredRoom = newRoom:Copy(roomDesc)
             local mirroredDesc = shared.Level:GetRoomByIdx(roomDesc.SafeGridIndex, 1)
             StageAPI.SetLevelRoom(mirroredRoom, mirroredDesc.ListIndex, 1)
+			
+            StageAPI.LogMinor("Mirroring!")
         end
     end
 end
@@ -602,8 +603,8 @@ function StageAPI.DetectBaseLayoutChanges(generateNewRooms)
             StageAPI.SetLevelRoom(levelRoomOne, changed.ListIndex, dimension)
             StageAPI.SetLevelRoom(levelRoomTwo, swappedWith.ListIndex, dimension)
         else
-            StageAPI.SetLevelRoom(nil, changed.ListIndex, dimension)
             if generateNewRooms then
+                StageAPI.SetLevelRoom(nil, changed.ListIndex, dimension)
                 local roomDesc = shared.Level:GetRooms():Get(changed.ListIndex)
                 if StageAPI.CurrentStage then
                     if StageAPI.CurrentStage.PregenerationEnabled then
