@@ -32,7 +32,7 @@ mod:AddCallback(ModCallbacks.MC_POST_GAME_STARTED, function()
             REVEL.AddedStageAPIChangelogs = true
         end
 
-        TryAddChangelog("v2.03", [[- Fixes for extra
+        TryAddChangelog("v2.03 - 04", [[- Fixes for extra
 rooms and custom grids with
 save and continue.
 
@@ -49,6 +49,15 @@ XL floors.
 
 - Bosses overriding The Heretic
 no longer spawn a pentagram.
+
+- Improvements to StageAPI room
+editor utilities
+
+- Fix for a mod compatibility issue
+with floor layout change detection
+
+- Further fixes for custom grids
+not loading properly
 ]])
 
         TryAddChangelog("v2.02", [[- Split StageAPI into
