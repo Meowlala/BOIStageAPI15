@@ -438,7 +438,9 @@ StageAPI.MetadataEntities = {
             Name = "SetPlayerPosition",
             Tag = "StageAPILoadEditorFeature",
             BitValues = {
-                UnclearedOnly = {Offset = 0, Length = 1}
+                UnclearedOnly = {Offset = 0, Length = 1},
+                OffsetX = {Offset = 1, Length = 1},
+                OffsetY = {Offset = 2, Length = 1},
             }
         },
         [20] = {

@@ -148,7 +148,9 @@ StageAPI.AddCallback("StageAPI", Callbacks.POST_ROOM_LOAD, 0, function(currentRo
         elseif loadFeature.Name == "SetPlayerPosition" then
             local unclearedOnly = loadFeature.BitValues.UnclearedOnly == 1
             if not unclearedOnly or not currentRoom.IsClear or firstLoad then
-                StageAPI.ForcePlayerNewRoomPosition = shared.Room:GetGridPosition(loadFeature.Index)
+                local pos = shared.Room:GetGridPosition(loadFeature.Index)
+                pos = pos + Vector(loadFeature.BitValues.OffsetX * 20, loadFeature.BitValues.OffsetY * 20)
+                StageAPI.ForcePlayerNewRoomPosition = pos
             end
         elseif loadFeature.Name == "EnteredFromTrigger" then
             local checkPos = StageAPI.ForcePlayerNewRoomPosition

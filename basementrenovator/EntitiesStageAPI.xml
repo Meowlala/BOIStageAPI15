@@ -50,6 +50,12 @@
         			<checkbox Name="Only when Uncleared" Length="1">
         				<tooltip>If checked, only teleports the player when the room is uncleared or on the very first load</tooltip>
         			</checkbox>
+                    <checkbox Name="Offset X" Length="1">
+                        <tooltip>Moves the player's X position to the right edge of the grid</tooltip>
+                    </checkbox>
+                    <checkbox Name="Offset Y" Length="1">
+                        <tooltip>Moves the player's Y Position to the bottom edge of the grid</tooltip>
+                    </checkbox>
         		</bitfield>
         	</entity>
         	<entity Metadata="1" ID="199" Image="stageapi/swap.png" Name="Swapper" Subtype="0" Variant="20" >
