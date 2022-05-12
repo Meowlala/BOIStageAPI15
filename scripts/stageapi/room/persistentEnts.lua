@@ -105,6 +105,8 @@ StageAPI.AddPersistenceCheck(function(entData)
                     end
                 elseif entity.Type == EntityType.ENTITY_SLOT then
                     return entity:GetSprite():IsPlaying("Death") or entity:GetSprite():IsPlaying("Broken") or entity:GetSprite():IsFinished("Death") or entity:GetSprite():IsFinished("Broken")
+                elseif entity.Type == EntityType.ENTITY_MOVABLE_TNT then
+                    return entity.HitPoints == 0.5 or entity:GetSprite():GetAnimation() == "Blown"
                 end
             end
         }
