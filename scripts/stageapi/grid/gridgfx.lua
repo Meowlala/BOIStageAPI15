@@ -3,6 +3,11 @@ local mod = require("scripts.stageapi.mod")
 
 StageAPI.LogMinor("Loading GridGfx Handler")
 
+---@return GridGfx
+function StageAPI.GridGfx()
+end
+
+---@class GridGfx : StageAPIClass
 StageAPI.GridGfx = StageAPI.Class("GridGfx")
 function StageAPI.GridGfx:Init()
     self.Grids = false
@@ -562,6 +567,7 @@ function StageAPI.ChangeDoors(doors)
     end
 end
 
+---@param grids GridGfx
 function StageAPI.ChangeGrids(grids)
     StageAPI.GridGfxRNG:SetSeed(shared.Room:GetDecorationSeed(), 0)
 

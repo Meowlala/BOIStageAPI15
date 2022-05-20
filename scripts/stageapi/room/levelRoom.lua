@@ -1,6 +1,34 @@
 local shared = require("scripts.stageapi.shared")
 local Callbacks = require("scripts.stageapi.enums.Callbacks")
 
+---@class LevelRoomArgs
+---@field LayoutName string
+---@field RoomsList RoomsList
+---@field SpawnSeed integer
+---@field Shape RoomShape
+---@field RoomType RoomType
+---@field IsExtraRoom boolean
+---@field FromSave boolean
+---@field RequireRoomType boolean
+---@field IgnoreDoors boolean
+---@field Doors table<integer, boolean>
+---@field LevelIndex integer
+---@field IgnoreRoomRules boolean
+
+---Default room args, but not necessarily only possible ones
+---@param layoutName string
+---@param roomsList? RoomsList
+---@param seed? integer
+---@param shape? RoomShape
+---@param roomType? RoomType
+---@param isExtraRoom? boolean
+---@param fromSaveData? boolean
+---@param requireRoomType? boolean
+---@param ignoreDoors? boolean
+---@param doors? table<DoorSlot, boolean>
+---@param levelIndex? integer
+---@param ignoreRoomRules? boolean
+---@return LevelRoomArgs
 function StageAPI.LevelRoomArgPacker(layoutName, roomsList, seed, shape, roomType, isExtraRoom, fromSaveData, requireRoomType, ignoreDoors, doors, levelIndex, ignoreRoomRules)
     return {
         LayoutName = layoutName,
@@ -14,12 +42,49 @@ function StageAPI.LevelRoomArgPacker(layoutName, roomsList, seed, shape, roomTyp
         IgnoreDoors = ignoreDoors,
         Doors = doors,
         LevelIndex = levelIndex,
-        IgnoreRoomRules = ignoreRoomRules
+        IgnoreRoomRules = ignoreRoomRules,
     }
 end
 
 local levelRoomCopyFromArgs = {"IsExtraRoom","LevelIndex", "IgnoreDoors","Doors", "IgnoreShape","Shape","RoomType","SpawnSeed","LayoutName","RequireRoomType","IgnoreRoomRules","DecorationSeed","AwardSeed","VisitCount","IsClear","ClearCount","IsPersistentRoom","HasWaterPits","ChallengeDone","FromData","Dimension","RoomsListName","RoomsListID"}
 
+---@param layoutName string
+---@param roomsList? RoomsList
+---@param seed? integer
+---@param shape? RoomShape
+---@param roomType? RoomType
+---@param isExtraRoom? boolean
+---@param fromSaveData? boolean
+---@param requireRoomType? boolean
+---@param ignoreDoors? boolean
+---@param doors? table<DoorSlot, boolean>
+---@param levelIndex? integer
+---@param ignoreRoomRules? boolean
+---@return LevelRoom
+---@overload fun(args: LevelRoomArgs): LevelRoom
+function StageAPI.LevelRoom(layoutName, roomsList, seed, shape, roomType, isExtraRoom, fromSaveData, requireRoomType, ignoreDoors, doors, levelIndex, ignoreRoomRules)
+end
+--Duplicated field to make this easy on the Lua linter
+
+--- Constructor: (layoutName, roomsList, seed, shape, roomType, isExtraRoom, fromSaveData, requireRoomType, ignoreDoors, doors, levelIndex, ignoreRoomRules)
+--- Or constructor: (args) where args is a table of fields to initialize the room with
+---@class LevelRoom
+---@field LayoutName string
+---@field RoomsList RoomsList
+---@field SpawnSeed integer
+---@field Shape RoomShape
+---@field RoomType RoomType
+---@field IsExtraRoom boolean
+---@field FromSave boolean
+---@field RequireRoomType boolean
+---@field IgnoreDoors boolean
+---@field Doors table<DoorSlot, boolean>
+---@field LevelIndex integer
+---@field IgnoreRoomRules boolean
+---@field FromData boolean
+---@field RoomDescriptor RoomDescriptor #can be passed to initialize the room with the descriptor's data
+---@field RoomsListID integer
+---@field IgnoreShape boolean
 StageAPI.LevelRoom = StageAPI.Class("LevelRoom")
 StageAPI.NextUniqueRoomIdentifier = 0
 function StageAPI.LevelRoom:Init(args, ...)

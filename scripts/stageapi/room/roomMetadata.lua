@@ -2,6 +2,12 @@ local shared = require("scripts.stageapi.shared")
 local mod = require("scripts.stageapi.mod")
 local Callbacks = require("scripts.stageapi.enums.Callbacks")
 
+---@return RoomMetadata
+function StageAPI.RoomMetadata()
+end
+
+---@class RoomMetadata
+---@field LevelRoom LevelRoom
 StageAPI.RoomMetadata = StageAPI.Class("RoomMetadata")
 
 function StageAPI.RoomMetadata:Init()

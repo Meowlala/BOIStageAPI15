@@ -5,7 +5,21 @@ StageAPI.LogMinor("Loading CustomStage Handler")
 
 StageAPI.CustomStages = {}
 
+---@class OverrideStage
+---@field OverrideStage number
+---@field OverrideStageType number
+---@field ReplaceWith CustomStage
+---@field GreedMode boolean
+
+---@param name string
+---@param replaces? OverrideStage #default: StageAPI.StageOverride.CatacombsOne
+---@param noSetReplaces? boolean
+function StageAPI.CustomStage(name, replaces, noSetReplaces)
+end
+
+---@class CustomStage : StageAPIClass
 StageAPI.CustomStage = StageAPI.Class("CustomStage")
+
 function StageAPI.CustomStage:Init(name, replaces, noSetReplaces)
     self.Name = name
     self.Alias = name

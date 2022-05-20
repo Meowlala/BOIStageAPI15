@@ -1,7 +1,18 @@
 local shared = require("scripts.stageapi.shared")
 
 StageAPI.RoomsLists = {}
+
+
+---@param name string
+---@vararg string roomfiles
+---@return RoomsList
+function StageAPI.RoomsList(name, ...)
+end
+
+--- Constructor: (name, roomFiles...)
+---@class RoomsList
 StageAPI.RoomsList = StageAPI.Class("RoomsList")
+
 function StageAPI.RoomsList:Init(name, ...)
     self.Name = name
     StageAPI.RoomsLists[name] = self

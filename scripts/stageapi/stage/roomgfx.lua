@@ -237,6 +237,12 @@ function StageAPI.ChangeRoomGfx(roomgfx)
     end
 end
 
+---@param backdrops BackdropType | BackdropType[]
+---@param grids GridGfx
+function StageAPI.RoomGfx(backdrops, grids)
+end
+
+---@class RoomGfx
 StageAPI.RoomGfx = StageAPI.Class("RoomGfx")
 function StageAPI.RoomGfx:Init(backdrops, grids)
     self.Backdrops = backdrops

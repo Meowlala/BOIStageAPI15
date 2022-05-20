@@ -36,6 +36,23 @@ end
 StageAPI.CustomDoorGrid = StageAPI.CustomGrid("CustomDoor")
 
 StageAPI.DoorTypes = {}
+
+---@param name any
+---@param anm2? string
+---@param openAnim? string
+---@param closeAnim? string
+---@param openedAnim? string
+---@param closedAnim? string
+---@param noAutoHandling? boolean
+---@param alwaysOpen? boolean
+---@param exitFunction? fun(door: EntityEffect, data: table, sprite: Sprite, doorData: CustomDoor, doorGridData: table) #doorGridData is the persistData
+---@param directionOffsets? table<Direction, Vector>
+---@param transitionAnim? integer Transition anim ID
+---@return CustomDoor
+function StageAPI.CustomDoor(name, anm2, openAnim, closeAnim, openedAnim, closedAnim, noAutoHandling, alwaysOpen, exitFunction, directionOffsets, transitionAnim)
+end
+
+---@class CustomDoor : StageAPIClass
 StageAPI.CustomDoor = StageAPI.Class("CustomDoor")
 function StageAPI.CustomDoor:Init(name, anm2, openAnim, closeAnim, openedAnim, closedAnim, noAutoHandling, alwaysOpen, exitFunction, directionOffsets, transitionAnim)
     self.NoAutoHandling = noAutoHandling
@@ -52,6 +69,68 @@ function StageAPI.CustomDoor:Init(name, anm2, openAnim, closeAnim, openedAnim, c
     StageAPI.DoorTypes[name] = self
 end
 
+---@param name string
+---@param anm2? string
+---@param states table<string, CustomStateDoor_StateData | string>
+---@param exitFunction? fun(door: EntityEffect, data: table, sprite: Sprite, doorData: CustomDoor, doorGridData: table) #doorGridData is the persistData
+---@param overlayAnm2? string optional, uses a separate sprite rather than an overlay anim for overlay animations
+---@param directionOffsets? table<Direction, Vector>
+---@return CustomStateDoor
+function StageAPI.CustomStateDoor(name, anm2, states, exitFunction, overlayAnm2, directionOffsets)
+end
+
+---@class CustomStateDoor_StateData
+---@field Anim string
+---@field OverlayAnim string
+---@field Frame integer
+---@field OverlayFrame integer
+---@field PlayAtStart boolean
+---@field Passable boolean
+---@field ChangeAfterTriggerAnim boolean
+---@field NoMemory boolean
+---@field RememberAs string state name to be saved in persistData instead of state name
+---@field StartAnim string
+---@field StartFunction fun(door: EntityEffect, data: table, sprite: Sprite, doorData: CustomDoor, doorGridData: table) #doorGridData is the persistData
+---@field StartOverlayAnim string
+---@field StartSound SoundEffect | {[1]: SoundEffect, [2]: number, [3]: integer, [4]: boolean, [5]: number}
+---@field Triggers CustomStateDoor_Triggers
+
+---@class CustomStateDoor_Triggers
+---@field Bomb string | CustomStateDoor_Trigger
+---@field EnteredThrough string | CustomStateDoor_Trigger
+---@field Unclear string | CustomStateDoor_Trigger
+---@field Clear string | CustomStateDoor_Trigger
+---@field Key string | CustomStateDoor_Trigger
+---@field Coin string | CustomStateDoor_Trigger
+---@field GoldKey string | CustomStateDoor_Trigger
+---@field OverlayEvent CustomStateDoor_TriggerOverlayEvent
+---@field FinishOverlayTrigger string | CustomStateDoor_Trigger
+---@field FinishAnimTrigger string | CustomStateDoor_Trigger
+---@field Function fun(door: EntityEffect, data: table, sprite: Sprite, doorData: CustomDoor, doorGridData: table): string | CustomStateDoor_Trigger #doorGridData is the persistData
+
+---@class CustomStateDoor_Trigger
+---@field State string
+---@field Anim string
+---@field OverlayAnim string
+---@field Jingle Music
+---@field Particle CustomStateDoor_TriggerParticle
+---@field Particles CustomStateDoor_TriggerParticle[]
+
+---@class CustomStateDoor_TriggerOverlayEvent : CustomStateDoor_Trigger
+---@field OverlayEvent string
+
+---@class CustomStateDoor_TriggerParticle
+---@field Count integer
+---@field Velocity number
+---@field LifeSpan integer | {[1]: integer, [2]: integer}
+---@field Type integer
+---@field Variant integer
+---@field SubType integer
+---@field Timeout integer
+---@field Rotation number
+
+
+---@class CustomStateDoor : StageAPIClass
 StageAPI.CustomStateDoor = StageAPI.Class("CustomStateDoor")
 
 function StageAPI.CustomStateDoor:Init(name, anm2, states, exitFunction, overlayAnm2, directionOffsets)
@@ -148,6 +227,7 @@ StageAPI.AddCallback("StageAPI", Callbacks.POST_SPAWN_CUSTOM_GRID, 0, function(c
     local index = customGrid.GridIndex
     local persistData = customGrid.PersistentData
 
+    ---@type CustomDoor | CustomStateDoor
     local doorData
     if persistData.DoorDataName and StageAPI.DoorTypes[persistData.DoorDataName] then
         doorData = StageAPI.DoorTypes[persistData.DoorDataName]
@@ -281,6 +361,8 @@ end
 
 local framesWithoutDoorData = 0
 local hadFrameWithoutDoorData = false
+
+---@param door EntityEffect
 mod:AddCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, function(_, door)
     local data, sprite = door:GetData(), door:GetSprite()
     local doorData = data.DoorData
@@ -354,6 +436,7 @@ mod:AddCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, function(_, door)
             local currentRoom = StageAPI.GetCurrentRoom()
             local doorLocked = currentRoom and currentRoom.Metadata:Has({Name = "DoorLocker", Index = shared.Room:GetGridIndex(door.Position)})
 
+            ---@type CustomStateDoor_Trigger
             local trigger
             if stateData.Triggers.Bomb and not doorLocked then
                 if not data.CountedExplosions then
