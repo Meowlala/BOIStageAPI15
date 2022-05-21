@@ -28,6 +28,16 @@ function StageAPI.RenderSpriteTiled(sprite, position, size, centerCorrect)
 end
 
 StageAPI.OverlayDefaultSize = Vector(512, 512)
+
+---@param file string
+---@param velocity? Vector
+---@param offset? Vector
+---@param size? Vector
+---@param alpha? number
+function StageAPI.Overlay(file, velocity, offset, size, alpha)
+end
+
+---@class StageAPIOverlay
 StageAPI.Overlay = StageAPI.Class("Overlay")
 function StageAPI.Overlay:Init(file, velocity, offset, size, alpha)
     self.Sprite = Sprite()

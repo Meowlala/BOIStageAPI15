@@ -9,6 +9,23 @@ StageAPI.CurrentLevelMapRoomID = nil
 
 StageAPI.LevelMapStartingDimension = -2
 
+---@class LevelMapArgs
+---@field Dimension integer
+---@field StartingRoom integer # room ID
+---@field Persistent boolean
+---@field OverlapDimension integer
+
+---@param args? LevelMapArgs
+---@return LevelMap
+function StageAPI.LevelMap(args)
+end
+
+--- Constructor: (args: {Dimension = int, StartingRoom = int, Persistent = bool, OverlapDimension = int})
+---@class LevelMap : StageAPIClass
+---@field Dimension integer
+---@field StartingRoom integer # room ID
+---@field Persistent boolean
+---@field OverlapDimension integer
 StageAPI.LevelMap = StageAPI.Class("LevelMap")
 
 local levelMapDirectCopyFromArgs = {"Dimension", "StartingRoom", "Persistent", "OverlapDimension"}

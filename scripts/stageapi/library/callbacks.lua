@@ -28,7 +28,7 @@ end
 ---@param id any
 ---@param priority number
 ---@param fn function
----@param ... any # params for the callback
+---@vararg any
 function StageAPI.AddCallback(modID, id, priority, fn, ...)
     if not StageAPI.Callbacks[id] then
         StageAPI.Callbacks[id] = {}

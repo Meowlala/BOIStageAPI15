@@ -5,6 +5,49 @@ local Callbacks = require("scripts.stageapi.enums.Callbacks")
 StageAPI.LogMinor("Loading Custom Grid System")
 
 StageAPI.CustomGridTypes = {}
+
+---@class CustomGridArgs
+---@field BaseType GridEntityType
+---@field BaseVariant integer
+---@field Anm2 string
+---@field Animation string
+---@field Frame integer
+---@field VariantFrames integer max number of random frame to choose from
+---@field Offset Vector
+---@field OverrideGridSpawns boolean
+---@field OverrideGridSpawnsState integer
+---@field ForceSpawning boolean
+---@field NoOverrideGridSprite boolean used for GridGfx
+
+---@param name string
+---@param baseType? GridEntityType
+---@param baseVariant? integer
+---@param anm2? string
+---@param animation? string
+---@param frame? integer
+---@param variantFrames? integer max number of random frame to choose from
+---@param offset? Vector
+---@param overrideGridSpawns? boolean
+---@param overrideGridSpawnAtState? integer
+---@param forceSpawning? boolean
+---@param noOverrideGridSprite? boolean used for GridGfx
+---@return CustomGrid
+---@overload fun(name: string, args: CustomGridArgs): CustomGrid
+function StageAPI.CustomGrid(name, baseType, baseVariant, anm2, animation, frame, variantFrames, offset, overrideGridSpawns, overrideGridSpawnAtState, forceSpawning, noOverrideGridSprite)
+end
+
+---@class CustomGrid : StageAPIClass
+---@field BaseType GridEntityType
+---@field BaseVariant integer
+---@field Anm2 string
+---@field Animation string
+---@field Frame integer
+---@field VariantFrames integer max number of random frame to choose from
+---@field Offset Vector
+---@field OverrideGridSpawns boolean
+---@field OverrideGridSpawnsState integer
+---@field ForceSpawning boolean
+---@field NoOverrideGridSprite boolean used for GridGfx
 StageAPI.CustomGrid = StageAPI.Class("CustomGrid")
 StageAPI.CustomGridSpawnerEntities = {}
 
@@ -80,6 +123,10 @@ StageAPI.DefaultBrokenGridStateByType = {
 
 -- { [dimension] = { [roomId] = { Grids = { [gridPersistIdx] = <grid data> }, LastPersistentIndex = N } } }
 StageAPI.CustomGrids = {}
+
+---@param dimension? integer default: current
+---@param roomID? integer default: current
+---@return {LastPersistentIndex: integer, Grids: CustomGrid[], [integer]: CustomGrid}
 function StageAPI.GetRoomCustomGrids(dimension, roomID)
     local customGrids = StageAPI.GetTableIndexedByDimensionRoom(StageAPI.CustomGrids, true, dimension, roomID)
     if not customGrids.Grids then
@@ -140,6 +187,17 @@ function StageAPI.CustomGrid:Spawn(grindex, force, respawning, persistentData)
 end
 
 StageAPI.CustomGridEntities = {}
+
+---@param gridConfig integer | CustomGrid
+---@param index integer
+---@param force? boolean
+---@param respawning? boolean
+---@param setPersistData? table
+---@return CustomGridEntity
+function StageAPI.CustomGridEntity(gridConfig, index, force, respawning, setPersistData)
+end
+
+---@class CustomGridEntity : StageAPIClass
 StageAPI.CustomGridEntity = StageAPI.Class("CustomGridEntity")
 function StageAPI.CustomGridEntity:Init(gridConfig, index, force, respawning, setPersistData)
     local roomGrids = StageAPI.GetRoomCustomGrids()
@@ -156,6 +214,8 @@ function StageAPI.CustomGridEntity:Init(gridConfig, index, force, respawning, se
 
     local gridData = roomGrids.Grids[self.PersistentIndex]
     if not gridData then
+        assert(gridConfig, "gridConfig cannot be nil while ")
+
         gridData = {Name = gridConfig.Name, Index = index, PersistData = {}}
         roomGrids.Grids[self.PersistentIndex] = gridData
     else
@@ -173,6 +233,8 @@ function StageAPI.CustomGridEntity:Init(gridConfig, index, force, respawning, se
     self.GridIndex = index
     self.Data = {}
 
+    ---either argument, checked if gridData nil, set if gridData not nil
+    ---@diagnostic disable-next-line: need-check-nil
     local grid = gridConfig:SpawnBaseGrid(index, force, respawning)
     self.GridEntity = grid
     if self.GridEntity then
