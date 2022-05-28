@@ -6,6 +6,11 @@ StageAPI.LogMinor("Loading Custom Grid System")
 
 StageAPI.CustomGridTypes = {}
 
+---@class CustomGridSpawnerEntity
+---@field Type integer
+---@field Variant integer
+---@field SubType integer
+
 ---@class CustomGridArgs
 ---@field BaseType GridEntityType
 ---@field BaseVariant integer
@@ -18,6 +23,7 @@ StageAPI.CustomGridTypes = {}
 ---@field OverrideGridSpawnsState integer
 ---@field ForceSpawning boolean
 ---@field NoOverrideGridSprite boolean used for GridGfx
+---@field SpawnerEntity CustomGridSpawnerEntity
 
 ---@param name string
 ---@param baseType? GridEntityType
@@ -49,6 +55,28 @@ end
 ---@field ForceSpawning boolean
 ---@field NoOverrideGridSprite boolean used for GridGfx
 StageAPI.CustomGrid = StageAPI.Class("CustomGrid")
+StageAPI.CustomGridSpawnerEntities = {}
+
+function StageAPI.RegisterCustomGridSpawnerEntity(id, var, subtype, customGrid)
+    if not StageAPI.CustomGridSpawnerEntities[id] then
+        StageAPI.CustomGridSpawnerEntities[id] = {}
+    end
+
+    if not var then
+        StageAPI.CustomGridSpawnerEntities[id][-1] = customGrid
+        return
+    elseif not StageAPI.CustomGridSpawnerEntities[id][var] then
+        StageAPI.CustomGridSpawnerEntities[id][var] = {}
+    end
+
+    StageAPI.CustomGridSpawnerEntities[id][var][subtype or -1] = customGrid
+end
+
+function StageAPI.IsCustomGridSpawnerEntity(id, var, subtype)
+    return (var and subtype and StageAPI.CustomGridSpawnerEntities[id] and StageAPI.CustomGridSpawnerEntities[id][var] and StageAPI.CustomGridSpawnerEntities[id][var][subtype])
+    or (var and StageAPI.CustomGridSpawnerEntities[id] and StageAPI.CustomGridSpawnerEntities[id][var] and StageAPI.CustomGridSpawnerEntities[id][var][-1])
+    or (StageAPI.CustomGridSpawnerEntities[id] and StageAPI.CustomGridSpawnerEntities[id][-1])
+end
 
 function StageAPI.CustomGridArgPacker(baseType, baseVariant, anm2, animation, frame, variantFrames, offset, overrideGridSpawns, overrideGridSpawnAtState, forceSpawning, noOverrideGridSprite)
     return {
@@ -72,6 +100,11 @@ function StageAPI.CustomGrid:Init(name, args, ...)
     end
 
     self.Name = name
+
+    if args.SpawnerEntity then
+        StageAPI.RegisterCustomGridSpawnerEntity(args.SpawnerEntity.Type, args.SpawnerEntity.Variant, args.SpawnerEntity.SubType, self)
+        args.SpawnerEntity = nil
+    end
 
     for k, v in pairs(args) do
         self[k] = v
@@ -133,9 +166,11 @@ function StageAPI.CustomGrid:SpawnBaseGrid(grindex, force, respawning)
             local sprite = grid:GetSprite()
             sprite:Load(self.Anm2, true)
             if self.VariantFrames or self.Frame then
+                local rng = RNG()
+                rng:SetSeed(grid.Desc.SpawnSeed, 0)
                 local animation = self.Animation or sprite:GetDefaultAnimation()
                 if self.VariantFrames then
-                    sprite:SetFrame(animation, StageAPI.Random(0, self.VariantFrames))
+                    sprite:SetFrame(animation, StageAPI.Random(0, self.VariantFrames, rng))
                 else
                     sprite:SetFrame(animation, self.Frame)
                 end
@@ -637,5 +672,22 @@ end, EffectVariant.GRID_ENTITY_PROJECTILE_HELPER)
 mod:AddCallback(ModCallbacks.MC_PRE_GAME_EXIT, function()
     for _, customGrid in ipairs(StageAPI.GetCustomGrids()) do
         customGrid:Unload()
+    end
+end)
+
+mod:AddCallback(ModCallbacks.MC_PRE_ENTITY_SPAWN, function(_, id, variant, subtype, position, velocity, spawner, seed)
+    local gridConfig = StageAPI.IsCustomGridSpawnerEntity(id, variant, subtype)
+    if gridConfig then
+        local room = shared.Room
+        if room:IsFirstVisit() or room:GetFrameCount() > 0 or (StageAPI.GetCurrentRoom() and StageAPI.GetCurrentRoom().FirstLoad) then
+            gridConfig:Spawn(room:GetGridIndex(position), true, false, {SpawnerEntity = {Type = id, Variant = variant, SubType = subtype}})
+        end
+
+        return {
+            StageAPI.E.DeleteMeEffect.T,
+            StageAPI.E.DeleteMeEffect.V,
+            0,
+            seed
+        }
     end
 end)
