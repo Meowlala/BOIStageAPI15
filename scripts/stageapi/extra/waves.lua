@@ -9,11 +9,16 @@ StageAPI.LogMinor("Loading Challenge Room / Greed Mode waves")
 
 CustomStage:SetChallengeWaves(RoomsList, BossChallengeRoomsList)
 
-Challenge waves must be rooms with only entities, and no metadata entities, to properly merge into the existing room.
+Challenge ROOMS must have subtype different than 1 to be normal challenge rooms, subtype 1 to be 
+boss challenge rooms (vanilla difference being having an item at the center as a reward.) Challenge rooms with
+subtype > 1 will be normal challenge rooms, and the subtype will be used to filter waves, see below.
+
+Challenge WAVES must be rooms with only entities, and no metadata entities, to properly merge into the existing room.
 
 If the challenge room has a non-zero SubType, only challenge waves with a SubType that matches or is zero will be selected.
 This allows the editor to design waves that fit each room layout, or some with SubType 0 that fit all.
-If a challenge room layout can fit any one set of waves, just use SubType 0.
+If a challenge room layout can fit any one set of waves, just use SubType 0. Remember that subtype 1 is used by boss challenge
+rooms, so normal challenge wave layouts with subtype 1 will never be used.
 
 - Custom Greed Waves -
 
@@ -26,6 +31,7 @@ StageAPI.Challenge = {
     WaveChanged = false,
     WaveSpawnFrame = nil,
     WaveSubtype = nil,
+    ChoosingWave = false,
     LastGreedWave = 0
 }
 
@@ -111,8 +117,35 @@ mod:AddCallback(ModCallbacks.MC_POST_NEW_LEVEL, function()
 end)
 
 -- prevent waves of the wrong subtype from appearing
-StageAPI.AddCallback("StageAPI", Callbacks.POST_CHECK_VALID_ROOM, 0, function(layout)
-    if StageAPI.Challenge.WaveSubtype then
+---@param layout RoomLayout
+---@param roomList RoomsList
+---@param seed integer
+---@param shape RoomShape
+---@param rtype RoomType
+---@param requireRoomType boolean
+StageAPI.AddCallback("StageAPI", Callbacks.POST_CHECK_VALID_ROOM, 0, function(layout, roomList, seed, shape, rtype, requireRoomType)
+    -- Select correct layout (boss/normal) depending on room subtype
+    if not StageAPI.Challenge.ChoosingWave 
+    and rtype == RoomType.ROOM_CHALLENGE and requireRoomType
+    then
+        local baseSubtype = shared.Level:GetCurrentRoomDesc().Data.Subtype
+        -- boss challenge room
+        if baseSubtype == 1 then
+            return layout.SubType == 1
+        else
+            return layout.SubType ~= 1
+        end
+    end
+
+    -- prevent waves of the wrong subtype from appearing
+    if StageAPI.Challenge.WaveSubtype and StageAPI.Challenge.ChoosingWave then
+        local isBoss = StageAPI.Challenge.WaveSubtype == 1
+        if isBoss then
+            -- stageapi uses different room lists for boss challenge waves, so
+            -- no need to check for subtype
+            return true
+        end
+        -- Check that the (normal) challenge wave matches the room subtype or 0 (that fits all)
         if not (layout.SubType == 0 or layout.SubType == StageAPI.Challenge.WaveSubtype or StageAPI.Challenge.WaveSubtype == 0) then
             return 0
         end
@@ -172,7 +205,9 @@ mod:AddCallback(ModCallbacks.MC_POST_UPDATE, function()
                 end
 
                 local seed = StageAPI.ChallengeWaveRNG:Next()
+                StageAPI.Challenge.ChoosingWave = true
                 local wave = StageAPI.ChooseRoomLayout(useWaves, seed, shared.Room:GetRoomShape(), shared.Room:GetType(), false, false, nil, challengeWaveIDs)
+                StageAPI.Challenge.ChoosingWave = false
                 if currentRoom then
                     table.insert(currentRoom.Data.ChallengeWaveIDs, wave.StageAPIID)
                 end
