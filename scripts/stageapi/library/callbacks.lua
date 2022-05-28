@@ -67,13 +67,13 @@ StageAPI.UnregisterCallbacks("StageAPI")
 ---Ideally callbacks obtained this way should be called with TryCallback/TryCallbackParams
 ---to do the error check
 ---@param id callbackId
----@return table
+---@return StageAPICallback[]
 function StageAPI.GetCallbacks(id)
     return StageAPI.Callbacks[id] or {}
 end
 
 ---@param id callbackId
----@param breakOnFirstReturn boolean
+---@param breakOnFirstReturn? boolean
 ---@param ... any # callback args
 ---@return any # return type of the callback
 function StageAPI.CallCallbacks(id, breakOnFirstReturn, ...)
