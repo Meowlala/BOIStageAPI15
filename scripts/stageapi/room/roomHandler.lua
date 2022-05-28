@@ -145,6 +145,10 @@ function StageAPI.DoLayoutDoorsMatch(layout, doors)
 end
 
 -- returns list of rooms, error message if no rooms valid
+---@param args {RoomList: RoomsList, RoomDescriptor: RoomDescriptor, IgnoreShape: boolean, Shape: RoomShape, RoomType: RoomType, RequireRoomType: boolean, IgnoreDoors: boolean, Doors: boolean[], Seed: integer, DisallowIDs: any[]}
+---@return {[1]: {Layout: table, ListID: any}, [2]: integer} validRooms # second value is weight
+---@return integer validRoomWeights
+---@return string errorMessage
 function StageAPI.GetValidRoomsForLayout(args)
     local roomList = args.RoomList
     local roomDesc = args.RoomDescriptor or shared.Level:GetCurrentRoomDesc()

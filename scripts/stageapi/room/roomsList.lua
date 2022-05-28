@@ -16,13 +16,17 @@ StageAPI.RoomsList = StageAPI.Class("RoomsList")
 function StageAPI.RoomsList:Init(name, ...)
     self.Name = name
     StageAPI.RoomsLists[name] = self
+    ---@type RoomLayout[]
     self.All = {}
+    ---@type table<RoomShape, RoomLayout[]>
     self.ByShape = {}
+    ---@type RoomShape[]
     self.Shapes = {}
     self.NotSimplifiedFiles = {}
     self:AddRooms(...)
 end
 
+---@vararg string roomFiles
 function StageAPI.RoomsList:AddRooms(...)
     local roomfiles = {...}
     for _, rooms in ipairs(roomfiles) do
@@ -37,6 +41,7 @@ function StageAPI.RoomsList:AddRooms(...)
             self.NotSimplifiedFiles[#self.NotSimplifiedFiles + 1] = rooms
         else
             for _, room in ipairs(rooms) do
+                ---@type RoomLayout
                 local simplified
                 if not room.PreSimplified then
                     simplified = StageAPI.SimplifyRoomLayout(room)
@@ -57,6 +62,8 @@ function StageAPI.RoomsList:AddRooms(...)
     end
 end
 
+---@param shape RoomShape
+---@return RoomLayout[]
 function StageAPI.RoomsList:GetRooms(shape)
     if shape == -1 then
         return self.All
@@ -65,6 +72,7 @@ function StageAPI.RoomsList:GetRooms(shape)
     end
 end
 
+---@param roomsList RoomsList
 function StageAPI.RoomsList:CopyRooms(roomsList)
     self:AddRooms(roomsList.All)
 end

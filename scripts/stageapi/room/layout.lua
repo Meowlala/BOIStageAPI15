@@ -90,6 +90,50 @@ StageAPI.RoomShapeToWidthHeight = {
     }
 }
 
+---@class RoomLayout
+---@field Type integer
+---@field Variant integer
+---@field SubType integer
+---@field GridEntities RoomLayout_GridData[]
+---@field GridEntitiesByIndex table<integer, RoomLayout_GridData[]>
+---@field Entities RoomLayout_EntityData[]
+---@field EntitiesByIndex table<integer, RoomLayout_EntityData[]>
+---@field Doors {Slot: integer, Exists: boolean}[]
+---@field Shape RoomShape
+---@field Weight integer
+---@field Difficulty integer
+---@field Name string
+---@field Width integer
+---@field Height integer
+---@field LWidthStart integer
+---@field LWidthEnd integer
+---@field LHeightStart integer
+---@field LHeightEnd integer
+---@field StageAPIID integer
+---@field private PreSimplified boolean
+
+---@class RoomLayout_GridData
+---@field Type integer
+---@field Variant integer
+---@field GridX integer
+---@field GridY integer
+---@field Index integer
+
+---@class RoomLayout_EntityData
+---@field Type integer
+---@field Variant integer
+---@field SubType integer
+---@field GridX integer
+---@field GridY integer
+---@field Index integer
+
+---@param layout RoomLayout
+---@param index integer
+---@param objtype integer
+---@param variant integer
+---@param subtype integer
+---@param gridX integer
+---@param gridY integer
 function StageAPI.AddObjectToRoomLayout(layout, index, objtype, variant, subtype, gridX, gridY)
     if gridX and gridY and not index then
         index = StageAPI.VectorToGrid(gridX, gridY, layout.Width)
@@ -176,6 +220,8 @@ function StageAPI.AddObjectToRoomLayout(layout, index, objtype, variant, subtype
 end
 
 StageAPI.LastRoomID = 0
+---@param layout any # room layout loaded from luaroom
+---@return RoomLayout
 function StageAPI.SimplifyRoomLayout(layout)
     local outLayout = {
         GridEntities = {},
@@ -223,6 +269,8 @@ function StageAPI.SimplifyRoomLayout(layout)
     return outLayout
 end
 
+---@param shape? RoomShape
+---@return RoomLayout
 function StageAPI.CreateEmptyRoomLayout(shape)
     shape = shape or RoomShape.ROOMSHAPE_1x1
     local widthHeight = StageAPI.RoomShapeToWidthHeight[shape]
@@ -232,6 +280,7 @@ function StageAPI.CreateEmptyRoomLayout(shape)
     else
         width, height, lWidthStart, lWidthEnd, lHeightStart, lHeightEnd, slots = widthHeight.Width, widthHeight.Height, widthHeight.LWidthStart, widthHeight.LWidthEnd, widthHeight.LHeightStart, widthHeight.LHeightEnd, widthHeight.Slots
     end
+    ---@type RoomLayout
     local newRoom = {
         Name = "Empty",
         RoomFilename = "Special",
