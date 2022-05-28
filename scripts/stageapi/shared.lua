@@ -5,9 +5,13 @@ local sharedVars = {}
 sharedVars.Game = Game()
 sharedVars.Sfx = SFXManager()
 sharedVars.Music = MusicManager()
-sharedVars.Room = nil -- for autocomplete, set by basic.lua
-sharedVars.Level = nil -- for autocomplete, set by basic.lua
-sharedVars.Players = {} -- for autocomplete, set by basic.lua
+ -- for autocomplete, set by basic.lua
+---@type Room
+sharedVars.Room = room
+---@type Level
+sharedVars.Level = level
+---@type EntityPlayer[]
+sharedVars.Players = {}
 
 --[[
     Was:
