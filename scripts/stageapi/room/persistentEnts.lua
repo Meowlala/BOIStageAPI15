@@ -23,15 +23,19 @@ StageAPI.AddEntityPersistenceData({Type = EntityType.ENTITY_STONE_EYE})
 StageAPI.AddEntityPersistenceData({Type = EntityType.ENTITY_BRIMSTONE_HEAD})
 StageAPI.AddEntityPersistenceData({Type = EntityType.ENTITY_WALL_HUGGER})
 StageAPI.AddEntityPersistenceData({Type = EntityType.ENTITY_POKY, Variant = 1})
-StageAPI.AddEntityPersistenceData({
-    Type = EntityType.ENTITY_FIREPLACE,
-    AutoPersists = true,
-    RemoveOnRemove = true,
-    UpdateType = true,
-    UpdateVariant = true,
-    UpdateSubType = true,
-    UpdateHealth = true,
-})
+
+for i = 0, 4 do
+    StageAPI.AddEntityPersistenceData({
+        Type = EntityType.ENTITY_FIREPLACE,
+        Variant = i,
+        AutoPersists = true,
+        RemoveOnRemove = true,
+        UpdateType = true,
+        UpdateVariant = true,
+        UpdateSubType = true,
+        UpdateHealth = true,
+    })
+end
 
 StageAPI.PersistenceChecks = {}
 function StageAPI.AddPersistenceCheck(fn)
