@@ -155,9 +155,9 @@ StageAPI.PoopDropChances = {
 }
 
 StageAPI.PetrifiedPoopDropChances = {
-    [PickupVariant.PICKUP_COIN] = 10.5 / 100,
-    [PickupVariant.PICKUP_HEART] = 3.75 / 100,
-    [PickupVariant.PICKUP_TRINKET] = 0.75 / 100, -- petrified poop
+    [PickupVariant.PICKUP_COIN] = 35 / 100,
+    [PickupVariant.PICKUP_HEART] = 12.5 / 100,
+    [PickupVariant.PICKUP_TRINKET] = 2.5 / 100, -- petrified poop
 }
 
 -- { [dimension] = { [roomId] = { Grids = { [gridPersistIdx] = <grid data> }, LastPersistentIndex = N } } }
