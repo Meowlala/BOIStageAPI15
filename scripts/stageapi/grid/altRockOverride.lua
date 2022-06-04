@@ -24,7 +24,7 @@ mod:AddCallback(ModCallbacks.MC_PRE_ENTITY_SPAWN, function(_, id, variant, subty
         if type(StageAPI.SpawnOverriddenGrids[grindex]) == "number" then
             stateCheck = StageAPI.SpawnOverriddenGrids[grindex]
         elseif grid then
-            stateCheck = StageAPI.DefaultBrokenGridStateByType[grid.Type] or 2
+            stateCheck = StageAPI.DefaultBrokenGridStateByType[grid.Desc.Type] or 2
         end
 
         shouldOverride = not grid or grid.State == stateCheck
