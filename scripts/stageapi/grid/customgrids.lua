@@ -4,6 +4,7 @@ local Callbacks = require("scripts.stageapi.enums.Callbacks")
 
 StageAPI.LogMinor("Loading Custom Grid System")
 
+---@type table<string, CustomGrid>
 StageAPI.CustomGridTypes = {}
 
 ---@class CustomGridSpawnerEntity
@@ -24,6 +25,16 @@ StageAPI.CustomGridTypes = {}
 ---@field ForceSpawning boolean
 ---@field NoOverrideGridSprite boolean used for GridGfx
 ---@field SpawnerEntity CustomGridSpawnerEntity
+---@field PoopExplosionColor Color
+---@field PoopExplosionAnm2 string
+---@field PoopExplosionSheet string
+---@field PoopGibColor Color
+---@field PoopGibAnm2 string
+---@field PoopGibSheet string
+---@field RemoveOnAnm2Change boolean
+---@field RemoveDrops boolean
+---@field RemovePetrifiedPoop boolean
+---@field RemovePetrifiedPoopExtraDrops boolean
 
 ---@param name string
 ---@param baseType? GridEntityType
@@ -54,6 +65,16 @@ end
 ---@field OverrideGridSpawnsState integer
 ---@field ForceSpawning boolean
 ---@field NoOverrideGridSprite boolean used for GridGfx
+---@field PoopExplosionColor Color
+---@field PoopExplosionAnm2 string
+---@field PoopExplosionSheet string
+---@field PoopGibColor Color
+---@field PoopGibAnm2 string
+---@field PoopGibSheet string
+---@field RemoveOnAnm2Change boolean
+---@field RemoveDrops boolean
+---@field RemovePetrifiedPoop boolean
+---@field RemovePetrifiedPoopExtraDrops boolean
 StageAPI.CustomGrid = StageAPI.Class("CustomGrid")
 StageAPI.CustomGridSpawnerEntities = {}
 
@@ -125,6 +146,18 @@ StageAPI.DefaultBrokenGridStateByType = {
     [GridEntityType.GRID_TNT]       = 4,
     [GridEntityType.GRID_FIREPLACE] = 4,
     [GridEntityType.GRID_POOP]      = 1000,
+}
+
+StageAPI.PoopDropChances = {
+    [PickupVariant.PICKUP_COIN] = 7 / 100,
+    [PickupVariant.PICKUP_HEART] = 2.5 / 100,
+    [PickupVariant.PICKUP_TRINKET] = 0.5 / 100, -- petrified poop
+}
+
+StageAPI.PetrifiedPoopDropChances = {
+    [PickupVariant.PICKUP_COIN] = 10.5 / 100,
+    [PickupVariant.PICKUP_HEART] = 3.75 / 100,
+    [PickupVariant.PICKUP_TRINKET] = 0.75 / 100, -- petrified poop
 }
 
 -- { [dimension] = { [roomId] = { Grids = { [gridPersistIdx] = <grid data> }, LastPersistentIndex = N } } }
@@ -204,6 +237,11 @@ function StageAPI.CustomGridEntity(gridConfig, index, force, respawning, setPers
 end
 
 ---@class CustomGridEntity : StageAPIClass
+---@field PersistentIndex integer
+---@field GridConfig CustomGrid
+---@field GridIndex integer
+---@field GridEntity GridEntity
+---@field RNG RNG
 StageAPI.CustomGridEntity = StageAPI.Class("CustomGridEntity")
 function StageAPI.CustomGridEntity:Init(gridConfig, index, force, respawning, setPersistData)
     local roomGrids = StageAPI.GetRoomCustomGrids()
@@ -443,6 +481,52 @@ end
 function StageAPI.CustomGridEntity:CallCallbacks(callback, ...)
     StageAPI.CallCallbacksWithParams(callback, false, self.GridConfig.Name, self, ...)
 end
+
+--- Handle drops
+---@param gridEntity CustomGridEntity
+---@param projectile? EntityProjectile
+StageAPI.AddCallback("StageAPI", Callbacks.POST_CUSTOM_GRID_DESTROY, 1, function(gridEntity, projectile)
+    for _, pickup in ipairs(Isaac.FindByType(5)) do
+        if pickup.Position:DistanceSquared(shared.Room:GetGridPosition(gridEntity.GridIndex)) < 20^2
+        and pickup.FrameCount <= 0 then
+            local doRemove = gridEntity.GridConfig.RemoveDrops
+                or (
+                    gridEntity.GridConfig.RemovePetrifiedPoop 
+                    and gridEntity.GridConfig.BaseType == GridEntityType.GRID_POOP
+                    and pickup.Variant == PickupVariant.PICKUP_TRINKET
+                )
+            
+            if not doRemove 
+            and gridEntity.GridConfig.BaseType == GridEntityType.GRID_POOP
+            and gridEntity.GridConfig.RemovePetrifiedPoopExtraDrops
+            then
+                local onePlayerHasPetrifiedPoop = false
+                for _, player in ipairs(shared.Players) do
+                    if player:HasTrinket(TrinketType.TRINKET_PETRIFIED_POOP) then
+                        onePlayerHasPetrifiedPoop = true
+                        break
+                    end
+                end
+
+                if onePlayerHasPetrifiedPoop then
+                    local removeRandom = gridEntity.RNG and gridEntity.RNG:RandomFloat() or math.random()
+                    -- remove the pickup at a chance that more or less compensates for the increased chance from petrified poop
+                    local removeChance = 0
+                    if StageAPI.PetrifiedPoopDropChances[pickup.Variant] then
+                        removeChance = StageAPI.PetrifiedPoopDropChances[pickup.Variant]
+                            - StageAPI.PoopDropChances[pickup.Variant]
+                    end
+
+                    doRemove = removeRandom < removeChance
+                end
+            end
+
+            if doRemove then
+                pickup:Remove()
+            end
+        end
+    end
+end)
 
 function StageAPI.GetCustomGrids(index, name)
     local matches = {}

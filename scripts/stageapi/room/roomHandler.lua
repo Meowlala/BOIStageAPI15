@@ -854,6 +854,7 @@ function StageAPI.SetCurrentRoom(room)
     StageAPI.SetLevelRoom(room, StageAPI.GetCurrentRoomID())
 end
 
+---@return LevelRoom
 function StageAPI.GetCurrentRoom()
     return StageAPI.GetLevelRoom(StageAPI.GetCurrentRoomID())
 end
