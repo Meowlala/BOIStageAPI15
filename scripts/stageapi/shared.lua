@@ -5,6 +5,7 @@ local sharedVars = {}
 sharedVars.Game = Game()
 sharedVars.Sfx = SFXManager()
 sharedVars.Music = MusicManager()
+sharedVars.ItemConfig = Isaac.GetItemConfig()
  -- for autocomplete, set by basic.lua
 ---@type Room
 sharedVars.Room = room
