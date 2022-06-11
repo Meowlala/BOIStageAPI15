@@ -893,6 +893,13 @@ mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, function()
         usingGfx = currentRoom.Data.RoomGfx
     elseif isNewStage and StageAPI.CurrentStage.RoomGfx then
         local rtype = StageAPI.GetCurrentRoomType()
+
+        -- Handle Devil's crown room gfx
+        if rtype == RoomType.ROOM_TREASURE
+        and StageAPI.IsDevilsCrownRoom(shared.Level:GetCurrentRoomDesc()) then
+            rtype = RoomType.ROOM_DEVIL
+        end
+
         usingGfx = StageAPI.CurrentStage.RoomGfx[rtype]
     end
 
@@ -963,6 +970,69 @@ mod:AddCallback(ModCallbacks.MC_PRE_ROOM_ENTITY_SPAWN, function(_, t, v, s, inde
                 StageAPI.E.DeleteMeEffect.V,
                 0
             }
+        end
+    end
+end)
+
+---Handle devil's crown items
+---@param roomDesc RoomDescriptor
+---@return boolean
+function StageAPI.IsDevilsCrownRoom(roomDesc)
+    return roomDesc.Flags & RoomDescriptor.FLAG_DEVIL_TREASURE > 0
+end
+
+function StageAPI.GetDevilPrice(id)
+    local devilPrice = shared.ItemConfig:GetCollectible(id).DevilPrice
+
+    local playerHasRedHealth, allPlayersHaveRedHealth
+    for _, player in ipairs(shared.Players) do
+        if player:GetMaxHearts() > 0 then
+            playerHasRedHealth = true
+        else
+            allPlayersHaveRedHealth = true
+        end
+    end
+
+    allPlayersHaveRedHealth = not allPlayersHaveRedHealth
+
+    if allPlayersHaveRedHealth or (playerHasRedHealth and math.random(1, 2) == 1) then
+        if devilPrice == 1 then
+            return PickupPrice.PRICE_ONE_HEART
+        else
+            return PickupPrice.PRICE_TWO_HEARTS
+        end
+    else
+        return PickupPrice.PRICE_THREE_SOULHEARTS
+    end
+end
+
+---@param currentRoom LevelRoom
+---@param isFirstLoad boolean
+---@param isExtraRoom boolean
+StageAPI.AddCallback("StageAPI", Callbacks.POST_ROOM_LOAD, 1, function(currentRoom, isFirstLoad, isExtraRoom)
+    if isFirstLoad then
+        local roomDesc = shared.Level:GetCurrentRoomDesc()
+        local isDevilCrown = StageAPI.IsDevilsCrownRoom(roomDesc)
+
+        local keeperBExists = false
+        for _, player in ipairs(shared.Players) do
+            if player:GetPlayerType() == PlayerType.PLAYER_KEEPER_B then
+                keeperBExists = true
+                break
+            end
+        end
+
+        if isDevilCrown then
+            local collectibles = Isaac.FindByType(EntityType.ENTITY_PICKUP, PickupVariant.PICKUP_COLLECTIBLE)
+            for _, entity in ipairs(collectibles) do
+                local pickup = entity:ToPickup()
+                if keeperBExists then
+                    pickup.Price = 15
+                else
+                    pickup.Price = StageAPI.GetDevilPrice(pickup.SubType)
+                end
+                pickup.AutoUpdatePrice = true
+            end
         end
     end
 end)

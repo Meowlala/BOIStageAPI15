@@ -221,6 +221,7 @@ function StageAPI.ChangeStageShadow(prefix, count)
     end
 end
 
+---@param roomgfx RoomGfx
 function StageAPI.ChangeRoomGfx(roomgfx)
     StageAPI.BackdropRNG:SetSeed(shared.Room:GetDecorationSeed(), 0)
     if roomgfx.Backdrops then
