@@ -26,7 +26,7 @@ end
 
 ---@param modID any
 ---@param id any
----@param priority number
+---@param priority number # The higher the priority, the later it goes
 ---@param fn function
 ---@vararg any
 function StageAPI.AddCallback(modID, id, priority, fn, ...)

@@ -4,6 +4,7 @@ local Callbacks = require("scripts.stageapi.enums.Callbacks")
 
 StageAPI.LogMinor("Loading Custom Grid System")
 
+---@type table<string, CustomGrid>
 StageAPI.CustomGridTypes = {}
 
 ---@class CustomGridSpawnerEntity
@@ -24,6 +25,13 @@ StageAPI.CustomGridTypes = {}
 ---@field ForceSpawning boolean
 ---@field NoOverrideGridSprite boolean used for GridGfx
 ---@field SpawnerEntity CustomGridSpawnerEntity
+---@field PoopExplosionColor Color
+---@field PoopExplosionAnm2 string
+---@field PoopExplosionSheet string
+---@field PoopGibColor Color
+---@field PoopGibAnm2 string
+---@field PoopGibSheet string
+---@field RemoveOnAnm2Change boolean
 
 ---@param name string
 ---@param baseType? GridEntityType
@@ -54,6 +62,13 @@ end
 ---@field OverrideGridSpawnsState integer
 ---@field ForceSpawning boolean
 ---@field NoOverrideGridSprite boolean used for GridGfx
+---@field PoopExplosionColor Color
+---@field PoopExplosionAnm2 string
+---@field PoopExplosionSheet string
+---@field PoopGibColor Color
+---@field PoopGibAnm2 string
+---@field PoopGibSheet string
+---@field RemoveOnAnm2Change boolean
 StageAPI.CustomGrid = StageAPI.Class("CustomGrid")
 StageAPI.CustomGridSpawnerEntities = {}
 
@@ -204,6 +219,11 @@ function StageAPI.CustomGridEntity(gridConfig, index, force, respawning, setPers
 end
 
 ---@class CustomGridEntity : StageAPIClass
+---@field PersistentIndex integer
+---@field GridConfig CustomGrid
+---@field GridIndex integer
+---@field GridEntity GridEntity
+---@field RNG RNG
 StageAPI.CustomGridEntity = StageAPI.Class("CustomGridEntity")
 function StageAPI.CustomGridEntity:Init(gridConfig, index, force, respawning, setPersistData)
     local roomGrids = StageAPI.GetRoomCustomGrids()

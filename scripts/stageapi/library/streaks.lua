@@ -102,6 +102,14 @@ function StageAPI.PlayTextStreak(text, extratext, extratextOffset, extratextScal
             break
         end
     end
+    -- Can happen very rarely with some odd combinations somehow
+    if not spriteIndex then
+        local highestIndex = -1
+        for i, sprite in pairs(StreakSprites) do
+            highestIndex = math.max(i, highestIndex)
+        end
+        spriteIndex = highestIndex + 1
+    end
 
     streak.SpriteIndex = spriteIndex
 
