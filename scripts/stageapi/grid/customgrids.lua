@@ -427,6 +427,7 @@ function StageAPI.CustomGridEntity:CheckDirtyMind(familiar)
 end
 
 function StageAPI.CustomGridEntity:Unload()
+    self.Unloaded = true
     for i, grid in StageAPI.ReverseIterate(StageAPI.CustomGridEntities) do
         if grid.PersistentIndex == self.PersistentIndex then
             table.remove(StageAPI.CustomGridEntities, i)
@@ -458,6 +459,10 @@ function StageAPI.CustomGridEntity:Remove(keepBaseGrid)
     self:Unload()
 
     self:CallCallbacks(Callbacks.POST_REMOVE_CUSTOM_GRID, keepBaseGrid)
+end
+
+function StageAPI.CustomGridEntity:Exists()
+    return not self.Unloaded
 end
 
 function StageAPI.CustomGridEntity:CallCallbacks(callback, ...)
