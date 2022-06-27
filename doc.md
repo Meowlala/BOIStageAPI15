@@ -3,6 +3,7 @@
 ## Basic Features:
 
 ### Commands:
+
 cstage or customstage <StageName> -- Warps to new stage.
 nstage or nextstage -- Warps to next stage.
 extraroom <ExtraRoomName> -- Warps to extra room
@@ -10,25 +11,31 @@ extraroomexit -- Cleanly exits extra room to previous room.
 creseed -- Akin to reseed, but guaranteed to work for and only work for custom stages.
 
 ### Classes:
+
 `StageAPI.Class("Name", AllowMultipleInit)`: Returns a Class object, actually is one itself.
 
 Classes can be constructed simply by calling them with (), i.e,
+
 ```
 local myClass = StageAPI.Class("MyClass")
 local myClassInst = myClass()
 ```
+
 Classes can have a couple of functions, Init, PostInit, and InheritInit.
 When called like in the example above, Init and PostInit are called, passing in whatever args.
 However, you can keep going deeper, i.e,
+
 ```
 local myClassInstCopy = myClassInst()
 ```
+
 Which will generate another copy that inherits from myClassInst that inherits from myClass which inherits from StageAPI.Class.
 In that case, InheritInit will be called instead of Init and PostInit, unless AllowMultipleInit was passed in to the initial myClass definition.
 
 Classes are used for a majority of StageAPI objects.
 
 ## Callbacks:
+
 `StageAPI.AddCallback(modID, id, priority, function, params...)`: Stores a function and its params in a table indexed by ID and sorted by priority, where low priority is at the start.
 
 `StageAPI.UnregisterCallbacks(modID)`: Unregisters all mod callbacks, should be used when a mod loads, useful for luamod.
@@ -63,6 +70,7 @@ ones, but will allow returning multiple values in callback functions. They are s
 per frame.
 
 You can also directly use the callback tables, but it's not recommended. Individual callbacks tables are arranged like so
+
 ```
 {
     Priority = integer,
@@ -74,173 +82,225 @@ You can also directly use the callback tables, but it's not recommended. Individ
 ```
 
 Callback List:
+
 - POST_CHECK_VALID_ROOM(layout, roomList, seed, shape, rtype, requireRoomType)
+
   - Return false to invalidate a room layout, return integer to specify new weight.
 
 - PRE_SELECT_GRIDENTITY_LIST(GridDataList, spawnIndex)
+
   - Takes 1 return value. If false, cancels selecting the list. If GridData, selects it to spawn.
   - With no value, picks at random.
 
 - PRE_SELECT_ENTITY_LIST(entityList, spawnIndex, roomMetadata)
+
   - Takes 3 return values, AddEntities, EntityList, StillAddRandom. If the first value is false, cancels selecting the list.
   - AddEntities and EntityList are lists of EntityData tables, described below.
   - Usually StageAPI will pick one entity from the EntityList to add to the AddEntities table at random, but that can be changed with this callback.
   - If StillAddRandom is true, StageAPI will still add a random entity from the entitylist to addentities, alongside ones you returned.
 
 - PRE_SPAWN_ENTITY_LIST(entityList, spawnIndex, doGrids, doPersistentOnly, doAutoPersistent, avoidSpawning, persistenceData)
+
   - Takes 1 return value. If false, cancels spawning the entity list. If a table, uses it as the entity list. Any return value breaks out of future callbacks.
   - Every entity in the final entity list is spawned.
   - Note that this entity list contains EntityInfo tables rather than EntityData, which contain persistent room-specific data. Both detailed below.
 
 - PRE_SPAWN_ENTITY(entityInfo, entityList, index, doGrids, doPersistentOnly, doAutoPersistent, avoidSpawning, persistenceData, shouldSpawnEntity)
+
   - Takes 1 return value. If false, cancels spawning the entity info. If a table, uses it as the entity info. Any return value breaks out of future callbacks.
   - Takes entity Type, Variant and SubType as callback parameters.
 
 - POST_SPAWN_ENTITY(ent, entityInfo, entityList, index, doGrids, doPersistentOnly, doAutoPersistent, avoidSpawning, persistenceData, shouldSpawnEntity)
+
   - Called both by normal StageAPI room layout entity spawning, and Spawner metaentities.
 
 - PRE_SPAWN_GRID(gridData, gridInformation, entities, gridSpawnRNG)
+
   - Takes 1 return value. If false, cancels spawning the grid. If a table, uses it as the grid data. Any return value breaks out of future callbacks.
 
 - PRE_ROOMS_LIST_USE(room)
+
   - Called when deciding the layout of a room.
   - Return a room list table to use that instead of the default one or the room (the name of which is found in room.RoomsListName)
 
 - PRE_ROOM_LAYOUT_CHOOSE(currentRoom, roomsList)
+
   - Takes 1 return value. If a table, uses it as the current room layout. Otherwise, chooses from the roomslist with seeded RNG. Breaks on first return.
   - Called both on initial room load and when continuing game, before INIT.
 
 - POST_ROOM_INIT(currentRoom, fromSaveData, saveData)
+
   - Called when a room initializes. Can occur at two times, when a room is initially entered or when a room is loaded from save data. Takes no return values.
 
 - POST_BOSS_ROOM_INIT(currentRoom, boss, bossID)
+
   - Called when a boss room is generated.
 
 - POST_ROOM_LOAD(currentRoom, isFirstLoad, isExtraRoom)
+
   - Called when a room is loaded. Takes no return value.
 
 - POST_SPAWN_CUSTOM_GRID(CustomGridEntity, force, respawning)
+
   - Takes CustomGridTypeName as first callback parameter, and will only run if parameter not supplied or matches current grid.
 
 - POST_CUSTOM_GRID_UPDATE(CustomGridEntity)
+
   - Takes CustomGridTypeName as first callback parameter, and will only run if parameter not supplied or matches current grid.
 
 - POST_CUSTOM_GRID_PROJECTILE_UPDATE(CustomGridEntity, projectile)
+
   - Takes CustomGridTypeName as first callback parameter, and will only run if parameter not supplied or matches current grid.
   - Used when the grid is lifted and shot as a projectile
 
 - POST_CUSTOM_GRID_PROJECTILE_HELPER_UPDATE(CustomGridEntity, projectileHelper, projectileHelperParent)
+
   - Takes CustomGridTypeName as first callback parameter, and will only run if parameter not supplied or matches current grid.
 
 - POST_CUSTOM_GRID_DESTROY(CustomGridEntity, projectile)
+
   - Takes CustomGridTypeName as first callback parameter, and will only run if parameter not supplied or matches current grid.
   - projectile is nil in case the grid is destroyed normally, and is set to the projectile entity in case the grid was lifted and shot as a projectile (see POST_CUSTOM_GRID_PROJECTILE_UPDATE)
 
-- POST_REMOVE_CUSTOM_GRID(CustomGridEntity, keepBaseGrid)
+- POST_CUSTOM_GRID_UNLOAD(CustomGridEntity)
+
   - Takes CustomGridTypeName as first callback parameter, and will only run if parameter not supplied or matches current grid.
+  - Run any time a custom grid is unloaded, including via removal and via room transitions.
+
+- POST_REMOVE_CUSTOM_GRID(CustomGridEntity, keepBaseGrid)
+
+  - Takes CustomGridTypeName as first callback parameter, and will only run if parameter not supplied or matches current grid.
+  - Run only when a custom grid is removed through the CustomGridEntity:Remove function, such as when its base grid is removed.
 
 - POST_CUSTOM_GRID_POOP_GIB_SPAWN(CustomGridEntity, effect)
+
   - Takes CustomGridTypeName as first callback parameter, and will only run if parameter not supplied or matches current grid.
 
 - POST_CUSTOM_GRID_DIRTY_MIND_SPAWN(CustomGridEntity, familiar)
+
   - Takes CustomGridTypeName as first callback parameter, and will only run if parameter not supplied or matches current grid.
   - Called for dips spawned by dirty mind from a custom grid entity whose base type is poop
 
 - PRE_TRANSITION_RENDER()
+
   - Called before the custom room transition would render, for effects that should render before it.
 
 - POST_SPAWN_CUSTOM_DOOR(door, data, sprite, CustomDoor, persistData, index, force, respawning, grid, CustomGrid)
+
   - Takes CustomDoorName as first callback parameter, and will only run if parameter not supplied or matches current door.
 
 - POST_CUSTOM_DOOR_UPDATE(door, data, sprite, CustomDoor, persistData)
+
   - Takes CustomDoorName as first callback parameter, and will only run if parameter not supplied or matches current door.
 
 - PRE_BOSS_SELECT(bosses, rng, roomDesc, ignoreNoOptions)
+
   - If a boss is returned, uses it instead.
 
 - POST_OVERRIDDEN_GRID_BREAK(grindex, grid, justBrokenGridSpawns)
+
   - Called when an overridden grid reaches its break state and is considered broken. justBrokenGridSpawns contains all deleted spawns from the grid. Breaks on first non-nil return.
 
 - POST_GRID_UPDATE()
+
   - Calls when the number of grids changes or grids are reprocessed. This is when room grid graphics are changed.
 
 - PRE_UPDATE_GRID_GFX()
+
   - Allows returning gridgfx to use in place of the stage's.
 
 - POST_UPDATE_GRID_GFX()
+
   - Called when the number of grids changes or grids are reprocessed, after room grid graphics are changed. Good for postfixes.
 
 - PRE_CHANGE_ROOM_GFX(currentRoom, usingGfx, onRoomLoad)
+
   - Allows returning roomgfx to use in place of the stage's.
   - Runs both on room load and when the backdrop is changed
 
 - POST_CHANGE_ROOM_GFX(currentRoom, usingGfx, onRoomLoad)
+
   - Runs both on room load and when the backdrop is changed
 
 - PRE_STAGEAPI_NEW_ROOM()
+
   - Runs before most but not all stageapi room functionality. guaranteed to run before any room loads.
 
 - PRE_STAGEAPI_NEW_ROOM_GENERATION(currentRoom, justGenerated, currentListIndex)
+
   - Allows returning currentRoom, justGenerated, boss
   - Run before normal room generation
 
 - POST_STAGEAPI_NEW_ROOM_GENERATION(currentRoom, justGenerated, currentListIndex, boss)
+
   - Allows returning currentRoom, justGenerated, boss
   - Run after normal room generation but before reloading old rooms.
 
 - POST_STAGEAPI_NEW_ROOM(justGenerated)
+
   - All loading and processing of new room generation and old room loading is done, but the gfx hasn't changed yet
 
 - PRE_SELECT_NEXT_STAGE(currentstage)
+
   - Return a stage to go to instead of currentstage.NextStage or none.
 
 - PRE_PARSE_METADATA(roomMetadata, outEntities, outGrids, roomLoadRNG)
+
   - Called after all metadata entities in a room are loaded, but before conflicts / groups are resolved
   - outEntities and outGrids are lists of entities / grids mapped to grid indices
   - roomMetadata, outEntities, and outGrids can all be edited within the callback to modify the room
 
 - POST_PARSE_METADATA(roomMetadata, outEntities, outGrids)
+
   - Called after all metadata entities in a room are loaded, and all conflicts / groups are resolved
   - roomMetadata, outEntities, and outGrids can all be edited within the callback to modify the room
 
 - POST_SELECT_BOSS_MUSIC(currentstage, musicID, isCleared, musicRNG)
+
   - Return a number to use that MusicID as music, not running further callbacks.
 
 - POST_SELECT_CHALLENGE_MUSIC(currentstage, musicID, isCleared, musicRNG)
+
   - Return a number to use that MusicID as music, not running further callbacks.
 
 - POST_SELECT_STAGE_MUSIC(currentstage, musicID, roomType, musicRNG)
+
   - Return a number to use that MusicID as music, not running further callbacks.
 
 - POST_ROOM_CLEAR()
 
 - PRE_STAGEAPI_SELECT_BOSS_ITEM(pickup, currentRoom)
+
   - Return true to prevent StageAPI from randomly selecting a collectible to replace pickup with.
   - pickup is the collectible spawned by vanilla logic, that will be morphed into a random reward by StageAPI
 
 - PRE_STAGEAPI_LOAD_SAVE()
+
   - Before loading stageapi save data
 
 - POST_STAGEAPI_LOAD_SAVE()
+
   - Before loading stageapi save data
 
 - CHALLENGE_WAVE_CHANGED()
 - GREED_WAVE_CHANGED()
 
 - PRE_PLAY_MINIBOSS_STREAK(currentRoom, boss, text)
+
   - Return false to not play "<player> VS <boss.Name>" as would be normally done, return a string to use that as the streak text instead
 
 - POST_STREAK_RENDER(streakPos, streakPlaying)
+
   - After rendering a streak played with StageAPI.PlayTextStreak
 
 - POST_HUD_RENDER(isPauseMenuOpen, pauseMenuDarkPct)
   - Runs after the vanilla hud is rendered
   - Uses a workaround with the shader callback
   - Use isPauseMenuOpen and pauseMenuDarkPct to work around the pause menu, as
-  the things rendered now will render over that too; either disable
-  them or darken them.
+    the things rendered now will render over that too; either disable
+    them or darken them.
   - Handy constant: StageAPI.PAUSE_DARK_BG_COLOR, the color of the dark background
-  rendered above the hud normally when paused
+    rendered above the hud normally when paused
 
 ## StageAPI Structures:
 
@@ -349,6 +409,7 @@ SecretDoorSpawn = DoorInfo -- where secret room doors should spawn
 ## StageAPI Objects:
 
 - GridGfx()
+
   - SetGrid(filename, GridEntityType, variant)
   - SetRocks(filename)
   - SetPits(filename, altpitsfilename, hasExtraFrames): Alt Pits are used where water pits would be. HasExtraFrames controls for situations where the base game would not normally tile pits specially
@@ -362,10 +423,12 @@ SecretDoorSpawn = DoorInfo -- where secret room doors should spawn
 - RoomGfx(Backdrop, GridGfx)
 
 - RoomsList(name, roomfiles...)
+
   - NAME IS NOT OPTIONAL. USED FOR SAVING / LOADING ROOMS.
   - AddRooms(roomfiles...): automatically called on init.
 
 - LevelRoom(layoutName, roomsList, seed, shape, roomType, isExtraRoom, saveData, requireRoomType)
+
   - PostGetLayout(seed): second part of init that is called both when loaded from save and normally, after most other things are initialized. gets spawn ents and grids
   - RemovePersistentIndex(persistentIndex)
   - RemovePersistentEntity(entity)
@@ -378,6 +441,7 @@ SecretDoorSpawn = DoorInfo -- where secret room doors should spawn
   - SetTypeOverride(override)
 
 - CustomStage(name, StageOverrideStage, noSetReplaces): replaces defaults to catacombs one if noSetReplaces is not set.
+
   - NAME IS NOT OPTIONAL. USED TO IDENTIFY STAGE AND FOR SAVING CURRENT STAGE.
   - InheritInit(name, noSetAlias): automatically aliases the new stage to the old one, if noSetAlias is not set, meaning that IsStage calls on either will return true if either is active. STILL NEEDS A UNIQUE NAME.
   - SetName(name)
@@ -397,10 +461,12 @@ SecretDoorSpawn = DoorInfo -- where secret room doors should spawn
   - IsStage(noAlias)
 
 - CustomGrid(name, GridEntityType, baseVariant, anm2, animation, frame, variantFrames, offset, overrideGridSpawns, overrideGridSpawnAtState, forceSpawning)
+
   - NAME IS NOT OPTIONAL. USED FOR IDENTIFICATION AFTER SAVING.
   - Spawn(grindex, force, reSpawning, initialPersistData): returns a new CustomGridEntity
 
 - CustomGridEntity() -- Returned from various GetCustomGrid functions and callbacks
+
   - CustomGridEntity:Remove(keepBaseGrid)
   - CustomGridEntity.PersistentData -- data table automatically saved to file
   - CustomGridEntity.Data -- data table reset on new room
@@ -408,6 +474,7 @@ SecretDoorSpawn = DoorInfo -- where secret room doors should spawn
   - CustomGridEntity.GridConfig -- associated CustomGrid object
 
 - CustomDoor(name, anm2, openAnim, closeAnim, openedAnim, closedAnim, noAutoHandling, alwaysOpen)
+
   - NAME IS NOT OPTIONAL. USED FOR IDENTIFICATION AFTER SAVING.
 
 - Overlay(anm2, velocity, offset, size)
@@ -416,6 +483,7 @@ SecretDoorSpawn = DoorInfo -- where secret room doors should spawn
   - Render(noCenterCorrect)
 
 ## Various useful tools:
+
 ```
 Random(min, max, rng)
 WeightedRNG(table, rng, weightKey, preCalculatedWeight)

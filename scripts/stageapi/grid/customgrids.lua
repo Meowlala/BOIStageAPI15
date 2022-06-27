@@ -433,6 +433,8 @@ function StageAPI.CustomGridEntity:Unload()
             table.remove(StageAPI.CustomGridEntities, i)
         end
     end
+
+    self:CallCallbacks(Callbacks.POST_CUSTOM_GRID_UNLOAD)
 end
 
 function StageAPI.CustomGridEntity:RemoveFromGrid()

@@ -17,6 +17,7 @@ local Callbacks = {
     POST_CUSTOM_GRID_PROJECTILE_UPDATE = "POST_CUSTOM_GRID_PROJECTILE_UPDATE", -- (CustomGridEntity, projectile)
     POST_CUSTOM_GRID_PROJECTILE_HELPER_UPDATE = "POST_CUSTOM_GRID_PROJECTILE_HELPER_UPDATE", -- (CustomGridEntity, projectileHelper, projectileHelperParent)
     POST_CUSTOM_GRID_DESTROY = "POST_CUSTOM_GRID_DESTROY", -- (CustomGridEntity, projectile)
+    POST_CUSTOM_GRID_UNLOAD = "POST_CUSTOM_GRID_UNLOAD", -- (CustomGridEntity)
     POST_REMOVE_CUSTOM_GRID = "POST_REMOVE_CUSTOM_GRID", -- (CustomGridEntity, keepBaseGrid)
     POST_CUSTOM_GRID_POOP_GIB_SPAWN = "POST_CUSTOM_GRID_POOP_GIB_SPAWN", -- (CustomGridEntity, effect)
     POST_CUSTOM_GRID_DIRTY_MIND_SPAWN = "POST_CUSTOM_GRID_DIRTY_MIND_SPAWN", -- (CustomGridEntity, familiar)
