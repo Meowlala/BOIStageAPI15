@@ -232,7 +232,7 @@ function StageAPI.SimplifyRoomLayout(layout)
         Shape = layout.SHAPE,
         Weight = layout.WEIGHT,
         Difficulty = layout.DIFFICULTY,
-        Name = layout.NAME,
+        Name = layout.NAME or "Nil_Name_Error",
         Width = layout.WIDTH + 2,
         Height = layout.HEIGHT + 2,
         Type = layout.TYPE,

@@ -231,7 +231,7 @@ function StageAPI.LevelRoom:PostGetLayout(seed)
         StageAPI.LogErr("No layout!")
     end
 
-    StageAPI.LogMinor("Initialized room " .. self.Layout.Name .. "." .. tostring(self.Layout.Variant) .. " from file " .. tostring(self.Layout.RoomFilename)
+    StageAPI.LogMinor("Initialized room " .. tostring(self.Layout.Name) .. "." .. tostring(self.Layout.Variant) .. " from file " .. tostring(self.Layout.RoomFilename)
                         .. (self.RoomsListName and (' from list ' .. self.RoomsListName) or ''))
 
     if self.Shape == -1 then
