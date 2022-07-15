@@ -243,11 +243,17 @@ function StageAPI.ChangeDoorSprite(door, spriteData)
         replace2 = spriteData.ExtraSprite
 
         if spriteData.Anm2 then
+            local anim, frame = sprite1:GetAnimation(), sprite1:GetFrame()
             sprite1:Load(spriteData.Anm2, spriteData.LoadGraphics or false)
+            sprite1:Play(anim, true)
+            sprite1:SetFrame(frame)
         end
 
         if spriteData.ExtraAnm2 then
+            local anim, frame = sprite2:GetAnimation(), sprite2:GetFrame()
             sprite2:Load(spriteData.ExtraAnm2, spriteData.LoadGraphics or false)
+            sprite2:Play(anim, true)
+            sprite2:SetFrame(frame)
         end
     end
 
@@ -271,24 +277,6 @@ function StageAPI.ChangeDoorSprite(door, spriteData)
         door.ExtraSprite = sprite2
     end
 end
-
--- TODO: Check if still needed anywhere
-StageAPI.DoorAnimationMap = {
-    "Opened",
-    "Closed",
-    "Open",
-    "Close",
-    "Break",
-    "KeyOpen",
-    "KeyClose",
-    "BrokenOpen",
-    "KeyClosed",
-    "Hidden",
-    "GoldenKeyOpen",
-    "KeyOpenNoKey",
-    "GoldKeyOpen",
-    "ArcadeSign"
-}
 
 -- TODO: consider deprecating passing door into DoesDoorMatch
 function StageAPI.DoesDoorMatch(door, doorSpawn, current, target, isBossAmbush, isPayToPlay, isSurpriseMiniboss)
