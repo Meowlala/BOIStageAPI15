@@ -207,6 +207,7 @@ function StageAPI.CustomGrid:Spawn(grindex, force, respawning, persistentData)
     return grid
 end
 
+---@type CustomGridEntity[]
 StageAPI.CustomGridEntities = {}
 
 ---@param gridConfig integer | CustomGrid
@@ -471,6 +472,9 @@ function StageAPI.CustomGridEntity:CallCallbacks(callback, ...)
     StageAPI.CallCallbacksWithParams(callback, false, self.GridConfig.Name, self, ...)
 end
 
+---@param index? integer
+---@param name? string
+---@return CustomGridEntity[]
 function StageAPI.GetCustomGrids(index, name)
     local matches = {}
     for _, customGrid in ipairs(StageAPI.CustomGridEntities) do
