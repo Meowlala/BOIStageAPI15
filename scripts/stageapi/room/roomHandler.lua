@@ -777,7 +777,9 @@ function StageAPI.GetCurrentRoomID()
     end
 end
 
+---@type table<integer, table<any, LevelRoom>>
 StageAPI.LevelRooms = {}
+
 function StageAPI.GetDimension(roomDesc)
     if not roomDesc then
         local levelMap = StageAPI.GetCurrentLevelMap()

@@ -141,18 +141,16 @@ function StageAPI.ChangeDecoration(decoration, decorations)
     gsprite:Play(decorations.Prefix .. tostring(prop) .. decorations.Suffix, true)
 end
 
+---@class DoorInfo
+---@field RequireCurrent RoomType[]
+---@field RequireTarget RoomType[]
+---@field RequireEither RoomType[]
+---@field NotCurrent RoomType[]
+---@field NotTarget RoomType[]
+---@field NotEither RoomType[]
+
+---@alias DoorSprites {Default: table<RoomType, string>, [string] : DoorSprite | string}
 --[[
-DoorInfo
-{
-    RequireCurrent = {},
-    RequireTarget = {},
-    RequireEither = {},
-    NotCurrent = {},
-    NotTarget = {},
-    NotEither = {}
-}
-
-
 DoorSprites
 {
     -- Can be paired with the type of the current room
@@ -173,26 +171,28 @@ DoorSprites
         LoadGraphics = false
     }
 }
-
-DoorSpawn
-{
-    RequireCurrent = {},
-    RequireTarget = {},
-    RequireEither = {},
-    NotCurrent = {},
-    NotTarget = {},
-    NotEither = {},
-    IsBossAmbush = boolean,
-    IsPayToPlay = boolean,
-    Sprite = string
-}
-
 ]]
 
+---@class DoorSprite
+---@field Anm2 string
+---@field Sprite string
+---@field ExtraAnm2 string
+---@field ExtraSprite string
+---@field LoadGraphics boolean
+
+---@class DoorSpawn : DoorInfo
+---@field IsBossAmbush boolean
+---@field IsPayToPlay boolean
+---@field IsSurpriseMiniboss boolean
+---@field Sprite string
+---@field StateDoor string
+
+---@param doorSprites DoorSprites
 function StageAPI.GridGfx:SetDoorSprites(doorSprites)
     self.DoorSprites = doorSprites
 end
 
+---@param doorSpawns DoorSpawn[]
 function StageAPI.GridGfx:SetDoorSpawns(doorSpawns)
     self.DoorSpawns = doorSpawns
 end
@@ -219,10 +219,13 @@ function StageAPI.GridGfx:AddDoors(filename, doorInfo)
     }
 end
 
+---@param filename string
 function StageAPI.GridGfx:SetPayToPlayDoor(filename)
     self.PayToPlayDoor = filename
 end
 
+---@param door GridEntity | Entity
+---@param spriteData DoorSprite | string | string[]
 function StageAPI.ChangeDoorSprite(door, spriteData)
     local sprite1, sprite2
     if door.ToDoor then -- is grid
@@ -279,6 +282,14 @@ function StageAPI.ChangeDoorSprite(door, spriteData)
 end
 
 -- TODO: consider deprecating passing door into DoesDoorMatch
+---@param door any TODO: consider deprecating passing door into DoesDoorMatch
+---@param doorSpawn DoorSpawn
+---@param current RoomType
+---@param target RoomType
+---@param isBossAmbush? boolean
+---@param isPayToPlay? boolean
+---@param isSurpriseMiniboss? boolean
+---@return boolean
 function StageAPI.DoesDoorMatch(door, doorSpawn, current, target, isBossAmbush, isPayToPlay, isSurpriseMiniboss)
     current = current or door.CurrentRoomType
     target = target or door.TargetRoomType
@@ -363,7 +374,7 @@ function StageAPI.DoesDoorMatch(door, doorSpawn, current, target, isBossAmbush, 
 
     if valid and doorSpawn.IsSurpriseMiniboss ~= nil then
         if doorSpawn.IsSurpriseMiniboss then
-            valid = isSurpriseMiniboss
+            valid = not not isSurpriseMiniboss
         else
             valid = not isSurpriseMiniboss
         end
@@ -371,7 +382,7 @@ function StageAPI.DoesDoorMatch(door, doorSpawn, current, target, isBossAmbush, 
 
     if valid and doorSpawn.IsBossAmbush ~= nil then
         if doorSpawn.IsBossAmbush then
-            valid = isBossAmbush
+            valid = not not isBossAmbush
         else
             valid = not isBossAmbush
         end
@@ -379,7 +390,7 @@ function StageAPI.DoesDoorMatch(door, doorSpawn, current, target, isBossAmbush, 
 
     if valid and doorSpawn.IsPayToPlay ~= nil then
         if doorSpawn.IsPayToPlay then
-            valid = isPayToPlay
+            valid = not not isPayToPlay
         else
             valid = not isPayToPlay
         end
@@ -420,6 +431,14 @@ function StageAPI.ChangeDoor(door, doors, payToPlay)
     end
 end
 
+---@param doorSpawns DoorSpawn[]
+---@param current RoomType
+---@param target RoomType
+---@param isBossAmbush? boolean
+---@param isPayToPlay? boolean
+---@param isSurpriseMiniboss? boolean
+---@return string useSprite
+---@return string useDoor
 function StageAPI.CompareDoorSpawns(doorSpawns, current, target, isBossAmbush, isPayToPlay, isSurpriseMiniboss)
     local useSprite, useDoor
     for _, spawn in ipairs(doorSpawns) do
@@ -433,9 +452,14 @@ function StageAPI.CompareDoorSpawns(doorSpawns, current, target, isBossAmbush, i
     return useSprite, useDoor
 end
 
+---@param door GridEntity | Entity
+---@param doorSpawns DoorSpawn[]
+---@param doorSprites DoorSprites
+---@param roomType? RoomType
 function StageAPI.CheckDoorSpawns(door, doorSpawns, doorSprites, roomType)
     local useSprite
     if door.ToDoor then
+        ---@type GridEntityDoor
         door = door:ToDoor()
         local current, target = door.CurrentRoomType, door.TargetRoomType
         local isBossAmbush, isPayToPlay = shared.Level:HasBossChallenge(), door:IsTargetRoomArcade() and target ~= RoomType.ROOM_ARCADE
