@@ -4,6 +4,8 @@ local Callbacks = require("scripts.stageapi.enums.Callbacks")
 
 StageAPI.LogMinor("Loading Rock Alt Breaking Override")
 
+local FART_RADIUS = 150
+
 StageAPI.SpawnOverriddenGrids = {}
 StageAPI.JustBrokenGridSpawns = {}
 StageAPI.RecentFarts = {}
@@ -57,6 +59,26 @@ mod:AddCallback(ModCallbacks.MC_PRE_ENTITY_SPAWN, function(_, id, variant, subty
             if id == EntityType.ENTITY_EFFECT and variant == EffectVariant.FART then
                 StageAPI.RecentFarts[grindex] = 2
                 shared.Sfx:Stop(SoundEffect.SOUND_FART)
+
+                for _, player in ipairs(shared.Players) do
+                    if position:Distance(player.Position) < FART_RADIUS + player.Size then
+                        local hadNoKnockback = player:HasEntityFlags(EntityFlag.FLAG_NO_KNOCKBACK)
+                        if not hadNoKnockback then
+                            player:AddEntityFlags(EntityFlag.FLAG_NO_KNOCKBACK)
+                        end
+                        player:GetData().__FartPreventHadNoKnockback = hadNoKnockback
+                    end
+                end
+                local closeEnemies = Isaac.FindInRadius(position, FART_RADIUS + 60, EntityPartition.ENEMY)
+                for _, npc in ipairs(closeEnemies) do
+                    if position:Distance(npc.Position) < FART_RADIUS + npc.Size then
+                        local hadNoKnockback = npc:HasEntityFlags(EntityFlag.FLAG_NO_KNOCKBACK)
+                        if not hadNoKnockback then
+                            npc:AddEntityFlags(EntityFlag.FLAG_NO_KNOCKBACK)
+                        end
+                        npc:GetData().__FartPreventHadNoKnockback = hadNoKnockback
+                    end
+                end
             end
 
             local dat = {
@@ -116,6 +138,10 @@ mod:AddCallback(ModCallbacks.MC_PRE_ENTITY_SPAWN, function(_, id, variant, subty
     end
 end)
 
+---@param e Entity
+---@param amount number
+---@param flag integer
+---@param source? EntityRef
 mod:AddCallback(ModCallbacks.MC_ENTITY_TAKE_DMG, function(_, e, amount, flag, source)
     if flag == 0 and source and source.Type == 0 and not e:GetData().TrueFart then
         local hasFarts = next(StageAPI.RecentFarts) ~= nil
@@ -127,12 +153,14 @@ mod:AddCallback(ModCallbacks.MC_ENTITY_TAKE_DMG, function(_, e, amount, flag, so
     end
 end)
 
-mod:AddCallback(ModCallbacks.MC_POST_PLAYER_RENDER, function(_, npc)
-    local data = npc:GetData()
+---@param player EntityPlayer
+mod:AddCallback(ModCallbacks.MC_POST_PLAYER_RENDER, function(_, player)
+    local data = player:GetData()
+
     if data.Farted then
         local stoppedFart
         for fart, timer in pairs(StageAPI.RecentFarts) do
-            if shared.Room:GetGridPosition(fart):Distance(npc.Position) < 150 + npc.Size then
+            if shared.Room:GetGridPosition(fart):Distance(player.Position) < FART_RADIUS + player.Size then
                 stoppedFart = true
                 break
             end
@@ -140,20 +168,26 @@ mod:AddCallback(ModCallbacks.MC_POST_PLAYER_RENDER, function(_, npc)
 
         if not stoppedFart then
             data.TrueFart = true
-            npc:TakeDamage(data.Farted[1], 0, EntityRef(npc), 0)
+            player:TakeDamage(data.Farted[1], 0, EntityRef(player), 0)
             data.TrueFart = nil
         end
+
+        if data.__FartPreventHadNoKnockback == false then
+            player:ClearEntityFlags(EntityFlag.FLAG_NO_KNOCKBACK)
+        end
+        data.__FartPreventHadNoKnockback = nil
 
         data.Farted = nil
     end
 end)
 
+---@param npc EntityNPC
 mod:AddCallback(ModCallbacks.MC_POST_NPC_RENDER, function(_, npc)
     local data = npc:GetData()
     if data.Farted then
         local stoppedFart
         for fart, timer in pairs(StageAPI.RecentFarts) do
-            if shared.Room:GetGridPosition(fart):Distance(npc.Position) < 150 + npc.Size then
+            if shared.Room:GetGridPosition(fart):Distance(npc.Position) < FART_RADIUS + npc.Size then
                 stoppedFart = true
                 break
             end
@@ -164,6 +198,11 @@ mod:AddCallback(ModCallbacks.MC_POST_NPC_RENDER, function(_, npc)
             npc:TakeDamage(data.Farted[1], 0, EntityRef(npc), 0)
             data.TrueFart = nil
         end
+
+        if data.__FartPreventHadNoKnockback == false then
+            npc:ClearEntityFlags(EntityFlag.FLAG_NO_KNOCKBACK)
+        end
+        data.__FartPreventHadNoKnockback = nil
 
         data.Farted = nil
     end
