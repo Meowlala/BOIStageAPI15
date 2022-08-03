@@ -207,6 +207,91 @@ function StageAPI.CustomStage:SetBosses(bosses)
     end
 end
 
+StageAPI.SinsSplitData = {
+    {
+        Type = EntityType.ENTITY_GLUTTONY,
+        Variant = 0,
+        ListName = "Gluttony",
+        MultipleListName = "SuperGluttony"
+    },
+    {
+        Type = EntityType.ENTITY_ENVY,
+        Variant = 0,
+        ListName = "Envy",
+        MultipleListName = "SuperEnvy"
+    },
+    {
+        Type = EntityType.ENTITY_GREED,
+        Variant = 0,
+        ListName = "Greed",
+        MultipleListName = "SuperGreed"
+    },
+    {
+        Type = EntityType.ENTITY_WRATH,
+        Variant = 0,
+        ListName = "Wrath",
+        MultipleListName = "SuperWrath"
+    },
+    {
+        Type = EntityType.ENTITY_PRIDE,
+        Variant = 0,
+        ListName = "Pride",
+        MultipleListName = "SuperPride"
+    },
+    {
+        Type = EntityType.ENTITY_LUST,
+        Variant = 0,
+        ListName = "Lust",
+        MultipleListName = "SuperLust"
+    },
+    {
+        Type = EntityType.ENTITY_SLOTH,
+        Variant = 0,
+        ListName = "Sloth",
+        MultipleListName = "SuperSloth"
+    },
+    {
+        Type = EntityType.ENTITY_GLUTTONY,
+        Variant = 1,
+        ListName = "SuperGluttony"
+    },
+    {
+        Type = EntityType.ENTITY_ENVY,
+        Variant = 1,
+        ListName = "SuperEnvy"
+    },
+    {
+        Type = EntityType.ENTITY_GREED,
+        Variant = 1,
+        ListName = "SuperGreed"
+    },
+    {
+        Type = EntityType.ENTITY_WRATH,
+        Variant = 1,
+        ListName = "SuperWrath"
+    },
+    {
+        Type = EntityType.ENTITY_PRIDE,
+        Variant = 1,
+        ListName = "SuperPride"
+    },
+    {
+        Type = EntityType.ENTITY_LUST,
+        Variant = 1,
+        ListName = "SuperLust"
+    },
+    {
+        Type = EntityType.ENTITY_SLOTH,
+        Variant = 1,
+        ListName = "SuperSloth"
+    },
+    {
+        Type = EntityType.ENTITY_SLOTH,
+        Variant = 2,
+        ListName = "UltraPride"
+    }
+}
+
 function StageAPI.CustomStage:SetSinRooms(sins)
     if type(sins) == "string" then -- allows passing in a prefix to a room list name, which all sins can be grabbed from
         self.SinRooms = {}
@@ -227,7 +312,11 @@ function StageAPI.CustomStage:GenerateRoom(roomDescriptor, isStartingRoom, fromL
 
     local roomData
     if roomDescriptor then
-        roomData = roomDescriptor.Data
+        if roomDescriptor.OverrideData then
+            roomData = roomDescriptor.OverrideData
+        else
+            roomData = roomDescriptor.Data
+        end
     end
 
     local rtype = (roomArgs and roomArgs.RoomType) or (roomData and roomData.Type) or RoomType.ROOM_DEFAULT
