@@ -87,7 +87,7 @@ StageAPI.BaseDoorStates = {
         Opened = StageAPI.BaseDoorOpenState,
         Closed = StageAPI.SpecialDoorClosedState
     },
-    Vault = {
+    DoubleLock = {
         Default = "TwoChains",
         TwoChains = {
             Anim = "Closed",
@@ -341,13 +341,14 @@ StageAPI.BaseDoorStates = {
 StageAPI.BaseDoors = {
     Default = StageAPI.CustomStateDoor("DefaultDoor", nil, StageAPI.BaseDoorStates.Default),
     SpecialInterior = StageAPI.CustomStateDoor("SpecialDoor", nil, StageAPI.BaseDoorStates.SpecialInterior),
-    Shop = StageAPI.CustomStateDoor("ShopDoor", nil, StageAPI.BaseDoorStates.Key),
+    Locked = StageAPI.CustomStateDoor("LockedDoor", nil, StageAPI.BaseDoorStates.Key),
     Treasure = StageAPI.CustomStateDoor("TreasureDoor", "gfx/grid/door_02_treasureroomdoor.anm2", StageAPI.BaseDoorStates.Key),
     Boss = StageAPI.CustomStateDoor("BossDoor", "gfx/grid/door_10_bossroomdoor.anm2", StageAPI.BaseDoorStates.SpecialInterior),
     Secret = StageAPI.CustomStateDoor("SecretDoor", "gfx/grid/door_08_holeinwall.anm2", StageAPI.BaseDoorStates.Secret, nil, nil, StageAPI.SecretDoorOffsetsByDirection),
     Arcade = StageAPI.CustomStateDoor("ArcadeDoor", "gfx/grid/door_05_arcaderoomdoor.anm2", StageAPI.BaseDoorStates.Arcade),
     Bedroom = StageAPI.CustomStateDoor("BedroomDoor", nil, StageAPI.BaseDoorStates.Bedroom, nil, "gfx/grid/door_18_crackeddoor.anm2"),
-    Vault = StageAPI.CustomStateDoor("VaultDoor", nil, StageAPI.BaseDoorStates.Vault, nil, "gfx/grid/door_16_doublelock.anm2"),
+    DoubleLock = StageAPI.CustomStateDoor("DoubleLockedDoor", nil, StageAPI.BaseDoorStates.DoubleLock, nil, "gfx/grid/door_16_doublelock.anm2"),
+    Chest = StageAPI.CustomStateDoor("ChestDoor", "gfx/grid/door_02_treasureroomdoor.anm2", StageAPI.BaseDoorStates.DoubleLock, nil, "gfx/grid/door_16_doublelock.anm2"),
     Miniboss = StageAPI.CustomStateDoor("MinibossDoor", nil, StageAPI.BaseDoorStates.Miniboss, nil, "gfx/grid/door_17_bardoor.anm2"),
     MinibossSecret = StageAPI.CustomStateDoor("MinibossSecretDoor", "gfx/grid/door_08_holeinwall.anm2", StageAPI.BaseDoorStates.MinibossSecret, nil, "gfx/grid/door_17_bardoor.anm2", StageAPI.SecretDoorOffsetsByDirection),
     Devil = StageAPI.CustomStateDoor("DevilDoor", "gfx/grid/door_07_devilroomdoor.anm2", StageAPI.BaseDoorStates.SpecialInterior),
@@ -360,8 +361,8 @@ StageAPI.BaseDoors = {
 
 -- these two are redundant but being kept for now since they are used in the old door system
 StageAPI.DefaultDoorSpawn = {
-    RequireCurrent = {RoomType.ROOM_DEFAULT, RoomType.ROOM_MINIBOSS, RoomType.ROOM_SACRIFICE, RoomType.ROOM_SHOP, RoomType.ROOM_LIBRARY, RoomType.ROOM_BARREN, RoomType.ROOM_ISAACS, RoomType.ROOM_DICE, RoomType.ROOM_CHEST},
-    RequireTarget = {RoomType.ROOM_DEFAULT, RoomType.ROOM_MINIBOSS, RoomType.ROOM_SACRIFICE, RoomType.ROOM_SHOP, RoomType.ROOM_LIBRARY, RoomType.ROOM_BARREN, RoomType.ROOM_ISAACS, RoomType.ROOM_DICE, RoomType.ROOM_CHEST}
+    RequireCurrent = {RoomType.ROOM_DEFAULT, RoomType.ROOM_MINIBOSS, RoomType.ROOM_BARREN, RoomType.ROOM_ISAACS},
+    RequireTarget = {RoomType.ROOM_DEFAULT, RoomType.ROOM_MINIBOSS, RoomType.ROOM_BARREN, RoomType.ROOM_ISAACS}
 }
 
 StageAPI.SecretDoorSpawn = {
@@ -406,11 +407,15 @@ StageAPI.BaseDoorSpawns = {
         StateDoor = "SecretDoor",
         RequireEither = {RoomType.ROOM_SECRET, RoomType.ROOM_SUPERSECRET}
     },
-    Lock = {
-        Sprite = "Default",
-        StateDoor = "ShopDoor",
-        RequireCurrent = {RoomType.ROOM_DEFAULT},
-        RequireTarget = {RoomType.ROOM_SHOP, RoomType.ROOM_LIBRARY}
+    Shop = {
+        Sprite = "Shop",
+        StateDoor = "LockedDoor",
+        RequireTarget = {RoomType.ROOM_SHOP}
+    },
+    Library = {
+        Sprite = "Library",
+        StateDoor = "LockedDoor",
+        RequireTarget = {RoomType.ROOM_LIBRARY}
     },
     Treasure = {
         Sprite = "Treasure",
@@ -450,11 +455,15 @@ StageAPI.BaseDoorSpawns = {
         RequireCurrent = {RoomType.ROOM_DEFAULT},
         RequireTarget = {RoomType.ROOM_BARREN, RoomType.ROOM_ISAACS}
     },
-    DoubleLock = {
-        Sprite = "DoubleLock",
-        StateDoor = "VaultDoor",
-        RequireCurrent = {RoomType.ROOM_DEFAULT},
-        RequireTarget = {RoomType.ROOM_CHEST, RoomType.ROOM_DICE}
+    Chest = {
+        Sprite = "Chest",
+        StateDoor = "ChestDoor",
+        RequireTarget = {RoomType.ROOM_CHEST}
+    },
+    Dice = {
+        Sprite = "Dice",
+        StateDoor = "DoubleLockedDoor",
+        RequireTarget = {RoomType.ROOM_DICE}
     },
     CurseInterior = {
         Sprite = "Default",
