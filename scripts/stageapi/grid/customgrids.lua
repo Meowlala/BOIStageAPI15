@@ -399,7 +399,7 @@ function StageAPI.CustomGridEntity:CheckPoopGib(effect)
     local updated = false
     if effect.Variant == EffectVariant.POOP_EXPLOSION then
         if self.GridConfig.PoopExplosionColor then
-            sprite.Color = self.GridConfig.PoopExplosionColor
+            effect.Color = self.GridConfig.PoopExplosionColor
             updated = true
         end
 
@@ -414,7 +414,8 @@ function StageAPI.CustomGridEntity:CheckPoopGib(effect)
         end
     elseif effect.Variant == EffectVariant.POOP_PARTICLE then
         if self.GridConfig.PoopGibColor then
-            sprite.Color = self.GridConfig.PoopGibColor
+            effect.Color = self.GridConfig.PoopGibColor
+            effect:GetData().StageAPIPoopGibColor = self.GridConfig.PoopGibColor
             updated = true
         end
 
@@ -588,6 +589,17 @@ end
 
 mod:AddCallback(ModCallbacks.MC_POST_EFFECT_INIT, customGridPoopGibs, EffectVariant.POOP_EXPLOSION)
 mod:AddCallback(ModCallbacks.MC_POST_EFFECT_INIT, customGridPoopGibs, EffectVariant.POOP_PARTICLE)
+
+mod:AddCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, function(_, effect)
+    local data = effect:GetData()
+    if not data.StageAPICheckedPoopGibColor then
+        if data.StageAPIPoopGibColor then
+            effect.Color = data.StageAPIPoopGibColor
+        end
+
+        data.StageAPICheckedPoopGibColor = true
+    end
+end, EffectVariant.POOP_PARTICLE)
 
 -- Dirty Mind Dip handling
 StageAPI.IgnoreDirtyMindSpawned = false
