@@ -99,7 +99,13 @@ StageAPI.BaseDoorStates = {
                 },
                 Key = {
                     State = "AwaitChain",
-                    OverlayAnim = "KeyOpenChain1"
+                    OverlayAnim = "KeyOpenChain1",
+                    NoPayToPlay = true
+                },
+                Coin = {
+                    State = "AwaitChain",
+                    OverlayAnim = "KeyOpenChain1",
+                    PayToPlay = true
                 }
             }
         },
@@ -121,7 +127,13 @@ StageAPI.BaseDoorStates = {
                 },
                 Key = {
                     State = "Opened",
-                    OverlayAnim = "KeyOpenChain2"
+                    OverlayAnim = "KeyOpenChain2",
+                    NoPayToPlay = true
+                },
+                Coin = {
+                    State = "AwaitChain",
+                    OverlayAnim = "KeyOpenChain1",
+                    PayToPlay = true
                 }
             }
         },
@@ -157,8 +169,22 @@ StageAPI.BaseDoorStates = {
         Closed = StageAPI.SpecialDoorClosedState,
         Opened = StageAPI.BaseDoorOpenState
     },
-    Key = {
+    Locked = {
         Default = "Locked",
+        DefaultPayToPlay = "LockedCoin",
+        LockedCoin = {
+            Anim = "CoinClosed",
+            Triggers = {
+                GoldKey = {
+                    State = "Opened",
+                    Anim = "CoinOpen"
+                },
+                Coin = {
+                    State = "Opened",
+                    Anim = "CoinOpen"
+                }
+            }
+        },
         Locked = {
             Anim = "KeyClosed",
             Triggers = {
@@ -341,8 +367,10 @@ StageAPI.BaseDoorStates = {
 StageAPI.BaseDoors = {
     Default = StageAPI.CustomStateDoor("DefaultDoor", nil, StageAPI.BaseDoorStates.Default),
     SpecialInterior = StageAPI.CustomStateDoor("SpecialDoor", nil, StageAPI.BaseDoorStates.SpecialInterior),
-    Locked = StageAPI.CustomStateDoor("LockedDoor", nil, StageAPI.BaseDoorStates.Key),
-    Treasure = StageAPI.CustomStateDoor("TreasureDoor", "gfx/grid/door_02_treasureroomdoor.anm2", StageAPI.BaseDoorStates.Key),
+    Locked = StageAPI.CustomStateDoor("LockedDoor", nil, StageAPI.BaseDoorStates.Locked),
+    Treasure = StageAPI.CustomStateDoor("TreasureDoor", "gfx/grid/door_02_treasureroomdoor.anm2", StageAPI.BaseDoorStates.Locked),
+    DevilTreasure = StageAPI.CustomStateDoor("DevilTreasureDoor", "gfx/grid/door_02_treasureroomdoor_devil.anm2", StageAPI.BaseDoorStates.Locked),
+    Planetarium = StageAPI.CustomStateDoor("PlanetariumDoor", "gfx/grid/door_00x_planetariumdoor.anm2", StageAPI.BaseDoorStates.Locked),
     Boss = StageAPI.CustomStateDoor("BossDoor", "gfx/grid/door_10_bossroomdoor.anm2", StageAPI.BaseDoorStates.SpecialInterior),
     Secret = StageAPI.CustomStateDoor("SecretDoor", "gfx/grid/door_08_holeinwall.anm2", StageAPI.BaseDoorStates.Secret, nil, nil, StageAPI.SecretDoorOffsetsByDirection),
     Arcade = StageAPI.CustomStateDoor("ArcadeDoor", "gfx/grid/door_05_arcaderoomdoor.anm2", StageAPI.BaseDoorStates.Arcade),
@@ -370,13 +398,18 @@ StageAPI.SecretDoorSpawn = {
     NotCurrent = {RoomType.ROOM_SECRET, RoomType.ROOM_SUPERSECRET}
 }
 
-StageAPI.DefaultDoorEntrances = {RoomType.ROOM_DEFAULT, RoomType.ROOM_MINIBOSS, RoomType.ROOM_SACRIFICE}
+StageAPI.DefaultDoorEntrances = {RoomType.ROOM_DEFAULT, RoomType.ROOM_MINIBOSS}
 StageAPI.BaseDoorSpawns = {
     Default = {
         Sprite = "Default",
         StateDoor = "DefaultDoor",
         RequireCurrent = {RoomType.ROOM_DEFAULT},
         RequireTarget = StageAPI.DefaultDoorEntrances
+    },
+    Sacrifice = {
+        Sprite = "Sacrifice",
+        StateDoor = "DefaultDoor",
+        RequireTarget = {RoomType.ROOM_SACRIFICE}
     },
     SpecialInterior = { -- same as default door, but cannot be blown up
         Sprite = "Default",
@@ -420,13 +453,16 @@ StageAPI.BaseDoorSpawns = {
     Treasure = {
         Sprite = "Treasure",
         StateDoor = "TreasureDoor",
-        RequireCurrent = {RoomType.ROOM_DEFAULT},
         RequireTarget = {RoomType.ROOM_TREASURE}
+    },
+    Planetarium = {
+        Sprite = "Planetarium",
+        StateDoor = "PlanetariumDoor",
+        RequireTarget = {RoomType.ROOM_PLANETARIUM}
     },
     Boss = {
         Sprite = "Boss",
         StateDoor = "BossDoor",
-        RequireCurrent = {RoomType.ROOM_DEFAULT},
         RequireTarget = {RoomType.ROOM_BOSS}
     },
     BossInterior = {
@@ -438,21 +474,18 @@ StageAPI.BaseDoorSpawns = {
     Ambush = {
         Sprite = "Ambush",
         StateDoor = "AmbushDoor",
-        RequireCurrent = {RoomType.ROOM_DEFAULT},
         RequireTarget = {RoomType.ROOM_CHALLENGE},
         IsBossAmbush = false
     },
     BossAmbush = {
         Sprite = "BossAmbush",
         StateDoor = "BossAmbushDoor",
-        RequireCurrent = {RoomType.ROOM_DEFAULT},
         RequireTarget = {RoomType.ROOM_CHALLENGE},
         IsBossAmbush = true
     },
     Boarded = {
         Sprite = "Boarded",
         StateDoor = "BedroomDoor",
-        RequireCurrent = {RoomType.ROOM_DEFAULT},
         RequireTarget = {RoomType.ROOM_BARREN, RoomType.ROOM_ISAACS}
     },
     Chest = {
@@ -474,7 +507,6 @@ StageAPI.BaseDoorSpawns = {
     Curse = {
         Sprite = "Curse",
         StateDoor = "CurseDoor",
-        RequireCurrent = {RoomType.ROOM_DEFAULT},
         RequireTarget = {RoomType.ROOM_CURSE}
     },
     Devil = {
@@ -487,13 +519,8 @@ StageAPI.BaseDoorSpawns = {
         StateDoor = "AngelDoor",
         RequireTarget = {RoomType.ROOM_ANGEL}
     },
-    PayToPlay = {
-        Sprite = "PayToPlay",
-        StateDoor = "ArcadeDoor",
-        IsPayToPlay = true
-    }
 }
-StageAPI.BaseDoorSpawnList = {StageAPI.BaseDoorSpawns.PayToPlay, StageAPI.BaseDoorSpawns.Devil, StageAPI.BaseDoorSpawns.Angel, StageAPI.BaseDoorSpawns.MinibossSecret, StageAPI.BaseDoorSpawns.Secret, StageAPI.BaseDoorSpawns.CurseInterior, StageAPI.BaseDoorSpawns.Curse, StageAPI.BaseDoorSpawns.BossInterior, StageAPI.BaseDoorSpawns.MinibossSurprise, StageAPI.BaseDoorSpawns.Miniboss, StageAPI.BaseDoorSpawns.SpecialInterior} -- in priority order
+StageAPI.BaseDoorSpawnList = {StageAPI.BaseDoorSpawns.Devil, StageAPI.BaseDoorSpawns.Angel, StageAPI.BaseDoorSpawns.MinibossSecret, StageAPI.BaseDoorSpawns.Secret, StageAPI.BaseDoorSpawns.CurseInterior, StageAPI.BaseDoorSpawns.Curse, StageAPI.BaseDoorSpawns.BossInterior, StageAPI.BaseDoorSpawns.MinibossSurprise, StageAPI.BaseDoorSpawns.Miniboss, StageAPI.BaseDoorSpawns.SpecialInterior} -- in priority order
 
 for k, v in pairs(StageAPI.BaseDoorSpawns) do
     if not StageAPI.IsIn(StageAPI.BaseDoorSpawnList, v) and k ~= "Default" then

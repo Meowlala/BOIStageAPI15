@@ -264,6 +264,11 @@ StageAPI.AddCallback("StageAPI", Callbacks.POST_SPAWN_CUSTOM_GRID, 0, function(c
         data.State = persistData.State
         if not data.State then
             data.State = "Default"
+
+            if doorData.States.DefaultPayToPlay and StageAPI.AnyPlayerWithPayToPlay() then
+                data.State = "DefaultPayToPlay"
+            end
+
             if shared.Room:IsClear() then
                 if doorData.States.DefaultCleared then
                     data.State = "DefaultCleared"
@@ -352,6 +357,16 @@ function StageAPI.IsRoomTopLeftShifted()
     if data then
         local trueTL = shared.Room:GetGridPosition(data.TopLeft) + Vector(20, 20)
         if trueTL.X ~= tlPos.X or trueTL.Y ~= tlPos.Y then
+            return true
+        end
+    end
+
+    return false
+end
+
+function StageAPI.AnyPlayerWithPayToPlay()
+    for _, player in ipairs(shared.Players) do
+        if player:HasCollectible(CollectibleType.COLLECTIBLE_PAY_TO_PLAY) then
             return true
         end
     end
@@ -475,6 +490,8 @@ mod:AddCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, function(_, door)
                     end
                 end
 
+                local payToPlay = StageAPI.AnyPlayerWithPayToPlay()
+
                 for _, player in ipairs(touched) do
                     if stateData.Triggers.GoldKey then
                         if player:HasGoldenKey() then
@@ -483,7 +500,7 @@ mod:AddCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, function(_, door)
                         end
                     end
 
-                    if stateData.Triggers.Key then
+                    if stateData.Triggers.Key and (not payToPlay or not stateData.Triggers.Key.NoPayToPlay) then
                         local keyCount = player:GetNumKeys()
                         local hasGold = player:HasGoldenKey() and not stateData.Triggers.Key.NoGold
                         if keyCount > 0 or hasGold then
@@ -496,7 +513,7 @@ mod:AddCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, function(_, door)
                         end
                     end
 
-                    if stateData.Triggers.Coin then
+                    if stateData.Triggers.Coin and (payToPlay or not stateData.Triggers.Coin.PayToPlay) then
                         local coinCount = player:GetNumCoins()
                         if coinCount > 0 then
                             trigger = stateData.Triggers.Coin
