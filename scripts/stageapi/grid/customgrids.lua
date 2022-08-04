@@ -282,6 +282,13 @@ function StageAPI.CustomGridEntity:Update()
         self.RecentProjectilePosition = self.Projectile.Position
         self.ProjectilePositionTimer = 10
         self.Projectile = nil
+
+        if not self.PersistentData.Destroyed then
+            self.PersistentData.Destroyed = true
+            StageAPI.TemporaryIgnoreSpawnOverride = true
+            self:CallCallbacks(Callbacks.POST_CUSTOM_GRID_DESTROY)
+            StageAPI.TemporaryIgnoreSpawnOverride = false
+        end
     end
 
     if self.ProjectilePositionTimer then
@@ -296,6 +303,18 @@ function StageAPI.CustomGridEntity:Update()
     if self.ProjectileHelper and not self.ProjectileHelper:Exists() then
         self.RecentProjectileHelper = true
         self.ProjectileHelper = nil
+    end
+
+    self.Velocity = Vector.Zero
+    if self.Projectile then
+        self.Position = self.Projectile.Position
+        self.Velocity = self.Projectile.Velocity
+    elseif self.RecentProjectilePosition then
+        self.Position = self.RecentProjectilePosition
+    elseif self.GridEntity then
+        self.Position = self.GridEntity.Position
+    elseif self.GridIndex then
+        self.Position = room:GetGridPosition(self.GridIndex)
     end
 
     if self:IsOnGrid() then
