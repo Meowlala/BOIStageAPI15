@@ -378,6 +378,10 @@ end
 
 function StageAPI.CustomGridEntity:UpdateProjectile(projectile)
     self.Projectile = projectile
+    if self.Projectile.Type == EntityType.ENTITY_TEAR then
+        self.ThrownByPlayer = true
+    end
+
     StageAPI.TemporaryIgnoreSpawnOverride = true
     self:CallCallbacks(Callbacks.POST_CUSTOM_GRID_PROJECTILE_UPDATE, projectile)
     if self.Projectile:IsDead() and not self.PersistentData.Destroyed then
@@ -390,6 +394,10 @@ end
 
 function StageAPI.CustomGridEntity:UpdateProjectileHelper(projectileHelper)
     self.ProjectileHelper = projectileHelper
+    if self.ProjectileHelper.Parent and self.ProjectileHelper.Parent.Type == EntityType.ENTITY_PLAYER then
+        self.HeldByPlayer = true
+    end
+
     self:CallCallbacks(Callbacks.POST_CUSTOM_GRID_PROJECTILE_HELPER_UPDATE, projectileHelper, projectileHelper.Parent)
 end
 
