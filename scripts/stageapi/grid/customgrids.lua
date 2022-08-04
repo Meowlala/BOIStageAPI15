@@ -314,7 +314,7 @@ function StageAPI.CustomGridEntity:Update()
     elseif self.GridEntity then
         self.Position = self.GridEntity.Position
     elseif self.GridIndex then
-        self.Position = room:GetGridPosition(self.GridIndex)
+        self.Position = shared.Room:GetGridPosition(self.GridIndex)
     end
 
     if self:IsOnGrid() then
