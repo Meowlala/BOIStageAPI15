@@ -266,7 +266,12 @@ function StageAPI.CustomGridEntity:Init(gridConfig, index, force, respawning, se
     self.GridEntity = grid
     if self.GridEntity then
         self.RNG = grid:GetRNG()
+        self.Position = self.GridEntity.Position
+    else
+        self.Position = shared.Room:GetGridPosition(self.GridIndex)
     end
+
+    self.Velocity = Vector.Zero
 
     StageAPI.CustomGridEntities[#StageAPI.CustomGridEntities + 1] = self
 
