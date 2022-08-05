@@ -64,7 +64,9 @@ mod:AddCallback(ModCallbacks.MC_POST_NPC_INIT, function(_, npc)
     local removeEntity
     if shared.Room:GetType() == RoomType.ROOM_CHALLENGE and not StageAPI.Challenge.WaveSpawnFrame
     and shared.Room:IsAmbushActive() and not shared.Room:IsAmbushDone() then
-        if not (npc:HasEntityFlags(EntityFlag.FLAG_FRIENDLY) or npc:HasEntityFlags(EntityFlag.FLAG_PERSISTENT) or npc:HasEntityFlags(EntityFlag.FLAG_NO_TARGET)) then
+        if not (npc:HasEntityFlags(EntityFlag.FLAG_FRIENDLY) or npc:HasEntityFlags(EntityFlag.FLAG_PERSISTENT) or npc:HasEntityFlags(EntityFlag.FLAG_NO_TARGET))
+        and not npc.SpawnerEntity -- only room spawns
+        then
             local preventCounting
             for _, entity in ipairs(Isaac.FindInRadius(Vector.Zero, 9999, EntityPartition.ENEMY)) do
                 if entity:ToNPC() and entity:CanShutDoors()
