@@ -257,7 +257,7 @@ StageAPI.AddCallback("StageAPI", Callbacks.POST_SPAWN_CUSTOM_GRID, 0, function(c
         if doorData.OverlayAnm2 then
             data.OverlaySprite = Sprite()
             data.OverlaySprite.Rotation = sprite.Rotation
-            data.OverlaySprite.Offset = sprite.Offset
+            data.OverlaySprite.Offset = door.PositionOffset * (26 / 40)
             data.OverlaySprite:Load(doorData.OverlayAnm2, true)
         end
 
