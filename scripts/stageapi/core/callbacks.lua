@@ -692,38 +692,36 @@ mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, function()
         StageAPI.CurrentLevelMapRoomID = nil
     end
 
-    if (inStartingRoom and StageAPI.GetDimension() == 0 and shared.Room:IsFirstVisit()) or (isNewStage and not StageAPI.CurrentStage) then
-        if inStartingRoom then
-            StageAPI.RoomGrids = {}
-            local maintainGrids = {}
-            for dimension, rooms in pairs(StageAPI.LevelRooms) do
-                maintainGrids[dimension] = {}
-                for roomId, levelRoom in pairs(rooms) do
-                    if not (levelRoom and levelRoom.IsPersistentRoom) then
-                        StageAPI.SetLevelRoom(nil, roomId, dimension)
-                    else
-                        maintainGrids[dimension][roomId] = true
-                    end
+    if not shared.Level:GetStateFlag(LevelStateFlag.STATE_LEVEL_START_TRIGGERED) then
+        StageAPI.RoomGrids = {}
+        local maintainGrids = {}
+        for dimension, rooms in pairs(StageAPI.LevelRooms) do
+            maintainGrids[dimension] = {}
+            for roomId, levelRoom in pairs(rooms) do
+                if not (levelRoom and levelRoom.IsPersistentRoom) then
+                    StageAPI.SetLevelRoom(nil, roomId, dimension)
+                else
+                    maintainGrids[dimension][roomId] = true
                 end
             end
+        end
 
-            for dimension, roomCustomGrids in pairs(StageAPI.CustomGrids) do
-                for roomId, grids in pairs(roomCustomGrids) do
-                    if not maintainGrids[dimension] or not maintainGrids[dimension][roomId] then
-                        roomCustomGrids[roomId] = nil
-                    end
+        for dimension, roomCustomGrids in pairs(StageAPI.CustomGrids) do
+            for roomId, grids in pairs(roomCustomGrids) do
+                if not maintainGrids[dimension] or not maintainGrids[dimension][roomId] then
+                    roomCustomGrids[roomId] = nil
                 end
             end
+        end
 
-            for mapID, levelMap in pairs(StageAPI.LevelMaps) do
-                if not levelMap.Persistent then
-                    local rooms = levelMap:GetRooms()
-                    if #rooms == 0 then
-                        levelMap:Destroy()
-                    else
-                        for _, roomData in ipairs(levelMap.Map) do
-                            levelMap:AddRoomToMinimap(roomData)
-                        end
+        for mapID, levelMap in pairs(StageAPI.LevelMaps) do
+            if not levelMap.Persistent then
+                local rooms = levelMap:GetRooms()
+                if #rooms == 0 then
+                    levelMap:Destroy()
+                else
+                    for _, roomData in ipairs(levelMap.Map) do
+                        levelMap:AddRoomToMinimap(roomData)
                     end
                 end
             end
