@@ -598,10 +598,22 @@ function StageAPI.DetectBaseLayoutChanges(generateNewRooms)
         end
 
         if swappedWith then
-            local levelRoomOne = StageAPI.GetLevelRoom(swappedWith.ListIndex, dimension)
-            local levelRoomTwo = StageAPI.GetLevelRoom(changed.ListIndex, dimension)
-            StageAPI.SetLevelRoom(levelRoomOne, changed.ListIndex, dimension)
-            StageAPI.SetLevelRoom(levelRoomTwo, swappedWith.ListIndex, dimension)
+            if not swappedWith.HandledSwap and not changed.HandledSwap then
+                swappedWith.HandledSwap = true
+                changed.HandledSwap = true
+
+                local levelRoomOne = StageAPI.GetLevelRoom(swappedWith.ListIndex, dimension)
+                local levelRoomTwo = StageAPI.GetLevelRoom(changed.ListIndex, dimension)
+                StageAPI.SetLevelRoom(levelRoomOne, changed.ListIndex, dimension)
+                StageAPI.SetLevelRoom(levelRoomTwo, swappedWith.ListIndex, dimension)
+
+                local customGridsOne = StageAPI.GetRoomCustomGrids(dimension, swappedWith.ListIndex)
+                local customGridsTwo = StageAPI.GetRoomCustomGrids(dimension, changed.ListIndex)
+                StageAPI.CustomGrids[dimension][changed.ListIndex] = customGridsOne
+                StageAPI.CustomGrids[dimension][swappedWith.ListIndex] = customGridsTwo
+                
+                StageAPI.CallCallbacks(Callbacks.POST_ROOM_SWAP, false, swappedWith.ListIndex, changed.ListIndex, levelRoomOne, levelRoomTwo)
+            end
         else
             if generateNewRooms then
                 StageAPI.SetLevelRoom(nil, changed.ListIndex, dimension)
@@ -661,7 +673,11 @@ mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, function()
     local inStartingRoom = StageAPI.InStartingRoom()
 
     for _, customGrid in ipairs(StageAPI.GetCustomGrids()) do
-        customGrid:Unload()
+        if not customGrid.JustSpawned then
+            customGrid:Unload()
+        else
+            customGrid.JustSpawned = false
+        end
     end
 
     -- Only a room the player is actively in can be "Loaded"

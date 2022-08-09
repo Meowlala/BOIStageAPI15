@@ -281,6 +281,8 @@ function StageAPI.CustomGridEntity:Init(gridConfig, index, force, respawning, se
 end
 
 function StageAPI.CustomGridEntity:Update()
+    self.JustSpawned = false
+
     self.RecentlyLifted = false
 
     if self.Projectile and not self.Projectile:Exists() then
@@ -756,7 +758,8 @@ mod:AddCallback(ModCallbacks.MC_PRE_ENTITY_SPAWN, function(_, id, variant, subty
         local room = shared.Room
         local index = room:GetGridIndex(position)
         if #StageAPI.GetCustomGrids(index, gridConfig.Name) == 0 and (room:IsFirstVisit() or room:GetFrameCount() > 0 or (StageAPI.GetCurrentRoom() and StageAPI.GetCurrentRoom().FirstLoad)) then
-            gridConfig:Spawn(index, true, false, {SpawnerEntity = {Type = id, Variant = variant, SubType = subtype}})
+            local grid = gridConfig:Spawn(index, true, false, {SpawnerEntity = {Type = id, Variant = variant, SubType = subtype}})
+            grid.JustSpawned = true
         end
 
         return {

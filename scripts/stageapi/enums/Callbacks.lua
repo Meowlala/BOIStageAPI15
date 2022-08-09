@@ -50,6 +50,7 @@ local Callbacks = {
     POST_HUD_RENDER = "POST_HUD_RENDER", -- (isPauseMenuOpen, pauseMenuDarkPct)
     GREED_WAVE_CHANGED = "GREED_WAVE_CHANGED", -- ()
     CHALLENGE_WAVE_CHANGED = "CHALLENGE_WAVE_CHANGED", -- ()
+    POST_ROOM_SWAP = "POST_ROOM_SWAP", -- (listIndexA, listIndexB, levelRoomA, levelRoomB)
 }
 
 StageAPI.Enum.Callbacks = Callbacks
