@@ -133,6 +133,51 @@ mod:AddCallback(ModCallbacks.MC_EXECUTE_CMD, function(_, cmd, params)
                 shared.Game:ChangeRoom(roomDesc.SafeGridIndex)
             end
         end
+    elseif cmd == "ascent" then
+        shared.Game:SetStateFlag(GameStateFlag.STATE_BACKWARDS_PATH, true)
+        local stageNum = shared.Level:GetStage()
+        local stageType = shared.Level:GetStageType()
+        local letter = ""
+        if stageType == StageType.STAGETYPE_REPENTANCE or stageType == StageType.STAGETYPE_REPENTANCE_B then
+            letter = "c"
+        end
+        Isaac.ExecuteCommand("stage " .. stageNum .. letter)
+        shared.Sfx:Stop(SoundEffect.SOUND_MOM_AND_DAD_1)
+        shared.Sfx:Stop(SoundEffect.SOUND_MOM_AND_DAD_2)
+        shared.Sfx:Stop(SoundEffect.SOUND_MOM_AND_DAD_3)
+        shared.Sfx:Stop(SoundEffect.SOUND_MOM_AND_DAD_4)
+        print("Entered ascent.")
+    elseif cmd == "mirror" then
+        local stageNum = shared.Level:GetStage()
+        local stageType = shared.Level:GetStageType()
+        if (stageNum == LevelStage.STAGE1_2) and (stageType == StageType.STAGETYPE_REPENTANCE or stageType == StageType.STAGETYPE_REPENTANCE_B) then
+            if shared.Game:GetStateFlag(GameStateFlag.STATE_BACKWARDS_PATH) == true then
+                print("Cannot be used in ascent.")
+            else
+                local roomIndex = shared.Level:GetCurrentRoomIndex()
+                if shared.Game:GetRoom():IsMirrorWorld() then
+                    shared.Game:ChangeRoom(roomIndex, 0)
+                    print("Exited mirror.")
+                else
+                    shared.Game:ChangeRoom(roomIndex, 1)
+                    print("Entered mirror.")
+                end
+            end
+        else
+            print("Must be used in stage 2 of Downpour or Dross.")
+        end
+    elseif cmd == "mineshaft" then
+        local player = Isaac.GetPlayer()
+        if not player:HasCollectible(CollectibleType.COLLECTIBLE_KNIFE_PIECE_1) then
+            player:AddCollectible(CollectibleType.COLLECTIBLE_KNIFE_PIECE_1)
+        end
+        Isaac.ExecuteCommand("stage 4c")
+        -- entrance is 162
+        -- knife room is 61
+        shared.Game:ChangeRoom(162, 1)
+    elseif cmd == "boss" then
+        local player = Isaac.GetPlayer()
+        player:UseCard(5, UseFlag.USE_NOANIM)
     elseif cmd == "clearroom" then
         StageAPI.ClearRoomLayout(false, true, true, true)
     elseif cmd == "superclearroom" then
