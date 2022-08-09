@@ -16,6 +16,7 @@ function StageAPI.TryLoadModData(continued)
         StageAPI.RoomGrids = {}
         StageAPI.CustomGrids = {}
         StageAPI.LevelMaps = {}
+        StageAPI.AscentData = {}
         StageAPI.CurrentLevelMapID = nil
         StageAPI.CurrentLevelMapRoomID = nil
         StageAPI.DefaultLevelMapID = nil
@@ -110,16 +111,15 @@ function StageAPI.GetSaveString()
         CurrentLevelMapID = StageAPI.CurrentLevelMapID,
         DefaultLevelMapID = StageAPI.DefaultLevelMapID,
         CurrentLevelMapRoomID = StageAPI.CurrentLevelMapRoomID,
+        AscentData = StageAPI.AscentData,
         EncounteredBosses = encounteredBosses
     })
 end
 
 function StageAPI.LoadSaveString(str)
     StageAPI.CallCallbacks(Callbacks.PRE_STAGEAPI_LOAD_SAVE, false)
-    local retLevelRooms = {}
     local retRoomGrids = {}
     local retCustomGrids = {}
-    local retEncounteredBosses = {}
     local decoded = json.decode(str)
 
     StageAPI.CurrentStage = nil
@@ -143,7 +143,6 @@ function StageAPI.LoadSaveString(str)
     StageAPI.LevelRooms = {}
     for strDimension, rooms in pairs(decoded.LevelInfo) do
         local dimension = tonumber(strDimension)
-        retLevelRooms[dimension] = {}
         retRoomGrids[dimension] = {}
         retCustomGrids[dimension] = {}
 
@@ -173,6 +172,7 @@ function StageAPI.LoadSaveString(str)
     StageAPI.CurrentLevelMapID = decoded.CurrentLevelMapID
     StageAPI.DefaultLevelMapID = decoded.DefaultLevelMapID
     StageAPI.CurrentLevelMapRoomID = decoded.CurrentLevelMapRoomID
+    StageAPI.AscentData = decoded.AscentData
 
     if StageAPI.CurrentLevelMapRoomID then
         StageAPI.TransitioningToExtraRoom = true

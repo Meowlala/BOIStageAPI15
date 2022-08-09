@@ -108,6 +108,7 @@ mod:AddCallback(ModCallbacks.MC_POST_EFFECT_INIT, function(_, eff)
     end
 end, EffectVariant.WATER_DROPLET)
 
+StageAPI.PotentialAscentData = {}
 mod:AddCallback(ModCallbacks.MC_POST_UPDATE, function()
     if StageAPI.JustUsedD7 then
         StageAPI.JustUsedD7 = nil
@@ -115,6 +116,24 @@ mod:AddCallback(ModCallbacks.MC_POST_UPDATE, function()
         if currentRoom then
             currentRoom.IsClear = currentRoom.WasClearAtStart
             currentRoom:Load()
+        end
+    end
+
+    StageAPI.PotentialAscentData = {}
+    local rooms = shared.Level:GetRooms()
+    for i = 0, rooms.Size - 1 do
+        local roomDesc = rooms:Get(i)
+        local dimension = StageAPI.GetDimension(roomDesc)
+        if dimension == 0 then
+            local data = roomDesc.Data
+            if data.Type == RoomType.ROOM_BOSS or data.Type == RoomType.ROOM_TREASURE then
+                StageAPI.PotentialAscentData[#StageAPI.PotentialAscentData + 1] = {
+                    ListIndex = roomDesc.ListIndex,
+                    Name = data.Name,
+                    Type = data.Type,
+                    Variant = data.Variant
+                }
+            end
         end
     end
 end)
@@ -128,15 +147,29 @@ function StageAPI.ShouldOverrideRoom(inStartingRoom, currentRoom)
         currentRoom = StageAPI.GetCurrentRoom()
     end
 
+    if shared.Game:GetStateFlag(GameStateFlag.STATE_BACKWARDS_PATH) then
+        local ascentIndex = StageAPI.GetStageAscentIndex()
+        local ascentData = StageAPI.AscentData[ascentIndex]
+        local desc = shared.Level:GetCurrentRoomDesc()
+
+        if ascentData then
+            for _, roomData in ipairs(ascentData) do
+                if roomData.LevelRoom and roomData.Name == desc.Data.Name and roomData.Type == desc.Data.Type and roomData.Variant == desc.Data.Variant then
+                    return true, true
+                end
+            end
+        end
+    end
+
     if currentRoom then
-        return true
+        return true, false
     elseif StageAPI.InNewStage() then
         local shouldGenerateDefaultRoom = (StageAPI.CurrentStage.Rooms and StageAPI.CurrentStage.Rooms[shared.Room:GetType()])
         local shouldGenerateBossRoom = (StageAPI.CurrentStage.Bosses and shared.Room:GetType() == RoomType.ROOM_BOSS)
         local shouldGenerateStartingRoom = StageAPI.CurrentStage.StartingRooms
 
         if (not inStartingRoom and (shouldGenerateDefaultRoom or shouldGenerateBossRoom)) or (inStartingRoom and shouldGenerateStartingRoom) then
-            return true
+            return true, false
         end
     end
 end
@@ -638,6 +671,8 @@ mod:AddCallback(ModCallbacks.MC_USE_ITEM, function()
     StageAPI.DetectBaseLayoutChanges(true)
 end, CollectibleType.COLLECTIBLE_BOOK_OF_REVELATIONS)
 
+StageAPI.PreviousNewRoomStage = -1
+StageAPI.PreviousNewRoomStageType = -1
 mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, function()
     StageAPI.CallCallbacks(Callbacks.PRE_STAGEAPI_NEW_ROOM, false)
 
@@ -693,6 +728,37 @@ mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, function()
     end
 
     if not shared.Level:GetStateFlag(LevelStateFlag.STATE_LEVEL_START_TRIGGERED) then
+        local previousAscentIndex = StageAPI.GetStageAscentIndex(StageAPI.PreviousNewRoomStage, StageAPI.PreviousNewRoomStageType)
+        if previousAscentIndex then
+            local ascentData = {}
+        
+            for _, roomData in ipairs(StageAPI.PotentialAscentData) do
+                local customGrids = StageAPI.GetRoomCustomGrids(0, roomData.ListIndex)
+                local levelRoom = StageAPI.GetLevelRoom(roomData.ListIndex, 0)
+
+                local roomSaveDat = {
+                    Name = roomData.Name,
+                    Type = roomData.Type,
+                    Variant = roomData.Variant
+                }
+                if customGrids and customGrids.LastPersistentIndex ~= 0 then
+                    roomSaveDat.CustomGrids = customGrids
+                end
+                
+                if levelRoom then
+                    roomSaveDat.LevelRoom = levelRoom:GetSaveData(false)
+                end
+
+                if StageAPI.RoomGrids[0] and StageAPI.RoomGrids[0][roomData.ListIndex] then
+                    roomSaveDat.RoomGrids = StageAPI.RoomGrids[0][roomData.ListIndex]
+                end
+
+                ascentData[#ascentData + 1] = roomSaveDat
+            end
+
+            StageAPI.AscentData[previousAscentIndex] = ascentData
+        end
+
         StageAPI.RoomGrids = {}
         local maintainGrids = {}
         for dimension, rooms in pairs(StageAPI.LevelRooms) do
@@ -737,6 +803,57 @@ mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, function()
 
         if not StageAPI.CurrentLevelMapID then
             StageAPI.CurrentLevelMapID = StageAPI.DefaultLevelMapID
+        end
+
+        if shared.Game:GetStateFlag(GameStateFlag.STATE_BACKWARDS_PATH) then
+            local ascentIndex = StageAPI.GetStageAscentIndex()
+            if StageAPI.AscentData[ascentIndex] then
+                local ascentData = StageAPI.AscentData[ascentIndex]
+
+                local matchingRooms = {}
+                local roomsList = shared.Level:GetRooms()
+                for i = 0, roomsList.Size - 1 do
+                    local roomDesc = roomsList:Get(i)
+                    for _, roomData in ipairs(ascentData) do
+                        if roomData.Name == roomDesc.Data.Name and roomData.Type == roomDesc.Data.Type and roomData.Variant == roomDesc.Data.Variant then
+                            matchingRooms[#matchingRooms + 1] = roomDesc
+                            break
+                        end
+                    end
+                end
+
+                for _, roomData in ipairs(ascentData) do
+                    local firstMatchingRoom
+                    for i, roomDesc in ipairs(matchingRooms) do
+                        if roomData.Name == roomDesc.Data.Name and roomData.Type == roomDesc.Data.Type and roomData.Variant == roomDesc.Data.Variant then
+                            firstMatchingRoom = roomDesc
+                            table.remove(matchingRooms, i)
+                            break
+                        end
+                    end
+
+                    if firstMatchingRoom then
+                        if roomData.LevelRoom then
+                            local levelRoom = StageAPI.LevelRoom{FromSave = roomData.LevelRoom}
+                            if roomData.Type == RoomType.ROOM_BOSS then
+                                levelRoom.IsClear = true
+                            end
+
+                            StageAPI.SetLevelRoom(levelRoom, firstMatchingRoom.ListIndex, 0)
+                        end
+
+                        if roomData.CustomGrids then
+                            StageAPI.CustomGrids[0] = StageAPI.CustomGrids[0] or {}
+                            StageAPI.CustomGrids[0][firstMatchingRoom.ListIndex] = roomData.CustomGrids
+                        end
+
+                        if roomData.RoomGrids then
+                            StageAPI.RoomGrids[0] = StageAPI.RoomGrids[0] or {}
+                            StageAPI.RoomGrids[0][firstMatchingRoom.ListIndex] = roomData.RoomGrids
+                        end
+                    end
+                end
+            end
         end
 
         StageAPI.PreviousBaseLevelLayout = {}
@@ -938,6 +1055,10 @@ mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, function()
     StageAPI.RoomRendered = false
 
     StageAPI.CallCallbacks(Callbacks.POST_STAGEAPI_NEW_ROOM, false, justGenerated)
+
+    StageAPI.PreviousNewRoomStage = shared.Level:GetStage()
+    StageAPI.PreviousNewRoomStageType = shared.Level:GetStageType()
+    StageAPI.PotentialAscentData = {}
 end)
 
 function StageAPI.GetGridPosition(index, width)
@@ -960,13 +1081,11 @@ StageAPI.RoomEntitySpawnGridBlacklist = {
 }
 
 mod:AddCallback(ModCallbacks.MC_PRE_ROOM_ENTITY_SPAWN, function(_, t, v, s, index, seed)
-    if StageAPI.RecentlyChangedLevel then
-        return
-    end
+    local shouldOverride, forceOverride = StageAPI.ShouldOverrideRoom()
 
-    if StageAPI.ShouldOverrideRoom() and (t >= 1000 or StageAPI.RoomEntitySpawnGridBlacklist[t] or StageAPI.IsMetadataEntity(t, v)) and not StageAPI.ActiveTransitionToExtraRoom then
+    if shouldOverride and (not StageAPI.RecentlyChangedLevel or forceOverride) and (t >= 1000 or StageAPI.RoomEntitySpawnGridBlacklist[t] or StageAPI.IsMetadataEntity(t, v)) and not StageAPI.ActiveTransitionToExtraRoom then
         local shouldReturn
-        if shared.Room:IsFirstVisit() or StageAPI.IsMetadataEntity(t, v) then
+        if shared.Room:IsFirstVisit() or StageAPI.IsMetadataEntity(t, v) or forceOverride then
             shouldReturn = true
         else
             local currentListIndex = StageAPI.GetCurrentRoomID()

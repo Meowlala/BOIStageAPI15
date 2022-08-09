@@ -83,3 +83,16 @@ end
 function StageAPI.InStartingRoom()
     return shared.Level:GetCurrentRoomDesc().SafeGridIndex == shared.Level:GetStartingRoomIndex()
 end
+
+function StageAPI.GetStageAscentIndex(stage, stageType)
+    stage, stageType = stage or shared.Level:GetStage(), stageType or shared.Level:GetStageType()
+    if stage >= 7 or stage < 1 then
+        return
+    end
+
+    if stageType == StageType.STAGETYPE_REPENTANCE or stageType == StageType.STAGETYPE_REPENTANCE_B then
+        return stage + 1
+    else
+        return stage
+    end
+end
