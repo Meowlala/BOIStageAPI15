@@ -537,6 +537,11 @@ function StageAPI.GenerateBaseRoom(roomDesc)
 end
 
 function StageAPI.GenerateBaseLevel()
+    -- changing room data can cause soft locks in br testing, for some reason. don't do it!
+    if BasementRenovator and BasementRenovator.InTestRoom and BasementRenovator.InTestStage and (BasementRenovator:InTestRoom() or BasementRenovator:InTestStage()) then
+        return
+    end
+
     local roomsList = shared.Level:GetRooms()
     for i = 0, roomsList.Size - 1 do
         local roomDesc = roomsList:Get(i)
