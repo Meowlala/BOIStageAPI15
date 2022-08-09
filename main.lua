@@ -1,3 +1,7 @@
+if debug then -- reload mod if luadebug is enabled, fixes luamod
+    package.loaded["scripts.stageapi.mod"] = false
+end
+
 require("scripts.stageapi.mod")
 
 -- Documentation moved to doc.md

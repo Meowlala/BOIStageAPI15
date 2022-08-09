@@ -134,13 +134,15 @@ mod:AddCallback(ModCallbacks.MC_EXECUTE_CMD, function(_, cmd, params)
             end
         end
     elseif cmd == "ascent" then
-        shared.Game:SetStateFlag(GameStateFlag.STATE_BACKWARDS_PATH, true)
         local stageNum = shared.Level:GetStage()
         local stageType = shared.Level:GetStageType()
         local letter = ""
         if stageType == StageType.STAGETYPE_REPENTANCE or stageType == StageType.STAGETYPE_REPENTANCE_B then
             letter = "c"
         end
+
+        Isaac.ExecuteCommand("stage 7") -- backwards path doesn't properly initialize special rooms if you don't leave the stage you're in first
+        shared.Game:SetStateFlag(GameStateFlag.STATE_BACKWARDS_PATH, true)
         Isaac.ExecuteCommand("stage " .. stageNum .. letter)
         shared.Sfx:Stop(SoundEffect.SOUND_MOM_AND_DAD_1)
         shared.Sfx:Stop(SoundEffect.SOUND_MOM_AND_DAD_2)
