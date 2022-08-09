@@ -661,9 +661,7 @@ mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, function()
     local inStartingRoom = StageAPI.InStartingRoom()
 
     for _, customGrid in ipairs(StageAPI.GetCustomGrids()) do
-        if customGrid.RoomIndex and customGrid.RoomIndex ~= StageAPI.GetCurrentRoomID() then
-            customGrid:Unload()
-        end
+        customGrid:Unload()
     end
 
     -- Only a room the player is actively in can be "Loaded"
