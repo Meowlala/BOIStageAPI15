@@ -32,7 +32,7 @@ mod:AddCallback(ModCallbacks.MC_POST_GAME_STARTED, function()
             REVEL.AddedStageAPIChangelogs = true
         end
 
-        TryAddChangelog("v2.05", [[- StageAPI now includes
+        TryAddChangelog("v2.05 - 06", [[- StageAPI now includes
 an embedded version
 of Mod Compatibility Hack
 
