@@ -32,6 +32,62 @@ mod:AddCallback(ModCallbacks.MC_POST_GAME_STARTED, function()
             REVEL.AddedStageAPIChangelogs = true
         end
 
+        TryAddChangelog("v2.05", [[- StageAPI now includes
+an embedded version
+of Mod Compatibility Hack
+
+- A spawner entity can
+now be specified for easy
+placement of custom grids
+
+- StageAPI's challenge wave
+system now supports
+boss challenge rooms
+
+- Added support for Devil's
+Crown treasure rooms on
+custom stages
+
+- Numerous tweaks to
+custom grids to expose
+more helpful features
+
+- Fixes for custom grids
+and luarooms with curse
+of the maze and ascent
+
+- Fixed movable TNT
+persisting improperly
+
+- Fixed movable fireplace
+variants persisting
+improperly
+
+- Fixed door overlay
+sprites being rendered
+at the wrong positions
+
+- StageAPI no longer
+runs level gen code
+while testing with
+Basement Renovator
+
+- Added some new commands:
+"ascent" - warps to ascent
+of current floor
+
+"boss" - warps to boss
+
+"mirror" - warps to mirror
+of current room
+
+"mineshaft" - warps to
+mines escape sequence
+
+- Improvements to StageAPI's
+documentation
+]])
+
         TryAddChangelog("v2.03 - 04", [[- Fixes for extra
 rooms and custom grids with
 save and continue.
