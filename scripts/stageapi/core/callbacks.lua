@@ -732,7 +732,7 @@ mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, function()
         StageAPI.CurrentLevelMapRoomID = nil
     end
 
-    if not shared.Level:GetStateFlag(LevelStateFlag.STATE_LEVEL_START_TRIGGERED) then
+    if (not shared.Level:GetStateFlag(LevelStateFlag.STATE_LEVEL_START_TRIGGERED) and shared.Level:GetCurrentRoomIndex() == shared.Level:GetPreviousRoomIndex()) or (isNewStage and not StageAPI.CurrentStage) then
         local previousAscentIndex = StageAPI.GetStageAscentIndex(StageAPI.PreviousNewRoomStage, StageAPI.PreviousNewRoomStageType)
         if previousAscentIndex then
             local ascentData = {}
