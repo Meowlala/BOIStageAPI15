@@ -1,19 +1,35 @@
 local shared = require("scripts.stageapi.shared")
 local mod = require("scripts.stageapi.mod")
+local Callbacks = require("scripts.stageapi.enums.Callbacks")
 
 StageAPI.LogMinor("Loading GridGfx Handler")
 
----@return GridGfx
-function StageAPI.GridGfx()
-end
-
 ---@class GridGfx : StageAPIClass
+---@field Decorations GridGfx.Decorations
+---@field private Pits GridGfx.PitFile?
+---@field private AltPits GridGfx.PitFile?
+---@operator call : GridGfx
 StageAPI.GridGfx = StageAPI.Class("GridGfx")
+
+---@class GridGfx.PitFile
+---@field File string
+---@field HasExtraFrames boolean?
+
+---@class GridGfx.Decorations
+---@field Png string
+---@field Anm2 string
+---@field PropCount integer
+---@field Prefix string
+---@field Suffix string
+
+
 function StageAPI.GridGfx:Init()
     self.Grids = false
     self.Doors = false
 end
 
+---@param filename string
+---@param noBridge? boolean
 function StageAPI.GridGfx:SetRocks(filename, noBridge)
     self.Rocks = filename
 
@@ -22,6 +38,9 @@ function StageAPI.GridGfx:SetRocks(filename, noBridge)
     end
 end
 
+---@param filename string
+---@param t GridEntityType
+---@param v integer?
 function StageAPI.GridGfx:SetGrid(filename, t, v)
     if not self.Grids then
         self.Grids = {}
@@ -39,6 +58,9 @@ function StageAPI.GridGfx:SetGrid(filename, t, v)
     end
 end
 
+---@param filenames string | GridGfx.PitFile[]
+---@param alts string | GridGfx.PitFile[] | nil
+---@param hasExtraFrames? boolean
 function StageAPI.GridGfx:SetPits(filenames, alts, hasExtraFrames)
     if type(filenames) == 'string' then
         filenames = { {
@@ -57,10 +79,16 @@ function StageAPI.GridGfx:SetPits(filenames, alts, hasExtraFrames)
     self.AltPitFiles = alts
 end
 
+---@param filename string
 function StageAPI.GridGfx:SetBridges(filename)
     self.Bridges = filename
 end
 
+---@param filename string
+---@param anm2? string
+---@param propCount? integer
+---@param prefix? string
+---@param suffix? string
 function StageAPI.GridGfx:SetDecorations(filename, anm2, propCount, prefix, suffix)
     self.Decorations = {
         Png = filename,
@@ -75,8 +103,16 @@ end
 
 StageAPI.GridGfxRNG = RNG()
 
+---@param rock StageAPI.GridGfxReplaceData
+---@param filename string
 function StageAPI.ChangeRock(rock, filename)
     local grid = rock.Grid
+
+    filename = StageAPI.CallCallbacksWithParams(Callbacks.PRE_CHANGE_ROCK_GFX, true, 
+        StageAPI.GetCurrentStage(),
+        grid, rock.Index, filename
+    ) or filename
+
     local gsprite = grid:GetSprite()
     for i = 0, 4 do
         gsprite:ReplaceSpritesheet(i, filename)
@@ -102,9 +138,28 @@ function StageAPI.CheckBridge(grid, index, bridgefilename)
     end
 end
 
+---@param pit StageAPI.GridGfxReplaceData
+---@param pitFile GridGfx.PitFile?
+---@param bridgefilename string?
+---@param alt GridGfx.PitFile?
 function StageAPI.ChangePit(pit, pitFile, bridgefilename, alt)
     local grid = pit.Grid
     local gsprite = grid:GetSprite()
+
+    local callbacks = StageAPI.GetCallbacks(Callbacks.PRE_CHANGE_PIT_GFX)
+    for _, callback in ipairs(callbacks) do
+        local succ, pitFileReturn, bridgeFilenameReturn, altReturn 
+            = StageAPI.TryCallbackMultiReturnParams(callback, 
+                StageAPI.GetCurrentStage(),
+                grid, pit.Index, pitFile, bridgefilename, alt
+            )
+        if succ and (pitFileReturn or bridgeFilenameReturn or altReturn) then
+            pitFile = pitFileReturn
+            bridgefilename = bridgeFilenameReturn
+            alt = altReturn
+            break
+        end
+    end
 
     if pitFile then
         if gsprite:GetFilename() ~= "stageapi/pit.anm2" then
@@ -125,8 +180,15 @@ function StageAPI.ChangePit(pit, pitFile, bridgefilename, alt)
     gsprite:LoadGraphics()
 end
 
+---@param decoration StageAPI.GridGfxReplaceData
+---@param decorations GridGfx.Decorations
 function StageAPI.ChangeDecoration(decoration, decorations)
     local grid = decoration.Grid
+
+    decorations = StageAPI.CallCallbacksWithParams(Callbacks.PRE_CHANGE_DECORATION_GFX, true, 
+        StageAPI.GetCurrentStage(),
+        grid, decoration.Index, decorations
+    ) or decorations
 
     local gsprite = grid:GetSprite()
     gsprite:Load(decorations.Anm2, false)
@@ -504,10 +566,24 @@ function StageAPI.ChangeGrid(sent, filename)
         filename = filename[StageAPI.Random(1, #filename, StageAPI.GridGfxRNG)]
     end
 
+    filename = StageAPI.CallCallbacksWithParams(Callbacks.PRE_CHANGE_MISC_GRID_GFX, true, 
+        StageAPI.GetCurrentStage(),
+        grid, sent.Index, filename
+    ) or filename
+
     sprite:ReplaceSpritesheet(0, filename)
     sprite:LoadGraphics()
 end
 
+---@class StageAPI.GridGfxReplaceData
+---@field Grid GridEntity
+---@field Index integer
+---@field Type GridEntityType
+---@field Desc GridEntityDesc
+
+---@param grid GridEntity
+---@param grids GridGfx
+---@param i integer
 function StageAPI.ChangeSingleGrid(grid, grids, i)
     local desc = grid.Desc
     local gtype = desc.Type
