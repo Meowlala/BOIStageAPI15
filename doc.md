@@ -222,6 +222,17 @@ Callback List:
 
   - Runs both on room load and when the backdrop is changed
 
+- PRE_CHANGE_ROCK_GFX(grid: GridEntity, index: integer, usingFilename: string): string?
+- PRE_CHANGE_DECORATION_GFX(grid: GridEntity, index: integer, usingDecorations: GridGfx.Decorations): GridGfx.Decorations?
+- PRE_CHANGE_PIT_GFX(grid: GridEntity, index: integer, usingPitFile: GridGfx.PitFile?, usingBridgeFilename: string?, usingAlt: GridGfx.PitFile?): GridGfx.PitFile?, string?, GridGfx.PitFile?
+- PRE_CHANGE_MISC_GRID_GFX(grid: GridEntity, index: integer, usingFilename: string): string?
+
+  - All of the PRE_CHANGE_<GRID>_GFX above can be used to change a specific grid's sprite, for example changing the spritesheet for rocks on a certain row or column
+  - Can take a CustomStage as parameter to only work in that stage
+  - Breaks on first returned value, see each specific callback for returned values/params (available in lua doc tags)
+  - No PRE_CHANGE_DOOR_GFX as most usecases where you'd want to change door sprites are either handled by room types or Custom Doors
+
+
 - PRE_STAGEAPI_NEW_ROOM()
 
   - Runs before most but not all stageapi room functionality. guaranteed to run before any room loads.

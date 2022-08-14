@@ -95,7 +95,13 @@ end
 local function MatchesParams(callback, params)
     local matches = true
     for i, param in ipairs(params) do
-        matches = matches and (param == callback.Params[i] or not callback.Params[i])
+        if callback.Params[i] then
+            if type(param) == "table" and param.Type == "CustomStage" then
+                matches = matches and StageAPI.IsSameStage(param, callback.Params[i], false)
+            else
+                matches = matches and param == callback.Params[i]
+            end
+        end
     end
     return matches
 end
