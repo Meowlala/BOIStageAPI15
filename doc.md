@@ -227,7 +227,7 @@ Callback List:
 - PRE_CHANGE_PIT_GFX(grid: GridEntity, index: integer, usingPitFile: GridGfx.PitFile?, usingBridgeFilename: string?, usingAlt: GridGfx.PitFile?): GridGfx.PitFile?, string?, GridGfx.PitFile?
 - PRE_CHANGE_MISC_GRID_GFX(grid: GridEntity, index: integer, usingFilename: string): string?
 
-  - All of the PRE_CHANGE_<GRID>_GFX above can be used to change a specific grid's sprite, for example changing the spritesheet for rocks on a certain row or column
+  - All of the PRE_CHANGE_\<GRID\>_GFX above can be used to change a specific grid's sprite, for example changing the spritesheet for rocks on a certain row or column
   - Can take a CustomStage as parameter to only work in that stage
   - Breaks on first returned value, see each specific callback for returned values/params (available in lua doc tags)
   - No PRE_CHANGE_DOOR_GFX as most usecases where you'd want to change door sprites are either handled by room types or Custom Doors
@@ -297,7 +297,7 @@ Callback List:
 
 - PRE_PLAY_MINIBOSS_STREAK(currentRoom, boss, text)
 
-  - Return false to not play "<player> VS <boss.Name>" as would be normally done, return a string to use that as the streak text instead
+  - Return false to not play "\<player\> VS \<boss.Name\>" as would be normally done, return a string to use that as the streak text instead
 
 - POST_STREAK_RENDER(streakPos, streakPlaying)
 
