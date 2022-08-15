@@ -214,8 +214,10 @@ StageAPI.AddCallback("StageAPI", Callbacks.POST_SPAWN_ENTITY, 0, function(ent, e
                     price = PickupPrice.PRICE_FREE
                 end
 
-                pickup.AutoUpdatePrice = false
-                pickup.Price = price
+                if currentRoom.FirstLoad then
+                    pickup.AutoUpdatePrice = false
+                    pickup.Price = price
+                end
             elseif metaEntity.Name == "OptionsPickup" then
                 local idx = metaEntity.BitValues.OptionsIndex
                 pickup.OptionsPickupIndex = idx

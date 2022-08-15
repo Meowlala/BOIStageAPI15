@@ -469,7 +469,6 @@ function StageAPI.LoadEntitiesFromEntitySets(entitysets, doGrids, doPersistentOn
                 end
 
                 if shouldSpawn and #entityList > 0 then
-                    local roomType = shared.Room:GetType()
                     for _, entityInfo in ipairs(entityList) do
                         local shouldSpawnEntity = true
 
@@ -548,8 +547,14 @@ function StageAPI.LoadEntitiesFromEntitySets(entitysets, doGrids, doPersistentOn
                                     ent.HitPoints = entityPersistData.Health
                                 end
 
+                                if entityPersistData and entityPersistData.Price and ent.Type == EntityType.ENTITY_PICKUP then
+                                    local pickup = ent:ToPickup()
+                                    pickup.Price = entityPersistData.Price.Price
+                                    pickup.AutoUpdatePrice = entityPersistData.Price.AutoUpdate
+                                end
+
                                 local currentRoom = StageAPI.GetCurrentRoom()
-                                if currentRoom and not currentRoom.IgnoreRoomRules then
+                                if currentRoom and not currentRoom.IgnoreRoomRules and currentRoom.FirstLoad then
                                     if entityData.Type == EntityType.ENTITY_PICKUP and entityData.Variant == PickupVariant.PICKUP_COLLECTIBLE then
                                         if currentRoom.RoomType == RoomType.ROOM_TREASURE then
                                             if currentRoom.Layout.Variant > 0 or string.find(string.lower(currentRoom.Layout.Name), "choice") or string.find(string.lower(currentRoom.Layout.Name), "choose") then

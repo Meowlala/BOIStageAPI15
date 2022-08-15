@@ -81,6 +81,7 @@ StageAPI.AddPersistenceCheck(function(entData)
             UpdateType = true,
             UpdateVariant = true,
             UpdateSubType = true,
+            UpdatePrice = true,
             StoreCheck = function(entity)
                 if entity.Type == EntityType.ENTITY_PICKUP then
                     local variant = entity.Variant

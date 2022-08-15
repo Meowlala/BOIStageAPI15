@@ -320,6 +320,10 @@ function StageAPI.LevelRoom:SavePersistentEntities()
                 entityPersistData.Position = {X = entity.Position.X, Y = entity.Position.Y}
             end
 
+            if persistData.UpdatePrice and entity.Type == EntityType.ENTITY_PICKUP then
+                entityPersistData.Price = {Price = entity:ToPickup().Price, AutoUpdate = entity:ToPickup().AutoUpdatePrice}
+            end
+
             if persistData.StoreCheck and persistData.StoreCheck(entity, data) then
                 self.AvoidSpawning[persistentIndex] = true
             end
@@ -364,6 +368,10 @@ function StageAPI.LevelRoom:SavePersistentEntities()
 
                     if persistData.UpdatePosition then
                         entityPersistData.Position = {X = entity.Position.X, Y = entity.Position.Y}
+                    end
+
+                    if persistData.UpdatePrice and entity.Type == EntityType.ENTITY_PICKUP then
+                        entityPersistData.Price = {Price = entity:ToPickup().Price, AutoUpdate = entity:ToPickup().AutoUpdatePrice}
                     end
 
                     StageAPI.SetEntityPersistenceData(entity, index, persistData)
