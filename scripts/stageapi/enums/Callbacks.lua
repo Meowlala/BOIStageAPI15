@@ -55,6 +55,7 @@ local Callbacks = {
     GREED_WAVE_CHANGED = "GREED_WAVE_CHANGED", -- ()
     CHALLENGE_WAVE_CHANGED = "CHALLENGE_WAVE_CHANGED", -- ()
     POST_ROOM_SWAP = "POST_ROOM_SWAP", -- (listIndexA, listIndexB, levelRoomA, levelRoomB)
+    PRE_LEVELMAP_SPAWN_DOOR = "PRE_LEVELMAP_SPAWN_DOOR", -- (slot: DoorSlot, doorData, levelRoom: LevelRoom, targetLevelRoom: LevelRoom, roomData, levelMap: LevelMap)
 }
 
 StageAPI.Enum.Callbacks = Callbacks

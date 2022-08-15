@@ -749,13 +749,17 @@ function StageAPI.LoadCustomMapRoomDoors(levelRoom, roomData, levelMap)
     levelMap = levelMap or StageAPI.GetCurrentLevelMap()
     if roomData.Doors then
         for slot, doorData in pairs(roomData.Doors) do
-            local targLevelRoom = levelMap:GetRoom(doorData.ExitRoom)
-            local current, target = levelRoom.RoomType, targLevelRoom.RoomType
-            local isBossAmbush = nil
-            local isPayToPlay = nil
-            local isSurpriseMiniboss = levelRoom.SurpriseMiniboss
-            local useSprite, useDoor = StageAPI.CompareDoorSpawns(StageAPI.BaseDoorSpawnList, current, target, isBossAmbush, isPayToPlay, isSurpriseMiniboss)
-            StageAPI.SpawnCustomDoor(slot, doorData.ExitRoom, levelMap, useDoor, nil, doorData.ExitSlot, useSprite)
+            local targetLevelRoom = levelMap:GetRoom(doorData.ExitRoom)
+            local cancelSpawn = StageAPI.CallCallbacks(Callbacks.PRE_LEVELMAP_SPAWN_DOOR, true, slot, doorData, levelRoom, targetLevelRoom, roomData, levelMap)
+
+            if not cancelSpawn then
+                local current, target = levelRoom.RoomType, targetLevelRoom.RoomType
+                local isBossAmbush = nil
+                local isPayToPlay = nil
+                local isSurpriseMiniboss = levelRoom.SurpriseMiniboss
+                local useSprite, useDoor = StageAPI.CompareDoorSpawns(StageAPI.BaseDoorSpawnList, current, target, isBossAmbush, isPayToPlay, isSurpriseMiniboss)
+                StageAPI.SpawnCustomDoor(slot, doorData.ExitRoom, levelMap, useDoor, nil, doorData.ExitSlot, useSprite)
+            end
         end
     end
 end

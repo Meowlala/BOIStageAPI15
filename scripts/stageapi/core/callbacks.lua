@@ -945,6 +945,20 @@ mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, function()
     if boss and not shared.Room:IsClear() then
         if not boss.IsMiniboss then
             StageAPI.PlayBossAnimation(boss)
+
+            local vanishingTwins = Isaac.FindByType(EntityType.ENTITY_FAMILIAR, FamiliarVariant.VANISHING_TWIN, -1, false, false)
+            for _, twin in ipairs(vanishingTwins) do
+                twin = twin:ToFamiliar()
+                if twin.Coins > 0 then
+                    if boss.VanishingTwinEntity then
+                        twin.Coins = boss.VanishingTwinEntity.Type
+                        twin.Keys = boss.VanishingTwinEntity.Variant
+                    elseif boss.Entity then
+                        twin.Coins = boss.Entity.Type
+                        twin.Keys = boss.Entity.Variant
+                    end
+                end
+            end
         else
             local text = shared.Players[1]:GetName() .. " VS " .. boss.Name
 
@@ -1131,7 +1145,7 @@ function StageAPI.GetDevilPrice(id)
 
     allPlayersHaveRedHealth = not allPlayersHaveRedHealth
 
-    if allPlayersHaveRedHealth or (playerHasRedHealth and math.random(1, 2) == 1) then
+    if allPlayersHaveRedHealth or (playerHasRedHealth and StageAPI.Random(1, 2) == 1) then
         if devilPrice == 1 then
             return PickupPrice.PRICE_ONE_HEART
         else

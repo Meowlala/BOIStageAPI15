@@ -239,6 +239,8 @@ StageAPI.AddCallback("StageAPI", Callbacks.POST_SPAWN_CUSTOM_GRID, 0, function(c
     local data, sprite = door:GetData(), door:GetSprite()
     sprite:Load(doorData.Anm2, true)
 
+    customGrid.Data.DoorEntity = door
+
     if persistData.DoorSprite then
         data.DoorSprite = persistData.DoorSprite
     end
@@ -376,6 +378,7 @@ end
 
 local framesWithoutDoorData = 0
 local hadFrameWithoutDoorData = false
+local recentDadsKey
 
 ---@param door EntityEffect
 mod:AddCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, function(_, door)
@@ -453,6 +456,10 @@ mod:AddCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, function(_, door)
 
             ---@type CustomStateDoor_Trigger
             local trigger
+            if stateData.Triggers.DadsKey and recentDadsKey and not doorLocked then
+                trigger = stateData.Triggers.DadsKey
+            end
+
             if stateData.Triggers.Bomb and not doorLocked then
                 if not data.CountedExplosions then
                     data.CountedExplosions = {}
@@ -474,7 +481,7 @@ mod:AddCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, function(_, door)
             end
 
 
-            if stateData.Triggers.Unclear and (not shared.Room:IsClear() or doorLocked) then
+            if stateData.Triggers.Unclear and (not shared.Room:IsClear() or doorLocked) and not data.ForcedOpen then
                 trigger = stateData.Triggers.Unclear
             end
 
@@ -563,6 +570,10 @@ mod:AddCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, function(_, door)
                     if trigger.OverlayAnim then
                         data.TriggerOverlayAnim = trigger.OverlayAnim
                         data.SkipStartOverlayAnim = true
+                    end
+
+                    if trigger.ForcedOpen then
+                        data.ForcedOpen = true
                     end
 
                     if trigger.Jingle then
@@ -680,7 +691,12 @@ mod:AddCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, function(_, door)
     )
 end, StageAPI.E.Door.V)
 
+mod:AddCallback(ModCallbacks.MC_USE_ITEM, function()
+    recentDadsKey = true
+end, CollectibleType.COLLECTIBLE_DADS_KEY)
+
 mod:AddCallback(ModCallbacks.MC_POST_UPDATE, function()
+    recentDadsKey = false
     if hadFrameWithoutDoorData then
         hadFrameWithoutDoorData = false
     elseif framesWithoutDoorData > 0 then

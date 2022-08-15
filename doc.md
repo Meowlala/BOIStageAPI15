@@ -232,7 +232,6 @@ Callback List:
   - Breaks on first returned value, see each specific callback for returned values/params (available in lua doc tags)
   - No PRE_CHANGE_DOOR_GFX as most usecases where you'd want to change door sprites are either handled by room types or Custom Doors
 
-
 - PRE_STAGEAPI_NEW_ROOM()
 
   - Runs before most but not all stageapi room functionality. guaranteed to run before any room loads.
@@ -305,6 +304,7 @@ Callback List:
   - After rendering a streak played with StageAPI.PlayTextStreak
 
 - POST_HUD_RENDER(isPauseMenuOpen, pauseMenuDarkPct)
+
   - Runs after the vanilla hud is rendered
   - Uses a workaround with the shader callback
   - Use isPauseMenuOpen and pauseMenuDarkPct to work around the pause menu, as
@@ -312,6 +312,12 @@ Callback List:
     them or darken them.
   - Handy constant: StageAPI.PAUSE_DARK_BG_COLOR, the color of the dark background
     rendered above the hud normally when paused
+
+- PRE_LEVELMAP_SPAWN_DOOR(slot, doorData, levelRoom, targetLevelRoom, roomData, levelMap)
+
+  - When a LevelMap has AutoDoors set, it automatically places doors based on room types
+  - This callback runs before it places a door, allowing you to change it.
+  - doorData is a table {ExitRoom = LevelMapRoomID, ExitSlot = slot}
 
 ## StageAPI Structures:
 

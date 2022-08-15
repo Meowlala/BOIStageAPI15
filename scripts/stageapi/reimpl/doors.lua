@@ -19,7 +19,11 @@ StageAPI.BaseDoorClosedState = {
     StartSound = SoundEffect.SOUND_DOOR_HEAVY_CLOSE,
     Triggers = {
         Clear = "Opened",
-        Bomb = "BrokenOpen"
+        Bomb = "BrokenOpen",
+        DadsKey = {
+            State = "Opened",
+            ForcedOpen = true
+        }
     }
 }
 
@@ -35,7 +39,11 @@ StageAPI.SpecialDoorClosedState = {
     Anim = "Closed",
     StartSound = SoundEffect.SOUND_DOOR_HEAVY_CLOSE,
     Triggers = {
-        Clear = "Opened"
+        Clear = "Opened",
+        DadsKey = {
+            State = "Opened",
+            ForcedOpen = true
+        }
     }
 }
 
@@ -54,6 +62,10 @@ StageAPI.SecretDoorHiddenState = {
                 {Variant = EffectVariant.ROCK_PARTICLE},
                 {Variant = EffectVariant.DUST_CLOUD, Timeout = 40, LifeSpan = 40, Rotation = -3, Count = 2, Velocity = 2}
             }
+        },
+        DadsKey = {
+            State = "Opened",
+            ForcedOpen = true
         }
     }
 }
@@ -62,7 +74,11 @@ StageAPI.SecretDoorClosedState = {
     Anim = "Close",
     StartAnim = "Close",
     Triggers = {
-        Clear = "Opened"
+        Clear = "Opened",
+        DadsKey = {
+            State = "Opened",
+            ForcedOpen = true
+        }
     }
 }
 
