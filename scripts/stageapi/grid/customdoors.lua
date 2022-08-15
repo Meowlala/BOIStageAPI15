@@ -240,6 +240,7 @@ StageAPI.AddCallback("StageAPI", Callbacks.POST_SPAWN_CUSTOM_GRID, 0, function(c
     sprite:Load(doorData.Anm2, true)
 
     customGrid.Data.DoorEntity = door
+    data.RoomIndex = StageAPI.GetCurrentRoomID()
 
     if persistData.DoorSprite then
         data.DoorSprite = persistData.DoorSprite
@@ -476,7 +477,7 @@ mod:AddCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, function(_, door)
                 end
             end
 
-            if stateData.Triggers.EnteredThrough and shared.Level.EnterDoor == data.DoorGridData.Slot and not doorLocked then
+            if stateData.Triggers.EnteredThrough and shared.Level.EnterDoor == data.DoorGridData.Slot and data.RoomIndex == StageAPI.GetCurrentRoomID() and not doorLocked then
                 trigger = stateData.Triggers.EnteredThrough
             end
 
@@ -554,83 +555,85 @@ mod:AddCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, function(_, door)
 
             if trigger then
                 if type(trigger) == "table" then
-                    if trigger.State then
-                        data.State = trigger.State
-                    end
+                    if not trigger.Check or trigger.Check(door, data, sprite, doorData, data.DoorGridData) then
+                        if trigger.State then
+                            data.State = trigger.State
+                        end
 
-                    if trigger.Anim or trigger.OverlayAnim then
-                        doorData:SetDoorAnim(sprite, trigger.Anim, nil, trigger.OverlayAnim, nil, data.OverlaySprite)
-                    end
+                        if trigger.Anim or trigger.OverlayAnim then
+                            doorData:SetDoorAnim(sprite, trigger.Anim, nil, trigger.OverlayAnim, nil, data.OverlaySprite)
+                        end
 
-                    if trigger.Anim then
-                        data.TriggerAnim = trigger.Anim
-                        data.SkipStartAnim = true
-                    end
+                        if trigger.Anim then
+                            data.TriggerAnim = trigger.Anim
+                            data.SkipStartAnim = true
+                        end
 
-                    if trigger.OverlayAnim then
-                        data.TriggerOverlayAnim = trigger.OverlayAnim
-                        data.SkipStartOverlayAnim = true
-                    end
+                        if trigger.OverlayAnim then
+                            data.TriggerOverlayAnim = trigger.OverlayAnim
+                            data.SkipStartOverlayAnim = true
+                        end
 
-                    if trigger.ForcedOpen then
-                        data.ForcedOpen = true
-                    end
+                        if trigger.ForcedOpen then
+                            data.ForcedOpen = true
+                        end
 
-                    if trigger.Jingle then
-                        local currentMusic = shared.Music:GetCurrentMusicID()
-                        shared.Music:Play(trigger.Jingle, 1)
-                        shared.Music:UpdateVolume()
-                        shared.Music:Queue(currentMusic)
-                    end
+                        if trigger.Jingle then
+                            local currentMusic = shared.Music:GetCurrentMusicID()
+                            shared.Music:Play(trigger.Jingle, 1)
+                            shared.Music:UpdateVolume()
+                            shared.Music:Queue(currentMusic)
+                        end
 
-                    if trigger.Particle then
-                        trigger.Particles = {trigger.Particle}
-                    end
+                        if trigger.Particle then
+                            trigger.Particles = {trigger.Particle}
+                        end
 
-                    if trigger.Particles then
-                        for _, particle in ipairs(trigger.Particles) do
-                            local count, vel = particle.Count or 5, particle.Velocity or 5
-                            if type(count) == "table" then
-                                count = StageAPI.Random(count[1], count[2])
-                            end
-
-                            if type(vel) == "table" then
-                                vel = StageAPI.Random(vel[1], vel[2])
-                            end
-
-                            for i = 1,count do
-                                local direction = Vector.FromAngle(sprite.Rotation + StageAPI.Random(-90, 90))
-                                if not shared.Room:IsPositionInRoom(door.Position + direction * 40, 0) then
-                                    direction = -direction
+                        if trigger.Particles then
+                            for _, particle in ipairs(trigger.Particles) do
+                                local count, vel = particle.Count or 5, particle.Velocity or 5
+                                if type(count) == "table" then
+                                    count = StageAPI.Random(count[1], count[2])
                                 end
 
-                                local part = Isaac.Spawn(particle.Type or 1000, particle.Variant or EffectVariant.ROCK_PARTICLE, particle.SubType or 0, door.Position, direction * vel, nil)
-
-                                if particle.LifeSpan then
-                                    local lifespan = particle.LifeSpan
-                                    if type(lifespan) == "table" then
-                                        lifespan = StageAPI.Random(lifespan[1], lifespan[2])
-                                    end
-
-                                    part:ToEffect().LifeSpan = lifespan
+                                if type(vel) == "table" then
+                                    vel = StageAPI.Random(vel[1], vel[2])
                                 end
 
-                                if particle.Timeout then
-                                    local timeout = particle.Timeout
-                                    if type(timeout) == "table" then
-                                        timeout = StageAPI.Random(timeout[1], timeout[2])
+                                for i = 1,count do
+                                    local direction = Vector.FromAngle(sprite.Rotation + StageAPI.Random(-90, 90))
+                                    if not shared.Room:IsPositionInRoom(door.Position + direction * 40, 0) then
+                                        direction = -direction
                                     end
 
-                                    part:ToEffect().Timeout = timeout
-                                end
+                                    local part = Isaac.Spawn(particle.Type or 1000, particle.Variant or EffectVariant.ROCK_PARTICLE, particle.SubType or 0, door.Position, direction * vel, nil)
 
-                                if particle.Rotation then
-                                    local rotation = particle.Rotation
-                                    if type(rotation) == "table" then
-                                        rotation = StageAPI.Random(rotation[1], rotation[2])
+                                    if particle.LifeSpan then
+                                        local lifespan = particle.LifeSpan
+                                        if type(lifespan) == "table" then
+                                            lifespan = StageAPI.Random(lifespan[1], lifespan[2])
+                                        end
+
+                                        part:ToEffect().LifeSpan = lifespan
                                     end
 
-                                    part:ToEffect().Rotation = rotation
+                                    if particle.Timeout then
+                                        local timeout = particle.Timeout
+                                        if type(timeout) == "table" then
+                                            timeout = StageAPI.Random(timeout[1], timeout[2])
+                                        end
+
+                                        part:ToEffect().Timeout = timeout
+                                    end
+
+                                    if particle.Rotation then
+                                        local rotation = particle.Rotation
+                                        if type(rotation) == "table" then
+                                            rotation = StageAPI.Random(rotation[1], rotation[2])
+                                        end
+
+                                        part:ToEffect().Rotation = rotation
+                                    end
                                 end
                             end
                         end
