@@ -32,7 +32,7 @@ mod:AddCallback(ModCallbacks.MC_POST_GAME_STARTED, function()
             REVEL.AddedStageAPIChangelogs = true
         end
 
-        TryAddChangelog("v2.05 - 06", [[- StageAPI now includes
+        TryAddChangelog("v2.05 - 07", [[- StageAPI now includes
 an embedded version
 of Mod Compatibility Hack
 
@@ -86,6 +86,18 @@ mines escape sequence
 
 - Improvements to StageAPI's
 documentation
+
+- Added support for Vanishing
+Twin on custom bosses
+
+- Fixed pickups with prices
+persisting improperly
+
+- Improvements to custom state
+door capabilities
+
+- Added PRE_CHANGE_GFX callbacks
+for a variety of grids
 ]])
 
         TryAddChangelog("v2.03 - 04", [[- Fixes for extra
