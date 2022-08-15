@@ -476,6 +476,7 @@ function StageAPI.GenerateBaseRoom(roomDesc)
     local backwards = shared.Game:GetStateFlag(GameStateFlag.STATE_BACKWARDS_PATH_INIT) or shared.Game:GetStateFlag(GameStateFlag.STATE_BACKWARDS_PATH)
     local dimension = StageAPI.GetDimension(roomDesc)
     local newRoom
+    local setMirrorBossData
     if baseFloorInfo and baseFloorInfo.HasCustomBosses and roomDesc.Data.Type == RoomType.ROOM_BOSS and dimension == 0 and not backwards then
         local bossFloorInfo = baseFloorInfo
         if xlFloorInfo and roomDesc.ListIndex == lastBossRoomListIndex then
@@ -493,10 +494,11 @@ function StageAPI.GenerateBaseRoom(roomDesc)
                     RoomDescriptor = roomDesc
                 })
 
-                if roomDesc.Data.Subtype == 82 or roomDesc.Data.Subtype == 83 or roomDesc.Data.Subtype == 81 then -- Remove Great Gideon special health bar, Hornfel room properties, and Heretic pentagram effect.
+                if roomDesc.Data.Subtype == 82 or roomDesc.Data.Subtype == 83 or roomDesc.Data.Subtype == 81 or roomDesc.Data.Subtype == 91 then -- Remove Great Gideon special health bar, Hornfel room properties, Min-Min Mist, and Heretic pentagram effect.
                     local overwritableRoomDesc = shared.Level:GetRoomByIdx(roomDesc.SafeGridIndex, dimension)
                     local replaceData = StageAPI.GetGotoDataForTypeShape(RoomType.ROOM_BOSS, roomDesc.Data.Shape)
                     overwritableRoomDesc.Data = replaceData
+                    setMirrorBossData = replaceData
                 end
 
                 StageAPI.LogMinor("Switched Base Floor Boss Room, new boss is " .. bossID)
@@ -529,6 +531,10 @@ function StageAPI.GenerateBaseRoom(roomDesc)
         if roomDesc.Data.Type == RoomType.ROOM_BOSS and baseFloorInfo.HasMirrorLevel and dimension == 0 then
             local mirroredRoom = newRoom:Copy(roomDesc)
             local mirroredDesc = shared.Level:GetRoomByIdx(roomDesc.SafeGridIndex, 1)
+            if setMirrorBossData then
+                mirroredDesc.Data = setMirrorBossData
+            end
+
             StageAPI.SetLevelRoom(mirroredRoom, mirroredDesc.ListIndex, 1)
 			
             StageAPI.LogMinor("Mirroring!")
