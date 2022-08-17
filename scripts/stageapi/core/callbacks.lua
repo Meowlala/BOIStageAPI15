@@ -465,6 +465,15 @@ function StageAPI.GenerateBossRoom(bossID, checkEncountered, bosses, hasHorseman
     return newRoom, boss
 end
 
+-- Certain boss subtypes should be replaced with monstro to avoid bugs
+local replaceBossSubtypes = {
+    [23] = true, -- the fallen, spawns devil items
+    [81] = true, -- heretic, pentagram effect
+    [82] = true, -- hornfel, doors
+    [83] = true, -- great gideon, health bar
+    [91] = true, -- min-min, mist
+}
+
 function StageAPI.GenerateBaseRoom(roomDesc)
     local baseFloorInfo = StageAPI.GetBaseFloorInfo()
     local xlFloorInfo
@@ -494,7 +503,7 @@ function StageAPI.GenerateBaseRoom(roomDesc)
                     RoomDescriptor = roomDesc
                 })
 
-                if roomDesc.Data.Subtype == 82 or roomDesc.Data.Subtype == 83 or roomDesc.Data.Subtype == 81 or roomDesc.Data.Subtype == 91 then -- Remove Great Gideon special health bar, Hornfel room properties, Min-Min Mist, and Heretic pentagram effect.
+                if replaceBossSubtypes[roomDesc.Data.Subtype] then
                     local overwritableRoomDesc = shared.Level:GetRoomByIdx(roomDesc.SafeGridIndex, dimension)
                     local replaceData = StageAPI.GetGotoDataForTypeShape(RoomType.ROOM_BOSS, roomDesc.Data.Shape)
                     overwritableRoomDesc.Data = replaceData
