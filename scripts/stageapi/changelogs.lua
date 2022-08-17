@@ -32,7 +32,7 @@ mod:AddCallback(ModCallbacks.MC_POST_GAME_STARTED, function()
             REVEL.AddedStageAPIChangelogs = true
         end
 
-        TryAddChangelog("v2.05 - 07", [[- StageAPI now includes
+        TryAddChangelog("v2.05 - 08", [[- StageAPI now includes
 an embedded version
 of Mod Compatibility Hack
 
@@ -98,6 +98,11 @@ door capabilities
 
 - Added PRE_CHANGE_GFX callbacks
 for a variety of grids
+
+- Min-Min and The Fallen rooms
+are now overridden when custom
+bosses replace them, fixing
+mist and boss pool issues
 ]])
 
         TryAddChangelog("v2.03 - 04", [[- Fixes for extra
