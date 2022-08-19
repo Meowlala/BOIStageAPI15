@@ -32,7 +32,7 @@ mod:AddCallback(ModCallbacks.MC_POST_GAME_STARTED, function()
             REVEL.AddedStageAPIChangelogs = true
         end
 
-        TryAddChangelog("v2.05 - 10", [[- StageAPI now includes
+        TryAddChangelog("v2.05 - 11", [[- StageAPI now includes
 an embedded version
 of Mod Compatibility Hack
 
@@ -113,6 +113,9 @@ a custom boss
 - Fixes for the D7 and mechanics
 that swap your character with
 another
+
+- Fixed member card trapdoor being
+deleted in luarooms
 ]])
 
         TryAddChangelog("v2.03 - 04", [[- Fixes for extra
