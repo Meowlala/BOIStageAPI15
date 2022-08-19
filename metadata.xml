@@ -18,7 +18,7 @@ Ashkal - Glacier and Tomb, Top
 If you're looking for the Afterbirth+ version of StageAPI, it can be found [url=https://steamcommunity.com/sharedfiles/filedetails/?id=2498098491]here[/url].
 
 For developers, a more up to date version of StageAPI can be found at [url=https://github.com/Meowlala/BOIStageAPI15]our Github repository.[/url] Please report any issues you find there!</description>
-    <version>2.10</version>
+    <version>2.11</version>
     <visibility>Public</visibility>
     <tag id="Lua"/>
     <tag id="Rooms"/>

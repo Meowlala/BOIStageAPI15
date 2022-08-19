@@ -32,7 +32,7 @@ mod:AddCallback(ModCallbacks.MC_POST_GAME_STARTED, function()
             REVEL.AddedStageAPIChangelogs = true
         end
 
-        TryAddChangelog("v2.05 - 08", [[- StageAPI now includes
+        TryAddChangelog("v2.05 - 10", [[- StageAPI now includes
 an embedded version
 of Mod Compatibility Hack
 
@@ -103,6 +103,16 @@ for a variety of grids
 are now overridden when custom
 bosses replace them, fixing
 mist and boss pool issues
+
+- Added a new boss pool option
+for replacing horsemen or
+certain bosses only if
+you have not yet encountered
+a custom boss
+
+- Fixes for the D7 and mechanics
+that swap your character with
+another
 ]])
 
         TryAddChangelog("v2.03 - 04", [[- Fixes for extra
