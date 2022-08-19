@@ -498,7 +498,8 @@ function StageAPI.GenerateBaseRoom(roomDesc)
             if bossData and not bossData.BaseGameBoss and bossData.Rooms then
                 newRoom = StageAPI.GenerateBossRoom({
                     BossID = bossID,
-                    NoPlayBossAnim = true
+                    NoPlayBossAnim = true,
+                    CheckEncountered = false,
                 }, {
                     RoomDescriptor = roomDesc
                 })

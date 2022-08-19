@@ -518,6 +518,8 @@ function StageAPI.SelectBoss(bosses, rng, roomDesc, ignoreNoOptions)
                 if isHorsemanRoom then
                     if poolEntry.AlwaysReplaceHorsemen or potentialBoss.AlwaysReplaceHorsemen then
                         forced = true
+                    elseif poolEntry.TryReplaceHorsemen or potentialBoss.TryReplaceHorsemen then
+                        forced = not encountered
                     elseif not (poolEntry.Horseman or potentialBoss.Horseman) then
                         invalid = true
                     end
@@ -528,6 +530,10 @@ function StageAPI.SelectBoss(bosses, rng, roomDesc, ignoreNoOptions)
                 if poolEntry.AlwaysReplaceSubtype and not invalid then
                     if roomSubtype == poolEntry.AlwaysReplaceSubtype then
                         forced = true
+                    end
+                elseif poolEntry.TryReplaceSubtype and not invalid then
+                    if roomSubtype == poolEntry.TryReplaceSubtype then
+                        forced = not encountered
                     end
                 end
 
