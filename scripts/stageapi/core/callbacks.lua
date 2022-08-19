@@ -114,8 +114,12 @@ mod:AddCallback(ModCallbacks.MC_POST_UPDATE, function()
         StageAPI.JustUsedD7 = nil
         local currentRoom = StageAPI.GetCurrentRoom()
         if currentRoom then
+            if currentRoom.IsExtraRoom then
+                currentRoom:Save()
+            end
+
             currentRoom.IsClear = currentRoom.WasClearAtStart
-            currentRoom:Load()
+            currentRoom:Load(nil, true, true)
         end
     end
 

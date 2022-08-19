@@ -214,12 +214,9 @@ if Isaac.GetPlayer(0) then
 end
 
 mod:AddCallback(ModCallbacks.MC_POST_UPDATE, function()
-    local numPlayers = shared.Game:GetNumPlayers()
-    if numPlayers ~= #shared.Players then
-        shared.Players = {}
-        for i = 1, numPlayers do
-            shared.Players[i] = Isaac.GetPlayer(i - 1)
-        end
+    shared.Players = {}
+    for i = 1, shared.Game:GetNumPlayers() do
+        shared.Players[i] = Isaac.GetPlayer(i - 1)
     end
 end)
 

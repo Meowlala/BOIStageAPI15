@@ -81,14 +81,14 @@ local function ShouldExcludeEntityFromClearing(entity)
         )
 end
 
-function StageAPI.ClearRoomLayout(keepDecoration, doGrids, doEnts, doPersistentEnts, onlyRemoveTheseDecorations, doWalls, doDoors, skipIndexedGrids)
+function StageAPI.ClearRoomLayout(keepDecoration, doGrids, doEnts, doPersistentEnts, onlyRemoveTheseDecorations, doWalls, doDoors, skipIndexedGrids, doNPCsOnly)
     if StageAPI.InOrTransitioningToExtraRoom() and shared.Room:GetType() ~= RoomType.ROOM_DUNGEON then
         StageAPI.FixWalls()
     end
 
     if doEnts or doPersistentEnts then
         for _, ent in ipairs(Isaac.GetRoomEntities()) do
-            if not ShouldExcludeEntityFromClearing(ent) then
+            if not ShouldExcludeEntityFromClearing(ent) and (not doNPCsOnly or ent:ToNPC()) then
                 local persistentData = StageAPI.CheckPersistence(ent.Type, ent.Variant, ent.SubType)
                 if (doPersistentEnts or (ent:ToNPC() and (not persistentData or not persistentData.AutoPersists))) and not (ent:HasEntityFlags(EntityFlag.FLAG_CHARM) or ent:HasEntityFlags(EntityFlag.FLAG_FRIENDLY) or ent:HasEntityFlags(EntityFlag.FLAG_PERSISTENT)) then
                     ent:Remove()
@@ -97,7 +97,7 @@ function StageAPI.ClearRoomLayout(keepDecoration, doGrids, doEnts, doPersistentE
         end
     end
 
-    if doGrids then
+    if doGrids and not doNPCsOnly then
         if not skipIndexedGrids then
             local lindex = StageAPI.GetCurrentRoomID()
             local customGrids = StageAPI.GetTableIndexedByDimension(StageAPI.CustomGrids, true)

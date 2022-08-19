@@ -396,7 +396,7 @@ function StageAPI.LevelRoom:RemovePersistentEntity(entity)
     end
 end
 
-function StageAPI.LevelRoom:Load(isExtraRoom, noIncrementVisit)
+function StageAPI.LevelRoom:Load(isExtraRoom, noIncrementVisit, clearNPCsOnly)
     StageAPI.LogMinor("Loading room " .. self.Layout.Name .. "." .. tostring(self.Layout.Variant) .. " from file " .. tostring(self.Layout.RoomFilename))
     if isExtraRoom == nil then
         isExtraRoom = self.IsExtraRoom
@@ -409,7 +409,7 @@ function StageAPI.LevelRoom:Load(isExtraRoom, noIncrementVisit)
     end
 
     local wasFirstLoad = self.FirstLoad
-    StageAPI.ClearRoomLayout(false, self.FirstLoad or isExtraRoom, true, self.FirstLoad or isExtraRoom, self.GridTakenIndices, nil, nil, not self.FirstLoad)
+    StageAPI.ClearRoomLayout(false, self.FirstLoad or isExtraRoom, true, self.FirstLoad or isExtraRoom, self.GridTakenIndices, nil, nil, not self.FirstLoad, clearNPCsOnly)
     if self.FirstLoad then
         StageAPI.LoadRoomLayout(self.SpawnGrids, {self.SpawnEntities, self.ExtraSpawn}, true, true, self.IsClear, true, self.GridInformation, self.AvoidSpawning, self.PersistenceData)
         self.WasClearAtStart = shared.Room:IsClear()
