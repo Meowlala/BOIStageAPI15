@@ -490,7 +490,10 @@ function StageAPI.GenerateBaseRoom(roomDesc)
     local dimension = StageAPI.GetDimension(roomDesc)
     local newRoom
     local setMirrorBossData
-    if baseFloorInfo and baseFloorInfo.HasCustomBosses and roomDesc.Data.Type == RoomType.ROOM_BOSS and dimension == 0 and not backwards then
+    if baseFloorInfo and baseFloorInfo.HasCustomBosses
+    and roomDesc.Data.Type == RoomType.ROOM_BOSS
+    and roomDesc.SafeGridIndex ~= GridRooms.ROOM_DEBUG_IDX
+    and dimension == 0 and not backwards then
         local bossFloorInfo = baseFloorInfo
         if xlFloorInfo and roomDesc.ListIndex == lastBossRoomListIndex then
             bossFloorInfo = xlFloorInfo
@@ -542,7 +545,7 @@ function StageAPI.GenerateBaseRoom(roomDesc)
     if newRoom then
         local listIndex = roomDesc.ListIndex
         StageAPI.SetLevelRoom(newRoom, listIndex, dimension)
-        if roomDesc.Data.Type == RoomType.ROOM_BOSS and baseFloorInfo.HasMirrorLevel and dimension == 0 then
+        if roomDesc.Data.Type == RoomType.ROOM_BOSS and baseFloorInfo.HasMirrorLevel and dimension == 0 and roomDesc.SafeGridIndex > -1 then
             local mirroredRoom = newRoom:Copy(roomDesc)
             local mirroredDesc = shared.Level:GetRoomByIdx(roomDesc.SafeGridIndex, 1)
             if setMirrorBossData then
@@ -698,9 +701,11 @@ end, CollectibleType.COLLECTIBLE_BOOK_OF_REVELATIONS)
 
 StageAPI.PreviousNewRoomStage = -1
 StageAPI.PreviousNewRoomStageType = -1
+StageAPI.EarlyNewRoomTriggered = false
 mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, function()
     StageAPI.CallCallbacks(Callbacks.PRE_STAGEAPI_NEW_ROOM, false)
 
+    StageAPI.EarlyNewRoomTriggered = true
     StageAPI.RecentlyChangedLevel = false
     StageAPI.RecentlyStartedGame = false
 
@@ -1120,6 +1125,8 @@ StageAPI.RoomEntitySpawnGridBlacklist = {
 }
 
 mod:AddCallback(ModCallbacks.MC_PRE_ROOM_ENTITY_SPAWN, function(_, t, v, s, index, seed)
+    StageAPI.CallCallbacks(Callbacks.EARLY_NEW_ROOM, false)
+
     local shouldOverride, forceOverride = StageAPI.ShouldOverrideRoom()
 
     if shouldOverride and (not StageAPI.RecentlyChangedLevel or forceOverride) and (t >= 1000 or StageAPI.RoomEntitySpawnGridBlacklist[t] or StageAPI.IsMetadataEntity(t, v)) and not StageAPI.ActiveTransitionToExtraRoom then
@@ -1141,6 +1148,13 @@ mod:AddCallback(ModCallbacks.MC_PRE_ROOM_ENTITY_SPAWN, function(_, t, v, s, inde
                 0
             }
         end
+    end
+end)
+
+StageAPI.AddCallback("StageAPI", Callbacks.EARLY_NEW_ROOM, -1, function()
+    if not StageAPI.ShouldOverrideRoom() then
+        local roomDesc = shared.Level:GetCurrentRoomDesc()
+        StageAPI.GenerateBaseRoom(roomDesc)
     end
 end)
 

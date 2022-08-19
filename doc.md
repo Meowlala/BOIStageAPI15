@@ -227,7 +227,7 @@ Callback List:
 - PRE_CHANGE_PIT_GFX(grid: GridEntity, index: integer, usingPitFile: GridGfx.PitFile?, usingBridgeFilename: string?, usingAlt: GridGfx.PitFile?): GridGfx.PitFile?, string?, GridGfx.PitFile?
 - PRE_CHANGE_MISC_GRID_GFX(grid: GridEntity, index: integer, usingFilename: string): string?
 
-  - All of the PRE_CHANGE_\<GRID\>_GFX above can be used to change a specific grid's sprite, for example changing the spritesheet for rocks on a certain row or column
+  - All of the PRE_CHANGE\_<GRID\>\_GFX above can be used to change a specific grid's sprite, for example changing the spritesheet for rocks on a certain row or column
   - Can take a CustomStage as parameter to only work in that stage
   - Breaks on first returned value, see each specific callback for returned values/params (available in lua doc tags)
   - No PRE_CHANGE_DOOR_GFX as most usecases where you'd want to change door sprites are either handled by room types or Custom Doors
@@ -318,6 +318,11 @@ Callback List:
   - When a LevelMap has AutoDoors set, it automatically places doors based on room types
   - This callback runs before it places a door, allowing you to change it.
   - doorData is a table {ExitRoom = LevelMapRoomID, ExitSlot = slot}
+
+- EARLY_NEW_ROOM()
+
+  - Runs on the first PRE_ROOM_ENTITY_SPAWN in a room
+  - Note that this means it will NOT run in empty rooms, and thus cannot be relied upon in all cases
 
 ## StageAPI Structures:
 

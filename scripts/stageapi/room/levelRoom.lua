@@ -167,6 +167,12 @@ end
 function StageAPI.LevelRoom:GetLayout()
     if self.FromData and not self.Layout then
         local roomDesc = shared.Level:GetRooms():Get(self.FromData)
+        if not roomDesc then
+            if self.FromData == 509 then
+                roomDesc = shared.Level:GetRoomByIdx(GridRooms.ROOM_DEBUG_IDX)
+            end
+        end
+
         if roomDesc then
             self.Layout = StageAPI.GenerateRoomLayoutFromData(roomDesc.Data)
         end
