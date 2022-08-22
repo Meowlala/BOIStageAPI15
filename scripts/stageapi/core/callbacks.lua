@@ -1152,6 +1152,14 @@ mod:AddCallback(ModCallbacks.MC_PRE_ROOM_ENTITY_SPAWN, function(_, t, v, s, inde
 end)
 
 StageAPI.AddCallback("StageAPI", Callbacks.EARLY_NEW_ROOM, -1, function()
+    if StageAPI.InTestMode then
+        StageAPI.RoomGrids = {}
+        StageAPI.CustomGrids = {}
+        StageAPI.LevelRooms = {}
+        StageAPI.LevelMaps = {}
+        StageAPI.AscentData = {}
+    end
+
     if not StageAPI.ShouldOverrideRoom() then
         local roomDesc = shared.Level:GetCurrentRoomDesc()
         StageAPI.GenerateBaseRoom(roomDesc)
