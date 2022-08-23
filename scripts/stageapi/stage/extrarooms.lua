@@ -205,8 +205,14 @@ mod:AddCallback(ModCallbacks.MC_POST_GAME_STARTED, function()
         if needsToLoad then
             local resetRun
             local currentIndex = shared.Level:GetCurrentRoomIndex()
-            if StageAPI.InStartingRoom() and shared.Room:IsFirstVisit() and shared.Level:GetStage() == LevelStage.STAGE1_1 then
+            if StageAPI.InStartingRoom() and shared.Room:IsFirstVisit() and shared.Level:GetStage() == LevelStage.STAGE1_1 and shared.Game:GetFrameCount() <= 1 then
                 resetRun = true
+            end
+
+            local levelMapID, levelMapRoomID
+            if StageAPI.InExtraRoom() then
+                levelMapID = StageAPI.CurrentLevelMapID
+                levelMapRoomID = StageAPI.CurrentLevelMapRoomID
             end
 
             for roomType, roomShapes in pairs(needsToLoad) do
@@ -232,7 +238,11 @@ mod:AddCallback(ModCallbacks.MC_POST_GAME_STARTED, function()
                 StageAPI.DataLoadNeedsRestart = true
             end
 
-            shared.Game:StartRoomTransition(currentIndex, Direction.NO_DIRECTION, 0)
+            if levelMapID and levelMapRoomID then
+                StageAPI.ExtraRoomTransition(levelMapRoomID, Direction.NO_DIRECTION, RoomTransitionAnim.WALK, levelMapID)
+            else
+                shared.Game:StartRoomTransition(currentIndex, Direction.NO_DIRECTION, 0)
+            end
         end
     end
 
