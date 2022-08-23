@@ -32,7 +32,7 @@ mod:AddCallback(ModCallbacks.MC_POST_GAME_STARTED, function()
             REVEL.AddedStageAPIChangelogs = true
         end
 
-        TryAddChangelog("v2.05 - 11", [[- StageAPI now includes
+        TryAddChangelog("v2.05 - 12", [[- StageAPI now includes
 an embedded version
 of Mod Compatibility Hack
 
@@ -116,6 +116,20 @@ another
 
 - Fixed member card trapdoor being
 deleted in luarooms
+
+- Fixed exiting a run, restarting
+the game, and then continuing not
+properly keeping extra room state
+
+- Fixed WOTL floors unnecessarily
+overriding boss music
+
+- Fixed features that teleport you into
+the previous room like glowing hour glass
+and revive items breaking extra rooms
+
+- Fixed camera position being briefly
+incorrect when entering extra rooms
 ]])
 
         TryAddChangelog("v2.03 - 04", [[- Fixes for extra
