@@ -641,10 +641,16 @@
 		<spawn x="-1" y="-1">
 			<entity type="999" variant="12540" subtype="0" weight="1.0"/>
 		</spawn>
+		<spawn x="13" y="-1">
+			<entity type="20" variant="0" subtype="0" weight="1.0"/>
+		</spawn>
 	</room>
 	<room variant="70051" name="1x1 H" type="5" subtype="0" shape="2" width="13" height="7" difficulty="1" weight="0.0">
 		<door exists="True" x="-1" y="3"/>
 		<door exists="True" x="13" y="3"/>
+		<spawn x="13" y="-1">
+			<entity type="20" variant="0" subtype="0" weight="1.0"/>
+		</spawn>
 		<spawn x="-1" y="1">
 			<entity type="999" variant="12540" subtype="0" weight="1.0"/>
 		</spawn>
@@ -654,6 +660,9 @@
 		<door exists="True" x="6" y="7"/>
 		<spawn x="-1" y="-1">
 			<entity type="999" variant="12540" subtype="0" weight="1.0"/>
+		</spawn>
+		<spawn x="13" y="-1">
+			<entity type="20" variant="0" subtype="0" weight="1.0"/>
 		</spawn>
 	</room>
 	<room variant="70053" name="1x2 (Tall)" type="5" subtype="0" shape="4" width="13" height="14" difficulty="1" weight="0.0">
@@ -666,12 +675,18 @@
 		<spawn x="-1" y="-1">
 			<entity type="999" variant="12540" subtype="0" weight="1.0"/>
 		</spawn>
+		<spawn x="13" y="-1">
+			<entity type="20" variant="0" subtype="0" weight="1.0"/>
+		</spawn>
 	</room>
 	<room variant="70054" name="1x2 V" type="5" subtype="0" shape="5" width="13" height="14" difficulty="1" weight="0.0">
 		<door exists="True" x="6" y="-1"/>
 		<door exists="True" x="6" y="14"/>
 		<spawn x="-1" y="-1">
 			<entity type="999" variant="12540" subtype="0" weight="1.0"/>
+		</spawn>
+		<spawn x="13" y="-1">
+			<entity type="20" variant="0" subtype="0" weight="1.0"/>
 		</spawn>
 	</room>
 	<room variant="70055" name="2x1 (Long)" type="5" subtype="0" shape="6" width="26" height="7" difficulty="1" weight="0.0">
@@ -684,12 +699,18 @@
 		<spawn x="-1" y="-1">
 			<entity type="999" variant="12540" subtype="0" weight="1.0"/>
 		</spawn>
+		<spawn x="26" y="-1">
+			<entity type="20" variant="0" subtype="0" weight="1.0"/>
+		</spawn>
 	</room>
 	<room variant="70056" name="2x1 H" type="5" subtype="0" shape="7" width="26" height="7" difficulty="1" weight="0.0">
 		<door exists="True" x="-1" y="3"/>
 		<door exists="True" x="26" y="3"/>
 		<spawn x="-1" y="-1">
 			<entity type="999" variant="12540" subtype="0" weight="1.0"/>
+		</spawn>
+		<spawn x="26" y="-1">
+			<entity type="20" variant="0" subtype="0" weight="1.0"/>
 		</spawn>
 	</room>
 	<room variant="70057" name="2x2" type="5" subtype="0" shape="8" width="26" height="14" difficulty="1" weight="0.0">
@@ -704,6 +725,9 @@
 		<spawn x="-1" y="-1">
 			<entity type="999" variant="12540" subtype="0" weight="1.0"/>
 		</spawn>
+		<spawn x="26" y="-1">
+			<entity type="20" variant="0" subtype="0" weight="1.0"/>
+		</spawn>
 	</room>
 	<room variant="70058" name="L TL" type="5" subtype="0" shape="9" width="26" height="14" difficulty="1" weight="0.0">
 		<door exists="False" x="-1" y="10"/>
@@ -716,6 +740,9 @@
 		<door exists="False" x="26" y="10"/>
 		<spawn x="-1" y="-1">
 			<entity type="999" variant="12540" subtype="0" weight="1.0"/>
+		</spawn>
+		<spawn x="26" y="-1">
+			<entity type="20" variant="0" subtype="0" weight="1.0"/>
 		</spawn>
 	</room>
 	<room variant="70059" name="L TR" type="5" subtype="0" shape="10" width="26" height="14" difficulty="1" weight="0.0">
@@ -730,6 +757,9 @@
 		<spawn x="-1" y="-1">
 			<entity type="999" variant="12540" subtype="0" weight="1.0"/>
 		</spawn>
+		<spawn x="26" y="-1">
+			<entity type="20" variant="0" subtype="0" weight="1.0"/>
+		</spawn>
 	</room>
 	<room variant="70060" name="L BL" type="5" subtype="0" shape="11" width="26" height="14" difficulty="1" weight="0.0">
 		<door exists="True" x="-1" y="3"/>
@@ -742,6 +772,9 @@
 		<door exists="False" x="26" y="10"/>
 		<spawn x="-1" y="-1">
 			<entity type="999" variant="12540" subtype="0" weight="1.0"/>
+		</spawn>
+		<spawn x="26" y="-1">
+			<entity type="20" variant="0" subtype="0" weight="1.0"/>
 		</spawn>
 	</room>
 	<room variant="70061" name="L BR" type="5" subtype="0" shape="12" width="26" height="14" difficulty="1" weight="0.0">
@@ -756,6 +789,9 @@
 		<spawn x="-1" y="-1">
 			<entity type="999" variant="12540" subtype="0" weight="1.0"/>
 		</spawn>
+		<spawn x="26" y="-1">
+			<entity type="20" variant="0" subtype="0" weight="1.0"/>
+		</spawn>
 	</room>
 	<room variant="70062" name="1x2 (Tall, Locked Doors)" type="5" subtype="0" shape="4" width="13" height="14" difficulty="1" weight="0.0">
 		<door exists="False" x="-1" y="3"/>
@@ -767,6 +803,9 @@
 		<spawn x="-1" y="-1">
 			<entity type="999" variant="12540" subtype="0" weight="1.0"/>
 		</spawn>
+		<spawn x="13" y="-1">
+			<entity type="20" variant="0" subtype="0" weight="1.0"/>
+		</spawn>
 	</room>
 	<room variant="70063" name="2x1 (Long, Locked Doors)" type="5" subtype="0" shape="6" width="26" height="7" difficulty="1" weight="0.0">
 		<door exists="True" x="-1" y="3"/>
@@ -777,6 +816,9 @@
 		<door exists="True" x="26" y="3"/>
 		<spawn x="-1" y="-1">
 			<entity type="999" variant="12540" subtype="0" weight="1.0"/>
+		</spawn>
+		<spawn x="26" y="-1">
+			<entity type="20" variant="0" subtype="0" weight="1.0"/>
 		</spawn>
 	</room>
 	<room variant="70064" name="2x2 (Locked Doors)" type="5" subtype="0" shape="8" width="26" height="14" difficulty="1" weight="0.0">
@@ -791,6 +833,9 @@
 		<spawn x="-1" y="-1">
 			<entity type="999" variant="12540" subtype="0" weight="1.0"/>
 		</spawn>
+		<spawn x="26" y="-1">
+			<entity type="20" variant="0" subtype="0" weight="1.0"/>
+		</spawn>
 	</room>
 	<room variant="70065" name="L TL (Locked Doors)" type="5" subtype="0" shape="9" width="26" height="14" difficulty="1" weight="0.0">
 		<door exists="True" x="-1" y="10"/>
@@ -803,6 +848,9 @@
 		<door exists="True" x="26" y="10"/>
 		<spawn x="-1" y="-1">
 			<entity type="999" variant="12540" subtype="0" weight="1.0"/>
+		</spawn>
+		<spawn x="26" y="-1">
+			<entity type="20" variant="0" subtype="0" weight="1.0"/>
 		</spawn>
 	</room>
 	<room variant="70066" name="L TR (Locked Doors)" type="5" subtype="0" shape="10" width="26" height="14" difficulty="1" weight="0.0">
@@ -817,6 +865,9 @@
 		<spawn x="-1" y="-1">
 			<entity type="999" variant="12540" subtype="0" weight="1.0"/>
 		</spawn>
+		<spawn x="26" y="-1">
+			<entity type="20" variant="0" subtype="0" weight="1.0"/>
+		</spawn>
 	</room>
 	<room variant="70067" name="L BL (Locked Doors)" type="5" subtype="0" shape="11" width="26" height="14" difficulty="1" weight="0.0">
 		<door exists="False" x="-1" y="3"/>
@@ -830,6 +881,9 @@
 		<spawn x="-1" y="-1">
 			<entity type="999" variant="12540" subtype="0" weight="1.0"/>
 		</spawn>
+		<spawn x="26" y="-1">
+			<entity type="20" variant="0" subtype="0" weight="1.0"/>
+		</spawn>
 	</room>
 	<room variant="70068" name="L BR (Locked Doors)" type="5" subtype="0" shape="12" width="26" height="14" difficulty="1" weight="0.0">
 		<door exists="False" x="-1" y="3"/>
@@ -842,6 +896,9 @@
 		<door exists="False" x="26" y="3"/>
 		<spawn x="-1" y="-1">
 			<entity type="999" variant="12540" subtype="0" weight="1.0"/>
+		</spawn>
+		<spawn x="26" y="-1">
+			<entity type="20" variant="0" subtype="0" weight="1.0"/>
 		</spawn>
 	</room>
 	<room variant="70050" name="1x1" type="6" subtype="0" shape="1" width="13" height="7" difficulty="1" weight="0.0">
