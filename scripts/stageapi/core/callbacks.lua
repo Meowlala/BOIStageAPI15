@@ -752,9 +752,40 @@ mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, function()
 
     local setDefaultLevelMap
     if not StageAPI.TransitioningToExtraRoom then
-        setDefaultLevelMap = true
-        StageAPI.CurrentLevelMapID = StageAPI.DefaultLevelMapID
-        StageAPI.CurrentLevelMapRoomID = nil
+        local reversedIntoExtraRoom
+        if StageAPI.PreviousExtraRoomData.RoomIndex == shared.Level:GetCurrentRoomIndex() then
+            local desc = shared.Level:GetCurrentRoomDesc()
+            if desc.Data.Variant == StageAPI.PreviousExtraRoomData.RoomVariant and desc.SpawnSeed == StageAPI.PreviousExtraRoomData.RoomSeed then
+                StageAPI.CurrentLevelMapID = StageAPI.PreviousExtraRoomData.MapID
+                StageAPI.CurrentLevelMapRoomID = StageAPI.PreviousExtraRoomData.RoomID
+                reversedIntoExtraRoom = true
+            end
+        end
+
+        if not reversedIntoExtraRoom then
+            if StageAPI.PreviousExtraRoomData.RoomIndex then
+                if StageAPI.PreviousExtraRoomData.RoomIndex ~= shared.Level:GetPreviousRoomIndex() then
+                    StageAPI.PreviousExtraRoomData = {}
+                else
+                    local desc = shared.Level:GetRoomByIdx(StageAPI.PreviousExtraRoomData.RoomIndex)
+                    if not desc or desc.Data.Variant ~= StageAPI.PreviousExtraRoomData.RoomVariant or desc.SpawnSeed ~= StageAPI.PreviousExtraRoomData.RoomSeed then
+                        StageAPI.PreviousExtraRoomData = {}
+                    end
+                end
+            end
+
+            setDefaultLevelMap = true
+            StageAPI.CurrentLevelMapID = StageAPI.DefaultLevelMapID
+            StageAPI.CurrentLevelMapRoomID = nil
+        end
+    else
+        StageAPI.PreviousExtraRoomData = {
+            MapID = StageAPI.CurrentLevelMapID,
+            RoomID = StageAPI.CurrentLevelMapRoomID,
+            RoomIndex = shared.Level:GetCurrentRoomIndex(),
+            RoomVariant = shared.Level:GetCurrentRoomDesc().Data.Variant,
+            RoomSeed = shared.Level:GetCurrentRoomDesc().SpawnSeed
+        }
     end
 
     if (not shared.Level:GetStateFlag(LevelStateFlag.STATE_LEVEL_START_TRIGGERED) and shared.Level:GetCurrentRoomIndex() == shared.Level:GetPreviousRoomIndex()) or (isNewStage and not StageAPI.CurrentStage) then
@@ -1152,6 +1183,24 @@ mod:AddCallback(ModCallbacks.MC_PRE_ROOM_ENTITY_SPAWN, function(_, t, v, s, inde
 end)
 
 StageAPI.AddCallback("StageAPI", Callbacks.EARLY_NEW_ROOM, -1, function()
+    --[[
+        because EARLY_NEW_ROOM is unreliable, this doesn't work consistently
+        but this is necessary to avoid camera bugs when loading extra rooms
+        all extra rooms have an effect that will instantly delete itself
+        placed in the room to ensure that this callback works when transitioning
+        to them
+    ]]
+    if StageAPI.ForcePlayerDoorSlot or StageAPI.ForcePlayerNewRoomPosition then
+        local pos = StageAPI.ForcePlayerNewRoomPosition or shared.Room:GetClampedPosition(shared.Room:GetDoorSlotPosition(StageAPI.ForcePlayerDoorSlot), 16)
+        for _, player in ipairs(shared.Players) do
+            player.Position = pos
+        end
+
+        if StageAPI.ForcePlayerDoorSlot then
+            shared.Level.EnterDoor = StageAPI.ForcePlayerDoorSlot
+        end
+    end
+
     if StageAPI.InTestMode then
         StageAPI.RoomGrids = {}
         StageAPI.CustomGrids = {}

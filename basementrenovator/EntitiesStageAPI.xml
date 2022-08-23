@@ -137,6 +137,7 @@
                     <spinner Name="Stage Type" Length="3" Minimum="0" Maximum="4"/>
                 </bitfield>
             </entity>
+			<entity ID="999" Variant="12540" Image="stageapi/delete_me.png" Name="Auto-Deleted Entity"/>
         </group>
     </group>
 </data>

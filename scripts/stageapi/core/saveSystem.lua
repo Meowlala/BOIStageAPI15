@@ -17,6 +17,7 @@ function StageAPI.TryLoadModData(continued)
         StageAPI.CustomGrids = {}
         StageAPI.LevelMaps = {}
         StageAPI.AscentData = {}
+        StageAPI.PreviousExtraRoomData = {}
         StageAPI.CurrentLevelMapID = nil
         StageAPI.CurrentLevelMapRoomID = nil
         StageAPI.DefaultLevelMapID = nil
@@ -112,6 +113,7 @@ function StageAPI.GetSaveString()
         DefaultLevelMapID = StageAPI.DefaultLevelMapID,
         CurrentLevelMapRoomID = StageAPI.CurrentLevelMapRoomID,
         AscentData = StageAPI.AscentData,
+        PreviousExtraRoomData = StageAPI.PreviousExtraRoomData,
         EncounteredBosses = encounteredBosses
     })
 end
@@ -173,6 +175,7 @@ function StageAPI.LoadSaveString(str)
     StageAPI.DefaultLevelMapID = decoded.DefaultLevelMapID
     StageAPI.CurrentLevelMapRoomID = decoded.CurrentLevelMapRoomID
     StageAPI.AscentData = decoded.AscentData
+    StageAPI.PreviousExtraRoomData = decoded.PreviousExtraRoomData
 
     if StageAPI.CurrentLevelMapRoomID then
         StageAPI.TransitioningToExtraRoom = true
