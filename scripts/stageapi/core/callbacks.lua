@@ -1156,8 +1156,6 @@ StageAPI.AddCallback("StageAPI", Callbacks.EARLY_NEW_ROOM, -1, function()
         StageAPI.RoomGrids = {}
         StageAPI.CustomGrids = {}
         StageAPI.LevelRooms = {}
-        StageAPI.LevelMaps = {}
-        StageAPI.AscentData = {}
     end
 
     if not StageAPI.ShouldOverrideRoom() then

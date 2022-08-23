@@ -5,7 +5,6 @@ local shared = require("scripts.stageapi.shared")
 -- Catacombs --
 StageAPI.Catacombs = StageAPI.CustomStage("Catacombs", nil, true)
 StageAPI.Catacombs:SetStageMusic(Music.MUSIC_CATACOMBS)
-StageAPI.Catacombs:SetBossMusic({Music.MUSIC_BOSS, Music.MUSIC_BOSS2}, Music.MUSIC_BOSS_OVER)
 StageAPI.Catacombs.GenerateLevel = StageAPI.GenerateBaseLevel
 
 StageAPI.Catacombs.DisplayName = "Catacombs I"
@@ -36,7 +35,6 @@ StageAPI.NecropolisOverlays = {
 
 StageAPI.Necropolis = StageAPI.CustomStage("Necropolis", nil, true)
 StageAPI.Necropolis:SetStageMusic(Music.MUSIC_NECROPOLIS)
-StageAPI.Necropolis:SetBossMusic({Music.MUSIC_BOSS, Music.MUSIC_BOSS2}, Music.MUSIC_BOSS_OVER)
 StageAPI.Necropolis.GenerateLevel = StageAPI.GenerateBaseLevel
 StageAPI.Necropolis.DisplayName = "Necropolis I"
 
@@ -57,7 +55,6 @@ StageAPI.AddOverrideStage("NecropolisGreed", LevelStage.STAGE3_GREED, StageType.
 -- Utero --
 StageAPI.Utero = StageAPI.CustomStage("Utero", nil, true)
 StageAPI.Utero:SetStageMusic(Music.MUSIC_UTERO)
-StageAPI.Utero:SetBossMusic({Music.MUSIC_BOSS, Music.MUSIC_BOSS2}, Music.MUSIC_BOSS_OVER)
 StageAPI.Utero.GenerateLevel = StageAPI.GenerateBaseLevel
 StageAPI.Utero.DisplayName = "Utero I"
 
