@@ -705,7 +705,7 @@ StageAPI.EarlyNewRoomTriggered = false
 mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, function()
     StageAPI.CallCallbacks(Callbacks.PRE_STAGEAPI_NEW_ROOM, false)
 
-    StageAPI.EarlyNewRoomTriggered = true
+    StageAPI.EarlyNewRoomTriggered = false
     StageAPI.RecentlyChangedLevel = false
     StageAPI.RecentlyStartedGame = false
 
