@@ -1156,7 +1156,10 @@ StageAPI.RoomEntitySpawnGridBlacklist = {
 }
 
 mod:AddCallback(ModCallbacks.MC_PRE_ROOM_ENTITY_SPAWN, function(_, t, v, s, index, seed)
-    StageAPI.CallCallbacks(Callbacks.EARLY_NEW_ROOM, false)
+    if not StageAPI.EarlyNewRoomTriggered then
+        StageAPI.EarlyNewRoomTriggered = true
+        StageAPI.CallCallbacks(Callbacks.EARLY_NEW_ROOM, false)
+    end
 
     local shouldOverride, forceOverride = StageAPI.ShouldOverrideRoom()
 
