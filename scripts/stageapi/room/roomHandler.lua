@@ -532,6 +532,14 @@ function StageAPI.LoadEntitiesFromEntitySets(entitysets, doGrids, doPersistentOn
                             end
                         end
 
+                        local currentRoom = StageAPI.GetCurrentRoom()
+                        local followRoomRules = currentRoom and not currentRoom.IgnoreRoomRules and currentRoom.FirstLoad
+                        if followRoomRules and shared.Room:IsMirrorWorld() then -- only slot machines and npcs can spawn in the mirror world
+                            if entityInfo.Data.Type < 10 and entityInfo.Data.Type ~= EntityType.ENTITY_SLOT then
+                                shouldSpawnEntity = false
+                            end
+                        end
+
                         if shouldSpawnEntity then
                             local entityData = entityInfo.Data
                             if doGrids or (entityData.Type > 9 and entityData.Type ~= EntityType.ENTITY_FIREPLACE) then
@@ -554,8 +562,7 @@ function StageAPI.LoadEntitiesFromEntitySets(entitysets, doGrids, doPersistentOn
                                     pickup.AutoUpdatePrice = entityPersistData.Price.AutoUpdate
                                 end
 
-                                local currentRoom = StageAPI.GetCurrentRoom()
-                                if currentRoom and not currentRoom.IgnoreRoomRules and currentRoom.FirstLoad then
+                                if followRoomRules then
                                     if entityData.Type == EntityType.ENTITY_PICKUP and entityData.Variant == PickupVariant.PICKUP_COLLECTIBLE then
                                         if currentRoom.RoomType == RoomType.ROOM_TREASURE then
                                             if currentRoom.Layout.Variant > 0 or string.find(string.lower(currentRoom.Layout.Name), "choice") or string.find(string.lower(currentRoom.Layout.Name), "choose") then

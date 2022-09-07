@@ -444,7 +444,7 @@ function StageAPI.GenerateBossRoom(bossID, checkEncountered, bosses, hasHorseman
     local bossID = args.BossID
     if not bossID then
         bossID = StageAPI.SelectBoss(args.Bosses)
-    elseif checkEncountered then
+    elseif args.CheckEncountered then
         if StageAPI.GetBossEncountered(bossID) then
             StageAPI.LogErr("Trying to generate boss room for encountered boss: " .. tostring(bossID))
             return
@@ -1202,6 +1202,10 @@ StageAPI.AddCallback("StageAPI", Callbacks.EARLY_NEW_ROOM, -1, function()
         if StageAPI.ForcePlayerDoorSlot then
             shared.Level.EnterDoor = StageAPI.ForcePlayerDoorSlot
         end
+    end
+
+    for _, customGrid in ipairs(StageAPI.GetCustomGrids()) do
+        customGrid:Unload()
     end
 
     if StageAPI.InTestMode then
