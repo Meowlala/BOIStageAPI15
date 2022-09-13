@@ -32,6 +32,46 @@ mod:AddCallback(ModCallbacks.MC_POST_GAME_STARTED, function()
             REVEL.AddedStageAPIChangelogs = true
         end
 
+        TryAddChangelog("v2.14", [[- Fixed the EARLY_NEW_ROOM
+callback being called multiple times,
+causing some issues with room testing
+
+- Fixed overlay sprites of custom
+doors rendering incorrectly in
+reflections
+
+- Mirror world luarooms no longer
+spawn pickups
+
+- Fixed CheckEncountered argument
+to GenerateBossRoom
+
+- Custom grids are now unloaded on
+EARLY_NEW_ROOM
+
+- SplitRoomsIntoLists now always
+generates new lists, rather than
+adding to existing ones, to
+prevent memory leaks
+
+- Added a parameter to
+CustomStage:SetSinRooms
+allowing you to disable
+super sins for a floor
+
+- Fixed encountered bosses
+being reset too late, sometimes
+causing the boss on floor 1 to
+show up again on floor 2
+
+- Fixed quake grimaces not
+persisting properly in luarooms
+
+- Fixed corrupted data being
+able to change items when re-entering
+a luaroom
+]])
+
         TryAddChangelog("v2.05 - 13", [[- StageAPI now includes
 an embedded version
 of Mod Compatibility Hack
