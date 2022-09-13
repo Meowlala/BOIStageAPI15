@@ -552,6 +552,12 @@ function StageAPI.LoadEntitiesFromEntitySets(entitysets, doGrids, doPersistentOn
                                     nil
                                 )
 
+                                if entityData.Type == EntityType.ENTITY_PICKUP and entityData.Variant == PickupVariant.PICKUP_COLLECTIBLE and entityData.SubType ~= 0 then -- why can corrupted data change fixed items spawns??
+                                    if ent.SubType ~= entityData.SubType then
+                                        ent:ToPickup():Morph(ent.Type, ent.Variant, entityData.SubType, true, true, true)
+                                    end
+                                end
+
                                 if entityPersistData and entityPersistData.Health then
                                     ent.HitPoints = entityPersistData.Health
                                 end

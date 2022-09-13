@@ -21,6 +21,7 @@ StageAPI.AddEntityPersistenceData({Type = EntityType.ENTITY_STONEHEAD})
 StageAPI.AddEntityPersistenceData({Type = EntityType.ENTITY_CONSTANT_STONE_SHOOTER})
 StageAPI.AddEntityPersistenceData({Type = EntityType.ENTITY_STONE_EYE})
 StageAPI.AddEntityPersistenceData({Type = EntityType.ENTITY_BRIMSTONE_HEAD})
+StageAPI.AddEntityPersistenceData({Type = EntityType.ENTITY_QUAKE_GRIMACE})
 StageAPI.AddEntityPersistenceData({Type = EntityType.ENTITY_WALL_HUGGER})
 StageAPI.AddEntityPersistenceData({Type = EntityType.ENTITY_POKY, Variant = 1})
 
