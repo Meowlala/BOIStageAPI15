@@ -523,7 +523,13 @@ StageAPI.BaseDoorSpawns = {
     Curse = {
         Sprite = "Curse",
         StateDoor = "CurseDoor",
-        RequireTarget = {RoomType.ROOM_CURSE}
+        RequireTarget = {RoomType.ROOM_CURSE},
+    },
+    CurseFlatfile = {
+        Sprite = "CurseFlatfile",
+        StateDoor = "CurseDoor",
+        RequireTarget = {RoomType.ROOM_CURSE},
+        IsFlatfile = true,
     },
     Devil = {
         Sprite = "Devil",
@@ -536,7 +542,21 @@ StageAPI.BaseDoorSpawns = {
         RequireTarget = {RoomType.ROOM_ANGEL}
     },
 }
-StageAPI.BaseDoorSpawnList = {StageAPI.BaseDoorSpawns.Devil, StageAPI.BaseDoorSpawns.Angel, StageAPI.BaseDoorSpawns.MinibossSecret, StageAPI.BaseDoorSpawns.Secret, StageAPI.BaseDoorSpawns.CurseInterior, StageAPI.BaseDoorSpawns.Curse, StageAPI.BaseDoorSpawns.BossInterior, StageAPI.BaseDoorSpawns.MinibossSurprise, StageAPI.BaseDoorSpawns.Miniboss, StageAPI.BaseDoorSpawns.SpecialInterior} -- in priority order
+
+-- in priority order
+StageAPI.BaseDoorSpawnList = {
+    StageAPI.BaseDoorSpawns.Devil,
+    StageAPI.BaseDoorSpawns.Angel, 
+    StageAPI.BaseDoorSpawns.MinibossSecret, 
+    StageAPI.BaseDoorSpawns.Secret, 
+    StageAPI.BaseDoorSpawns.CurseInterior, 
+    StageAPI.BaseDoorSpawns.CurseFlatfile, 
+    StageAPI.BaseDoorSpawns.Curse, 
+    StageAPI.BaseDoorSpawns.BossInterior, 
+    StageAPI.BaseDoorSpawns.MinibossSurprise, 
+    StageAPI.BaseDoorSpawns.Miniboss,
+    StageAPI.BaseDoorSpawns.SpecialInterior
+}
 
 for k, v in pairs(StageAPI.BaseDoorSpawns) do
     if not StageAPI.IsIn(StageAPI.BaseDoorSpawnList, v) and k ~= "Default" then
