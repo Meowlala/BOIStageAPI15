@@ -756,8 +756,14 @@ function StageAPI.LoadCustomMapRoomDoors(levelRoom, roomData, levelMap)
                 local current, target = levelRoom.RoomType, targetLevelRoom.RoomType
                 local isBossAmbush = nil
                 local isPayToPlay = nil
+                -- TODO: check flatfile in custom doors, could check item but vanilla 
+                -- behavior is setting VarData to 1 which persists even without item
+                local isFlatfiled = nil
                 local isSurpriseMiniboss = levelRoom.SurpriseMiniboss
-                local useSprite, useDoor = StageAPI.CompareDoorSpawns(StageAPI.BaseDoorSpawnList, current, target, isBossAmbush, isPayToPlay, isSurpriseMiniboss)
+                local useSprite, useDoor = StageAPI.CompareDoorSpawns(
+                    StageAPI.BaseDoorSpawnList, current, target, 
+                    isBossAmbush, isPayToPlay, isSurpriseMiniboss, isFlatfiled
+                )
                 StageAPI.SpawnCustomDoor(slot, doorData.ExitRoom, levelMap, useDoor, nil, doorData.ExitSlot, useSprite)
             end
         end
