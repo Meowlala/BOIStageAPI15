@@ -456,12 +456,6 @@ function StageAPI.GetBossEncountered(name)
     return StageAPI.EncounteredBosses[name]
 end
 
-mod:AddCallback(ModCallbacks.MC_POST_GAME_STARTED, function(_, continued)
-    if not continued then
-        StageAPI.EncounteredBosses = {}
-    end
-end)
-
 StageAPI.BossSelectRNG = RNG()
 function StageAPI.SelectBoss(bosses, rng, roomDesc, ignoreNoOptions)
     local bossID = StageAPI.CallCallbacks(Callbacks.PRE_BOSS_SELECT, true, bosses, rng, roomDesc, ignoreNoOptions)

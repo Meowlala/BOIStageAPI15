@@ -14,6 +14,7 @@ local Callbacks = require("scripts.stageapi.enums.Callbacks")
 ---@field Doors table<integer, boolean>
 ---@field LevelIndex integer
 ---@field IgnoreRoomRules boolean
+---@field ReplaceVSStreak string
 
 ---Default room args, but not necessarily only possible ones
 ---@param layoutName string
@@ -28,8 +29,9 @@ local Callbacks = require("scripts.stageapi.enums.Callbacks")
 ---@param doors? table<DoorSlot, boolean>
 ---@param levelIndex? integer
 ---@param ignoreRoomRules? boolean
+---@param replaceVSStreak? string
 ---@return LevelRoomArgs
-function StageAPI.LevelRoomArgPacker(layoutName, roomsList, seed, shape, roomType, isExtraRoom, fromSaveData, requireRoomType, ignoreDoors, doors, levelIndex, ignoreRoomRules)
+function StageAPI.LevelRoomArgPacker(layoutName, roomsList, seed, shape, roomType, isExtraRoom, fromSaveData, requireRoomType, ignoreDoors, doors, levelIndex, ignoreRoomRules, replaceVSStreak)
     return {
         LayoutName = layoutName,
         RoomsList = roomsList,
@@ -43,10 +45,36 @@ function StageAPI.LevelRoomArgPacker(layoutName, roomsList, seed, shape, roomTyp
         Doors = doors,
         LevelIndex = levelIndex,
         IgnoreRoomRules = ignoreRoomRules,
+        ReplaceVSStreak = replaceVSStreak,
     }
 end
 
-local levelRoomCopyFromArgs = {"IsExtraRoom","LevelIndex", "IgnoreDoors","Doors", "IgnoreShape","Shape","RoomType","SpawnSeed","LayoutName","RequireRoomType","IgnoreRoomRules","DecorationSeed","AwardSeed","VisitCount","IsClear","ClearCount","IsPersistentRoom","HasWaterPits","ChallengeDone","FromData","Dimension","RoomsListName","RoomsListID"}
+local levelRoomCopyFromArgs = {
+    "IsExtraRoom",
+    "LevelIndex",
+    "IgnoreDoors",
+    "Doors",
+    "IgnoreShape",
+    "Shape",
+    "RoomType",
+    "SpawnSeed",
+    "LayoutName",
+    "RequireRoomType",
+    "IgnoreRoomRules",
+    "DecorationSeed",
+    "AwardSeed",
+    "VisitCount",
+    "IsClear",
+    "ClearCount",
+    "IsPersistentRoom",
+    "HasWaterPits",
+    "ChallengeDone",
+    "FromData",
+    "Dimension",
+    "RoomsListName",
+    "RoomsListID",
+    "ReplaceVSStreak",
+}
 
 ---@param layoutName string
 ---@param roomsList? RoomsList
@@ -85,6 +113,7 @@ end
 ---@field RoomDescriptor RoomDescriptor #can be passed to initialize the room with the descriptor's data
 ---@field RoomsListID integer
 ---@field IgnoreShape boolean
+---@field ReplaceVSStreak string
 StageAPI.LevelRoom = StageAPI.Class("LevelRoom")
 StageAPI.NextUniqueRoomIdentifier = 0
 function StageAPI.LevelRoom:Init(args, ...)

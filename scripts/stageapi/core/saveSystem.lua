@@ -17,6 +17,7 @@ function StageAPI.TryLoadModData(continued)
         StageAPI.CustomGrids = {}
         StageAPI.LevelMaps = {}
         StageAPI.AscentData = {}
+        StageAPI.EncounteredBosses = {}
         StageAPI.PreviousExtraRoomData = {}
         StageAPI.CurrentLevelMapID = nil
         StageAPI.CurrentLevelMapRoomID = nil

@@ -292,7 +292,11 @@ StageAPI.SinsSplitData = {
     }
 }
 
-function StageAPI.CustomStage:SetSinRooms(sins)
+---Set rooms for sins; noSuperSins should be true in stages
+-- equivalent to chapter one to match vanilla behavior
+---@param sins string | {[string]: RoomsList}
+---@param noSuperSins? boolean
+function StageAPI.CustomStage:SetSinRooms(sins, noSuperSins)
     if type(sins) == "string" then -- allows passing in a prefix to a room list name, which all sins can be grabbed from
         self.SinRooms = {}
         for _, sin in ipairs(StageAPI.SinsSplitData) do
@@ -301,10 +305,32 @@ function StageAPI.CustomStage:SetSinRooms(sins)
     else
         self.SinRooms = sins
     end
+
+    self.NoSuperSins = noSuperSins
 end
 
 function StageAPI.CustomStage:SetStartingRooms(starting)
     self.StartingRooms = starting
+end
+
+---@param stage CustomStage
+local function SinMatchesSplitData(stage, entry, sin)
+    -- For chapter 1 stages (set as a stage field NoSuperSins)
+    -- replace super sin rooms with normal sin rooms
+    local variantToUse = entry.Variant
+    local replacedSuper = false
+    if stage.NoSuperSins then
+        variantToUse = 0
+        replacedSuper = entry.Variant > 0
+    end
+
+    return entry.Type == sin.Type 
+        and (sin.Variant and variantToUse == sin.Variant) 
+        and (
+            (sin.ListName and stage.SinRooms[sin.ListName]) 
+            or (sin.MultipleListName and stage.SinRooms[sin.MultipleListName])
+        ),
+        replacedSuper and (sin.ListName or sin.MultipleListName)
 end
 
 function StageAPI.CustomStage:GenerateRoom(roomDescriptor, isStartingRoom, fromLevelGenerator, roomArgs)
@@ -325,16 +351,19 @@ function StageAPI.CustomStage:GenerateRoom(roomDescriptor, isStartingRoom, fromL
     if self.SinRooms and (rtype == RoomType.ROOM_MINIBOSS or rtype == RoomType.ROOM_SECRET or rtype == RoomType.ROOM_SHOP) then
         local usingRoomsList
         local includedSins = {}
+        local lastReplacedSuperSin
 
         if roomData then
             StageAPI.ForAllSpawnEntries(roomData, function(entry, spawn)
                 for i, sin in ipairs(StageAPI.SinsSplitData) do
-                    if entry.Type == sin.Type and (sin.Variant and entry.Variant == sin.Variant) and ((sin.ListName and self.SinRooms[sin.ListName]) or (sin.MultipleListName and self.SinRooms[sin.MultipleListName])) then
+                    local matches, replacedSuper = SinMatchesSplitData(self, entry, sin)
+                    if matches  then
                         if not includedSins[i] then
                             includedSins[i] = 0
                         end
 
                         includedSins[i] = includedSins[i] + 1
+                        lastReplacedSuperSin = replacedSuper or lastReplacedSuperSin
                         break
                     end
                 end
@@ -342,12 +371,14 @@ function StageAPI.CustomStage:GenerateRoom(roomDescriptor, isStartingRoom, fromL
         else
             for _, entity in ipairs(Isaac.GetRoomEntities()) do
                 for i, sin in ipairs(StageAPI.SinsSplitData) do
-                    if entity.Type == sin.Type and (sin.Variant and entity.Variant == sin.Variant) and ((sin.ListName and self.SinRooms[sin.ListName]) or (sin.MultipleListName and self.SinRooms[sin.MultipleListName])) then
+                    local matches, replacedSuper = SinMatchesSplitData(self, entity, sin)
+                    if matches  then
                         if not includedSins[i] then
                             includedSins[i] = 0
                         end
 
                         includedSins[i] = includedSins[i] + 1
+                        lastReplacedSuperSin = replacedSuper or lastReplacedSuperSin
                         break
                     end
                 end
@@ -367,10 +398,16 @@ function StageAPI.CustomStage:GenerateRoom(roomDescriptor, isStartingRoom, fromL
         if usingRoomsList then
             local shape = shared.Room:GetRoomShape()
             if usingRoomsList:GetRooms(shape) then
+                local replaceVsText
+                if lastReplacedSuperSin then
+                    replaceVsText = shared.Players[1]:GetName() .. " VS " .. lastReplacedSuperSin
+                end
+
                 local newRoom = StageAPI.LevelRoom(StageAPI.Merged({
                     RoomsList = usingRoomsList,
                     RoomDescriptor = roomDescriptor,
-                    RequireRoomType = self.RequireRoomTypeSin
+                    RequireRoomType = self.RequireRoomTypeSin,
+                    ReplaceVSStreak = replaceVsText,
                 }, roomArgs))
 
                 return newRoom
@@ -408,6 +445,16 @@ function StageAPI.CustomStage:GenerateRoom(roomDescriptor, isStartingRoom, fromL
         return newRoom, boss
     end
 end
+
+-- Replace sin VS streak if they were replaced
+---@param levelRoom LevelRoom
+---@param wasFirstLoad boolean
+---@param isExtraRoom boolean
+StageAPI.AddCallback("StageAPI", Callbacks.POST_ROOM_LOAD, 0, function(levelRoom, wasFirstLoad, isExtraRoom)
+    if not levelRoom.IsClear and levelRoom.ReplaceVSStreak then
+        shared.Game:GetHUD():ShowItemText(levelRoom.ReplaceVSStreak, "")
+    end
+end)
 
 function StageAPI.CustomStage:SetPregenerationEnabled(setTo)
     self.PregenerationEnabled = setTo

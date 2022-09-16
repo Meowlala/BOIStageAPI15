@@ -336,11 +336,13 @@ StageAPI.AddCallback("StageAPI", Callbacks.POST_SPAWN_CUSTOM_GRID, 0, function(c
     )
 end, "CustomDoor")
 
-mod:AddCallback(ModCallbacks.MC_POST_EFFECT_RENDER, function(_, door)
+mod:AddCallback(ModCallbacks.MC_POST_EFFECT_RENDER, function(_, door, offset)
     local data = door:GetData()
     if data.OverlaySprite and data.RenderOverlay then
-        local rpos = Isaac.WorldToRenderPosition(door.Position) + shared.Room:GetRenderScrollOffset()
-        data.OverlaySprite:Render(rpos, Vector.Zero, Vector.Zero)
+        if shared.Room:GetRenderMode() == RenderMode.RENDER_NORMAL then
+            local rpos = Isaac.WorldToRenderPosition(door.Position) + offset
+            data.OverlaySprite:Render(rpos, Vector.Zero, Vector.Zero)
+        end
     end
 end, StageAPI.E.Door.V)
 
