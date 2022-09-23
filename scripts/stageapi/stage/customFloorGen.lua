@@ -207,7 +207,8 @@ function StageAPI.LevelMap:AddRoomToMinimap(roomData)
                 VisitedIcons = {},
                 Position = Vector(roomData.X, roomData.Y),
                 AdjacentDisplayFlags = MinimapAPI.RoomTypeDisplayFlagsAdjacent[levelRoom.RoomType] or 5,
-                Type = levelRoom.RoomType,
+                -- StageAPI custom room types can be strings, which MinimapAPI doesn't support
+                Type = type(levelRoom.RoomType) == "number" and levelRoom.RoomType or RoomType.ROOM_DEFAULT,
                 Dimension = dim,
                 ID = roomData.MapID
             }
