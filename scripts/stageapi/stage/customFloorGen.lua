@@ -2,6 +2,7 @@ local shared = require("scripts.stageapi.shared")
 local mod = require("scripts.stageapi.mod")
 local Callbacks = require("scripts.stageapi.enums.Callbacks")
 
+---@type table<any, LevelMap>
 StageAPI.LevelMaps = {}
 StageAPI.DefaultLevelMapID = nil
 StageAPI.CurrentLevelMapID = nil
@@ -26,7 +27,27 @@ end
 ---@field StartingRoom integer # room ID
 ---@field Persistent boolean
 ---@field OverlapDimension integer
+---@field Map table<integer, LevelMap.RoomData>
+---@field Map2D table<table<integer, LevelMap.RoomData>>
 StageAPI.LevelMap = StageAPI.Class("LevelMap")
+
+---@class LevelMap.RoomData
+---@field GridIndex integer
+---@field X integer
+---@field Y integer
+---@field MapID integer 
+---@field RoomID any
+---@field MapSegments LevelMap.RoomSegment[]
+---@field LowX integer
+---@field LowY integer
+---@field HighX integer
+---@field HighY integer
+---@field Doors table<DoorSlot,  {ExitRoom: integer, ExitSlot: DoorSlot}> # ExitRoom is a MapID
+---@field AutoDoors boolean
+---@field Stage LevelStage
+---@field StageType StageType
+---@field Shape RoomShape
+---@field RoomType RoomType
 
 local levelMapDirectCopyFromArgs = {"Dimension", "StartingRoom", "Persistent", "OverlapDimension"}
 function StageAPI.LevelMap:Init(args)
@@ -58,6 +79,7 @@ function StageAPI.LevelMap:Init(args)
     StageAPI.LevelMaps[self.Dimension] = self
 end
 
+---@param roomData LevelMap.RoomData
 function StageAPI.LevelMap:UpdateDoorsAroundRoom(roomData)
     if not roomData.LowX or not roomData.HighX or not roomData.LowY or not roomData.HighY or not roomData.X or not roomData.Y then
         return
@@ -77,6 +99,10 @@ function StageAPI.LevelMap:UpdateDoorsAroundRoom(roomData)
     end
 end
 
+---@param levelRoom? LevelRoom # If nil, will get from from RoomID in roomData
+---@param roomData? LevelMap.RoomData # If nil, will be created
+---@param noUpdateDoors? boolean
+---@return LevelMap.RoomData
 function StageAPI.LevelMap:AddRoom(levelRoom, roomData, noUpdateDoors)
     roomData = roomData or {}
     if roomData.GridIndex then
@@ -130,6 +156,9 @@ function StageAPI.LevelMap:AddRoom(levelRoom, roomData, noUpdateDoors)
     return roomData
 end
 
+---@param removeRoomData LevelMap.RoomData
+---@param noUpdateDoors? boolean
+---@param noRemoveLevelRoom? boolean
 function StageAPI.LevelMap:RemoveRoom(removeRoomData, noUpdateDoors, noRemoveLevelRoom)
     local mapID = removeRoomData.MapID
     local roomData
@@ -164,6 +193,7 @@ function StageAPI.LevelMap:RemoveRoom(removeRoomData, noUpdateDoors, noRemoveLev
     end
 end
 
+---@param roomData LevelMap.RoomData
 function StageAPI.LevelMap:AddRoomToMinimap(roomData)
     if MinimapAPI and roomData.X and roomData.Y then
         local levelRoom = self:GetRoom(roomData)
@@ -192,6 +222,10 @@ function StageAPI.LevelMap:AddRoomToMinimap(roomData)
     end
 end
 
+---@param x integer
+---@param y integer
+---@return LevelMap.RoomData
+---@overload fun(self: LevelMap, mapID: integer): LevelMap.RoomData
 function StageAPI.LevelMap:GetRoomData(x, y)
     if y then
         if self.Map2D[x] and self.Map2D[x][y] then
@@ -199,9 +233,12 @@ function StageAPI.LevelMap:GetRoomData(x, y)
         end
     else
         return self.Map[x]
+        ---@diagnostic disable-next-line
     end
 end
 
+---@param roomID any
+---@return LevelMap.RoomData?
 function StageAPI.LevelMap:GetRoomDataFromRoomID(roomID)
     for _, roomData in ipairs(self.Map) do
         if roomData.RoomID == roomID then
@@ -210,6 +247,11 @@ function StageAPI.LevelMap:GetRoomDataFromRoomID(roomID)
     end
 end
 
+---@param x integer
+---@param y integer
+---@return LevelRoom?
+---@overload fun(self: LevelMap, roomData: LevelMap.RoomData): LevelRoom?
+---@overload fun(self: LevelMap, mapID: integer): LevelRoom?
 function StageAPI.LevelMap:GetRoom(x, y)
     if type(x) == "table" then
         return StageAPI.GetLevelRoom(x.RoomID, self.Dimension)
@@ -221,6 +263,7 @@ function StageAPI.LevelMap:GetRoom(x, y)
     end
 end
 
+---@return LevelRoom[]
 function StageAPI.LevelMap:GetRooms()
     local rooms = {}
     for _, roomData in ipairs(self.Map) do
@@ -230,12 +273,14 @@ function StageAPI.LevelMap:GetRooms()
     return rooms
 end
 
+---@return LevelMap.RoomData?
 function StageAPI.LevelMap:GetCurrentRoomData()
     if self:IsCurrent() and StageAPI.CurrentLevelMapRoomID then
         return self.Map[StageAPI.CurrentLevelMapRoomID]
     end
 end
 
+---@param roomData LevelMap.RoomData
 function StageAPI.LevelMap:SetRoomDoors(roomData)
     if not roomData.X or not roomData.Y then
         return
@@ -323,15 +368,19 @@ function StageAPI.LevelMap:IsCurrent()
     return StageAPI.CurrentLevelMapID == self.Dimension
 end
 
+---@return LevelMap # Is actually nil-able, but since in most usecases it won't be nil and the vscode extension would complain without redundant checks, is set as non-nil.
 function StageAPI.GetCurrentLevelMap()
     if StageAPI.CurrentLevelMapID then
         return StageAPI.LevelMaps[StageAPI.CurrentLevelMapID]
+        ---@diagnostic disable-next-line
     end
 end
 
+---@return LevelMap # Is actually nil-able, but since in most usecases it won't be nil and the vscode extension would complain without redundant checks, is set as non-nil.
 function StageAPI.GetDefaultLevelMap()
     if StageAPI.DefaultLevelMapID then
         return StageAPI.LevelMaps[StageAPI.DefaultLevelMapID]
+        ---@diagnostic disable-next-line
     end
 end
 
@@ -343,6 +392,9 @@ function StageAPI.InOrTransitioningToExtraRoom()
     return StageAPI.InExtraRoom() or StageAPI.TransitioningToExtraRoom
 end
 
+---@param roomsList RoomsList
+---@param useMapID? any
+---@return LevelMap?
 function StageAPI.CreateMapFromRoomsList(roomsList, useMapID)
     local startingRoom
     local mapLayouts = {}
@@ -614,6 +666,16 @@ StageAPI.RoomShapeToSegments = {
     }
 }
 
+---@class LevelMap.RoomSegment
+---@field X integer
+---@field Y integer
+---@field Segment integer
+---@field Doors table<"LEFT"|"UP"|"RIGHT"|"DOWN", DoorSlot>
+
+---@param roomX integer
+---@param roomY integer
+---@param shape RoomShape
+---@return LevelMap.RoomSegment[]
 function StageAPI.GetRoomMapSegments(roomX, roomY, shape)
     local onMap = {}
     local segments = StageAPI.RoomShapeToSegments[shape]
@@ -625,6 +687,10 @@ function StageAPI.GetRoomMapSegments(roomX, roomY, shape)
     return onMap
 end
 
+---@param roomObject RoomDescriptor | LevelMap.RoomData | integer
+---@param noCaching? boolean
+---@param noInterference? boolean
+---@return LevelMap.RoomSegment[]
 function StageAPI.GetMapSegmentsFromRoomObject(roomObject, noCaching, noInterference)
     local typ = type(roomObject)
     if typ == "table" then
@@ -647,6 +713,7 @@ function StageAPI.GetMapSegmentsFromRoomObject(roomObject, noCaching, noInterfer
     end
 end
 
+---@return LevelMap
 function StageAPI.CopyCurrentLevelMap()
     local levelMap = StageAPI.LevelMap()
     local roomsList = shared.Level:GetRooms()
@@ -689,6 +756,13 @@ local directionStringSwap = {
     DOWN = "UP"
 }
 
+---@param segs1 LevelMap.RoomSegment[]
+---@param segs2 LevelMap.RoomSegment[]
+---@param getDoors? boolean
+---@param getSegs? boolean
+---@return boolean
+---@return table<DoorSlot, DoorSlot>|{[1]: LevelMap.RoomSegment, [2]: LevelMap.RoomSegment, [3]: "LEFT"|"UP"|"RIGHT"|"DOWN"}[]?
+---@return {[1]: LevelMap.RoomSegment, [2]: LevelMap.RoomSegment, [3]: "LEFT"|"UP"|"RIGHT"|"DOWN"}[]?
 function StageAPI.CheckAdjacentRoomSegments(segs1, segs2, getDoors, getSegs)
     local adjacentSegments = {}
     for _, seg in ipairs(segs1) do
@@ -740,11 +814,22 @@ function StageAPI.CheckAdjacentRoomSegments(segs1, segs2, getDoors, getSegs)
     return false
 end
 
+---@param room1 RoomDescriptor | LevelMap.RoomData | integer
+---@param room2 RoomDescriptor | LevelMap.RoomData | integer
+---@param getDoors? boolean
+---@param getSegs? boolean
+---@param preventCaching? boolean
+---@return boolean
+---@return table<DoorSlot, DoorSlot>|{[1]: LevelMap.RoomSegment, [2]: LevelMap.RoomSegment, [3]: "LEFT"|"UP"|"RIGHT"|"DOWN"}[]?
+---@return {[1]: LevelMap.RoomSegment, [2]: LevelMap.RoomSegment, [3]: "LEFT"|"UP"|"RIGHT"|"DOWN"}[]?
 function StageAPI.CheckRoomAdjacency(room1, room2, getDoors, getSegs, preventCaching) -- Checks if two rooms are adjacent on the map; if getDoors is true, returns the doors in room1 paired to the doors they connect to in room2
     local segs1, segs2 = StageAPI.GetMapSegmentsFromRoomObject(room1, preventCaching), StageAPI.GetMapSegmentsFromRoomObject(room2, preventCaching)
     return StageAPI.CheckAdjacentRoomSegments(segs1, segs2, getDoors, getSegs)
 end
 
+---@param levelRoom LevelRoom
+---@param roomData LevelMap.RoomData
+---@param levelMap? LevelMap
 function StageAPI.LoadCustomMapRoomDoors(levelRoom, roomData, levelMap)
     levelMap = levelMap or StageAPI.GetCurrentLevelMap()
     if roomData.Doors then
