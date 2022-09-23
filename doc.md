@@ -4,11 +4,11 @@
 
 ### Commands:
 
-cstage or customstage <StageName> -- Warps to new stage.
-nstage or nextstage -- Warps to next stage.
-extraroom <ExtraRoomName> -- Warps to extra room
-extraroomexit -- Cleanly exits extra room to previous room.
-creseed -- Akin to reseed, but guaranteed to work for and only work for custom stages.
+cstage or customstage <StageName> -- Warps to new stage.  
+nstage or nextstage -- Warps to next stage.  
+extraroom <ExtraRoomName> -- Warps to extra room  
+extraroomexit -- Cleanly exits extra room to previous room.  
+creseed -- Akin to reseed, but guaranteed to work for and only work for custom stages.  
 
 ### Classes:
 

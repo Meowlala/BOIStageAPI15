@@ -61,6 +61,7 @@ mod:AddCallback(ModCallbacks.MC_PRE_USE_ITEM, function()
 end)
 
 StageAPI.PreviousGridCount = nil
+StageAPI.PreviousDoors = nil
 
 function StageAPI.ReprocessRoomGrids()
     StageAPI.PreviousGridCount = nil
@@ -244,9 +245,8 @@ mod:AddCallback(ModCallbacks.MC_POST_RENDER, function()
     end
 
     local currentListIndex = StageAPI.GetCurrentRoomID()
-    local stage = shared.Level:GetStage()
-    local stype = shared.Level:GetStageType()
-    local updatedGrids
+    local updatedGrids, updatedDoors
+    local newDoors = {}
     local gridCount = 0
     local pits = {}
     for i = 0, shared.Room:GetGridSize() do
@@ -272,6 +272,17 @@ mod:AddCallback(ModCallbacks.MC_POST_RENDER, function()
         end
 
         StageAPI.PreviousGridCount = gridCount
+    end
+
+    -- Door count gets changed by ie devil doors spawning
+    for i = 0, DoorSlot.NUM_DOOR_SLOTS - 1 do
+        local hasDoor = not not shared.Room:GetDoor(i)
+        if not StageAPI.PreviousDoors or hasDoor ~= StageAPI.PreviousDoors[i] then
+            updatedDoors = true
+            if hasDoor then
+                newDoors[#newDoors+1] = i
+            end
+        end
     end
 
     if shared.Sfx:IsPlaying(SoundEffect.SOUND_CASTLEPORTCULLIS) and not (StageAPI.CurrentStage and StageAPI.CurrentStage.BossMusic and StageAPI.CurrentStage.BossMusic.Intro) then
@@ -304,6 +315,11 @@ mod:AddCallback(ModCallbacks.MC_POST_RENDER, function()
 
             if not StageAPI.RoomRendered and updatedGrids then
                 StageAPI.ChangeGrids(grids)
+            elseif updatedDoors then
+                for _, newDoorSlot in ipairs(newDoors) do
+                    local door = shared.Room:GetDoor(newDoorSlot)
+                    StageAPI.ChangeSingleGrid(door, grids, door:GetGridIndex())
+                end
             end
         end
 
