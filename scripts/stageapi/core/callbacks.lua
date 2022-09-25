@@ -169,11 +169,7 @@ function StageAPI.ShouldOverrideRoom(inStartingRoom, currentRoom)
     if currentRoom then
         return true, false
     elseif StageAPI.InNewStage() then
-        local shouldGenerateDefaultRoom = (StageAPI.CurrentStage.Rooms and StageAPI.CurrentStage.Rooms[shared.Room:GetType()])
-        local shouldGenerateBossRoom = (StageAPI.CurrentStage.Bosses and shared.Room:GetType() == RoomType.ROOM_BOSS)
-        local shouldGenerateStartingRoom = StageAPI.CurrentStage.StartingRooms
-
-        if (not inStartingRoom and (shouldGenerateDefaultRoom or shouldGenerateBossRoom)) or (inStartingRoom and shouldGenerateStartingRoom) then
+        if StageAPI.CurrentStage:WillOverrideRoom(shared.Level:GetCurrentRoomDesc()) then
             return true, false
         end
     end

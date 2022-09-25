@@ -94,19 +94,68 @@ function StageAPI.CustomStage:SetRoomGfx(gfx, rtype)
     end
 end
 
-function StageAPI.CustomStage:SetRooms(rooms, rtype)
+function StageAPI.CustomStage:SetRooms(rooms, rtype, subtype)
     if not self.Rooms then
         self.Rooms = {}
     end
 
     if type(rooms) == "table" and rooms.Type ~= "RoomsList" then
         for rtype, rooms in pairs(rooms) do
-            self.Rooms[rtype] = rooms
+            if not self.Rooms[rtype] then
+                self.Rooms[rtype] = {}
+            end
+
+            if rooms.Type == "RoomsList" then
+                self.Rooms[rtype].Default = rooms
+            elseif type(rooms) == "table" then
+                if not self.Room[rtype].Subtypes then
+                    self.Rooms[rtype].Subtypes = {}
+                end
+
+                for subtype, rooms in pairs(rooms) do
+                    if subtype == 0 then
+                        self.Rooms[rtype].Default = rooms
+                    else
+                        self.Rooms[type].Subtypes[subtype] = rooms
+                    end
+                end
+            end
         end
     else
         rtype = rtype or RoomType.ROOM_DEFAULT
-        self.Rooms[rtype] = rooms
+        if not self.Rooms[rtype] then
+            self.Rooms[rtype] = {}
+        end
+
+        if subtype then
+            if not self.Rooms[rtype].Subtypes then
+                self.Rooms[rtype].Subtypes = {}
+            end
+
+            self.Rooms[rtype].Subtypes[subtype] = rooms
+        else
+            self.Rooms[rtype].Default = rooms
+        end
     end
+end
+
+function StageAPI.CustomStage:WillOverrideRoom(roomDesc)
+    local rtype = roomDesc.Data.Type
+    local isStartingRoom = roomDesc.SafeGridIndex == shared.Level:GetStartingRoomIndex()
+
+    if rtype == RoomType.ROOM_BOSS and self.Bosses then
+        return true
+    elseif isStartingRoom and self.StartingRooms then
+        return true
+    elseif self.Rooms[rtype] then
+        local rooms = self.Rooms[rtype]
+        local subtype = roomDesc.Data.Subtype
+        if rooms.Default or (rooms.Subtypes and rooms.Subtypes[subtype]) then
+            return true
+        end
+    end
+
+    return false
 end
 
 function StageAPI.CustomStage:SetChallengeWaves(rooms, bossChallengeRooms)
@@ -333,9 +382,8 @@ local function SinMatchesSplitData(stage, entry, sin)
         replacedSuper and (sin.ListName or sin.MultipleListName)
 end
 
-function StageAPI.CustomStage:GenerateRoom(roomDescriptor, isStartingRoom, fromLevelGenerator, roomArgs)
-    StageAPI.LogMinor("Generating room for stage " .. self:GetDisplayName())
-
+-- To more easily replace GenerateRoom on your stage, can call this function after running custom generation logic
+function StageAPI.CustomStageGenerateRoom(currentStage, roomDescriptor, isStartingRoom, fromLevelGenerator, roomArgs)
     local roomData
     if roomDescriptor then
         if roomDescriptor.OverrideData then
@@ -347,8 +395,9 @@ function StageAPI.CustomStage:GenerateRoom(roomDescriptor, isStartingRoom, fromL
 
     local rtype = (roomArgs and roomArgs.RoomType) or (roomData and roomData.Type) or RoomType.ROOM_DEFAULT
     local shape = (roomArgs and roomArgs.Shape) or (roomData and roomData.Shape) or RoomShape.ROOMSHAPE_1x1
+    local subtype = (roomArgs and roomArgs.Subtype) or (roomData and roomData.Subtype) or 0
 
-    if self.SinRooms and (rtype == RoomType.ROOM_MINIBOSS or rtype == RoomType.ROOM_SECRET or rtype == RoomType.ROOM_SHOP) then
+    if currentStage.SinRooms and (rtype == RoomType.ROOM_MINIBOSS or rtype == RoomType.ROOM_SECRET or rtype == RoomType.ROOM_SHOP) then
         local usingRoomsList
         local includedSins = {}
         local lastReplacedSuperSin
@@ -356,7 +405,7 @@ function StageAPI.CustomStage:GenerateRoom(roomDescriptor, isStartingRoom, fromL
         if roomData then
             StageAPI.ForAllSpawnEntries(roomData, function(entry, spawn)
                 for i, sin in ipairs(StageAPI.SinsSplitData) do
-                    local matches, replacedSuper = SinMatchesSplitData(self, entry, sin)
+                    local matches, replacedSuper = SinMatchesSplitData(currentStage, entry, sin)
                     if matches  then
                         if not includedSins[i] then
                             includedSins[i] = 0
@@ -371,7 +420,7 @@ function StageAPI.CustomStage:GenerateRoom(roomDescriptor, isStartingRoom, fromL
         else
             for _, entity in ipairs(Isaac.GetRoomEntities()) do
                 for i, sin in ipairs(StageAPI.SinsSplitData) do
-                    local matches, replacedSuper = SinMatchesSplitData(self, entity, sin)
+                    local matches, replacedSuper = SinMatchesSplitData(currentStage, entity, sin)
                     if matches  then
                         if not includedSins[i] then
                             includedSins[i] = 0
@@ -392,11 +441,10 @@ function StageAPI.CustomStage:GenerateRoom(roomDescriptor, isStartingRoom, fromL
                 listName = sin.MultipleListName
             end
 
-            usingRoomsList = self.SinRooms[listName]
+            usingRoomsList = currentStage.SinRooms[listName]
         end
 
         if usingRoomsList then
-            local shape = shared.Room:GetRoomShape()
             if usingRoomsList:GetRooms(shape) then
                 local replaceVsText
                 if lastReplacedSuperSin then
@@ -406,7 +454,7 @@ function StageAPI.CustomStage:GenerateRoom(roomDescriptor, isStartingRoom, fromL
                 local newRoom = StageAPI.LevelRoom(StageAPI.Merged({
                     RoomsList = usingRoomsList,
                     RoomDescriptor = roomDescriptor,
-                    RequireRoomType = self.RequireRoomTypeSin,
+                    RequireRoomType = currentStage.RequireRoomTypeSin,
                     ReplaceVSStreak = replaceVsText,
                 }, roomArgs))
 
@@ -415,35 +463,45 @@ function StageAPI.CustomStage:GenerateRoom(roomDescriptor, isStartingRoom, fromL
         end
     end
 
-    if not isStartingRoom and StageAPI.CurrentStage.Rooms and StageAPI.CurrentStage.Rooms[rtype] then
+    if not isStartingRoom and currentStage.Rooms and currentStage.Rooms[rtype] then
+        local rooms = currentStage.Rooms[rtype].Default
+        if currentStage.Rooms[rtype].Subtypes and currentStage.Rooms[rtype].Subtypes[subtype] ~= nil then -- can set rooms for a subtype to "false" to not override them
+            rooms = currentStage.Rooms[rtype].Subtypes[subtype]
+        end
 
+        if rooms then
+            local newRoom = StageAPI.LevelRoom(StageAPI.Merged({
+                RoomsList = rooms,
+                RoomDescriptor = roomDescriptor,
+                RequireRoomType = currentStage.RequireRoomTypeMatching
+            }, roomArgs))
+            return newRoom
+        end
+    elseif isStartingRoom and currentStage.StartingRooms then
         local newRoom = StageAPI.LevelRoom(StageAPI.Merged({
-            RoomsList = StageAPI.CurrentStage.Rooms[rtype],
-            RoomDescriptor = roomDescriptor,
-            RequireRoomType = self.RequireRoomTypeMatching
-        }, roomArgs))
-        return newRoom
-    elseif isStartingRoom and StageAPI.CurrentStage.StartingRooms then
-
-        local newRoom = StageAPI.LevelRoom(StageAPI.Merged({
-            RoomsList = StageAPI.CurrentStage.StartingRooms,
+            RoomsList = currentStage.StartingRooms,
             RoomDescriptor = roomDescriptor
         }, roomArgs))
         return newRoom
     end
 
-    if self.Bosses and rtype == RoomType.ROOM_BOSS then
+    if currentStage.Bosses and rtype == RoomType.ROOM_BOSS then
         local newRoom, boss = StageAPI.GenerateBossRoom({
-            Bosses = self.Bosses,
+            Bosses = currentStage.Bosses,
             CheckEncountered = true,
             NoPlayBossAnim = fromLevelGenerator
         }, StageAPI.Merged({
             RoomDescriptor = roomDescriptor,
-            RequireRoomType = self.RequireRoomTypeBoss
+            RequireRoomType = currentStage.RequireRoomTypeBoss
         }, roomArgs))
 
         return newRoom, boss
     end
+end
+
+function StageAPI.CustomStage:GenerateRoom(roomDescriptor, isStartingRoom, fromLevelGenerator, roomArgs)
+    StageAPI.LogMinor("Generating room for stage " .. self:GetDisplayName())
+    return StageAPI.CustomStageGenerateRoom(self, roomDescriptor, isStartingRoom, fromLevelGenerator, roomArgs)
 end
 
 -- Replace sin VS streak if they were replaced
