@@ -108,7 +108,7 @@ function StageAPI.CustomStage:SetRooms(rooms, rtype, subtype)
             if rooms.Type == "RoomsList" then
                 self.Rooms[rtype].Default = rooms
             elseif type(rooms) == "table" then
-                if not self.Room[rtype].Subtypes then
+                if not self.Rooms[rtype].Subtypes then
                     self.Rooms[rtype].Subtypes = {}
                 end
 
