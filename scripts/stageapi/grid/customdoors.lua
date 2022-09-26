@@ -250,11 +250,10 @@ end
 ---@param doorDataName? string Optionally filter door types
 ---@return CustomGridEntity?
 function StageAPI.GetCustomDoorAtSlot(slot, doorDataName)
-    local slotIndex = shared.Room:GetGridIndex(shared.Room:GetDoorSlotPosition(slot))
     local doors = StageAPI.GetCustomGrids(nil, StageAPI.CustomDoorGrid.Name)
 
     for _, door in ipairs(doors) do
-        if door.GridIndex == slotIndex
+        if door.PersistentData.Slot == slot
         (not doorDataName or door.PersistentData.DoorDataName == doorDataName) 
         then
             return door
@@ -286,11 +285,10 @@ end
 ---@return CustomGridPersistData?
 function StageAPI.GetCustomDoorDataAtSlot(slot, doorDataName)
     local customGrids = StageAPI.GetRoomCustomGrids()
-    local slotIndex = shared.Room:GetGridIndex(shared.Room:GetDoorSlotPosition(slot))
 
     for _, gridData in pairs(customGrids.Grids) do
         if gridData.Name == StageAPI.CustomDoorGrid.Name
-        and gridData.Index == slotIndex
+        and gridData.PersistData.Slot == slot
         and (not doorDataName or gridData.PersistData.DoorDataName == doorDataName)
         then
             return gridData
