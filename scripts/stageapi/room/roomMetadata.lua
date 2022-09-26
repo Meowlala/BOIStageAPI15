@@ -105,7 +105,7 @@ function StageAPI.RoomMetadata:AddMetadataEntity(index, entity, persistentIndex)
     local metadata
     local name
     if entity and type(entity) ~= "string" then
-        metadata = StageAPI.IsMetadataEntity(entity)
+        metadata = StageAPI.GetMetadataEntity(entity)
         name = metadata.Name
     else
         if entity then
@@ -629,6 +629,7 @@ end
 ---@param etype integer
 ---@param variant integer
 ---@return EntityMeta
+---@overload fun(entInfo: {Type: integer, Variant: integer}): EntityMeta
 function StageAPI.GetMetadataEntity(etype, variant)
     if type(etype) == "table" then
         variant = etype.Variant
@@ -655,7 +656,7 @@ function StageAPI.RoomDataHasMetadataEntity(data)
                 local entry = spawn:PickEntry(weight)
                 weight = weight + entry.Weight / sumWeight
 
-                if StageAPI.IsMetadataEntity(entry.Type, entry.Variant) then
+                if StageAPI.GetMetadataEntity(entry.Type, entry.Variant) then
                     return true
                 end
             end
@@ -693,6 +694,44 @@ function StageAPI.IsEntityUnblockable(etype, variant, subtype)
     or (StageAPI.UnblockableEntities[etype][variant] and StageAPI.UnblockableEntities[etype][variant][subtype] == true))
 end
 
+--- temporary, for debug purposes
+local function table_val_to_str(v)
+    if "string" == type(v) then
+        v = string.gsub(v, "\n", "\\n")
+        if string.match(string.gsub(v,"[^'\"]",""), '^"+$') then
+            return "'" .. v .. "'"
+        end
+        return '"' .. string.gsub(v,'"', '\\"' ) .. '"'
+    else
+        return REVEL.ToString(v)
+    end
+end
+
+--- temporary, for debug purposes
+local function table_key_to_str(k)
+    if "string" == type(k) and string.match(k, "^[_%a][_%a%d]*$") then
+        return k
+    else
+        return "[" .. table_val_to_str(k) .. "]"
+    end
+end
+
+--- temporary, for debug purposes
+local function table_to_string(tbl)
+    local result, done = {}, {}
+    for k, v in ipairs(tbl) do
+        table.insert(result, table_val_to_str(v))
+        done[k] = true
+    end
+    for k, v in pairs(tbl) do
+        if not done[k] then
+            table.insert(result,
+            table_key_to_str(k) .. "=" .. table_val_to_str(v))
+        end
+    end
+    return "{" .. table.concat(result, ",") .. "}"
+end
+
 
 function StageAPI.SeparateEntityMetadata(entities, grids, seed)
     StageAPI.RoomLoadRNG:SetSeed(seed or shared.Room:GetSpawnSeed(), 1)
@@ -701,10 +740,29 @@ function StageAPI.SeparateEntityMetadata(entities, grids, seed)
 
     local persistentIndex
 
+    if not entities then
+        local currentRoom = StageAPI.GetCurrentRoom()
+        local err = "SeparateEntityMetadata | entities is nil! This should never happen. Logging room info.\n"
+        .. "Layout name: " .. currentRoom.Layout.Name
+        .. "\nFull layout: \n-------------------------"
+
+        for k, v in pairs(currentRoom.Layout) do
+            if type(v) == "table" then
+                err = err .. "\n\t" .. tostring(k) .. " = " .. table_to_string(v)
+            else
+                err = err .. "\n\t" .. tostring(k) .. " = " .. tostring(v)
+            end
+        end
+
+        err = err .. "\n-------------------------"
+
+        error(err, 2)
+    end
+
     for index, entityList in pairs(entities) do
         local outList = {}
         for _, entity in ipairs(entityList) do
-            local metadata = StageAPI.IsMetadataEntity(entity.Type, entity.Variant)
+            local metadata = StageAPI.GetMetadataEntity(entity.Type, entity.Variant)
             if metadata then
                 local _, newPersistentIndex = roomMetadata:AddMetadataEntity(index, entity, persistentIndex)
                 persistentIndex = newPersistentIndex
