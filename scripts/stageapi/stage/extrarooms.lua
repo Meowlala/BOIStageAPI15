@@ -451,6 +451,10 @@ function StageAPI.ExtraRoomTransition(levelMapRoomID, direction, transitionType,
     direction = direction or Direction.NO_DIRECTION
     StageAPI.ForcePlayerNewRoomPosition = setPlayerPosition
 
+    if StageAPI.TransitioningToExtraRoom then
+        StageAPI.LogWarn("Transitioning to extra room while already doing a transition! ", StageAPI.TryGetCallInfo())
+    end
+
     if not noSave then
         local currentRoom = StageAPI.GetCurrentRoom()
         if currentRoom and currentRoom.IsExtraRoom then

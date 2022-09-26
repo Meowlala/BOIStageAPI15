@@ -10,6 +10,21 @@ end
 ---@field LevelRoom LevelRoom
 StageAPI.RoomMetadata = StageAPI.Class("RoomMetadata")
 
+---@class EntityMeta
+---@field Name string
+---@field Tags string[]
+---@field BitValues table<string, {Offset: integer, Length: integer}>
+---@field ConflictTag string
+---@field GroupID string
+---@field StoreAsGroup boolean
+---@field Type integer
+---@field Variant integer
+
+---@class EntityMetaArgs : EntityMeta
+---@field Tag string
+---@field Group string deprecated
+---@field Conflicts string deprecated
+
 function StageAPI.RoomMetadata:Init()
     self.Groups = {}
     self.BlockedEntities = {}
@@ -390,6 +405,7 @@ function StageAPI.RoomMetadata:GetDirections(index)
     return outDirections
 end
 
+---@type table<integer, table<integer, EntityMeta>>
 StageAPI.MetadataEntities = {
     [199] = {
         [0] = {
@@ -532,6 +548,7 @@ mod:AddCallback(ModCallbacks.MC_NPC_UPDATE, function(_, npc)
     end
 end, StageAPI.E.MetaEntity.T)
 
+---@type table<string, EntityMeta>
 StageAPI.MetadataEntitiesByName = {}
 
 StageAPI.UnblockableEntities = {}
@@ -544,6 +561,9 @@ for id, variants in pairs(StageAPI.MetadataEntities) do
     end
 end
 
+---@param data EntityMetaArgs
+---@param id? integer
+---@param variant? integer
 function StageAPI.AddMetadataEntity(data, id, variant)
     if data.Group then -- backwards compatibility features
         if not data.Tags then
@@ -601,7 +621,15 @@ function StageAPI.AddMetadataEntities(tbl)
     end
 end
 
+---@deprecated
 function StageAPI.IsMetadataEntity(etype, variant)
+    return StageAPI.GetMetadataEntity(etype, variant)
+end
+
+---@param etype integer
+---@param variant integer
+---@return EntityMeta
+function StageAPI.GetMetadataEntity(etype, variant)
     if type(etype) == "table" then
         variant = etype.Variant
         etype = etype.Type
@@ -610,6 +638,8 @@ function StageAPI.IsMetadataEntity(etype, variant)
     return StageAPI.MetadataEntities[etype] and StageAPI.MetadataEntities[etype][variant]
 end
 
+---@param metadataName string
+---@return EntityMeta
 function StageAPI.GetMetadataByName(metadataName)
     return StageAPI.MetadataEntitiesByName[metadataName]
 end

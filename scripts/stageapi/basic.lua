@@ -33,6 +33,14 @@ function StageAPI.LogErr(...)
     Isaac.DebugString(str)
 end
 
+function StageAPI.LogWarn(...)
+    local str = StageAPI.LogConcat('[StageAPI:WARNING] ', ...)
+    if StageAPI.DebugMinorLog then
+        Isaac.ConsoleOutput(str .. "\n")
+    end
+    Isaac.DebugString(str)
+end
+
 function StageAPI.LogMinor(...)
     local str = StageAPI.LogConcat('[StageAPI] ', ...)
     if StageAPI.DebugMinorLog then
@@ -40,6 +48,16 @@ function StageAPI.LogMinor(...)
     end
 
     Isaac.DebugString(str)
+end
+
+function StageAPI.TryGetCallInfo(level)
+    level = level or 2
+    if debug then
+        local info = debug.getinfo(1 + level)
+        return tostring(info.short_src) .. "@" .. tostring(info.linedefined)
+    else
+        return ""
+    end
 end
 
 -- definitions
