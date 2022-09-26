@@ -695,6 +695,9 @@ function StageAPI.IsEntityUnblockable(etype, variant, subtype)
 end
 
 --- temporary, for debug purposes
+local table_to_string
+
+--- temporary, for debug purposes
 local function table_val_to_str(v)
     if "string" == type(v) then
         v = string.gsub(v, "\n", "\\n")
@@ -703,7 +706,7 @@ local function table_val_to_str(v)
         end
         return '"' .. string.gsub(v,'"', '\\"' ) .. '"'
     else
-        return REVEL.ToString(v)
+        return "table" == type( v ) and table_to_string( v ) or tostring( v )
     end
 end
 
@@ -717,7 +720,7 @@ local function table_key_to_str(k)
 end
 
 --- temporary, for debug purposes
-local function table_to_string(tbl)
+function table_to_string(tbl)
     local result, done = {}, {}
     for k, v in ipairs(tbl) do
         table.insert(result, table_val_to_str(v))
