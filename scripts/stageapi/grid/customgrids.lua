@@ -142,12 +142,17 @@ StageAPI.DefaultBrokenGridStateByType = {
     [GridEntityType.GRID_POOP]      = 1000,
 }
 
--- { [dimension] = { [roomId] = { Grids = { [gridPersistIdx] = <grid data> }, LastPersistentIndex = N } } }
+---@class CustomGridPersistData
+---@field Name string
+---@field Index integer
+---@field PersistData table
+
+---@type table<integer, table<any, {Grids: CustomGridPersistData[], LastPersistentIndex: integer}>>
 StageAPI.CustomGrids = {}
 
 ---@param dimension? integer default: current
 ---@param roomID? integer default: current
----@return {LastPersistentIndex: integer, Grids: CustomGrid[], [integer]: CustomGrid}
+---@return {Grids: CustomGridPersistData[], LastPersistentIndex: integer}
 function StageAPI.GetRoomCustomGrids(dimension, roomID)
     local customGrids = StageAPI.GetTableIndexedByDimensionRoom(StageAPI.CustomGrids, true, dimension, roomID)
     if not customGrids.Grids then

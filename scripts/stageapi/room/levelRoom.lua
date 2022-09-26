@@ -470,8 +470,12 @@ function StageAPI.LevelRoom:Load(isExtraRoom, noIncrementVisit, clearNPCsOnly)
 end
 
 function StageAPI.LevelRoom:Save()
-    self:SavePersistentEntities()
-    self:SaveGridInformation()
+    if self.Loaded then
+        self:SavePersistentEntities()
+        self:SaveGridInformation()
+    else
+        StageAPI.LogErr("Trying to save data for room <", self.Layout.Name, "> before it is loaded, won't proceed")
+    end
 end
 
 local saveDataCopyDirectly = {

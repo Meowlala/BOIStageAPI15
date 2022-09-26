@@ -12,7 +12,22 @@ local shared = require("scripts.stageapi.shared")
     StoreCheck = storeCheck
 }
 ]]
+---@class EntityPersistenceData
+---@field Type EntityType
+---@field Variant integer
+---@field SubType integer
+---@field AutoPersists boolean
+---@field RemoveOnRemove boolean
+---@field RemoveOnDeath boolean
+---@field UpdatePosition boolean
+---@field UpdateHealth boolean
+---@field UpdatePrice boolean
+---@field StoreCheck fun(entity: Entity): boolean
+
+---@type EntityPersistenceData[]
 StageAPI.PersistentEntities = {}
+
+---@param persistenceData EntityPersistenceData
 function StageAPI.AddEntityPersistenceData(persistenceData)
     StageAPI.PersistentEntities[#StageAPI.PersistentEntities + 1] = persistenceData
 end
@@ -38,7 +53,12 @@ for i = 0, 4 do
     })
 end
 
+---@alias StageAPI.PersistenceCheck fun(entData: RoomLayout_EntityData): EntityPersistenceData?
+
+---@type StageAPI.PersistenceCheck[]
 StageAPI.PersistenceChecks = {}
+
+---@param fn StageAPI.PersistenceCheck
 function StageAPI.AddPersistenceCheck(fn)
     StageAPI.PersistenceChecks[#StageAPI.PersistenceChecks + 1] = fn
 end
@@ -119,6 +139,10 @@ StageAPI.AddPersistenceCheck(function(entData)
     end
 end)
 
+---@param id EntityType
+---@param variant integer
+---@param subtype integer
+---@return EntityPersistenceData?
 function StageAPI.CheckPersistence(id, variant, subtype)
     local persistentData
 

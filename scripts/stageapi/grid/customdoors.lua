@@ -187,9 +187,24 @@ function StageAPI.CustomStateDoor:UpdateDoorSprite(sprite, stateData, triggerAni
     return renderOverlay, not not anim, not not overlayAnim
 end
 
-function StageAPI.SpawnCustomDoor(slot, leadsTo, levelMapID, doorDataName, data, exitSlot, doorSprite, transitionAnim, exitPosition)
+---@param slot DoorSlot
+---@param leadsTo? any
+---@param levelMapID? any
+---@param doorDataName string
+---@param data? table
+---@param exitSlot? DoorSlot
+---@param doorSprite? Sprite
+---@param transitionAnim? RoomTransitionAnim
+---@param exitPosition? Vector
+---@param force? boolean do not check if a door already exists at the slot
+function StageAPI.SpawnCustomDoor(slot, leadsTo, levelMapID, doorDataName, data, exitSlot, doorSprite, transitionAnim, exitPosition, force)
     if type(levelMapID) == "table" then
         levelMapID = levelMapID.Dimension
+    end
+
+    local existant = StageAPI.GetCustomDoorDataAtSlot(slot)
+    if existant and not force then
+        error("SpawnCustomDoor | door already exists at slot " .. tostring(slot) .. ", is " .. tostring(existant.PersistData.DoorDataName), 2)
     end
 
     local persistData = {
@@ -211,9 +226,14 @@ function StageAPI.SpawnCustomDoor(slot, leadsTo, levelMapID, doorDataName, data,
     StageAPI.CustomDoorGrid:Spawn(index, nil, false, persistData)
 end
 
+---Remember that custom grids placed in previous visits of
+-- the room will only spawn after ROOM_LOAD, so this is not
+-- to be used there
+---@param doorDataName? string
+---@return CustomGridEntity[]
 function StageAPI.GetCustomDoors(doorDataName)
     local ret = {}
-    local doors = StageAPI.GetCustomGrids(nil, "CustomDoor")
+    local doors = StageAPI.GetCustomGrids(nil, StageAPI.CustomDoorGrid.Name)
     for _, door in ipairs(doors) do
         if not doorDataName or door.PersistentData.DoorDataName == doorDataName then
             ret[#ret + 1] = door
@@ -221,6 +241,61 @@ function StageAPI.GetCustomDoors(doorDataName)
     end
 
     return ret
+end
+
+---Remember that custom grids placed in previous visits of
+-- the room will only spawn after ROOM_LOAD, so this is not
+-- to be used there
+---@param slot integer
+---@param doorDataName? string Optionally filter door types
+---@return CustomGridEntity?
+function StageAPI.GetCustomDoorAtSlot(slot, doorDataName)
+    local slotIndex = shared.Room:GetGridIndex(shared.Room:GetDoorSlotPosition(slot))
+    local doors = StageAPI.GetCustomGrids(nil, StageAPI.CustomDoorGrid.Name)
+
+    for _, door in ipairs(doors) do
+        if door.GridIndex == slotIndex
+        (not doorDataName or door.PersistentData.DoorDataName == doorDataName) 
+        then
+            return door
+        end
+    end
+end
+
+---Can be used during room load too
+---@param doorDataName? string Optionally filter door types
+---@return CustomGridPersistData[]
+function StageAPI.GetCustomDoorData(doorDataName)
+    local customGrids = StageAPI.GetRoomCustomGrids()
+    local ret = {}
+
+    for _, gridData in pairs(customGrids.Grids) do
+        if gridData.Name == StageAPI.CustomDoorGrid.Name
+        and (not doorDataName or gridData.PersistData.DoorDataName == doorDataName)
+        then
+            ret[#ret+1] = gridData
+        end
+    end
+
+    return ret
+end
+
+---Can be used during room load too
+---@param slot integer
+---@param doorDataName? string Optionally filter door types
+---@return CustomGridPersistData?
+function StageAPI.GetCustomDoorDataAtSlot(slot, doorDataName)
+    local customGrids = StageAPI.GetRoomCustomGrids()
+    local slotIndex = shared.Room:GetGridIndex(shared.Room:GetDoorSlotPosition(slot))
+
+    for _, gridData in pairs(customGrids.Grids) do
+        if gridData.Name == StageAPI.CustomDoorGrid.Name
+        and gridData.Index == slotIndex
+        and (not doorDataName or gridData.PersistData.DoorDataName == doorDataName)
+        then
+            return gridData
+        end
+    end
 end
 
 StageAPI.AddCallback("StageAPI", Callbacks.POST_SPAWN_CUSTOM_GRID, 0, function(customGrid, force, respawning)

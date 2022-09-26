@@ -23,7 +23,7 @@ end
 
 --- Constructor: (args: {Dimension = int, StartingRoom = int, Persistent = bool, OverlapDimension = int})
 ---@class LevelMap : StageAPIClass
----@field Dimension integer
+---@field Dimension integer # map ID
 ---@field StartingRoom integer # room ID
 ---@field Persistent boolean
 ---@field OverlapDimension integer
