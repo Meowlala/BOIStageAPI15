@@ -1300,6 +1300,29 @@ end)
 local SECRET_SHOP_LADDER_VARIANT = 2
 local MEMBER_CARD_DEFAULT_INDEX = 25
 
+---@param entityInfo RoomLayout_EntityData
+---@param entityList RoomLayout_EntityData[]
+---@param index integer
+---@param doGrids boolean
+---@param doPersistentOnly boolean
+---@param doAutoPersistent boolean
+---@param avoidSpawning boolean
+---@param persistenceData table
+---@param shouldSpawnEntity boolean
+StageAPI.AddCallback("StageAPI", Callbacks.PRE_SPAWN_ENTITY, 1, function(entityInfo, entityList, index, doGrids, doPersistentOnly, doAutoPersistent, avoidSpawning, persistenceData, shouldSpawnEntity)
+    -- Do not spawn slot machines in secret shops
+
+    local roomType = shared.Room:GetType()
+
+    if roomType == RoomType.ROOM_SHOP
+    and shared.Level:GetCurrentRoomDesc().GridIndex == GridRooms.ROOM_SECRET_SHOP_IDX
+    and entityInfo.Data.Type == EntityType.ENTITY_SLOT
+    then
+        return false
+    end
+end)
+
+
 -- Spawn member card shop trapdoor
 -- Wait after room load so it doesn't go under grids spawned in room loading
 -- Assumes it was cleared by ClearRoomLayout
@@ -1307,39 +1330,95 @@ local MEMBER_CARD_DEFAULT_INDEX = 25
 ---@param isFirstLoad boolean
 ---@param isExtraRoom boolean
 StageAPI.AddCallback("StageAPI", Callbacks.POST_ROOM_LOAD, 1, function(currentRoom, isFirstLoad, isExtraRoom)
-    if isFirstLoad and currentRoom:GetType() == RoomType.ROOM_SHOP then
-        local roomDesc = shared.Level:GetCurrentRoomDesc()
+    if currentRoom:GetType() == RoomType.ROOM_SHOP then
+        if isFirstLoad then
+            local roomDesc = shared.Level:GetCurrentRoomDesc()
 
-        if roomDesc.GridIndex == GridRooms.ROOM_SECRET_SHOP_IDX then
-            return
-        end
+            local hasMemberCard = false
 
-        local hasMemberCard = false
-
-        for _, player in ipairs(shared.Players) do
-            if player:HasCollectible(CollectibleType.COLLECTIBLE_MEMBER_CARD) then
-                hasMemberCard = true
-                break
+            for _, player in ipairs(shared.Players) do
+                if player:HasCollectible(CollectibleType.COLLECTIBLE_MEMBER_CARD) then
+                    hasMemberCard = true
+                    break
+                end
             end
-        end
-    
-        if hasMemberCard then
-            local positionMeta = currentRoom.Metadata:Search { Name = "Member Card Trapdoor Position" }[1]
-            -- Manually specified member card trapdoor position, spawn there
-            local index
-            if positionMeta then
-                index = positionMeta.Index
-            else
+
+            local pos
+
+            if roomDesc.GridIndex == GridRooms.ROOM_SECRET_SHOP_IDX
+            or hasMemberCard then
+                local index
+                local positionMeta = currentRoom.Metadata:Search { Name = "Member Card Trapdoor Position" }[1]
+                if positionMeta then
+                    index = positionMeta.Index
+                else
+                    index = StageAPI.FindFreeIndexInLayout(currentRoom.Layout, MEMBER_CARD_DEFAULT_INDEX)
+                end
+
+                pos = shared.Room:GetGridPosition(index)
+            end
+
+            if roomDesc.GridIndex == GridRooms.ROOM_SECRET_SHOP_IDX then
+                -- Spawn exit ladder
+
+                Isaac.Spawn(EntityType.ENTITY_EFFECT, EffectVariant.TALL_LADDER, 0, pos, Vector.Zero, nil)
+
+                for _, player in ipairs(shared.Players) do
+                    player.Position = pos
+                end
+            elseif hasMemberCard then
                 -- Can't use vanilla TrySpawnSecretShop function 
-                -- or FindFreeTile as it seemingly ignored spawned slot
+                -- or FindFreeTile as it seemingly ignores spawned slot
                 -- machines and such
-                index = StageAPI.FindFreeIndexInLayout(currentRoom.Layout, MEMBER_CARD_DEFAULT_INDEX)
+                Isaac.GridSpawn(GridEntityType.GRID_STAIRS, SECRET_SHOP_LADDER_VARIANT, pos)
             end
 
-            local pos = shared.Room:GetGridPosition(index)
+            currentRoom.PersistentData.MemberCardIndex = shared.Room:GetGridIndex(pos)
+        elseif currentRoom.PersistentData.MemberCardIndex then
+            -- Check if a trapdoor/ladder was spawned in default vanilla position
+            -- and move it
 
-            Isaac.GridSpawn(GridEntityType.GRID_STAIRS, SECRET_SHOP_LADDER_VARIANT, pos)
-            StageAPI.Log("Spawned secret ladder")
+            local checkIndex = currentRoom.PersistentData.MemberCardIndex
+
+            if checkIndex == MEMBER_CARD_DEFAULT_INDEX then
+                -- No need to do anything, vanilla handles it
+                return
+            end
+
+            local roomDesc = shared.Level:GetCurrentRoomDesc()
+
+            if roomDesc.GridIndex == GridRooms.ROOM_SECRET_SHOP_IDX then
+                local ladders = Isaac.FindByType(EntityType.ENTITY_EFFECT, EffectVariant.TALL_LADDER)
+                local found = false
+                for _, ladder in ipairs(ladders) do
+                    local idx = shared.Room:GetGridIndex(ladder.Position)
+                    if idx == checkIndex then
+                        found = true
+                    elseif idx == MEMBER_CARD_DEFAULT_INDEX then
+                        ladder:Remove()
+                    end
+                end
+
+                if not found then
+                    Isaac.Spawn(
+                        EntityType.ENTITY_EFFECT, EffectVariant.TALL_LADDER, 0, 
+                        shared.Room:GetGridPosition(checkIndex), Vector.Zero, 
+                        nil
+                    )
+                end
+
+                for _, player in ipairs(shared.Players) do
+                    player.Position = shared.Room:GetGridPosition(checkIndex)
+                end
+            else
+                local gridEntity = shared.Room:GetGridEntity(MEMBER_CARD_DEFAULT_INDEX)
+                if gridEntity 
+                and gridEntity:GetType() == GridEntityType.GRID_STAIRS
+                and gridEntity:GetVariant() == SECRET_SHOP_LADDER_VARIANT
+                then
+                    shared.Room:RemoveGridEntity(MEMBER_CARD_DEFAULT_INDEX, 0, false)
+                end
+            end
         end
     end
 end)
