@@ -1330,9 +1330,16 @@ end)
 ---@param isFirstLoad boolean
 ---@param isExtraRoom boolean
 StageAPI.AddCallback("StageAPI", Callbacks.POST_ROOM_LOAD, 1, function(currentRoom, isFirstLoad, isExtraRoom)
-    if currentRoom:GetType() == RoomType.ROOM_SHOP then
+    -- secret shop: base room type must be shop
+    -- spawning trapdoor: stageapi room type must be shop, so custom rooms work too
+
+    local roomDesc = shared.Level:GetCurrentRoomDesc()
+    local isSecretShop = roomDesc.GridIndex == GridRooms.ROOM_SECRET_SHOP_IDX 
+        and not StageAPI.InExtraRoom()
+        and shared.Room:GetType() == RoomType.ROOM_SHOP
+
+    if isSecretShop or currentRoom:GetType() == RoomType.ROOM_SHOP then
         if isFirstLoad then
-            local roomDesc = shared.Level:GetCurrentRoomDesc()
 
             local hasMemberCard = false
 
@@ -1345,20 +1352,20 @@ StageAPI.AddCallback("StageAPI", Callbacks.POST_ROOM_LOAD, 1, function(currentRo
 
             local pos
 
-            if roomDesc.GridIndex == GridRooms.ROOM_SECRET_SHOP_IDX
+            if isSecretShop
             or hasMemberCard then
                 local index
                 local positionMeta = currentRoom.Metadata:Search { Name = "Member Card Trapdoor Position" }[1]
                 if positionMeta then
                     index = positionMeta.Index
                 else
-                    index = StageAPI.FindFreeIndexInLayout(currentRoom.Layout, MEMBER_CARD_DEFAULT_INDEX)
+                    index = StageAPI.FindFreeIndex(MEMBER_CARD_DEFAULT_INDEX)
                 end
 
                 pos = shared.Room:GetGridPosition(index)
             end
 
-            if roomDesc.GridIndex == GridRooms.ROOM_SECRET_SHOP_IDX then
+            if isSecretShop then
                 -- Spawn exit ladder
 
                 Isaac.Spawn(EntityType.ENTITY_EFFECT, EffectVariant.TALL_LADDER, 0, pos, Vector.Zero, nil)
@@ -1385,9 +1392,7 @@ StageAPI.AddCallback("StageAPI", Callbacks.POST_ROOM_LOAD, 1, function(currentRo
                 return
             end
 
-            local roomDesc = shared.Level:GetCurrentRoomDesc()
-
-            if roomDesc.GridIndex == GridRooms.ROOM_SECRET_SHOP_IDX then
+            if isSecretShop then
                 local ladders = Isaac.FindByType(EntityType.ENTITY_EFFECT, EffectVariant.TALL_LADDER)
                 local found = false
                 for _, ladder in ipairs(ladders) do
