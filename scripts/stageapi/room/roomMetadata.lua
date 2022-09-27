@@ -622,7 +622,7 @@ StageAPI.MetadataEntities = {
 
 mod:AddCallback(ModCallbacks.MC_NPC_UPDATE, function(_, npc)
     if npc.Variant ~= StageAPI.E.DeleteMeNPC.Variant then
-        StageAPI.LogErr("Something is wrong! A StageAPI metadata entity has spawned when it should have been removed.")
+        StageAPI.LogErr("Something is wrong! A StageAPI metadata entity has spawned at index <" .. tostring(shared.Room:GetGridIndex(npc.Position)) .. "> when it should have been removed.")
     end
 end, StageAPI.E.MetaEntity.T)
 
