@@ -1177,7 +1177,7 @@ mod:AddCallback(ModCallbacks.MC_PRE_ROOM_ENTITY_SPAWN, function(_, t, v, s, inde
 
     if shouldOverride and (not StageAPI.RecentlyChangedLevel or forceOverride) and (t >= 1000 or StageAPI.RoomEntitySpawnGridBlacklist[t] or StageAPI.IsMetadataEntity(t, v)) and not StageAPI.ActiveTransitionToExtraRoom then
         local shouldReturn
-        if shared.Room:IsFirstVisit() or StageAPI.IsMetadataEntity(t, v) or forceOverride then
+        if shared.Room:IsFirstVisit() or StageAPI.GetMetadataEntity(t, v) or forceOverride then
             shouldReturn = true
         else
             local currentListIndex = StageAPI.GetCurrentRoomID()
@@ -1294,3 +1294,54 @@ StageAPI.AddCallback("StageAPI", Callbacks.POST_ROOM_LOAD, 1, function(currentRo
         end
     end
 end)
+
+--#region MemberCard
+
+local SECRET_SHOP_LADDER_VARIANT = 2
+local MEMBER_CARD_DEFAULT_INDEX = 25
+
+-- Spawn member card shop trapdoor
+-- Wait after room load so it doesn't go under grids spawned in room loading
+-- Assumes it was cleared by ClearRoomLayout
+---@param currentRoom LevelRoom
+---@param isFirstLoad boolean
+---@param isExtraRoom boolean
+StageAPI.AddCallback("StageAPI", Callbacks.POST_ROOM_LOAD, 1, function(currentRoom, isFirstLoad, isExtraRoom)
+    if isFirstLoad and currentRoom:GetType() == RoomType.ROOM_SHOP then
+        local roomDesc = shared.Level:GetCurrentRoomDesc()
+
+        if roomDesc.GridIndex == GridRooms.ROOM_SECRET_SHOP_IDX then
+            return
+        end
+
+        local hasMemberCard = false
+
+        for _, player in ipairs(shared.Players) do
+            if player:HasCollectible(CollectibleType.COLLECTIBLE_MEMBER_CARD) then
+                hasMemberCard = true
+                break
+            end
+        end
+    
+        if hasMemberCard then
+            local positionMeta = currentRoom.Metadata:Search { Name = "Member Card Trapdoor Position" }[1]
+            -- Manually specified member card trapdoor position, spawn there
+            local index
+            if positionMeta then
+                index = positionMeta.Index
+            else
+                -- Can't use vanilla TrySpawnSecretShop function 
+                -- or FindFreeTile as it seemingly ignored spawned slot
+                -- machines and such
+                index = StageAPI.FindFreeIndexInLayout(currentRoom.Layout, MEMBER_CARD_DEFAULT_INDEX)
+            end
+
+            local pos = shared.Room:GetGridPosition(index)
+
+            Isaac.GridSpawn(GridEntityType.GRID_STAIRS, SECRET_SHOP_LADDER_VARIANT, pos)
+            StageAPI.Log("Spawned secret ladder")
+        end
+    end
+end)
+
+--#endregion

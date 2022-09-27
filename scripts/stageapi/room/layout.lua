@@ -522,3 +522,88 @@ function StageAPI.DoesLayoutContainEntities(layout, mustIncludeAny, mustExclude,
 
     return includesAny and #mustIncludeAllCopy == 0
 end
+
+---@param layout RoomLayout
+---@param fromIndex integer
+---@param checkEntities? boolean default: true
+---@param checkGrids? boolean default: true
+---@param checkMeta? boolean default: true
+---@return integer?
+function StageAPI.FindFreeIndexInLayout(layout, fromIndex, checkEntities, checkGrids, checkMeta)
+    if checkEntities == nil then checkEntities = true end
+    if checkGrids == nil then checkGrids = true end
+    if checkMeta == nil then checkMeta = true end
+
+    local checked = {}
+    local toCheck = {fromIndex}
+
+    while #toCheck > 0 do
+        local newToCheck = {}
+        local added = {}
+        for _, index in ipairs(toCheck) do
+            checked[index] = true
+
+            local isFree = true
+
+            if checkGrids then
+                for index2, _ in pairs(layout.GridEntitiesByIndex) do
+                    if index2 == index then
+                        isFree = false
+                        break
+                    end
+                end
+            end
+
+            if isFree and (checkEntities or checkMeta) then
+                for index2, entityList in pairs(layout.EntitiesByIndex) do
+                    if index2 == index then
+                        -- No need to check if meta or entity if checking for both
+                        if checkEntities and checkMeta then
+                            isFree = false
+                            break
+                        else
+                            for _, entityData in ipairs(entityList) do
+                                local isMeta = StageAPI.GetMetadataEntity(entityData)
+                                if (isMeta and checkMeta)
+                                or (not isMeta and checkEntities)
+                                then
+                                    isFree = false
+                                    break
+                                end
+                            end
+                            if not isFree then
+                                break
+                            end
+                        end
+                    end
+                end
+            end
+
+            if isFree then
+                return index
+            else
+                local w = shared.Room:GetGridWidth()
+                local adjacent = {
+                    index - w - 1,
+                    index - w,
+                    index - w + 1,
+                    index - 1,
+                    index + 1,
+                    index + w - 1,
+                    index + w,
+                    index + w + 1,
+                }
+                for _, adj in ipairs(adjacent) do
+                    if not checked[adj]
+                    and not added[adj]
+                    and shared.Room:IsPositionInRoom(shared.Room:GetGridPosition(adj), 0)
+                    then
+                        newToCheck[#newToCheck+1] = adj
+                        added[adj] = true
+                    end
+                end
+            end
+        end
+        toCheck = newToCheck
+    end
+end

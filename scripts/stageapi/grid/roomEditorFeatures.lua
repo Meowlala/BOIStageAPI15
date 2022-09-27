@@ -9,6 +9,10 @@ mod:AddCallback(ModCallbacks.MC_USE_ITEM, function()
     d12Used = true
 end, CollectibleType.COLLECTIBLE_D12)
 
+---@param roomMetadata RoomMetadata
+---@param outEntities table<integer, EntityDef[]>
+---@param outGrids any
+---@param rng RNG
 StageAPI.AddCallback("StageAPI", Callbacks.POST_PARSE_METADATA, 0, function(roomMetadata, outEntities, outGrids, rng)
     local swapperIndices = {}
     local swappers = roomMetadata:Search({Name = "Swapper"})
@@ -90,6 +94,8 @@ StageAPI.AddCallback("StageAPI", Callbacks.POST_PARSE_METADATA, 0, function(room
     end
 end)
 
+---@param currentRoom LevelRoom
+---@param firstLoad boolean
 StageAPI.AddCallback("StageAPI", Callbacks.POST_ROOM_INIT, 0, function(currentRoom, firstLoad)
     if not currentRoom.PersistentData.BossID then
         local bossIdentifiers = currentRoom.Metadata:Search({Name = "BossIdentifier"})
@@ -136,6 +142,8 @@ end)
 
 StageAPI.CustomButtonGrid = StageAPI.CustomGrid("CustomButton")
 
+---@param currentRoom LevelRoom
+---@param firstLoad boolean
 StageAPI.AddCallback("StageAPI", Callbacks.POST_ROOM_LOAD, 0, function(currentRoom, firstLoad)
     local loadFeatures = currentRoom.Metadata:Search({Tag = "StageAPILoadEditorFeature"})
     for _, loadFeature in ipairs(loadFeatures) do

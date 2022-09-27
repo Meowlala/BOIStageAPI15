@@ -7,11 +7,6 @@ StageAPI.LogMinor("Loading Custom Grid System")
 ---@type table<string, CustomGrid>
 StageAPI.CustomGridTypes = {}
 
----@class CustomGridSpawnerEntity
----@field Type integer
----@field Variant integer
----@field SubType integer
-
 ---@class CustomGridArgs
 ---@field BaseType GridEntityType
 ---@field BaseVariant integer
@@ -24,7 +19,7 @@ StageAPI.CustomGridTypes = {}
 ---@field OverrideGridSpawnsState integer
 ---@field ForceSpawning boolean
 ---@field NoOverrideGridSprite boolean used for GridGfx
----@field SpawnerEntity CustomGridSpawnerEntity
+---@field SpawnerEntity EntityDef
 ---@field PoopExplosionColor Color
 ---@field PoopExplosionAnm2 string
 ---@field PoopExplosionSheet string

@@ -115,7 +115,6 @@ function StageAPI.ClearRoomLayout(keepDecoration, doGrids, doEnts, doPersistentE
                 local gtype = grid.Desc.Type
                 if (doWalls or gtype ~= GridEntityType.GRID_WALL or shared.Room:IsPositionInRoom(grid.Position, 0)) -- this allows custom wall grids to exist
                 and (doDoors or gtype ~= GridEntityType.GRID_DOOR)
-                and (gtype ~= GridEntityType.GRID_STAIRS or grid.Desc.Variant ~= 2)
                 and (not onlyRemoveTheseDecorations or gtype ~= GridEntityType.GRID_DECORATION or onlyRemoveTheseDecorations[i]) then
                     shared.Room:RemoveGridEntity(i, 0, keepDecoration)
                     shared.Room:SetGridPath(i, 0)
