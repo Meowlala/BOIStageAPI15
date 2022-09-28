@@ -699,7 +699,10 @@ function StageAPI.AddMetadataEntities(tbl)
     end
 end
 
----@deprecated Named is but often used to get values
+---@param etype integer
+---@param variant integer
+---@return EntityMeta
+---@overload fun(entInfo: {Type: integer, Variant: integer}): EntityMeta
 function StageAPI.IsMetadataEntity(etype, variant)
     return StageAPI.GetMetadataEntity(etype, variant)
 end
