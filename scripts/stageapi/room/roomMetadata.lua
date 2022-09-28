@@ -735,8 +735,8 @@ function table_to_string(tbl)
     return "{" .. table.concat(result, ",") .. "}"
 end
 
-
-function StageAPI.SeparateEntityMetadata(entities, grids, seed)
+---@param layout? RoomLayout TEMPORARY FOR DEBUG PURPOSES; NOT USED BY FUNCTION
+function StageAPI.SeparateEntityMetadata(entities, grids, seed, layout)
     StageAPI.RoomLoadRNG:SetSeed(seed or shared.Room:GetSpawnSeed(), 1)
     local outEntities = {}
     local roomMetadata = StageAPI.RoomMetadata()
@@ -744,22 +744,30 @@ function StageAPI.SeparateEntityMetadata(entities, grids, seed)
     local persistentIndex
 
     if not entities then
-        local currentRoom = StageAPI.GetCurrentRoom()
-        local err = "SeparateEntityMetadata | entities is nil! This should never happen. Logging room info.\n"
-        .. "Layout name: " .. currentRoom.Layout.Name
-        .. "\nFull layout: \n-------------------------"
+        if layout then
+            local err = "SeparateEntityMetadata | entities is nil! This should never happen. Logging room info.\n"
+            .. "Layout name: " .. layout.Name
+            .. "\nFull layout: \n-------------------------"
 
-        for k, v in pairs(currentRoom.Layout) do
-            if type(v) == "table" then
-                err = err .. "\n\t" .. tostring(k) .. " = " .. table_to_string(v)
-            else
-                err = err .. "\n\t" .. tostring(k) .. " = " .. tostring(v)
+            for k, v in pairs(layout) do
+                if type(v) == "table" then
+                    err = err .. "\n\t" .. tostring(k) .. " = " .. table_to_string(v)
+                else
+                    err = err .. "\n\t" .. tostring(k) .. " = " .. tostring(v)
+                end
             end
+
+            err = err .. "\n-------------------------"
+
+            error(err, 2)
+        else
+            local err = "SeparateEntityMetadata | entities is nil! This should never happen. Logging less info, as layout not passed.\n"
+            .. "-------------------------"
+            err = err .. "\n\t" .. tostring(grids) .. " = " .. table_to_string(grids)
+            err = err .. "\n\t" .. tostring(entities) .. " = " .. table_to_string(entities)
+            err = err .. "\n-------------------------"
+            error(err, 2)
         end
-
-        err = err .. "\n-------------------------"
-
-        error(err, 2)
     end
 
     for index, entityList in pairs(entities) do
