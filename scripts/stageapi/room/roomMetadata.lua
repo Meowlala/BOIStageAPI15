@@ -746,7 +746,7 @@ function StageAPI.SeparateEntityMetadata(entities, grids, seed, layout)
     if not entities then
         if layout then
             local err = "SeparateEntityMetadata | entities is nil! This should never happen. Logging room info.\n"
-            .. "Layout name: " .. layout.Name
+            .. "Layout name: " .. tostring(layout.Name)
             .. "\nFull layout: \n-------------------------"
 
             for k, v in pairs(layout) do
@@ -763,8 +763,8 @@ function StageAPI.SeparateEntityMetadata(entities, grids, seed, layout)
         else
             local err = "SeparateEntityMetadata | entities is nil! This should never happen. Logging less info, as layout not passed.\n"
             .. "-------------------------"
-            err = err .. "\n\t" .. tostring(grids) .. " = " .. table_to_string(grids)
-            err = err .. "\n\t" .. tostring(entities) .. " = " .. table_to_string(entities)
+            err = err .. "\n\t" .. tostring("grids") .. " = " .. table_to_string(grids)
+            err = err .. "\n\t" .. tostring("entities") .. " = " .. table_to_string(entities)
             err = err .. "\n-------------------------"
             error(err, 2)
         end
