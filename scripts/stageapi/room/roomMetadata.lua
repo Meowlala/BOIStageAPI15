@@ -813,7 +813,13 @@ function table_to_string(tbl)
     return "{" .. table.concat(result, ",") .. "}"
 end
 
-
+---@param entities table<integer, RoomLayout_EntityData[]>
+---@param grids table<integer, RoomLayout_GridData[]>
+---@param seed? integer 
+---@return table<integer, RoomLayout_EntityData[]> outEntities
+---@return table<integer, RoomLayout_GridData[]> outGrids
+---@return RoomMetadata metadata
+---@return integer? persistentIndex
 function StageAPI.SeparateEntityMetadata(entities, grids, seed)
     StageAPI.RoomLoadRNG:SetSeed(seed or shared.Room:GetSpawnSeed(), 1)
     local outEntities = {}
