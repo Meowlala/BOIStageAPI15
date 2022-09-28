@@ -1300,8 +1300,8 @@ end)
 local SECRET_SHOP_LADDER_VARIANT = 2
 local MEMBER_CARD_DEFAULT_INDEX = 25
 
----@param entityInfo RoomLayout_EntityData
----@param entityList RoomLayout_EntityData[]
+---@param entityInfo SpawnList.EntityInfo
+---@param entityList SpawnList.EntityInfo[]
 ---@param index integer
 ---@param doGrids boolean
 ---@param doPersistentOnly boolean
@@ -1325,7 +1325,9 @@ end)
 
 -- Spawn member card shop trapdoor
 -- Wait after room load so it doesn't go under grids spawned in room loading
--- Assumes it was cleared by ClearRoomLayout
+-- Assumes it was cleared by ClearRoomLayout to be able to spawn it in a separate
+-- position if the metaentity was set
+-- Also spawn ladder which would be cleared by stageapi otherwise
 ---@param currentRoom LevelRoom
 ---@param isFirstLoad boolean
 ---@param isExtraRoom boolean
@@ -1359,7 +1361,8 @@ StageAPI.AddCallback("StageAPI", Callbacks.POST_ROOM_LOAD, 1, function(currentRo
                 if positionMeta then
                     index = positionMeta.Index
                 else
-                    index = StageAPI.FindFreeIndex(MEMBER_CARD_DEFAULT_INDEX)
+                    -- use normal member card position unless explicitly specified by meta entity
+                    index = MEMBER_CARD_DEFAULT_INDEX --StageAPI.FindFreeIndex(MEMBER_CARD_DEFAULT_INDEX)
                 end
 
                 pos = shared.Room:GetGridPosition(index)
