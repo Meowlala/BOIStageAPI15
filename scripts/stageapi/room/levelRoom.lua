@@ -633,7 +633,7 @@ function StageAPI.LevelRoom:GetPlayingMusic()
 
         local newMusicID = StageAPI.CallCallbacks(
             Callbacks.POST_SELECT_ROOM_MUSIC, true, 
-            self, musicID, roomType, StageAPI.GetCurrentRoomID(), StageAPI.MusicRNG
+            self, musicID, roomType, self.LevelIndex, StageAPI.MusicRNG
         )
         if newMusicID then
             musicID = newMusicID
