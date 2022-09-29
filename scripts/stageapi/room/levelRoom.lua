@@ -15,6 +15,8 @@ local Callbacks = require("scripts.stageapi.enums.Callbacks")
 ---@field LevelIndex integer
 ---@field IgnoreRoomRules boolean
 ---@field ReplaceVSStreak string
+---@field Music Music # If set, will play this regardless of being in a custom stage (and also use the POST_SELECT_ROOM_MUSIC callback)
+---@field UseRoomMusicHandling boolean # If this is true, will use the room-specific music handling independent of custom stages
 
 ---Default room args, but not necessarily only possible ones
 ---@param layoutName string
@@ -74,6 +76,8 @@ local levelRoomCopyFromArgs = {
     "RoomsListName",
     "RoomsListID",
     "ReplaceVSStreak",
+    "Music",
+    "UseRoomMusicHandling",
 }
 
 ---@param layoutName string
@@ -114,6 +118,10 @@ end
 ---@field RoomsListID integer
 ---@field IgnoreShape boolean
 ---@field ReplaceVSStreak string
+---@field Music Music # If set, will play this regardless of being in a custom stage (and also use the POST_SELECT_ROOM_MUSIC callback)
+---@field UseRoomMusicHandling boolean # If this is true, will use the room-specific music handling independent of custom stages
+---@field HasWaterPits boolean
+---@field ChallengeDone boolean
 StageAPI.LevelRoom = StageAPI.Class("LevelRoom")
 StageAPI.NextUniqueRoomIdentifier = 0
 function StageAPI.LevelRoom:Init(args, ...)
@@ -614,4 +622,25 @@ end
 
 function StageAPI.LevelRoom:GetType()
     return self.TypeOverride or self.RoomType
+end
+
+---@return Music? musicId
+---@return boolean? shouldLayer
+function StageAPI.LevelRoom:GetPlayingMusic()
+    if self.Music or self.UseRoomMusicHandling then
+        local roomType = shared.Room:GetType()
+        local musicID = self.Music
+
+        local newMusicID = StageAPI.CallCallbacks(
+            Callbacks.POST_SELECT_ROOM_MUSIC, true, 
+            self, musicID, roomType, StageAPI.GetCurrentRoomID(), StageAPI.MusicRNG
+        )
+        if newMusicID then
+            musicID = newMusicID
+        end
+
+        if musicID then
+            return musicID, not shared.Room:IsClear()
+        end
+    end
 end

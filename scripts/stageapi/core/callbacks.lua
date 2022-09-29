@@ -323,40 +323,6 @@ mod:AddCallback(ModCallbacks.MC_POST_RENDER, function()
             StageAPI.CallCallbacks(Callbacks.POST_UPDATE_GRID_GFX, false, grids)
         end
 
-        local id = shared.Music:GetCurrentMusicID()
-        local musicID, shouldLayer, shouldQueue, disregardNonOverride = StageAPI.CurrentStage:GetPlayingMusic()
-        if musicID then
-            if not shouldQueue then
-                shouldQueue = musicID
-            end
-
-            local queuedID = shared.Music:GetQueuedMusicID()
-            local canOverride, canOverrideQueue, neverOverrideQueue = StageAPI.CanOverrideMusic(queuedID)
-            local shouldOverrideQueue = shouldQueue and (canOverride or canOverrideQueue or disregardNonOverride)
-            if not neverOverrideQueue and shouldQueue then
-                shouldOverrideQueue = shouldOverrideQueue or (id == queuedID)
-            end
-
-            if queuedID ~= shouldQueue and shouldOverrideQueue then
-                shared.Music:Queue(shouldQueue)
-            end
-
-            local canOverride = StageAPI.CanOverrideMusic(id)
-            if id ~= musicID and (canOverride or disregardNonOverride) then
-                shared.Music:Play(musicID, 0)
-            end
-
-            shared.Music:UpdateVolume()
-
-            if shouldLayer and not shared.Music:IsLayerEnabled() then
-                shared.Music:EnableLayer()
-            elseif not shouldLayer and shared.Music:IsLayerEnabled() then
-                shared.Music:DisableLayer()
-            end
-        end
-
-        StageAPI.RoomRendered = true
-
         local anyPlayerPressingTab = false
 
         for _, player in ipairs(shared.Players) do
@@ -387,6 +353,58 @@ mod:AddCallback(ModCallbacks.MC_POST_RENDER, function()
             if StageNameTabStreak then
                 StageNameTabStreak.Hold = false
                 StageNameTabStreak = nil
+            end
+        end
+        
+        StageAPI.RoomRendered = true
+    end
+
+    -- Music handling
+
+    local currentRoom = StageAPI.GetCurrentRoom()
+    if StageAPI.InOverriddenStage() and StageAPI.CurrentStage 
+    or currentRoom
+    then
+        local id = shared.Music:GetCurrentMusicID()
+        local musicID, shouldLayer, shouldQueue, disregardNonOverride
+        if StageAPI.CurrentStage then
+            musicID, shouldLayer, shouldQueue, disregardNonOverride = StageAPI.CurrentStage:GetPlayingMusic()
+        end
+
+        if currentRoom then
+            local rMusicID, rShouldLayer = currentRoom:GetPlayingMusic()
+            if rMusicID then
+                musicID, shouldLayer, shouldQueue, disregardNonOverride = rMusicID, rShouldLayer, nil, nil
+            end
+        end
+
+        if musicID then
+            if not shouldQueue then
+                shouldQueue = musicID
+            end
+
+            local queuedID = shared.Music:GetQueuedMusicID()
+            local canOverride, canOverrideQueue, neverOverrideQueue = StageAPI.CanOverrideMusic(queuedID)
+            local shouldOverrideQueue = shouldQueue and (canOverride or canOverrideQueue or disregardNonOverride)
+            if not neverOverrideQueue and shouldQueue then
+                shouldOverrideQueue = shouldOverrideQueue or (id == queuedID)
+            end
+
+            if queuedID ~= shouldQueue and shouldOverrideQueue then
+                shared.Music:Queue(shouldQueue)
+            end
+
+            local canOverride = StageAPI.CanOverrideMusic(id)
+            if id ~= musicID and (canOverride or disregardNonOverride) then
+                shared.Music:Play(musicID, 0)
+            end
+
+            shared.Music:UpdateVolume()
+
+            if shouldLayer and not shared.Music:IsLayerEnabled() then
+                shared.Music:EnableLayer()
+            elseif not shouldLayer and shared.Music:IsLayerEnabled() then
+                shared.Music:DisableLayer()
             end
         end
     end
