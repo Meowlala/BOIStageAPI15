@@ -174,6 +174,8 @@ function StageAPI.CustomStage:SetGreedModeWaves(rooms, bossRooms, devilRooms)
     }
 end
 
+---@param music Music
+---@param rtype RoomType
 function StageAPI.CustomStage:SetMusic(music, rtype)
     if not self.Music then
         self.Music = {}
