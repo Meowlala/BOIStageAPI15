@@ -273,6 +273,12 @@ Callback List:
 
   - Return a number to use that MusicID as music, not running further callbacks.
 
+- POST_SELECT_ROOM_MUSIC(currentstage, musicID, baseRoomType, roomId, musicRNG)
+
+  - Return a number to use that MusicID as music, not running further callbacks.
+  - Overrides stage callbacks if something is returned
+  - Ran for StageAPI rooms, even in vanilla floors (in that case, extra rooms)
+
 - POST_SELECT_STAGE_MUSIC(currentstage, musicID, roomType, musicRNG)
 
   - Return a number to use that MusicID as music, not running further callbacks.
