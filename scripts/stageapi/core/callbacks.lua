@@ -382,15 +382,12 @@ mod:AddCallback(ModCallbacks.MC_POST_RENDER, function()
     then
         local id = shared.Music:GetCurrentMusicID()
         local musicID, shouldLayer, shouldQueue, disregardNonOverride
-        if StageAPI.CurrentStage then
-            musicID, shouldLayer, shouldQueue, disregardNonOverride = StageAPI.CurrentStage:GetPlayingMusic()
+        if musicRoom then
+            musicID, shouldLayer = musicRoom:GetPlayingMusic()
         end
 
-        if musicRoom then
-            local rMusicID, rShouldLayer = musicRoom:GetPlayingMusic()
-            if rMusicID then
-                musicID, shouldLayer, shouldQueue, disregardNonOverride = rMusicID, rShouldLayer, nil, nil
-            end
+        if not musicID and StageAPI.CurrentStage then
+            musicID, shouldLayer, shouldQueue, disregardNonOverride = StageAPI.CurrentStage:GetPlayingMusic()
         end
 
         if musicID then
