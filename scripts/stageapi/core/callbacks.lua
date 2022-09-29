@@ -361,9 +361,24 @@ mod:AddCallback(ModCallbacks.MC_POST_RENDER, function()
 
     -- Music handling
 
-    local currentRoom = StageAPI.GetCurrentRoom()
+    local musicRoom = StageAPI.GetCurrentRoom()
+
+    -- if transitioning from extra room to normal room, 
+    -- grid index is still the old one while the stageapi room
+    -- id is reset, leaving for default music for the transition
+    -- only (if the normal room was for instance a boss room)
+    -- Fix this by taking the last extra room in case
+    if StageAPI.DoingExtraRoomTransition
+    and not StageAPI.TransitioningToExtraRoom 
+    and StageAPI.PreviousExtraRoomData.RoomID
+    then
+        local levelMap = StageAPI.LevelMaps[StageAPI.PreviousExtraRoomData.MapID]
+        local roomId = levelMap:GetRoomData(StageAPI.PreviousExtraRoomData.RoomID).RoomID
+        musicRoom = StageAPI.GetLevelRoom(roomId, StageAPI.PreviousExtraRoomData.MapID)
+    end
+
     if StageAPI.InOverriddenStage() and StageAPI.CurrentStage 
-    or currentRoom
+    or musicRoom
     then
         local id = shared.Music:GetCurrentMusicID()
         local musicID, shouldLayer, shouldQueue, disregardNonOverride
@@ -371,8 +386,8 @@ mod:AddCallback(ModCallbacks.MC_POST_RENDER, function()
             musicID, shouldLayer, shouldQueue, disregardNonOverride = StageAPI.CurrentStage:GetPlayingMusic()
         end
 
-        if currentRoom then
-            local rMusicID, rShouldLayer = currentRoom:GetPlayingMusic()
+        if musicRoom then
+            local rMusicID, rShouldLayer = musicRoom:GetPlayingMusic()
             if rMusicID then
                 musicID, shouldLayer, shouldQueue, disregardNonOverride = rMusicID, rShouldLayer, nil, nil
             end
@@ -1013,7 +1028,7 @@ mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, function()
         end
     end
 
-    retCurrentRoom, retJustGenerated, retBoss = StageAPI.CallCallbacks("POST_STAGEAPI_NEW_ROOM_GENERATION", true, currentRoom, justGenerated, currentListIndex, boss)
+    retCurrentRoom, retJustGenerated, retBoss = StageAPI.CallCallbacks(Callbacks.POST_STAGEAPI_NEW_ROOM_GENERATION, true, currentRoom, justGenerated, currentListIndex, boss)
     prevRoom = currentRoom
     currentRoom, justGenerated, boss = retCurrentRoom or currentRoom, retJustGenerated or justGenerated, retBoss or boss
     if prevRoom ~= currentRoom then
@@ -1109,6 +1124,7 @@ mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, function()
     end
 
     StageAPI.TransitioningToExtraRoom = false
+    StageAPI.DoingExtraRoomTransition = false
 
     local stageType = shared.Level:GetStageType()
     if not StageAPI.InNewStage() and stageType ~= StageType.STAGETYPE_REPENTANCE and stageType ~= StageType.STAGETYPE_REPENTANCE_B then
