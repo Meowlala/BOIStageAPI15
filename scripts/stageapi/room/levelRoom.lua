@@ -232,8 +232,13 @@ function StageAPI.LevelRoom:GetLayout()
             self.RoomsListName = roomsList.Name
 
             local retLayout = StageAPI.CallCallbacks(Callbacks.PRE_ROOM_LAYOUT_CHOOSE, true, self, roomsList)
+
             if retLayout then
-                self.Layout = retLayout
+                if type(retLayout) == "table" then
+                    self.Layout = retLayout
+                else
+                    StageAPI.LogErr("PRE_ROOM_LAYOUT_CHOOSE | A callback returned a non-table layout! Value is ", tostring(retLayout), " type is ", type(retLayout))
+                end
             else
                 self.Layout = StageAPI.ChooseRoomLayout{
                     RoomList = roomsList,
