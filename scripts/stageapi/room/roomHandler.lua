@@ -406,7 +406,7 @@ function StageAPI.SelectSpawnGrids(gridsByIndex, seed)
 end
 
 function StageAPI.ObtainSpawnObjects(layout, seed)
-    local entitiesByIndex, gridsByIndex, roomMetadata, lastPersistentIndex = StageAPI.SeparateEntityMetadata(layout.EntitiesByIndex, layout.GridEntitiesByIndex, seed, layout)
+    local entitiesByIndex, gridsByIndex, roomMetadata, lastPersistentIndex = StageAPI.SeparateEntityMetadata(layout.EntitiesByIndex, layout.GridEntitiesByIndex, seed)
     local spawnEntities, lastPersistentIndex = StageAPI.SelectSpawnEntities(entitiesByIndex, seed, roomMetadata, lastPersistentIndex)
     local spawnGrids = StageAPI.SelectSpawnGrids(gridsByIndex, seed)
 
