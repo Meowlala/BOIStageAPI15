@@ -15,6 +15,7 @@ local Callbacks = require("scripts.stageapi.enums.Callbacks")
 ---@field LevelIndex integer
 ---@field IgnoreRoomRules boolean
 ---@field ReplaceVSStreak string
+---@field Music Music # If set, will play this regardless of being in a custom stage
 
 ---Default room args, but not necessarily only possible ones
 ---@param layoutName string
@@ -74,6 +75,7 @@ local levelRoomCopyFromArgs = {
     "RoomsListName",
     "RoomsListID",
     "ReplaceVSStreak",
+    "Music",
 }
 
 ---@param layoutName string
@@ -114,6 +116,9 @@ end
 ---@field RoomsListID integer
 ---@field IgnoreShape boolean
 ---@field ReplaceVSStreak string
+---@field Music Music # If set, will play this regardless of being in a custom stage
+---@field HasWaterPits boolean
+---@field ChallengeDone boolean
 StageAPI.LevelRoom = StageAPI.Class("LevelRoom")
 StageAPI.NextUniqueRoomIdentifier = 0
 function StageAPI.LevelRoom:Init(args, ...)
@@ -545,6 +550,10 @@ function StageAPI.LevelRoom:GetSaveData(isExtraRoom)
         saveData.ExtraSpawn[tostring(index)] = entities
     end
 
+    if self.Music then
+        saveData.Music = self.Music
+    end
+
     return saveData
 end
 
@@ -606,6 +615,8 @@ function StageAPI.LevelRoom:LoadSaveData(saveData)
             self.ExtraSpawn[tonumber(strindex)] = entities
         end
     end
+
+    self.Music = saveData.Music
 end
 
 function StageAPI.LevelRoom:SetTypeOverride(override)
@@ -614,4 +625,23 @@ end
 
 function StageAPI.LevelRoom:GetType()
     return self.TypeOverride or self.RoomType
+end
+
+---@return Music? musicId
+---@return boolean? shouldLayer
+function StageAPI.LevelRoom:GetPlayingMusic()
+    local roomType = shared.Room:GetType()
+    local musicID = self.Music
+
+    local newMusicID = StageAPI.CallCallbacks(
+        Callbacks.POST_SELECT_ROOM_MUSIC, true, 
+        self, musicID, roomType, self.LevelIndex, StageAPI.MusicRNG
+    )
+    if newMusicID then
+        musicID = newMusicID
+    end
+
+    if musicID then
+        return musicID, not shared.Room:IsClear()
+    end
 end

@@ -45,6 +45,7 @@ local Callbacks = {
     POST_SELECT_BOSS_MUSIC = "POST_SELECT_BOSS_MUSIC", -- (currentstage, musicID, isCleared, musicRNG)
     POST_SELECT_CHALLENGE_MUSIC = "POST_SELECT_CHALLENGE_MUSIC", -- (currentstage, musicID, isCleared, musicRNG)
     POST_SELECT_STAGE_MUSIC = "POST_SELECT_STAGE_MUSIC", -- (currentstage, musicID, roomType, musicRNG)
+    POST_SELECT_ROOM_MUSIC = "POST_SELECT_ROOM_MUSIC", -- (currentRoom, musicID, baseRoomType, roomId, musicRNG)
     POST_ROOM_CLEAR = "POST_ROOM_CLEAR", -- ()
     PRE_STAGEAPI_SELECT_BOSS_ITEM = "PRE_STAGEAPI_SELECT_BOSS_ITEM", -- (pickup, currentRoom)
     PRE_STAGEAPI_LOAD_SAVE = "PRE_STAGEAPI_LOAD_SAVE", -- ()

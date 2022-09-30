@@ -18,6 +18,7 @@ function StageAPI.CustomStage(name, replaces, noSetReplaces)
 end
 
 ---@class CustomStage : StageAPIClass
+---@field Music table<RoomType, Music>
 StageAPI.CustomStage = StageAPI.Class("CustomStage")
 
 function StageAPI.CustomStage:Init(name, replaces, noSetReplaces)
@@ -173,6 +174,8 @@ function StageAPI.CustomStage:SetGreedModeWaves(rooms, bossRooms, devilRooms)
     }
 end
 
+---@param music Music
+---@param rtype RoomType
 function StageAPI.CustomStage:SetMusic(music, rtype)
     if not self.Music then
         self.Music = {}
@@ -538,6 +541,10 @@ function StageAPI.CustomStage:GenerateLevel()
     end
 end
 
+---@return Music? musicId
+---@return boolean? shouldLayer
+---@return Music? shouldQueue
+---@return boolean? disregardNonOverride
 function StageAPI.CustomStage:GetPlayingMusic()
     local roomType = shared.Room:GetType()
     local id = shared.Music:GetCurrentMusicID()

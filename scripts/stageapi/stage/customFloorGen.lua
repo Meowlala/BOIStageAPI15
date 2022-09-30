@@ -835,6 +835,7 @@ function StageAPI.LoadCustomMapRoomDoors(levelRoom, roomData, levelMap)
     levelMap = levelMap or StageAPI.GetCurrentLevelMap()
     if roomData.Doors then
         for slot, doorData in pairs(roomData.Doors) do
+            ---@type LevelRoom
             local targetLevelRoom = levelMap:GetRoom(doorData.ExitRoom)
             local cancelSpawn = StageAPI.CallCallbacks(Callbacks.PRE_LEVELMAP_SPAWN_DOOR, true, slot, doorData, levelRoom, targetLevelRoom, roomData, levelMap)
 

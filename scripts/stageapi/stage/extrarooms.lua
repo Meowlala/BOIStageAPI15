@@ -444,6 +444,15 @@ function StageAPI.GetExtraRoomBaseGridRooms(nextIsBoss)
     return default, alternate, largeDefault, largeAlternate
 end
 
+---@param levelMapRoomID any
+---@param direction? Direction
+---@param transitionType? RoomTransitionAnim | -1 # -1 for instant transition
+---@param levelMapID? Dimension
+---@param leaveDoor? DoorSlot
+---@param enterDoor? DoorSlot
+---@param setPlayerPosition? Vector
+---@param extraRoomBaseType? RoomType
+---@param noSave? boolean
 function StageAPI.ExtraRoomTransition(levelMapRoomID, direction, transitionType, levelMapID, leaveDoor, enterDoor, setPlayerPosition, extraRoomBaseType, noSave)
     leaveDoor = leaveDoor or -1
     enterDoor = enterDoor or -1
@@ -606,6 +615,9 @@ function StageAPI.ExtraRoomTransition(levelMapRoomID, direction, transitionType,
 
         shared.Game:StartRoomTransition(transitionTo, direction, transitionType)
     end
+
+    -- To check if doing transition either to or from extra room
+    StageAPI.DoingExtraRoomTransition = true
 end
 
 mod:AddCallback(ModCallbacks.MC_POST_RENDER, function()
