@@ -816,7 +816,7 @@ function table_to_string(tbl)
     return "{" .. table.concat(result, ",") .. "}"
 end
 
----@param layout? RoomLayout TEMPORARY FOR DEBUG PURPOSES; NOT USED BY FUNCTION
+
 ---@param entities table<integer, RoomLayout_EntityData[]>
 ---@param grids table<integer, RoomLayout_GridData[]>
 ---@param seed? integer 
@@ -824,7 +824,7 @@ end
 ---@return table<integer, RoomLayout_GridData[]> outGrids
 ---@return RoomMetadata metadata
 ---@return integer? persistentIndex
-function StageAPI.SeparateEntityMetadata(entities, grids, seed, layout)
+function StageAPI.SeparateEntityMetadata(entities, grids, seed)
     StageAPI.RoomLoadRNG:SetSeed(seed or shared.Room:GetSpawnSeed(), 1)
     local outEntities = {}
     local roomMetadata = StageAPI.RoomMetadata()
@@ -832,30 +832,7 @@ function StageAPI.SeparateEntityMetadata(entities, grids, seed, layout)
     local persistentIndex
 
     if not entities then
-        if layout then
-            local err = "SeparateEntityMetadata | entities is nil! This should never happen. Logging room info.\n"
-            .. "Layout name: " .. tostring(layout.Name)
-            .. "\nFull layout: \n-------------------------"
-
-            for k, v in pairs(layout) do
-                if type(v) == "table" then
-                    err = err .. "\n\t" .. tostring(k) .. " = " .. table_to_string(v)
-                else
-                    err = err .. "\n\t" .. tostring(k) .. " = " .. tostring(v)
-                end
-            end
-
-            err = err .. "\n-------------------------"
-
-            error(err, 2)
-        else
-            local err = "SeparateEntityMetadata | entities is nil! This should never happen. Logging less info, as layout not passed.\n"
-            .. "-------------------------"
-            err = err .. "\n\t" .. tostring("grids") .. " = " .. table_to_string(grids)
-            err = err .. "\n\t" .. tostring("entities") .. " = " .. table_to_string(entities)
-            err = err .. "\n-------------------------"
-            error(err, 2)
-        end
+        error("SeparateEntityMetadata | entities is nil! This should never happen", 2)
     end
 
     for index, entityList in pairs(entities) do
