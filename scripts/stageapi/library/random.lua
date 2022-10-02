@@ -2,6 +2,7 @@
 
 StageAPI.RandomRNG = RNG()
 StageAPI.RandomRNG:SetSeed(Random(), 0)
+
 function StageAPI.Random(a, b, rng)
     rng = rng or StageAPI.RandomRNG
     if a and b then
@@ -34,6 +35,14 @@ function StageAPI.RandomFloat(a, b, rng)
     return rand
 end
 
+---@generic T
+---@param args T[] | {[1]: T, [2]: number}[]
+---@param rng? RNG
+---@param key? any
+---@param preCalculatedWeight? number
+---@param floatWeights? boolean
+---@return T?
+---@return integer? index
 function StageAPI.WeightedRNG(args, rng, key, preCalculatedWeight, floatWeights) -- takes tables {{obj, weight}, {"pie", 3}, {555, 0}}
     local weight_value = preCalculatedWeight or 0
     local iterated_weight = 1

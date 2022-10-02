@@ -10,7 +10,7 @@ function StageAPI.RoomsList(name, ...)
 end
 
 --- Constructor: (name, roomFiles...)
----@class RoomsList
+---@class RoomsList : StageAPIClass
 StageAPI.RoomsList = StageAPI.Class("RoomsList")
 
 function StageAPI.RoomsList:Init(name, ...)

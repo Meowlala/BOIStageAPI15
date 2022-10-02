@@ -81,6 +81,15 @@ local function ShouldExcludeEntityFromClearing(entity)
         )
 end
 
+---@param keepDecoration? boolean
+---@param doGrids? boolean
+---@param doEnts? boolean
+---@param doPersistentEnts? boolean
+---@param onlyRemoveTheseDecorations? table<integer, boolean>
+---@param doWalls? boolean
+---@param doDoors? boolean
+---@param skipIndexedGrids? boolean
+---@param doNPCsOnly? boolean
 function StageAPI.ClearRoomLayout(keepDecoration, doGrids, doEnts, doPersistentEnts, onlyRemoveTheseDecorations, doWalls, doDoors, skipIndexedGrids, doNPCsOnly)
     if StageAPI.InOrTransitioningToExtraRoom() and shared.Room:GetType() ~= RoomType.ROOM_DUNGEON then
         StageAPI.FixWalls()
@@ -115,7 +124,6 @@ function StageAPI.ClearRoomLayout(keepDecoration, doGrids, doEnts, doPersistentE
                 local gtype = grid.Desc.Type
                 if (doWalls or gtype ~= GridEntityType.GRID_WALL or shared.Room:IsPositionInRoom(grid.Position, 0)) -- this allows custom wall grids to exist
                 and (doDoors or gtype ~= GridEntityType.GRID_DOOR)
-                and (gtype ~= GridEntityType.GRID_STAIRS or grid.Desc.Variant ~= 2)
                 and (not onlyRemoveTheseDecorations or gtype ~= GridEntityType.GRID_DECORATION or onlyRemoveTheseDecorations[i]) then
                     shared.Room:RemoveGridEntity(i, 0, keepDecoration)
                     shared.Room:SetGridPath(i, 0)
@@ -131,6 +139,10 @@ function StageAPI.ClearRoomLayout(keepDecoration, doGrids, doEnts, doPersistentE
     StageAPI.CalledRoomUpdate = false
 end
 
+---@param layout RoomLayout
+---@param doors table<DoorSlot, boolean>
+---@return boolean doesLayoutMatch
+---@return integer numNonExistingDoors
 function StageAPI.DoLayoutDoorsMatch(layout, doors)
     local numNonExistingDoors = 0
     local doesLayoutMatch = true
@@ -146,11 +158,23 @@ function StageAPI.DoLayoutDoorsMatch(layout, doors)
     return doesLayoutMatch, numNonExistingDoors
 end
 
+---@class GetValidRoomsForLayout.Args
+---@field RoomList RoomsList
+---@field RoomDescriptor RoomDescriptor
+---@field IgnoreShape boolean
+---@field Shape RoomShape
+---@field RoomType RoomType
+---@field RequireRoomType boolean
+---@field IgnoreDoors boolean
+---@field Doors boolean[]
+---@field Seed integer
+---@field DisallowIDs any[]
+
 -- returns list of rooms, error message if no rooms valid
----@param args {RoomList: RoomsList, RoomDescriptor: RoomDescriptor, IgnoreShape: boolean, Shape: RoomShape, RoomType: RoomType, RequireRoomType: boolean, IgnoreDoors: boolean, Doors: boolean[], Seed: integer, DisallowIDs: any[]}
----@return {[1]: {Layout: table, ListID: any}, [2]: integer} validRooms # second value is weight
----@return integer validRoomWeights
----@return string errorMessage
+---@param args GetValidRoomsForLayout.Args
+---@return {[1]: {Layout: RoomLayout, ListID: integer}, [2]: number} validRooms # second value is weight
+---@return number? validRoomWeights
+---@return string? errorMessage
 function StageAPI.GetValidRoomsForLayout(args)
     local roomList = args.RoomList
     local roomDesc = args.RoomDescriptor or shared.Level:GetCurrentRoomDesc()
@@ -234,6 +258,18 @@ function StageAPI.GetValidRoomsForLayout(args)
 end
 
 StageAPI.RoomChooseRNG = RNG()
+
+---@param roomList RoomsList
+---@param seed? integer
+---@param shape? RoomShape
+---@param rtype? RoomType
+---@param requireRoomType? RoomType
+---@param ignoreDoors? boolean
+---@param doors? boolean[]
+---@param disallowIDs? any[]
+---@return RoomLayout?
+---@return integer? listId
+---@overload fun(args: GetValidRoomsForLayout.Args)
 function StageAPI.ChooseRoomLayout(roomList, seed, shape, rtype, requireRoomType, ignoreDoors, doors, disallowIDs)
     local args
     if roomList.Type ~= "RoomsList" then
@@ -265,6 +301,16 @@ end
 
 StageAPI.RoomLoadRNG = RNG()
 
+---@class SpawnList.EntityInfo
+---@field Data RoomLayout_EntityData
+---@field PersistentIndex integer
+---@field Persistent boolean
+
+---@param tbl SpawnList.EntityInfo[]
+---@param entData RoomLayout_EntityData
+---@param persistentIndex integer
+---@param index? integer
+---@return integer lastPersistentIndex
 function StageAPI.AddEntityToSpawnList(tbl, entData, persistentIndex, index)
     local currentRoom = StageAPI.CurrentlyInitializing or StageAPI.GetCurrentRoom()
     if persistentIndex == nil and currentRoom then
@@ -309,6 +355,12 @@ function StageAPI.AddEntityToSpawnList(tbl, entData, persistentIndex, index)
     return persistentIndex
 end
 
+---@param entities table<integer, RoomLayout_EntityData[]>
+---@param seed? integer
+---@param roomMetadata RoomMetadata
+---@param lastPersistentIndex integer
+---@return table<integer, SpawnList.EntityInfo[]> entitiesToSpawn
+---@return integer lastPersistentIndex
 function StageAPI.SelectSpawnEntities(entities, seed, roomMetadata, lastPersistentIndex)
     StageAPI.RoomLoadRNG:SetSeed(seed or shared.Room:GetSpawnSeed(), 1)
     local entitiesToSpawn = {}
@@ -364,6 +416,9 @@ function StageAPI.SelectSpawnEntities(entities, seed, roomMetadata, lastPersiste
     return entitiesToSpawn, persistentIndex
 end
 
+---@param gridsByIndex table<integer, RoomLayout_GridData[]>
+---@param seed? integer
+---@return table<integer, RoomLayout_GridData>
 function StageAPI.SelectSpawnGrids(gridsByIndex, seed)
     StageAPI.RoomLoadRNG:SetSeed(seed or shared.Room:GetSpawnSeed(), 1)
     local spawnGrids = {}
@@ -405,6 +460,14 @@ function StageAPI.SelectSpawnGrids(gridsByIndex, seed)
     return spawnGrids
 end
 
+---@param layout RoomLayout
+---@param seed? integer
+---@return table<integer, SpawnList.EntityInfo[]> spawnEntities
+---@return table<integer, RoomLayout_GridData> spawnGrids
+---@return table<integer, boolean> entityTakenIndices
+---@return table<integer, boolean> gridTakenIndices
+---@return integer lastPersistentIndex
+---@return RoomMetadata roomMetadata
 function StageAPI.ObtainSpawnObjects(layout, seed)
     local entitiesByIndex, gridsByIndex, roomMetadata, lastPersistentIndex = StageAPI.SeparateEntityMetadata(layout.EntitiesByIndex, layout.GridEntitiesByIndex, seed, layout)
     local spawnEntities, lastPersistentIndex = StageAPI.SelectSpawnEntities(entitiesByIndex, seed, roomMetadata, lastPersistentIndex)
@@ -429,6 +492,9 @@ mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, function()
     StageAPI.ActiveEntityPersistenceData = {}
 end)
 
+---@param entity Entity
+---@return integer? persistentIndex
+---@return EntityPersistenceData?
 function StageAPI.GetEntityPersistenceData(entity)
     local ent = StageAPI.ActiveEntityPersistenceData[GetPtrHash(entity)]
     if ent then
@@ -436,6 +502,9 @@ function StageAPI.GetEntityPersistenceData(entity)
     end
 end
 
+---@param entity Entity
+---@param persistentIndex integer
+---@param persistenceData EntityPersistenceData
 function StageAPI.SetEntityPersistenceData(entity, persistentIndex, persistenceData)
     StageAPI.ActiveEntityPersistenceData[GetPtrHash(entity)] = {
         Index = persistentIndex,
@@ -443,6 +512,14 @@ function StageAPI.SetEntityPersistenceData(entity, persistentIndex, persistenceD
     }
 end
 
+---@param entitysets table<integer, SpawnList.EntityInfo[]>
+---@param doGrids? boolean
+---@param doPersistentOnly? boolean
+---@param doAutoPersistent? boolean
+---@param avoidSpawning? boolean
+---@param persistenceData? table[] Apparently never set? To investigate
+---@param loadingWave? boolean
+---@return Entity[] entsSpawned
 function StageAPI.LoadEntitiesFromEntitySets(entitysets, doGrids, doPersistentOnly, doAutoPersistent, avoidSpawning, persistenceData, loadingWave)
     local ents_spawned = {}
     local listCallbacks = StageAPI.GetCallbacks(Callbacks.PRE_SPAWN_ENTITY_LIST)
@@ -630,6 +707,16 @@ function StageAPI.CallGridPostInit()
 end
 
 StageAPI.GridSpawnRNG = RNG()
+
+---@class GridInformation : RoomLayout_GridData
+---@field State integer
+---@field VarData integer
+---@field Frame integer
+
+---@param grids table<integer, RoomLayout_GridData>
+---@param gridInformation? table<integer, GridInformation> if set will be used instead of grids, and set its additional data
+---@param entities table<integer, SpawnList.EntityInfo[]>
+---@return GridEntity[] gridsSpawned
 function StageAPI.LoadGridsFromDataList(grids, gridInformation, entities)
     local grids_spawned = {}
     StageAPI.GridSpawnRNG:SetSeed(shared.Room:GetSpawnSeed(), 0)
@@ -749,6 +836,7 @@ function StageAPI.LoadGridsFromDataList(grids, gridInformation, entities)
     return grids_spawned
 end
 
+---@return table<integer, GridInformation>
 function StageAPI.GetGridInformation()
     local gridInformation = {}
     for i = 0, shared.Room:GetGridSize() do
@@ -770,6 +858,18 @@ function StageAPI.GetGridInformation()
     return gridInformation
 end
 
+---@param grids table<integer, RoomLayout_GridData>
+---@param entities table<integer, SpawnList.EntityInfo[]>
+---@param doGrids? boolean
+---@param doEntities? boolean
+---@param doPersistentOnly? boolean
+---@param doAutoPersistent? boolean
+---@param gridData? boolean
+---@param avoidSpawning? boolean
+---@param persistenceData? boolean
+---@param loadingWave? boolean
+---@return Entity[] entsSpawned
+---@return GridEntity[] gridsSpawned
 function StageAPI.LoadRoomLayout(grids, entities, doGrids, doEntities, doPersistentOnly, doAutoPersistent, gridData, avoidSpawning, persistenceData, loadingWave)
     local grids_spawned = {}
     local ents_spawned = {}
@@ -787,6 +887,7 @@ function StageAPI.LoadRoomLayout(grids, entities, doGrids, doEntities, doPersist
     return ents_spawned, grids_spawned
 end
 
+---@return any
 function StageAPI.GetCurrentRoomID()
     local levelMap = StageAPI.GetCurrentLevelMap()
     if levelMap and StageAPI.CurrentLevelMapRoomID then
@@ -799,6 +900,10 @@ end
 ---@type table<integer, table<any, LevelRoom>>
 StageAPI.LevelRooms = {}
 
+---@alias Dimension integer
+
+---@param roomDesc? RoomDescriptor
+---@return Dimension
 function StageAPI.GetDimension(roomDesc)
     if not roomDesc then
         local levelMap = StageAPI.GetCurrentLevelMap()
@@ -818,9 +923,15 @@ function StageAPI.GetDimension(roomDesc)
         if GetPtrHash(dimensionDesc) == hash then
             return dimension
         end
+        ---@diagnostic disable-next-line
     end
 end
 
+---@generic T
+---@param tbl table<integer, T>
+---@param setIfNot? boolean
+---@param dimension? Dimension
+---@return T
 function StageAPI.GetTableIndexedByDimension(tbl, setIfNot, dimension)
     dimension = dimension or StageAPI.GetDimension()
     if setIfNot and not tbl[dimension] then
@@ -829,6 +940,12 @@ function StageAPI.GetTableIndexedByDimension(tbl, setIfNot, dimension)
     return tbl[dimension]
 end
 
+---@generic T
+---@param tbl table<integer, table<any, T>>
+---@param setIfNot? boolean
+---@param dimension? Dimension
+---@param roomID? any
+---@return T
 function StageAPI.GetTableIndexedByDimensionRoom(tbl, setIfNot, dimension, roomID)
     local byDimension = StageAPI.GetTableIndexedByDimension(tbl, setIfNot, dimension)
     roomID = roomID or StageAPI.GetCurrentRoomID()
@@ -838,14 +955,19 @@ function StageAPI.GetTableIndexedByDimensionRoom(tbl, setIfNot, dimension, roomI
         end
 
         return byDimension[roomID]
+        ---@diagnostic disable-next-line
     end
 end
 
+---@param roomID any
+---@param dimension? Dimension
+---@return LevelRoom
 function StageAPI.GetLevelRoom(roomID, dimension)
     dimension = dimension or StageAPI.GetDimension()
     return StageAPI.LevelRooms[dimension] and StageAPI.LevelRooms[dimension][roomID]
 end
 
+---@return LevelRoom[]
 function StageAPI.GetAllLevelRooms()
     local levelRooms = {}
     for dimension, rooms in pairs(StageAPI.LevelRooms) do
@@ -857,6 +979,9 @@ function StageAPI.GetAllLevelRooms()
     return levelRooms
 end
 
+---@param levelRoom LevelRoom
+---@param roomID any
+---@param dimension? Dimension
 function StageAPI.SetLevelRoom(levelRoom, roomID, dimension)
     dimension = dimension or StageAPI.GetDimension()
     if not StageAPI.LevelRooms[dimension] then
@@ -871,6 +996,7 @@ function StageAPI.SetLevelRoom(levelRoom, roomID, dimension)
     end
 end
 
+---@param room LevelRoom
 function StageAPI.SetCurrentRoom(room)
     StageAPI.ActiveEntityPersistenceData = {}
     StageAPI.SetLevelRoom(room, StageAPI.GetCurrentRoomID())
@@ -902,6 +1028,7 @@ function StageAPI.CloseDoors()
     end
 end
 
+---@return table<DoorSlot, boolean>
 function StageAPI.GetDoorsForRoom()
     local doors = {}
     for i = 0, 7 do
@@ -915,6 +1042,8 @@ for i = 0, 7 do
     StageAPI.AllDoorsOpen[i] = true
 end
 
+---@param data RoomConfig_Room
+---@return table<DoorSlot, boolean>
 function StageAPI.GetDoorsForRoomFromData(data)
     local doors = {}
     for i = 0, 7 do
@@ -924,6 +1053,8 @@ function StageAPI.GetDoorsForRoomFromData(data)
     return doors
 end
 
+---@param slot DoorSlot
+---@return boolean
 function StageAPI.IsDoorSlotAllowed(slot)
     local currentRoom = StageAPI.GetCurrentRoom()
     if currentRoom and currentRoom.Layout and currentRoom.Layout.Doors then
@@ -931,12 +1062,22 @@ function StageAPI.IsDoorSlotAllowed(slot)
             if door.Slot == slot and door.Exists then
                 return true
             end
-        end
+        end        
+        return false
     else
         return shared.Room:IsDoorSlotAllowed(slot)
     end
 end
 
+---@param roomsList RoomsList
+---@param roomType? RoomType
+---@param requireRoomType? boolean
+---@param isExtraRoom? boolean
+---@param load? boolean
+---@param seed? integer
+---@param shape? RoomShape
+---@param fromSaveData? boolean
+---@return LevelRoom
 function StageAPI.SetRoomFromList(roomsList, roomType, requireRoomType, isExtraRoom, load, seed, shape, fromSaveData)
     local levelIndex = StageAPI.GetCurrentRoomID()
     local newRoom = StageAPI.LevelRoom(nil, roomsList, seed, shape, roomType, isExtraRoom, fromSaveData, requireRoomType, nil, nil, levelIndex)
@@ -949,6 +1090,7 @@ function StageAPI.SetRoomFromList(roomsList, roomType, requireRoomType, isExtraR
     return newRoom
 end
 
+---@param entity Entity
 function StageAPI.RemovePersistentEntity(entity)
     local currentRoom = StageAPI.GetCurrentRoom()
     if currentRoom then

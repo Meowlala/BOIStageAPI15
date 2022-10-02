@@ -22,7 +22,7 @@ local shared = require("scripts.stageapi.shared")
 ---@field UpdatePosition boolean
 ---@field UpdateHealth boolean
 ---@field UpdatePrice boolean
----@field StoreCheck fun(entity: Entity): boolean
+---@field StoreCheck fun(entity: Entity, data: table): boolean
 
 ---@type EntityPersistenceData[]
 StageAPI.PersistentEntities = {}

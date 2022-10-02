@@ -62,6 +62,11 @@ end
 
 -- definitions
 
+---@class EntityDef
+---@field Type EntityType
+---@field Variant integer
+---@field SubType integer
+
 StageAPI.RockTypes = {
     [GridEntityType.GRID_ROCK] = true,
     [GridEntityType.GRID_ROCKB] = true,

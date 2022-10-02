@@ -8,29 +8,48 @@ end
 
 ---@class RoomMetadata
 ---@field LevelRoom LevelRoom
+---@field BlockedEntities table<integer, EntityDef[]>
+---@field IndexMetadata table<integer, MetadataEntity[]>
+---@field Groups table<GroupID, table<integer, boolean>>
 StageAPI.RoomMetadata = StageAPI.Class("RoomMetadata")
-
----@class EntityMeta
----@field Name string
----@field Tags string[]
----@field BitValues table<string, {Offset: integer, Length: integer}>
----@field ConflictTag string
----@field GroupID string
----@field StoreAsGroup boolean
----@field Type integer
----@field Variant integer
-
----@class EntityMetaArgs : EntityMeta
----@field Tag string
----@field Group string deprecated
----@field Conflicts string deprecated
-
 function StageAPI.RoomMetadata:Init()
     self.Groups = {}
     self.BlockedEntities = {}
     self.IndexMetadata = {}
 end
 
+---@alias GroupID integer
+
+---@class EntityMeta
+---@field Name string
+---@field Tags string[]
+---@field Tag string
+---@field BitValues table<string, {Offset: integer, Length: integer}>
+---@field ConflictTag string
+---@field GroupID GroupID
+---@field StoreAsGroup boolean
+---@field Type integer
+---@field Variant integer
+---@field HasPersistentData boolean
+---@field NoBlockIfTriggered boolean
+---@field GroupIDIfUngrouped GroupID
+
+---@class MetadataEntity
+---@field Name string
+---@field Metadata EntityMeta
+---@field Entity EntityDef
+---@field Index integer
+---@field BitValues table
+---@field PersistentIndex integer
+
+
+---@class EntityMetaArgs : EntityMeta
+---@field Tag string
+---@field Group GroupID deprecated
+---@field Conflicts string deprecated
+
+---@param index integer
+---@return GroupID[]
 function StageAPI.RoomMetadata:GroupsWithIndex(index)
     local groups = {}
     for groupID, indices in pairs(self.Groups) do
@@ -42,10 +61,15 @@ function StageAPI.RoomMetadata:GroupsWithIndex(index)
     return groups
 end
 
+---@param index integer
+---@param group GroupID
+---@return boolean
 function StageAPI.RoomMetadata:IsIndexInGroup(index, group)
     return self.Groups[group] and self.Groups[group][index]
 end
 
+---@param group GroupID
+---@return integer[]
 function StageAPI.RoomMetadata:IndicesInGroup(group)
     local indices = self.Groups[group]
     local out = {}
@@ -56,6 +80,8 @@ function StageAPI.RoomMetadata:IndicesInGroup(group)
     return out
 end
 
+---@param index integer
+---@param group GroupID
 function StageAPI.RoomMetadata:AddIndexToGroup(index, group)
     if type(index) == "table" then
         for _, idx in ipairs(index) do
@@ -74,6 +100,8 @@ function StageAPI.RoomMetadata:AddIndexToGroup(index, group)
     end
 end
 
+---@param index integer
+---@param group GroupID
 function StageAPI.RoomMetadata:RemoveIndexFromGroup(index, group)
     if type(index) == "table" then
         for _, idx in ipairs(index) do
@@ -88,6 +116,7 @@ function StageAPI.RoomMetadata:RemoveIndexFromGroup(index, group)
     end
 end
 
+---@return integer
 function StageAPI.RoomMetadata:GetNextGroupID()
     if not self.LastGroupID then
         self.LastGroupID = 0
@@ -97,6 +126,11 @@ function StageAPI.RoomMetadata:GetNextGroupID()
     return self.LastGroupID
 end
 
+---@param index integer
+---@param entity? EntityDef | string
+---@param persistentIndex? integer
+---@return MetadataEntity
+---@return integer? persistentIndex
 function StageAPI.RoomMetadata:AddMetadataEntity(index, entity, persistentIndex) -- also accepts a name rather than an entity
     if not self.IndexMetadata[index] then
         self.IndexMetadata[index] = {}
@@ -151,6 +185,9 @@ function StageAPI.RoomMetadata:AddMetadataEntity(index, entity, persistentIndex)
     return metaEntity, persistentIndex
 end
 
+---@param index integer
+---@param setIfNot? boolean
+---@return EntityDef[]
 function StageAPI.RoomMetadata:GetBlockedEntities(index, setIfNot)
     if setIfNot and not self.BlockedEntities[index] then
         self.BlockedEntities[index] = {}
@@ -159,6 +196,8 @@ function StageAPI.RoomMetadata:GetBlockedEntities(index, setIfNot)
     return self.BlockedEntities[index]
 end
 
+---@param index integer
+---@param tbl EntityDef[]
 function StageAPI.RoomMetadata:SetBlockedEntities(index, tbl)
     self.BlockedEntities[index] = tbl
 end
@@ -214,6 +253,29 @@ METADATA SEARCH PARAMS
 
 ]]
 
+---@class EntityMeta.SearchParams
+---@field Names string[]
+---@field Name string
+---@field Tags string[]
+---@field Tag string
+---@field RequireAllTags boolean
+---@field Indices integer[]
+---@field Index integer
+---@field Groups any[] 
+---@field Group any
+---@field RequireAllGroups boolean
+---@field IndicesOrGroups boolean
+---@field Metadata table
+---@field Entity table
+---@field BitValues table
+---@field IndexTable boolean
+---@field IndexBooleanTable boolean
+
+---@param index integer
+---@param searchParams EntityMeta.SearchParams
+---@param checkIndices? boolean
+---@param checkGroups? boolean
+---@return boolean
 function StageAPI.RoomMetadata:IndexMatchesSearchParams(index, searchParams, checkIndices, checkGroups)
     if not checkIndices then
         checkIndices = searchParams.Indices or {}
@@ -271,6 +333,11 @@ function StageAPI.RoomMetadata:IndexMatchesSearchParams(index, searchParams, che
     end
 end
 
+---@param metadataEntity MetadataEntity
+---@param searchParams EntityMeta.SearchParams
+---@param checkNames? boolean
+---@param checkTags? boolean
+---@return boolean
 function StageAPI.RoomMetadata:EntityMatchesSearchParams(metadataEntity, searchParams, checkNames, checkTags)
     if not checkNames then
         checkNames = searchParams.Names or {}
@@ -337,6 +404,9 @@ function StageAPI.RoomMetadata:EntityMatchesSearchParams(metadataEntity, searchP
     return true
 end
 
+---@param searchParams EntityMeta.SearchParams
+---@param narrowEntities? MetadataEntity[]
+---@return MetadataEntity[] | table<integer, MetadataEntity[]> | table<integer, boolean>
 function StageAPI.RoomMetadata:Search(searchParams, narrowEntities)
     searchParams = searchParams or {}
     local checkIndices, checkGroups, checkNames, checkTags = searchParams.Indices or {}, searchParams.Groups or {}, searchParams.Names or {}, searchParams.Tags or {}
@@ -390,10 +460,15 @@ function StageAPI.RoomMetadata:Search(searchParams, narrowEntities)
     return matchingEntities
 end
 
+---@param searchParams EntityMeta.SearchParams
+---@param narrowEntities? MetadataEntity[]
+---@return boolean
 function StageAPI.RoomMetadata:Has(searchParams, narrowEntities)
     return #self:Search(searchParams, narrowEntities) > 0
 end
 
+---@param index integer
+---@return number[]
 function StageAPI.RoomMetadata:GetDirections(index)
     local directions = self:Search({Name = "Direction", Index = index})
     local outDirections = {}
@@ -533,6 +608,9 @@ StageAPI.MetadataEntities = {
         [30] = {
             Name = "BossIdentifier"
         },
+        [31] = {
+            Name = "Member Card Trapdoor Position"
+        },
         [40] = {
             Name = "Room"
         },
@@ -544,7 +622,7 @@ StageAPI.MetadataEntities = {
 
 mod:AddCallback(ModCallbacks.MC_NPC_UPDATE, function(_, npc)
     if npc.Variant ~= StageAPI.E.DeleteMeNPC.Variant then
-        StageAPI.LogErr("Something is wrong! A StageAPI metadata entity has spawned when it should have been removed.")
+        StageAPI.LogErr("Something is wrong! A StageAPI metadata entity has spawned at index <" .. tostring(shared.Room:GetGridIndex(npc.Position)) .. "> when it should have been removed.")
     end
 end, StageAPI.E.MetaEntity.T)
 
@@ -621,7 +699,10 @@ function StageAPI.AddMetadataEntities(tbl)
     end
 end
 
----@deprecated
+---@param etype integer
+---@param variant integer
+---@return EntityMeta
+---@overload fun(entInfo: {Type: integer, Variant: integer}): EntityMeta
 function StageAPI.IsMetadataEntity(etype, variant)
     return StageAPI.GetMetadataEntity(etype, variant)
 end
@@ -736,6 +817,13 @@ function table_to_string(tbl)
 end
 
 ---@param layout? RoomLayout TEMPORARY FOR DEBUG PURPOSES; NOT USED BY FUNCTION
+---@param entities table<integer, RoomLayout_EntityData[]>
+---@param grids table<integer, RoomLayout_GridData[]>
+---@param seed? integer 
+---@return table<integer, RoomLayout_EntityData[]> outEntities
+---@return table<integer, RoomLayout_GridData[]> outGrids
+---@return RoomMetadata metadata
+---@return integer? persistentIndex
 function StageAPI.SeparateEntityMetadata(entities, grids, seed, layout)
     StageAPI.RoomLoadRNG:SetSeed(seed or shared.Room:GetSpawnSeed(), 1)
     local outEntities = {}
