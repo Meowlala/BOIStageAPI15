@@ -129,7 +129,12 @@ mod:AddCallback(ModCallbacks.MC_POST_EFFECT_INIT, function(_, eff)
 end, EffectVariant.MOM_FOOT_STOMP)
 
 function StageAPI.GetLevelTransitionIcon(stage, stype)
-    local base = StageAPI.GetBaseFloorInfo().Prefix
+    local floorInfo = StageAPI.GetBaseFloorInfo()
+    if not floorInfo then
+        return "stageapi/none.png"
+    end
+
+    local base = floorInfo.Prefix
     if base == "07_womb" and stype == StageType.STAGETYPE_WOTL then
         base = "utero"
     end
@@ -196,7 +201,14 @@ function StageAPI.GotoCustomStage(stage, playTransition, noForgetSeed)
 
         if playTransition then
             local gfxData = StageAPI.TryGetPlayerGraphicsInfo(shared.Players[1])
-            local ground = "gfx/ui/boss/bossspot_" .. StageAPI.GetBaseFloorInfo().Prefix .. ".png"
+            local floorInfo = StageAPI.GetBaseFloorInfo()
+            local ground
+            if floorInfo then
+                ground = "gfx/ui/boss/bossspot_" .. floorInfo.Prefix .. ".png"
+            else
+                ground = "stageapi/none.png"
+            end
+
             local bg = "stageapi/transition/nightmares_bg_mask.png"
             StageAPI.PlayTransitionAnimationManual(gfxData.Portrait, StageAPI.GetLevelTransitionIcon(stage.Stage, stageType), ground, bg, nil, nil, gfxData.NoShake)
         end
@@ -210,7 +222,11 @@ function StageAPI.GotoCustomStage(stage, playTransition, noForgetSeed)
             StageAPI.PlayTransitionAnimation(stage)
         end
 
-        Isaac.ExecuteCommand("stage " .. tostring(absolute) .. StageAPI.StageTypeToString[replace.OverrideStageType])
+        if stage.LevelgenStage then
+            Isaac.ExecuteCommand("stage " .. tostring(stage.LevelgenStage.Stage) .. StageAPI.StageTypeToString[stage.LevelgenStage.StageType])
+        else
+            Isaac.ExecuteCommand("stage " .. tostring(absolute) .. StageAPI.StageTypeToString[replace.OverrideStageType])
+        end
     end
 end
 

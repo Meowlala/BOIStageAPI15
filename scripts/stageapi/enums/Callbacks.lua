@@ -58,6 +58,7 @@ local Callbacks = {
     POST_ROOM_SWAP = "POST_ROOM_SWAP", -- (listIndexA, listIndexB, levelRoomA, levelRoomB)
     PRE_LEVELMAP_SPAWN_DOOR = "PRE_LEVELMAP_SPAWN_DOOR", -- (slot: DoorSlot, doorData, levelRoom: LevelRoom, targetLevelRoom: LevelRoom, roomData, levelMap: LevelMap)
     EARLY_NEW_ROOM = "EARLY_NEW_ROOM", -- ()
+    EARLY_NEW_CUSTOM_STAGE = "EARLY_NEW_CUSTOM_STAGE", -- (stage: CustomStage)
 }
 
 StageAPI.Enum.Callbacks = Callbacks

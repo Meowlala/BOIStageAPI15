@@ -868,7 +868,7 @@ end)
 StageAPI.AddCallback("StageAPI", Callbacks.POST_CHANGE_ROOM_GFX, -1, function(currentRoom)
     if StageAPI.InExtraRoom() and currentRoom and currentRoom.IsExtraRoom and not StageAPI.CurrentStage then
         local baseFloorInfo = StageAPI.GetBaseFloorInfo()
-        if shared.Room:GetBackdropType() == baseFloorInfo.Backdrop and baseFloorInfo.RoomGfx then
+        if baseFloorInfo and shared.Room:GetBackdropType() == baseFloorInfo.Backdrop and baseFloorInfo.RoomGfx then
             StageAPI.ChangeDoors(baseFloorInfo.RoomGfx)
         end
     end

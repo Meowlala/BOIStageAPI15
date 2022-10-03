@@ -81,6 +81,14 @@ function StageAPI.CustomStage:SetIsSecondStage(isSecondStage)
     self.IsSecondStage = isSecondStage
 end
 
+-- If set, custom stage will use the layout of the stage specified, while still using the visuals / features of the override stage it replaces.
+function StageAPI.CustomStage:SetLevelgenStage(stage, stageType)
+    self.LevelgenStage = {
+        Stage = stage,
+        StageType = stageType or StageType.STAGETYPE_ORIGINAL
+    }
+end
+
 function StageAPI.CustomStage:SetRoomGfx(gfx, rtype)
     if not self.RoomGfx then
         self.RoomGfx = {}

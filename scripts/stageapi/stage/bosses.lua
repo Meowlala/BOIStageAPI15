@@ -82,8 +82,10 @@ function StageAPI.GetBaseFloorInfo(stage, stageType, isGreed)
     end
 
     if isGreed then
+        if not StageAPI.FloorInfoGreed[stage] then return end
         return StageAPI.FloorInfoGreed[stage][stageType]
     else
+        if not StageAPI.FloorInfo[stage] then return end
         return StageAPI.FloorInfo[stage][stageType]
     end
 end
@@ -192,15 +194,26 @@ StageAPI.AddPlayerGraphicsInfo(PlayerType.PLAYER_JACOB_B, "gfx/ui/stage/playerpo
 
 StageAPI.PlayerBossInfo[PlayerType.PLAYER_JACOB].ControlsFrame = 2
 
+StageAPI.DefaultVSBackgroundColor = Color(30/255, 18/255, 15/255, 1, 0, 0, 0)
+StageAPI.DefaultVSDirtColor = Color(94/255, 56/255, 54/255, 1, 0, 0, 0)
 function StageAPI.GetStageSpot()
     if StageAPI.InNewStage() then
         return StageAPI.CurrentStage.BossSpot or "gfx/ui/boss/bossspot.png",
             StageAPI.CurrentStage.PlayerSpot or "gfx/ui/boss/playerspot.png",
-            StageAPI.CurrentStage.BackgroundColor or Color(30/255, 18/255, 15/255, 1, 0, 0, 0),
-            StageAPI.CurrentStage.DirtColor or Color(94/255, 56/255, 54/255, 1, 0, 0, 0)
+            StageAPI.CurrentStage.BackgroundColor or StageAPI.DefaultVSBackgroundColor,
+            StageAPI.CurrentStage.DirtColor or StageAPI.DefaultVSDirtColor
     else
-        local spot = StageAPI.GetBaseFloorInfo().Prefix
-        return "gfx/ui/boss/bossspot_" .. spot .. ".png", "gfx/ui/boss/playerspot_" .. spot .. ".png", StageAPI.GetBaseFloorInfo().VsBgColor, StageAPI.GetBaseFloorInfo().VsDirtColor
+        local bossSpot = "gfx/ui/boss/bossspot.png"
+        local playerSpot = "gfx/ui/boss/playerspot.png"
+        local bgColor = StageAPI.DefaultVSBackgroundColor
+        local dirtColor = StageAPI.DefaultVSDirtColor
+        local floorInfo = StageAPI.GetBaseFloorInfo()
+        if floorInfo then
+            local prefix = floorInfo.Prefix
+            bossSpot, playerSpot = "gfx/ui/boss/bossspot_" .. prefix .. ".png", "gfx/ui/boss/playerspot_" .. prefix .. ".png"
+            bgColor, dirtColor = floorInfo.VsBgColor, floorInfo.VsDirtColor
+        end
+        return bossSpot, playerSpot, bgColor, dirtColor
     end
 end
 
@@ -209,7 +222,10 @@ function StageAPI.GetStageFloorTextColor()
     if StageAPI.InNewStage() then
         return StageAPI.CurrentStage.FloorTextColor
     else
-        return StageAPI.GetBaseFloorInfo().FloorTextColor
+        local floorInfo = StageAPI.GetBaseFloorInfo()
+        if floorInfo then
+            return floorInfo.FloorTextColor
+        end
     end
 end
 
@@ -594,6 +610,11 @@ function StageAPI.AddBossToBaseFloorPool(poolEntry, stage, stageType, noStageTwo
     end
 
     local floorInfo = StageAPI.GetBaseFloorInfo(stage, stageType, false)
+    if not floorInfo then
+        StageAPI.LogErr("Attempting to add boss to invalid stage " .. tostring(stage) .. " " .. tostring(stageType))
+        return
+    end
+
     floorInfo.HasCustomBosses = true
     if not floorInfo.Bosses then
         floorInfo.Bosses = {Pool = {}}

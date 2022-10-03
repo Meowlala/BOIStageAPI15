@@ -774,6 +774,17 @@ mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, function()
         return
     end
 
+    if StageAPI.NextStage and not StageAPI.DoubleTransitioning then
+        StageAPI.CallCallbacksWithParams(Callbacks.EARLY_NEW_CUSTOM_STAGE, false, StageAPI.NextStage, StageAPI.NextStage)
+        if StageAPI.NextStage.LevelgenStage then
+            StageAPI.DoubleTransitioning = true
+            local replace = StageAPI.NextStage.Replaces
+            shared.Level:SetStage(replace.OverrideStage, replace.OverrideStageType)
+            shared.Level:ChangeRoom(shared.Level:GetCurrentRoomIndex())
+            return
+        end
+    end
+
     StageAPI.DoubleTransitioning = false
 
     local isNewStage, override = StageAPI.InOverriddenStage()
@@ -979,7 +990,6 @@ mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, function()
             StageAPI.GenerateBaseLevel()
         end
 
-        StageAPI.NextStage = nil
         if StageAPI.CurrentStage and StageAPI.CurrentStage.GetPlayingMusic then
             local musicID = StageAPI.CurrentStage:GetPlayingMusic()
             if musicID then
@@ -988,6 +998,7 @@ mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, function()
         end
     end
 
+    StageAPI.NextStage = nil
     StageAPI.DetectBaseLayoutChanges(false)
 
     local currentListIndex = StageAPI.GetCurrentRoomID()
