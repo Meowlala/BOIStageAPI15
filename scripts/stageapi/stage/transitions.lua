@@ -182,14 +182,25 @@ end
 StageAPI.StageRNG = RNG()
 function StageAPI.GotoCustomStage(stage, playTransition, noForgetSeed)
     if not noForgetSeed then
-        local realstage
+        local realstage, realStageType
         if stage.NormalStage then
             realstage = stage.Stage
+            realStageType = stage.StageType
         else
-            realstage = stage.Replaces.OverrideStage
+            if stage.LevelgenStage then
+                realstage = stage.LevelgenStage.Stage
+                realStageType = stage.LevelgenStage.StageType
+            else
+                realstage = stage.Replaces.OverrideStage
+                realStageType = stage.Replaces.OverrideStageType
+            end
         end
 
-        StageAPI.Seeds:ForgetStageSeed(realstage)
+        if realStageType == StageType.STAGETYPE_REPENTANCE or realStageType == StageType.STAGETYPE_REPENTANCE_B then
+            StageAPI.Seeds:ForgetStageSeed(realstage + 1)
+        else
+            StageAPI.Seeds:ForgetStageSeed(realstage)
+        end
     end
 
     if stage.NormalStage then
