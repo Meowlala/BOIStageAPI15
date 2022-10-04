@@ -76,10 +76,6 @@ mod:AddCallback(ModCallbacks.MC_POST_RENDER, function()
     elseif StageAPI.TransitionIsPlaying then -- Finished transition
         StageAPI.TransitionIsPlaying = false
         if StageAPI.CurrentStage then
-            
-            shared.Music:Play(shared.Music:GetQueuedMusicID(), 0)
-            shared.Music:UpdateVolume()
-
             local name = StageAPI.CurrentStage:GetDisplayName()
             StageAPI.PlayTextStreak{
                 Text = name,
