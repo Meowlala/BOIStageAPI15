@@ -223,5 +223,5 @@ StageAPI.BaseRoomGfx = {
     Isaacs = StageAPI.RoomGfx(BackdropType.ISAAC, StageAPI.BaseGridGfx.Basement, "_default"),
     Arcade = StageAPI.RoomGfx(BackdropType.ARCADE, StageAPI.BaseGridGfx.Basement, "_default"),
     Dice = StageAPI.RoomGfx(BackdropType.DICE, StageAPI.BaseGridGfx.Basement, "_default"),
-    BlueSecret = StageAPI.RoomGfx(BackdropType.BLUE_WOMB_PASS, nil, "_default")
+    BlueSecret = StageAPI.RoomGfx(BackdropType.BLUE_WOMB_PASS, StageAPI.BaseGridGfx.BlueWomb, "_default")
 }
