@@ -77,6 +77,10 @@ function StageAPI.CustomStage:SetStageNumber(num)
     self.StageNumber = num
 end
 
+function StageAPI.CustomStage:SetNoChampions(bool)
+    self.NoChampions = bool
+end
+
 function StageAPI.CustomStage:SetIsSecondStage(isSecondStage)
     self.IsSecondStage = isSecondStage
 end

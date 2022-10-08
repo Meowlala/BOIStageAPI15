@@ -330,6 +330,17 @@ function StageAPI.AddEntityToSpawnList(tbl, entData, persistentIndex, index)
     entData.Variant = entData.Variant or 0
     entData.SubType = entData.SubType or 0
     entData.Index = entData.Index or index or 0
+    
+    if not (StageAPI.CantBeChampions[entData.Type] 
+    or StageAPI.CantBeChampions[entData.Type.." "..entData.Variant] 
+    or StageAPI.CantBeChampions[entData.Type.." "..entData.Variant.." "..entData.SubType])
+    then
+        if not (StageAPI.InNewStage() and StageAPI.GetCurrentStage().NoChampions == true) then
+            if StageAPI.RoomLoadRNG:RandomFloat() <= StageAPI.GetChampionChance() then
+                entData.ChampionSeed = StageAPI.RoomLoadRNG:GetSeed()
+            end
+        end
+    end
 
     if not entData.GridX or not entData.GridY then
         local width
@@ -628,6 +639,13 @@ function StageAPI.LoadEntitiesFromEntitySets(entitysets, doGrids, doPersistentOn
                                     Vector.Zero,
                                     nil
                                 )
+
+                                if not ent:IsBoss() then
+                                    if entityData.ChampionSeed then
+                                        ent:ToNPC():MakeChampion(entityData.ChampionSeed, -1, true)
+                                        ent.HitPoints = ent.MaxHitPoints
+                                    end
+                                end
 
                                 if entityData.Type == EntityType.ENTITY_PICKUP and entityData.Variant == PickupVariant.PICKUP_COLLECTIBLE and entityData.SubType ~= 0 then -- why can corrupted data change fixed items spawns??
                                     if ent.SubType ~= entityData.SubType then
