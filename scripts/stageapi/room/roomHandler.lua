@@ -331,13 +331,15 @@ function StageAPI.AddEntityToSpawnList(tbl, entData, persistentIndex, index)
     entData.SubType = entData.SubType or 0
     entData.Index = entData.Index or index or 0
     
-    if not (StageAPI.CantBeChampions[entData.Type] 
-    or StageAPI.CantBeChampions[entData.Type.." "..entData.Variant] 
-    or StageAPI.CantBeChampions[entData.Type.." "..entData.Variant.." "..entData.SubType])
-    then
-        if not (StageAPI.InNewStage() and StageAPI.GetCurrentStage().NoChampions == true) then
-            if StageAPI.RoomLoadRNG:RandomFloat() <= StageAPI.GetChampionChance() then
-                entData.ChampionSeed = StageAPI.RoomLoadRNG:GetSeed()
+    if entData.Type > 9 and entData.Type < 1000 then
+        if not (StageAPI.CantBeChampions[entData.Type] 
+        or StageAPI.CantBeChampions[entData.Type.." "..entData.Variant] 
+        or StageAPI.CantBeChampions[entData.Type.." "..entData.Variant.." "..entData.SubType])
+        then
+            if not (StageAPI.InNewStage() and StageAPI.GetCurrentStage().NoChampions == true) then
+                if StageAPI.RoomLoadRNG:RandomFloat() <= StageAPI.GetChampionChance() then
+                    entData.ChampionSeed = StageAPI.RoomLoadRNG:GetSeed()
+                end
             end
         end
     end
@@ -640,7 +642,7 @@ function StageAPI.LoadEntitiesFromEntitySets(entitysets, doGrids, doPersistentOn
                                     nil
                                 )
 
-                                if not ent:IsBoss() then
+                                if not ent:IsBoss() and ent:ToNPC() then
                                     if entityData.ChampionSeed then
                                         ent:ToNPC():MakeChampion(entityData.ChampionSeed, -1, true)
                                         ent.HitPoints = ent.MaxHitPoints
