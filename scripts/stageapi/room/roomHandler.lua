@@ -310,8 +310,9 @@ StageAPI.RoomLoadRNG = RNG()
 ---@param entData RoomLayout_EntityData
 ---@param persistentIndex integer
 ---@param index? integer
+---@param noChampions? boolean
 ---@return integer lastPersistentIndex
-function StageAPI.AddEntityToSpawnList(tbl, entData, persistentIndex, index)
+function StageAPI.AddEntityToSpawnList(tbl, entData, persistentIndex, index, noChampions)
     local currentRoom = StageAPI.CurrentlyInitializing or StageAPI.GetCurrentRoom()
     if persistentIndex == nil and currentRoom then
         persistentIndex = currentRoom.LastPersistentIndex
@@ -331,15 +332,13 @@ function StageAPI.AddEntityToSpawnList(tbl, entData, persistentIndex, index)
     entData.SubType = entData.SubType or 0
     entData.Index = entData.Index or index or 0
     
-    if entData.Type > 9 and entData.Type < 1000 then
+    if not noChampions and entData.Type > 9 and entData.Type < 1000 then
         if not (StageAPI.CantBeChampions[entData.Type] 
         or StageAPI.CantBeChampions[entData.Type.." "..entData.Variant] 
         or StageAPI.CantBeChampions[entData.Type.." "..entData.Variant.." "..entData.SubType])
         then
-            if not (StageAPI.InNewStage() and StageAPI.GetCurrentStage().NoChampions == true) then
-                if StageAPI.RoomLoadRNG:RandomFloat() <= StageAPI.GetChampionChance() then
-                    entData.ChampionSeed = StageAPI.RoomLoadRNG:GetSeed()
-                end
+            if StageAPI.RoomLoadRNG:RandomFloat() <= StageAPI.GetChampionChance() then
+                entData.ChampionSeed = StageAPI.RoomLoadRNG:GetSeed()
             end
         end
     end
@@ -372,9 +371,10 @@ end
 ---@param seed? integer
 ---@param roomMetadata RoomMetadata
 ---@param lastPersistentIndex integer
+---@param noChampions? boolean
 ---@return table<integer, SpawnList.EntityInfo[]> entitiesToSpawn
 ---@return integer lastPersistentIndex
-function StageAPI.SelectSpawnEntities(entities, seed, roomMetadata, lastPersistentIndex)
+function StageAPI.SelectSpawnEntities(entities, seed, roomMetadata, lastPersistentIndex, noChampions)
     StageAPI.RoomLoadRNG:SetSeed(seed or shared.Room:GetSpawnSeed(), 1)
     local entitiesToSpawn = {}
     local callbacks = StageAPI.GetCallbacks(Callbacks.PRE_SELECT_ENTITY_LIST)
@@ -420,7 +420,7 @@ function StageAPI.SelectSpawnEntities(entities, seed, roomMetadata, lastPersiste
                 end
 
                 for _, entData in ipairs(addEntities) do
-                    persistentIndex = StageAPI.AddEntityToSpawnList(entitiesToSpawn[index], entData, persistentIndex)
+                    persistentIndex = StageAPI.AddEntityToSpawnList(entitiesToSpawn[index], entData, persistentIndex, noChampions)
                 end
             end
         end
@@ -475,15 +475,16 @@ end
 
 ---@param layout RoomLayout
 ---@param seed? integer
+---@param noChampions? boolean
 ---@return table<integer, SpawnList.EntityInfo[]> spawnEntities
 ---@return table<integer, RoomLayout_GridData> spawnGrids
 ---@return table<integer, boolean> entityTakenIndices
 ---@return table<integer, boolean> gridTakenIndices
 ---@return integer lastPersistentIndex
 ---@return RoomMetadata roomMetadata
-function StageAPI.ObtainSpawnObjects(layout, seed)
+function StageAPI.ObtainSpawnObjects(layout, seed, noChampions)
     local entitiesByIndex, gridsByIndex, roomMetadata, lastPersistentIndex = StageAPI.SeparateEntityMetadata(layout.EntitiesByIndex, layout.GridEntitiesByIndex, seed)
-    local spawnEntities, lastPersistentIndex = StageAPI.SelectSpawnEntities(entitiesByIndex, seed, roomMetadata, lastPersistentIndex)
+    local spawnEntities, lastPersistentIndex = StageAPI.SelectSpawnEntities(entitiesByIndex, seed, roomMetadata, lastPersistentIndex, noChampions)
     local spawnGrids = StageAPI.SelectSpawnGrids(gridsByIndex, seed)
 
     local gridTakenIndices = {}

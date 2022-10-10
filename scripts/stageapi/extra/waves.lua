@@ -216,7 +216,7 @@ mod:AddCallback(ModCallbacks.MC_POST_UPDATE, function()
 
                 StageAPI.Challenge.WaveSubtype = nil
 
-                local spawnEntities = StageAPI.ObtainSpawnObjects(wave, seed)
+                local spawnEntities = StageAPI.ObtainSpawnObjects(wave, seed, not shared.Game:IsGreedMode())
                 StageAPI.SpawningChallengeEnemies = true
                 StageAPI.LoadRoomLayout(nil, {spawnEntities}, false, true, false, true, nil, nil, nil, true)
                 StageAPI.SpawningChallengeEnemies = false
