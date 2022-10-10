@@ -103,12 +103,6 @@ mod:AddCallback(ModCallbacks.MC_PRE_USE_ITEM, function()
     end
 end, CollectibleType.COLLECTIBLE_FORGET_ME_NOW)
 
-mod:AddCallback(ModCallbacks.MC_POST_EFFECT_INIT, function(_, eff)
-    if StageAPI.InNewStage() and not eff:GetData().StageAPIDoNotDelete then
-        eff:Remove()
-    end
-end, EffectVariant.WATER_DROPLET)
-
 StageAPI.PotentialAscentData = {}
 mod:AddCallback(ModCallbacks.MC_POST_UPDATE, function()
     if StageAPI.JustUsedD7 then

@@ -283,7 +283,8 @@ function StageAPI.LevelRoom:PostGetLayout(seed)
         self.Shape = self.Layout.Shape
     end
 
-    self.SpawnEntities, self.SpawnGrids, self.EntityTakenIndices, self.GridTakenIndices, self.LastPersistentIndex, self.Metadata = StageAPI.ObtainSpawnObjects(self.Layout, seed)
+    local noChampions = StageAPI.InNewStage() and StageAPI.GetCurrentStage().NoChampions == true
+    self.SpawnEntities, self.SpawnGrids, self.EntityTakenIndices, self.GridTakenIndices, self.LastPersistentIndex, self.Metadata = StageAPI.ObtainSpawnObjects(self.Layout, seed, noChampions)
     self.Metadata.LevelRoom = self
 end
 
