@@ -246,7 +246,8 @@ DoorSprites
 ---@field IsBossAmbush boolean
 ---@field IsPayToPlay boolean
 ---@field IsSurpriseMiniboss boolean
----@field IsFlatfile boolean
+---@field RequireVarData integer
+---@field RequireTargetIndex integer
 ---@field Sprite string
 ---@field StateDoor string
 
@@ -352,9 +353,10 @@ end
 ---@param isBossAmbush? boolean
 ---@param isPayToPlay? boolean
 ---@param isSurpriseMiniboss? boolean
----@param isFlatfiled? boolean
+---@param varData? integer
+---@param targetIndex? integer
 ---@return boolean
-function StageAPI.DoesDoorMatch(door, doorSpawn, current, target, isBossAmbush, isPayToPlay, isSurpriseMiniboss, isFlatfiled)
+function StageAPI.DoesDoorMatch(door, doorSpawn, current, target, isBossAmbush, isPayToPlay, isSurpriseMiniboss, varData, targetIndex)
     -- REVEL.DebugLog(("DoesDoorMatch | cur %s ; target %s ; FLATFILE %s ; spawn : %s"):format(current, target, isFlatfiled, REVEL.ToString(doorSpawn)))
 
     current = current or door.CurrentRoomType
@@ -462,12 +464,12 @@ function StageAPI.DoesDoorMatch(door, doorSpawn, current, target, isBossAmbush, 
         end
     end
 
-    if valid and doorSpawn.IsFlatfile ~= nil then
-        if doorSpawn.IsFlatfile then
-            valid = not not isFlatfiled
-        else
-            valid = not isFlatfiled
-        end
+    if valid and doorSpawn.RequireVarData then
+        valid = varData == doorSpawn.RequireVarData
+    end
+    
+    if valid and doorSpawn.RequireTargetIndex then
+        valid = targetIndex == doorSpawn.RequireTargetIndex
     end
 
     return valid
@@ -479,7 +481,8 @@ function StageAPI.ChangeDoor(door, doors, payToPlay)
     local gsprite = grid:GetSprite()
     local current, target = grid.CurrentRoomType, grid.TargetRoomType
     local isBossAmbush, isPayToPlay = shared.Level:HasBossChallenge(), grid:IsTargetRoomArcade() and target ~= RoomType.ROOM_ARCADE
-    local isFlatfiled = (current == RoomType.ROOM_CURSE or target == RoomType.ROOM_CURSE) and grid.VarData == 1
+    local varData = grid.VarData
+    local targetIndex = grid.TargetRoomIndex
 
     if isPayToPlay then
         if payToPlay then
@@ -496,7 +499,8 @@ function StageAPI.ChangeDoor(door, doors, payToPlay)
     for _, doorOption in ipairs(doors) do
         if StageAPI.DoesDoorMatch(
             grid, doorOption, current, target, 
-            isBossAmbush, isPayToPlay, false, isFlatfiled
+            isBossAmbush, isPayToPlay, false,
+            varData, targetIndex
         ) then
             for i = 0, 5 do
                 gsprite:ReplaceSpritesheet(i, doorOption.File)
@@ -515,15 +519,17 @@ end
 ---@param isBossAmbush? boolean
 ---@param isPayToPlay? boolean
 ---@param isSurpriseMiniboss? boolean
----@param isFlatfiled? boolean
+---@param varData? integer
+---@param targetIndex? integer
 ---@return string useSprite
 ---@return string useDoor
-function StageAPI.CompareDoorSpawns(doorSpawns, current, target, isBossAmbush, isPayToPlay, isSurpriseMiniboss, isFlatfiled)
+function StageAPI.CompareDoorSpawns(doorSpawns, current, target, isBossAmbush, isPayToPlay, isSurpriseMiniboss, varData, targetIndex)
     local useSprite, useDoor
     for _, spawn in ipairs(doorSpawns) do
         if StageAPI.DoesDoorMatch(
             nil, spawn, current, target, 
-            isBossAmbush, isPayToPlay, isSurpriseMiniboss, isFlatfiled
+            isBossAmbush, isPayToPlay, isSurpriseMiniboss,
+            varData, targetIndex
         ) then
             useSprite = spawn.Sprite
             useDoor = spawn.StateDoor
@@ -546,11 +552,13 @@ function StageAPI.CheckDoorSpawns(door, doorSpawns, doorSprites, roomType)
         local current, target = door.CurrentRoomType, door.TargetRoomType
         local isBossAmbush, isPayToPlay = shared.Level:HasBossChallenge(), door:IsTargetRoomArcade() and target ~= RoomType.ROOM_ARCADE
         local isSurpriseMiniboss = shared.Level:GetCurrentRoomDesc().SurpriseMiniboss
-        local isFlatfiled = (current == RoomType.ROOM_CURSE or target == RoomType.ROOM_CURSE) and door.VarData == 1
+        local varData = door.VarData
+        local targetRoomIndex = door.TargetRoomIndex
 
         useSprite = StageAPI.CompareDoorSpawns(
             doorSpawns, current, target, 
-            isBossAmbush, isPayToPlay, isSurpriseMiniboss, isFlatfiled
+            isBossAmbush, isPayToPlay, isSurpriseMiniboss,
+            varData, targetRoomIndex
         )
     else
         local data = door:GetData()

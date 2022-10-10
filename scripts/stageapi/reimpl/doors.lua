@@ -529,7 +529,7 @@ StageAPI.BaseDoorSpawns = {
         Sprite = "CurseFlatfile",
         StateDoor = "CurseDoor",
         RequireTarget = {RoomType.ROOM_CURSE},
-        IsFlatfile = true,
+        RequireVarData = 1
     },
     Devil = {
         Sprite = "Devil",
@@ -541,19 +541,37 @@ StageAPI.BaseDoorSpawns = {
         StateDoor = "AngelDoor",
         RequireTarget = {RoomType.ROOM_ANGEL}
     },
+    Mirror = {
+        Sprite = "Mirror",
+        StateDoor = "DefaultDoor", -- unimplemented
+        RequireTargetIndex = GridRooms.ROOM_MIRROR_IDX
+    },
+    Mineshaft = {
+        Sprite = "Mineshaft",
+        StateDoor = "DefaultDoor", -- unimplemented
+        RequireTargetIndex = GridRooms.ROOM_MINESHAFT_IDX
+    },
+    SecretExit = { -- entrance to downpour, mines, mausoleum, as well as post-quest mom's heart fight in mausoleum
+        Sprite = "SecretExit",
+        StateDoor = "DefaultDoor", -- unimplemented
+        RequireTargetIndex = GridRooms.ROOM_SECRET_EXIT_IDX
+    },
 }
 
 -- in priority order
 StageAPI.BaseDoorSpawnList = {
+    StageAPI.BaseDoorSpawns.Mirror,
+    StageAPI.BaseDoorSpawns.Mineshaft,
+    StageAPI.BaseDoorSpawns.SecretExit,
     StageAPI.BaseDoorSpawns.Devil,
-    StageAPI.BaseDoorSpawns.Angel, 
-    StageAPI.BaseDoorSpawns.MinibossSecret, 
-    StageAPI.BaseDoorSpawns.Secret, 
-    StageAPI.BaseDoorSpawns.CurseInterior, 
-    StageAPI.BaseDoorSpawns.CurseFlatfile, 
-    StageAPI.BaseDoorSpawns.Curse, 
-    StageAPI.BaseDoorSpawns.BossInterior, 
-    StageAPI.BaseDoorSpawns.MinibossSurprise, 
+    StageAPI.BaseDoorSpawns.Angel,
+    StageAPI.BaseDoorSpawns.MinibossSecret,
+    StageAPI.BaseDoorSpawns.Secret,
+    StageAPI.BaseDoorSpawns.CurseInterior,
+    StageAPI.BaseDoorSpawns.CurseFlatfile,
+    StageAPI.BaseDoorSpawns.Curse,
+    StageAPI.BaseDoorSpawns.BossInterior,
+    StageAPI.BaseDoorSpawns.MinibossSurprise,
     StageAPI.BaseDoorSpawns.Miniboss,
     StageAPI.BaseDoorSpawns.SpecialInterior
 }
