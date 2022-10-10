@@ -11,6 +11,17 @@ StageAPI.StageTypeToString = {
     [StageType.STAGETYPE_REPENTANCE_B] = "d"
 }
 
+StageAPI.BaseStageTypes = {
+    StageType.STAGETYPE_ORIGINAL,
+    StageType.STAGETYPE_WOTL,
+    StageType.STAGETYPE_AFTERBIRTH,
+}
+
+StageAPI.AltPathStageTypes = {
+    StageType.STAGETYPE_REPENTANCE,
+    StageType.STAGETYPE_REPENTANCE_B
+}
+
 StageAPI.StageTypes = {
     StageType.STAGETYPE_ORIGINAL,
     StageType.STAGETYPE_WOTL,
@@ -207,7 +218,12 @@ function StageAPI.GotoCustomStage(stage, playTransition, noForgetSeed)
         local stageType = stage.StageType
         if not stageType then
             StageAPI.StageRNG:SetSeed(StageAPI.Seeds:GetStageSeed(stage.Stage), 0)
-            stageType = StageAPI.StageTypes[StageAPI.Random(1, #StageAPI.StageTypes, StageAPI.StageRNG)]
+
+            if stage.AltPath then
+                stageType = StageAPI.AltPathStageTypes[StageAPI.Random(1, #StageAPI.AltPathStageTypes, StageAPI.StageRNG)]
+            else
+                stageType = StageAPI.BaseStageTypes[StageAPI.Random(1, #StageAPI.BaseStageTypes, StageAPI.StageRNG)]
+            end
         end
 
         if playTransition then
