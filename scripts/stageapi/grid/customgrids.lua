@@ -124,17 +124,20 @@ function StageAPI.CustomGrid:Init(name, args, ...)
 end
 
 StageAPI.DefaultBrokenGridStateByType = {
-    [GridEntityType.GRID_ROCK]      = 2,
-    [GridEntityType.GRID_ROCKB]     = 2,
-    [GridEntityType.GRID_ROCKT]     = 2,
-    [GridEntityType.GRID_ROCK_SS]   = 2,
-    [GridEntityType.GRID_ROCK_BOMB] = 2,
-    [GridEntityType.GRID_ROCK_ALT]  = 2,
-    [GridEntityType.GRID_SPIDERWEB] = 1,
-    [GridEntityType.GRID_LOCK]      = 1,
-    [GridEntityType.GRID_TNT]       = 4,
-    [GridEntityType.GRID_FIREPLACE] = 4,
-    [GridEntityType.GRID_POOP]      = 1000,
+    [GridEntityType.GRID_ROCK]          = 2,
+    [GridEntityType.GRID_ROCKB]         = 2,
+    [GridEntityType.GRID_ROCKT]         = 2,
+    [GridEntityType.GRID_ROCK_SS]       = 2,
+    [GridEntityType.GRID_ROCK_BOMB]     = 2,
+    [GridEntityType.GRID_ROCK_ALT]      = 2,
+    [GridEntityType.GRID_ROCK_SPIKED]   = 2,
+    [GridEntityType.GRID_ROCK_ALT2]     = 2,
+    [GridEntityType.GRID_ROCK_GOLD]     = 2,
+    [GridEntityType.GRID_SPIDERWEB]     = 1,
+    [GridEntityType.GRID_LOCK]          = 1,
+    [GridEntityType.GRID_TNT]           = 4,
+    [GridEntityType.GRID_FIREPLACE]     = 4,
+    [GridEntityType.GRID_POOP]          = 1000,
 }
 
 ---@class CustomGridPersistData
