@@ -1204,6 +1204,10 @@ StageAPI.RoomEntitySpawnGridBlacklist = {
 }
 
 mod:AddCallback(ModCallbacks.MC_PRE_ROOM_ENTITY_SPAWN, function(_, t, v, s, index, seed)
+    if StageAPI.ConsoleSpawningGrid then -- gridspawn command triggers MC_PRE_ROOM_ENTITY_SPAWN for some reason?
+        return
+    end
+
     if not StageAPI.EarlyNewRoomTriggered then
         StageAPI.EarlyNewRoomTriggered = true
         StageAPI.CallCallbacks(Callbacks.EARLY_NEW_ROOM, false)

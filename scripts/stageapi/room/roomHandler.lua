@@ -728,6 +728,7 @@ function StageAPI.CallGridPostInit()
 end
 
 StageAPI.GridSpawnRNG = RNG()
+StageAPI.ConsoleSpawningGrid = false
 
 ---@class GridInformation : RoomLayout_GridData
 ---@field State integer
@@ -768,7 +769,20 @@ function StageAPI.LoadGridsFromDataList(grids, gridInformation, entities)
 
             shared.Room:SetGridPath(index, 0)
 
-            local grid = Isaac.GridSpawn(gridData.Type, gridData.Variant, shared.Room:GetGridPosition(index), true)
+            local grid
+            if StageAPI.ConsoleSpawnedGridTypes[gridData.Type] then
+                local command = "gridspawn " .. gridData.Type .. "." .. gridData.Variant .. " " .. index
+                StageAPI.ConsoleSpawningGrid = true
+                Isaac.ExecuteCommand(command)
+                StageAPI.ConsoleSpawningGrid = false
+
+                if StageAPI.RailGridTypes[gridData.Type] and StageAPI.MinecartRailVariants[gridData.Variant] then
+                    -- TODO: Rail Cart Handling (may require redoing minecart rendering?)
+                end
+            else
+                grid = Isaac.GridSpawn(gridData.Type, gridData.Variant, shared.Room:GetGridPosition(index), true)
+            end
+
             if grid then
                 if gridInformation and gridInformation[index] then
                     local grinformation = gridInformation[index]

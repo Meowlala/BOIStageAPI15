@@ -125,14 +125,29 @@ StageAPI.CorrectedGridTypes = {
     [10000]=GridEntityType.GRID_GRAVITY
 }
 
-StageAPI.UnsupportedTypes = {
-    [970] = true, -- room darkness, water flow, water disabler, lava disabler, quest door
-    [969] = true, -- events
+StageAPI.RailGridTypes = {
+    [6000] = true,
+    [6001] = true
+}
+
+StageAPI.MinecartRailVariants = {
+    [16] = true,
+    [17] = true,
+    [32] = true,
+    [33] = true
+}
+
+StageAPI.ConsoleSpawnedGridTypes = {
     [1009] = true, -- event rock
     [3009] = true, -- event pit
     [3002] = true, -- button rail
     [6000] = true, -- rail
     [6001] = true, -- rail over pit
+}
+
+StageAPI.UnsupportedTypes = {
+    [970] = true, -- room darkness, water flow, water disabler, lava disabler, quest door
+    [969] = true, -- events
 }
 
 local EntityNames = {

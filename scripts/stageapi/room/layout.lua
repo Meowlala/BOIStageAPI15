@@ -139,11 +139,16 @@ function StageAPI.AddObjectToRoomLayout(layout, index, objtype, variant, subtype
         index = StageAPI.VectorToGrid(gridX, gridY, layout.Width)
     end
 
-    if StageAPI.CorrectedGridTypes[objtype] then
-        local t, v = StageAPI.CorrectedGridTypes[objtype], variant
-        if type(t) == "table" then
-            v = t.Variant
-            t = t.Type
+    if StageAPI.CorrectedGridTypes[objtype] or StageAPI.ConsoleSpawnedGridTypes[objtype] then
+        local t, v
+        if StageAPI.ConsoleSpawnedGridTypes[objtype] then
+            t, v = objtype, variant
+        else
+            t, v = StageAPI.CorrectedGridTypes[objtype], variant
+            if type(t) == "table" then
+                v = t.Variant
+                t = t.Type
+            end
         end
 
         local gridData = {
