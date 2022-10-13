@@ -32,6 +32,57 @@ mod:AddCallback(ModCallbacks.MC_POST_GAME_STARTED, function()
             REVEL.AddedStageAPIChangelogs = true
         end
 
+        TryAddChangelog("v2.15 - 16", [[- Fixed MinimapAPI placement for
+custom room types
+
+- Fixed seeds for Repentance stages
+not being reset properly when
+GotoCustomStage is called
+
+- Fixed sending the player to a
+base game stage without specifying
+stage type having a chance to send
+the player to a Repentance stage
+
+- Fixed nightmare jingle not
+stopping when the transition cutscene
+is halted
+
+- Fixed off-grid luarooms loaded
+from room data becoming empty layouts
+
+- Removed automatic water droplet
+deleting in custom stages
+
+- Better error detection for invalid
+room layouts
+
+- Support for custom stages using
+a different stage as their base
+for level generation purposes
+
+- Support for replacing certain room
+subtypes with specific lists on
+a custom stage
+
+- Support for door graphics for
+Repentance doors
+
+- Support for champion enemies
+in custom stages
+
+- Support for placing rails, event rocks,
+and event pits in luarooms. Minecarts
+do not currently function
+
+- Added a custom member card
+placement metadata entity
+
+- LevelRooms can now have
+music specified, which will play
+while they are active
+]])
+
         TryAddChangelog("v2.14", [[- Fixed the EARLY_NEW_ROOM
 callback being called multiple times,
 causing some issues with room testing
