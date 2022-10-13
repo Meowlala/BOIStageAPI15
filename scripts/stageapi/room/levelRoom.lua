@@ -198,12 +198,34 @@ function StageAPI.LevelRoom:Copy(roomDesc)
     return newLevelRoom
 end
 
+StageAPI.ListIndexToGridRoomIndex = {
+    [507] = GridRooms.ROOM_DEVIL_IDX,
+    [508] = GridRooms.ROOM_ERROR_IDX,
+    [509] = GridRooms.ROOM_DEBUG_IDX,
+    [510] = GridRooms.ROOM_DUNGEON_IDX,
+    [511] = GridRooms.ROOM_BOSSRUSH_IDX,
+    [512] = GridRooms.ROOM_BLACK_MARKET_IDX,
+    [513] = GridRooms.ROOM_MEGA_SATAN_IDX,
+    [514] = GridRooms.ROOM_BLUE_WOOM_IDX,
+    [515] = GridRooms.ROOM_THE_VOID_IDX,
+    [516] = GridRooms.ROOM_SECRET_EXIT_IDX,
+    [517] = GridRooms.ROOM_GIDEON_DUNGEON_IDX,
+    [519] = GridRooms.ROOM_SECRET_SHOP_IDX,
+    [520] = GridRooms.ROOM_ROTGUT_DUNGEON1_IDX,
+    [521] = GridRooms.ROOM_ROTGUT_DUNGEON2_IDX,
+    [522] = GridRooms.ROOM_BLUE_ROOM_IDX,
+    [523] = GridRooms.ROOM_EXTRA_BOSS_IDX,
+    [524] = GridRooms.ROOM_ANGEL_SHOP_IDX,
+    [GridRooms.ROOM_GENESIS_IDX] = GridRooms.ROOM_DEVIL_IDX, -- wtf genesis??
+}
+
 function StageAPI.LevelRoom:GetLayout()
     if self.FromData and not self.Layout then
         local roomDesc = shared.Level:GetRooms():Get(self.FromData)
         if not roomDesc then
-            if self.FromData == 509 then
-                roomDesc = shared.Level:GetRoomByIdx(GridRooms.ROOM_DEBUG_IDX)
+            local gridRoomIndex = StageAPI.ListIndexToGridRoomIndex[self.FromData]
+            if gridRoomIndex then
+                roomDesc = shared.Level:GetRoomByIdx(gridRoomIndex)
             end
         end
 
