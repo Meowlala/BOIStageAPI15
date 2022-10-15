@@ -195,6 +195,7 @@ StageAPI.NonOverrideTrapdoors = {
     ["gfx/grid/trapdoor_downpour.anm2"] = true,
     ["gfx/grid/trapdoor_mines.anm2"] = true,
     ["gfx/grid/trapdoor_mausoleum.anm2"] = true,
+    ["gfx/grid/trapdoor_corpse_big.anm2"] = true
 }
 
 function StageAPI.CheckStageTrapdoor(grid, index)
