@@ -420,7 +420,7 @@ function StageAPI.SelectSpawnEntities(entities, seed, roomMetadata, lastPersiste
                 end
 
                 for _, entData in ipairs(addEntities) do
-                    persistentIndex = StageAPI.AddEntityToSpawnList(entitiesToSpawn[index], entData, persistentIndex, noChampions)
+                    persistentIndex = StageAPI.AddEntityToSpawnList(entitiesToSpawn[index], entData, persistentIndex, nil, noChampions)
                 end
             end
         end

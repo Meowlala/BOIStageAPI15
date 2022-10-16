@@ -395,8 +395,9 @@ end
 
 ---@param roomsList RoomsList
 ---@param useMapID? any
+---@param roomArgs? LevelRoomArgs
 ---@return LevelMap?
-function StageAPI.CreateMapFromRoomsList(roomsList, useMapID)
+function StageAPI.CreateMapFromRoomsList(roomsList, useMapID, roomArgs)
     local startingRoom
     local mapLayouts = {}
     local nonMapLayouts = {}
@@ -582,7 +583,7 @@ function StageAPI.CreateMapFromRoomsList(roomsList, useMapID)
                         end
                     end
 
-                    local newRoom = StageAPI.LevelRoom{
+                    local newRoom = StageAPI.LevelRoom(StageAPI.Merged({
                         RoomsListName = roomsList.Name,
                         RoomsListID = listIndex,
                         SpawnSeed = StageAPI.StageRNG:Next(),
@@ -592,7 +593,7 @@ function StageAPI.CreateMapFromRoomsList(roomsList, useMapID)
                         RoomType = roomLayout.Type,
                         IsPersistentRoom = true,
                         IsExtraRoom = true
-                    }
+                    }, roomArgs or {}))
 
                     local roomData = {X = setRoom.X, Y = setRoom.Y, AutoDoors = true}
                     if stage then

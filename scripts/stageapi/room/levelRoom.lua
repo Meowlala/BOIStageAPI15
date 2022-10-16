@@ -16,6 +16,7 @@ local Callbacks = require("scripts.stageapi.enums.Callbacks")
 ---@field IgnoreRoomRules boolean
 ---@field ReplaceVSStreak string
 ---@field Music Music # If set, will play this regardless of being in a custom stage
+---@field NoChampions boolean
 
 ---Default room args, but not necessarily only possible ones
 ---@param layoutName string
@@ -76,6 +77,7 @@ local levelRoomCopyFromArgs = {
     "RoomsListID",
     "ReplaceVSStreak",
     "Music",
+    "NoChampions"
 }
 
 ---@param layoutName string
@@ -119,6 +121,7 @@ end
 ---@field Music Music # If set, will play this regardless of being in a custom stage
 ---@field HasWaterPits boolean
 ---@field ChallengeDone boolean
+---@field NoChampions boolean
 StageAPI.LevelRoom = StageAPI.Class("LevelRoom")
 StageAPI.NextUniqueRoomIdentifier = 0
 function StageAPI.LevelRoom:Init(args, ...)
@@ -306,6 +309,10 @@ function StageAPI.LevelRoom:PostGetLayout(seed)
     end
 
     local noChampions = StageAPI.InNewStage() and StageAPI.GetCurrentStage().NoChampions == true
+    if self.NoChampions ~= nil then
+        noChampions = self.NoChampions
+    end
+
     self.SpawnEntities, self.SpawnGrids, self.EntityTakenIndices, self.GridTakenIndices, self.LastPersistentIndex, self.Metadata = StageAPI.ObtainSpawnObjects(self.Layout, seed, noChampions)
     self.Metadata.LevelRoom = self
 end
@@ -515,7 +522,7 @@ local saveDataCopyDirectly = {
     "IsClear","WasClearAtStart","RoomsListName","RoomsListID","LayoutName","SpawnSeed","AwardSeed","DecorationSeed",
     "FirstLoad","Shape","RoomType","TypeOverride","PersistentData","IsExtraRoom","LastPersistentIndex",
     "RequireRoomType", "IgnoreRoomRules", "VisitCount", "ClearCount", "LevelIndex","HasWaterPits","ChallengeDone",
-    "SurpriseMiniboss", "FromData", "Dimension"
+    "SurpriseMiniboss", "FromData", "Dimension", "NoChampions"
 }
 
 function StageAPI.LevelRoom:GetSaveData(isExtraRoom)
