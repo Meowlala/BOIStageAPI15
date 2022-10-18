@@ -32,7 +32,7 @@ mod:AddCallback(ModCallbacks.MC_POST_GAME_STARTED, function()
             REVEL.AddedStageAPIChangelogs = true
         end
 
-        TryAddChangelog("v2.15 - 16", [[- Fixed MinimapAPI placement for
+        TryAddChangelog("v2.15 - 17", [[- Fixed MinimapAPI placement for
 custom room types
 
 - Fixed seeds for Repentance stages
@@ -70,6 +70,10 @@ Repentance doors
 
 - Support for champion enemies
 in custom stages
+
+-- Custom stages and individual
+LevelRooms can disable champions
+for old behavior
 
 - Support for placing rails, event rocks,
 and event pits in luarooms. Minecarts
