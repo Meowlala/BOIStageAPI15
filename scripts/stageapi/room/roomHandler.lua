@@ -640,11 +640,6 @@ function StageAPI.LoadEntitiesFromEntitySets(entitysets, doGrids, doPersistentOn
                                     nil
                                 )
 
-                                local currentStage = StageAPI.GetCurrentStage()
-                                if currentStage then
-                                    StageAPI.RecalculateEntityStageHP(ent)
-                                end
-
                                 if not ent:IsBoss() and ent:ToNPC() then
                                     if entityData.ChampionSeed then
                                         ent:ToNPC():MakeChampion(entityData.ChampionSeed, -1, true)
@@ -1147,5 +1142,12 @@ mod:AddCallback(ModCallbacks.MC_POST_ENTITY_KILL, function(_, ent)
     local index, data = StageAPI.GetEntityPersistenceData(ent)
     if data and data.RemoveOnDeath then
         StageAPI.RemovePersistentEntity(ent)
+    end
+end)
+
+mod:AddCallback(ModCallbacks.MC_POST_NPC_INIT, function(_, ent)
+    local currentStage = StageAPI.GetCurrentStage()
+    if currentStage then
+        StageAPI.RecalculateEntityStageHP(ent)
     end
 end)
