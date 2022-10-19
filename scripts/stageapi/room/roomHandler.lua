@@ -642,7 +642,7 @@ function StageAPI.LoadEntitiesFromEntitySets(entitysets, doGrids, doPersistentOn
 
                                 local currentStage = StageAPI.GetCurrentStage()
                                 if currentStage then
-                                    StageAPI.RecalculateStageHP(ent)
+                                    StageAPI.RecalculateEntityStageHP(ent)
                                 end
 
                                 if not ent:IsBoss() and ent:ToNPC() then
