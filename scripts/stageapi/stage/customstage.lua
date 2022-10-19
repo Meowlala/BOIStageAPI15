@@ -73,8 +73,9 @@ function StageAPI.CustomStage:SetXLStage(stage)
     self.XLStage = stage
 end
 
-function StageAPI.CustomStage:SetStageNumber(num)
+function StageAPI.CustomStage:SetStageNumber(num, stageHPNumber)
     self.StageNumber = num
+    self.StageHPNumber = self.StageHPNumber or num
 end
 
 function StageAPI.CustomStage:SetNoChampions(bool)
@@ -224,6 +225,16 @@ end
 
 function StageAPI.CustomStage:SetBossMusic(music, clearedMusic, intro, outro)
     self.BossMusic = {
+        Fight = music,
+        Cleared = clearedMusic,
+        Intro = intro,
+        Outro = outro
+    }
+end
+
+-- By default, miniboss = sins
+function StageAPI.CustomStage:SetMinibossMusic(music, clearedMusic, intro, outro)
+    self.MinibossMusic = {
         Fight = music,
         Cleared = clearedMusic,
         Intro = intro,
@@ -560,6 +571,7 @@ end
 function StageAPI.CustomStage:GetPlayingMusic()
     local roomType = shared.Room:GetType()
     local id = shared.Music:GetCurrentMusicID()
+    local roomDesc = shared.Level:GetCurrentRoomDesc()
     if roomType == RoomType.ROOM_BOSS then
         if self.BossMusic then
             local music = self.BossMusic
@@ -589,6 +601,43 @@ function StageAPI.CustomStage:GetPlayingMusic()
             end
 
             local newMusicID = StageAPI.CallCallbacks(Callbacks.POST_SELECT_BOSS_MUSIC, true, self, musicID, isCleared, StageAPI.MusicRNG)
+            if newMusicID then
+                musicID = newMusicID
+            end
+
+            if musicID then
+                return musicID, not shared.Room:IsClear(), queue, disregardNonOverride
+            end
+        end
+    elseif roomDesc.SurpriseMiniboss or roomType == RoomType.ROOM_MINIBOSS then
+        if self.MinibossMusic then
+            local music = self.MinibossMusic
+            local musicID, queue, disregardNonOverride
+            local isCleared = shared.Room:GetAliveBossesCount() < 1 or shared.Room:IsClear()
+
+            if (music.Outro and (id == Music.MUSIC_JINGLE_BOSS_OVER or id == Music.MUSIC_JINGLE_BOSS_OVER2 or id == music.Outro or (type(music.Outro) == "table" and StageAPI.IsIn(music.Outro, id))))
+            or (music.Intro and (id == Music.MUSIC_JINGLE_BOSS or id == music.Intro or (type(music.Intro) == "table" and StageAPI.IsIn(music.Intro, id)))) then
+                if id == Music.MUSIC_JINGLE_BOSS or id == music.Intro or (type(music.Intro) == "table" and StageAPI.IsIn(music.Intro, id)) then
+                    musicID, queue = music.Intro, music.Fight
+                else
+                    musicID, queue = music.Outro, music.Cleared
+                end
+
+                disregardNonOverride = true
+            else
+                if isCleared then
+                    musicID = music.Cleared
+                else
+                    musicID = music.Fight
+                end
+            end
+
+            if type(musicID) == "table" then
+                StageAPI.MusicRNG:SetSeed(shared.Room:GetDecorationSeed(), 0)
+                musicID = musicID[StageAPI.Random(1, #musicID, StageAPI.MusicRNG)]
+            end
+
+            local newMusicID = StageAPI.CallCallbacks(Callbacks.POST_SELECT_MINIBOSS_MUSIC, true, self, musicID, isCleared, StageAPI.MusicRNG)
             if newMusicID then
                 musicID = newMusicID
             end

@@ -11,7 +11,7 @@ local subModules = {
     "bosses",
     "floorInfo",
     "music",
-    "champions",
+    "entityconfig",
 }
 
 local moduleName = "reimpl"

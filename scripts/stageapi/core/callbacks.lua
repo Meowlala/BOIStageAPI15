@@ -1425,7 +1425,9 @@ StageAPI.AddCallback("StageAPI", Callbacks.POST_ROOM_LOAD, 1, function(currentRo
                 Isaac.GridSpawn(GridEntityType.GRID_STAIRS, SECRET_SHOP_LADDER_VARIANT, pos)
             end
 
-            currentRoom.PersistentData.MemberCardIndex = shared.Room:GetGridIndex(pos)
+            if pos then
+                currentRoom.PersistentData.MemberCardIndex = shared.Room:GetGridIndex(pos)
+            end
         elseif currentRoom.PersistentData.MemberCardIndex then
             -- Check if a trapdoor/ladder was spawned in default vanilla position
             -- and move it

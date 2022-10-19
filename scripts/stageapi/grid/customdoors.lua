@@ -193,7 +193,7 @@ end
 ---@param doorDataName string
 ---@param data? table
 ---@param exitSlot? DoorSlot
----@param doorSprite? Sprite
+---@param doorSprite? DoorSprite | string | string[]
 ---@param transitionAnim? RoomTransitionAnim
 ---@param exitPosition? Vector
 ---@param force? boolean do not check if a door already exists at the slot
@@ -390,7 +390,7 @@ StageAPI.AddCallback("StageAPI", Callbacks.POST_SPAWN_CUSTOM_GRID, 0, function(c
 
     local grid = shared.Room:GetGridEntity(index)
     if not grid then
-        StageAPI.LogErr("Custom door not find grid at", index, "slot",persistData.Slot)
+        StageAPI.LogErr("Custom door not find grid at ", index, " slot ",persistData.Slot)
     end
 
     if opened then
