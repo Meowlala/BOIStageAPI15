@@ -122,6 +122,7 @@ end
 ---@field HasWaterPits boolean
 ---@field ChallengeDone boolean
 ---@field NoChampions boolean
+---@field JustCleared boolean
 StageAPI.LevelRoom = StageAPI.Class("LevelRoom")
 StageAPI.NextUniqueRoomIdentifier = 0
 function StageAPI.LevelRoom:Init(args, ...)
