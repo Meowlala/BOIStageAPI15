@@ -73,8 +73,9 @@ function StageAPI.CustomStage:SetXLStage(stage)
     self.XLStage = stage
 end
 
-function StageAPI.CustomStage:SetStageNumber(num)
+function StageAPI.CustomStage:SetStageNumber(num, stageHPNumber)
     self.StageNumber = num
+    self.StageHPNumber = self.StageHPNumber or num
 end
 
 function StageAPI.CustomStage:SetNoChampions(bool)

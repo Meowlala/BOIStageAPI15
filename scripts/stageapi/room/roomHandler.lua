@@ -640,6 +640,11 @@ function StageAPI.LoadEntitiesFromEntitySets(entitysets, doGrids, doPersistentOn
                                     nil
                                 )
 
+                                local currentStage = StageAPI.GetCurrentStage()
+                                if currentStage then
+                                    StageAPI.RecalculateStageHP(ent)
+                                end
+
                                 if not ent:IsBoss() and ent:ToNPC() then
                                     if entityData.ChampionSeed then
                                         ent:ToNPC():MakeChampion(entityData.ChampionSeed, -1, true)
