@@ -333,10 +333,7 @@ function StageAPI.AddEntityToSpawnList(tbl, entData, persistentIndex, index, noC
     entData.Index = entData.Index or index or 0
     
     if not noChampions and entData.Type > 9 and entData.Type < 1000 then
-        if not (StageAPI.CantBeChampions[entData.Type] 
-        or StageAPI.CantBeChampions[entData.Type.." "..entData.Variant] 
-        or StageAPI.CantBeChampions[entData.Type.." "..entData.Variant.." "..entData.SubType])
-        then
+        if StageAPI.CanBeChampion(entData.Type, entData.Variant, entData.SubType) then
             if StageAPI.RoomLoadRNG:RandomFloat() <= StageAPI.GetChampionChance() then
                 entData.ChampionSeed = StageAPI.RoomLoadRNG:GetSeed()
             end
