@@ -569,7 +569,7 @@ function StageAPI.GenerateBaseRoom(roomDesc)
             end
         end)
 
-        if hasMetadataEntity or true then
+        if hasMetadataEntity then
             newRoom = StageAPI.LevelRoom{
                 FromData = roomDesc.ListIndex,
                 RoomDescriptor = roomDesc
