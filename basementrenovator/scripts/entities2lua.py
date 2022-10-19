@@ -102,6 +102,8 @@ def main():
                     else:
                         tblprop = value
                 else:
+                    value = value.replace("\\", "\\\\")
+                    value = value.replace('"', '\\"')
                     tblprop = '"' + value + '"'
 
                 entitytable += ATTRIB_MAP[key] + "=" + tblprop + ","
