@@ -61,7 +61,14 @@ function StageAPI.GetEntityConfig(id, var, sub)
                         else
                             local n = next(byType[id])
                             if n then
-                                mostSpecific = n
+                                if n[0] then
+                                    mostSpecific = n[0]
+                                else
+                                    local n2 = next(n)
+                                    if n2 then
+                                        mostSpecific = n2
+                                    end
+                                end
                             end
                         end
                     end
