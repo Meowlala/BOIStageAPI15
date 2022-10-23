@@ -36,12 +36,34 @@ function StageAPI.GetEntityConfig(id, var, sub)
                     if byType[id][var][sub] then
                         return byType[id][var][sub]
                     else
-                        mostSpecific = byType[id][var][0]
-                        specificVariant = true
+                        if byType[id][var][0] then
+                            mostSpecific = byType[id][var][0]
+                            specificVariant = true
+                        else
+                            local n = next(byType[id][var])
+                            if n then
+                                mostSpecific = n
+                                specificVariant = true
+                            end
+                        end
                     end
                 else
                     if not specificVariant then
-                        mostSpecific = byType[id][0][0]
+                        if byType[id][0] then
+                            if byType[id][0][0] then
+                                mostSpecific = byType[id][0][0]
+                            else
+                                local n = next(byType[id][0])
+                                if n then
+                                    mostSpecific = n
+                                end
+                            end
+                        else
+                            local n = next(byType[id])
+                            if n then
+                                mostSpecific = n
+                            end
+                        end
                     end
                 end
             end
