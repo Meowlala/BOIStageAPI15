@@ -40,9 +40,9 @@ function StageAPI.GetEntityConfig(id, var, sub)
                             mostSpecific = byType[id][var][0]
                             specificVariant = true
                         else
-                            local n = next(byType[id][var])
-                            if n then
-                                mostSpecific = n
+                            local _, nextVal = next(byType[id][var])
+                            if nextVal then
+                                mostSpecific = nextVal
                                 specificVariant = true
                             end
                         end
@@ -53,20 +53,20 @@ function StageAPI.GetEntityConfig(id, var, sub)
                             if byType[id][0][0] then
                                 mostSpecific = byType[id][0][0]
                             else
-                                local n = next(byType[id][0])
-                                if n then
-                                    mostSpecific = n
+                                local _, nextVal = next(byType[id])
+                                if nextVal then
+                                    mostSpecific = nextVal
                                 end
                             end
                         else
-                            local n = next(byType[id])
-                            if n then
-                                if n[0] then
-                                    mostSpecific = n[0]
+                            local _, nextVal = next(byType[id])
+                            if nextVal then
+                                if nextVal[0] then
+                                    mostSpecific = nextVal[0]
                                 else
-                                    local n2 = next(n)
-                                    if n2 then
-                                        mostSpecific = n2
+                                    local _, nextVal2 = next(nextVal)
+                                    if nextVal2 then
+                                        mostSpecific = nextVal2
                                     end
                                 end
                             end
