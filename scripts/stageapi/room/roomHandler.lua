@@ -1146,8 +1146,7 @@ mod:AddCallback(ModCallbacks.MC_POST_ENTITY_KILL, function(_, ent)
 end)
 
 mod:AddCallback(ModCallbacks.MC_POST_NPC_INIT, function(_, ent)
-    local currentStage = StageAPI.GetCurrentStage()
-    if currentStage then
+    if StageAPI.InNewStage() then
         StageAPI.RecalculateEntityStageHP(ent)
     end
 end)

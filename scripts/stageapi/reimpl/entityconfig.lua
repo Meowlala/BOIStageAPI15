@@ -36,12 +36,41 @@ function StageAPI.GetEntityConfig(id, var, sub)
                     if byType[id][var][sub] then
                         return byType[id][var][sub]
                     else
-                        mostSpecific = byType[id][var][0]
-                        specificVariant = true
+                        if byType[id][var][0] then
+                            mostSpecific = byType[id][var][0]
+                            specificVariant = true
+                        else
+                            local _, nextVal = next(byType[id][var])
+                            if nextVal then
+                                mostSpecific = nextVal
+                                specificVariant = true
+                            end
+                        end
                     end
                 else
                     if not specificVariant then
-                        mostSpecific = byType[id][0][0]
+                        if byType[id][0] then
+                            if byType[id][0][0] then
+                                mostSpecific = byType[id][0][0]
+                            else
+                                local _, nextVal = next(byType[id])
+                                if nextVal then
+                                    mostSpecific = nextVal
+                                end
+                            end
+                        else
+                            local _, nextVal = next(byType[id])
+                            if nextVal then
+                                if nextVal[0] then
+                                    mostSpecific = nextVal[0]
+                                else
+                                    local _, nextVal2 = next(nextVal)
+                                    if nextVal2 then
+                                        mostSpecific = nextVal2
+                                    end
+                                end
+                            end
+                        end
                     end
                 end
             end
