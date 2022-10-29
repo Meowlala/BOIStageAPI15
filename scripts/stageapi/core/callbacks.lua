@@ -802,7 +802,8 @@ mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, function()
     local setDefaultLevelMap
     if not StageAPI.TransitioningToExtraRoom then
         local reversedIntoExtraRoom
-        if StageAPI.PreviousExtraRoomData.RoomIndex == shared.Level:GetCurrentRoomIndex() then
+        if StageAPI.PreviousExtraRoomData
+        and StageAPI.PreviousExtraRoomData.RoomIndex == shared.Level:GetCurrentRoomIndex() then
             local desc = shared.Level:GetCurrentRoomDesc()
             if desc.Data.Variant == StageAPI.PreviousExtraRoomData.RoomVariant and desc.SpawnSeed == StageAPI.PreviousExtraRoomData.RoomSeed then
                 StageAPI.CurrentLevelMapID = StageAPI.PreviousExtraRoomData.MapID
@@ -812,7 +813,8 @@ mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, function()
         end
 
         if not reversedIntoExtraRoom then
-            if StageAPI.PreviousExtraRoomData.RoomIndex then
+            if StageAPI.PreviousExtraRoomData
+            and StageAPI.PreviousExtraRoomData.RoomIndex then
                 if StageAPI.PreviousExtraRoomData.RoomIndex ~= shared.Level:GetPreviousRoomIndex() then
                     StageAPI.PreviousExtraRoomData = {}
                 else
