@@ -170,3 +170,27 @@ function StageAPI.FindFreeIndex(fromIndex, checkEntities, checkGrids, entityPart
         toCheck = newToCheck
     end
 end
+
+---@param collectibleType CollectibleType
+---@return boolean
+function StageAPI.AnyPlayerHasItem(collectibleType)
+    for _, player in ipairs(shared.Players) do
+        if player:HasCollectible(collectibleType) then
+            return true
+        end
+    end
+
+    return false
+end
+
+---@param trinketType TrinketType
+---@return boolean
+function StageAPI.AnyPlayerHasTrinket(trinketType)
+    for _, player in ipairs(shared.Players) do
+        if player:HasTrinket(trinketType) then
+            return true
+        end
+    end
+
+    return false
+end
