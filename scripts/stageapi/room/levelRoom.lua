@@ -241,6 +241,10 @@ Base game treasure rooms have:
 ---@return integer? requireSubType
 ---@return boolean? forceRequiredSubtype
 local function GetRequiredLevelRoomSubtype(levelRoom)
+    if levelRoom.IgnoreRoomRules then
+        return
+    end
+    
     if levelRoom:GetType() == RoomType.ROOM_TREASURE then
         local hasMoreOptions = StageAPI.AnyPlayerHasItem(CollectibleType.COLLECTIBLE_MORE_OPTIONS)
         local hasBrokenGlasses = StageAPI.AnyPlayerHasTrinket(TrinketType.TRINKET_BROKEN_GLASSES)
