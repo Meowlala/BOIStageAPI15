@@ -32,12 +32,17 @@ mod:AddCallback(ModCallbacks.MC_POST_GAME_STARTED, function()
             REVEL.AddedStageAPIChangelogs = true
         end
 
-        TryAddChangelog("v2.18", [[- StageAPI now loads entities2
+        TryAddChangelog("v2.18 - 20", [[- StageAPI now loads entities2
 xml data and uses it for
 champion validation and stage hp
 
 - Miniboss music support for
 custom stages
+
+- Lua treasure room generation now
+more closely matches base game
+by default, including support
+for pay to play and broken glasses
 
 - Fixes for member card relocator
 
