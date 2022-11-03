@@ -223,6 +223,50 @@ StageAPI.ListIndexToGridRoomIndex = {
     [GridRooms.ROOM_GENESIS_IDX] = GridRooms.ROOM_DEVIL_IDX, -- wtf genesis??
 }
 
+
+--#region ItemRoomItems
+--Related to issue #58
+
+-- More options, pay to win, broken glasses, voodoo head (curse rooms)
+
+--[[
+Base game treasure rooms have:
+- Subtype 0: normal treasure rooms
+- Subtype 1: double treasure rooms (used by more options)
+- Subtype 2: treasure rooms with restock machine
+- Subtype 3: double treasure rooms with restock machine
+]]
+
+---@param levelRoom LevelRoom
+---@return integer? requireSubType
+---@return boolean? forceRequiredSubtype
+local function GetRequiredLevelRoomSubtype(levelRoom)
+    if levelRoom.IgnoreRoomRules then
+        return
+    end
+    
+    if levelRoom:GetType() == RoomType.ROOM_TREASURE then
+        local hasMoreOptions = StageAPI.AnyPlayerHasItem(CollectibleType.COLLECTIBLE_MORE_OPTIONS)
+        local hasBrokenGlasses = StageAPI.AnyPlayerHasTrinket(TrinketType.TRINKET_BROKEN_GLASSES)
+        local hasPayToWin = StageAPI.AnyPlayerHasTrinket(TrinketType.TRINKET_PAY_TO_WIN)
+
+        local brokenGlassesRng = RNG()
+        brokenGlassesRng:SetSeed(levelRoom.Seed, 40)
+        local triggersBrokenGlasses = hasBrokenGlasses and brokenGlassesRng:RandomFloat() < 0.5
+
+        local requireSubtype = 0
+
+        if hasMoreOptions or triggersBrokenGlasses then
+            requireSubtype = requireSubtype + 1
+        end
+        if hasPayToWin then
+            requireSubtype = requireSubtype + 2
+        end
+
+        return requireSubtype, false
+    end
+end
+
 function StageAPI.LevelRoom:GetLayout()
     if self.FromData and not self.Layout then
         local roomDesc = shared.Level:GetRooms():Get(self.FromData)
@@ -266,6 +310,8 @@ function StageAPI.LevelRoom:GetLayout()
                     StageAPI.LogErr("PRE_ROOM_LAYOUT_CHOOSE | A callback returned a non-table layout! Value is ", tostring(retLayout), " type is ", type(retLayout))
                 end
             else
+                local requireSubtype, forceRequiredSubtype = GetRequiredLevelRoomSubtype(self)
+
                 self.Layout = StageAPI.ChooseRoomLayout{
                     RoomList = roomsList,
                     Seed = self.SpawnSeed,
@@ -274,7 +320,9 @@ function StageAPI.LevelRoom:GetLayout()
                     RoomType = self.RoomType,
                     RequireRoomType = self.RequireRoomType,
                     IgnoreDoors = self.IgnoreDoors,
-                    Doors = self.Doors
+                    Doors = self.Doors,
+                    RequireSubtype = requireSubtype,
+                    ForceRequiredSubtype = forceRequiredSubtype,
                 }
 
                 if self.IgnoreShape then

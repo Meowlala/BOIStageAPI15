@@ -169,6 +169,8 @@ end
 ---@field Doors boolean[]
 ---@field Seed integer
 ---@field DisallowIDs any[]
+---@field RequireSubtype integer?
+---@field ForceRequiredSubtype boolean
 
 -- returns list of rooms, error message if no rooms valid
 ---@param args GetValidRoomsForLayout.Args
@@ -201,6 +203,8 @@ function StageAPI.GetValidRoomsForLayout(args)
     local seed = args.Seed or roomDesc.SpawnSeed
     local disallowIDs = args.DisallowIDs
 
+    local requireSubtype = args.RequireSubtype
+
     for listID, layout in ipairs(possibleRooms) do
         shape = layout.Shape
 
@@ -211,6 +215,10 @@ function StageAPI.GetValidRoomsForLayout(args)
             isValid = false
         elseif not ignoreDoors then
             isValid, numNonExistingDoors = StageAPI.DoLayoutDoorsMatch(layout, doors)
+        end
+
+        if isValid and requireSubtype then
+            isValid = layout.SubType == requireSubtype
         end
 
         if isValid and disallowIDs then
@@ -271,6 +279,7 @@ StageAPI.RoomChooseRNG = RNG()
 ---@return integer? listId
 ---@overload fun(args: GetValidRoomsForLayout.Args)
 function StageAPI.ChooseRoomLayout(roomList, seed, shape, rtype, requireRoomType, ignoreDoors, doors, disallowIDs)
+    ---@type GetValidRoomsForLayout.Args
     local args
     if roomList.Type ~= "RoomsList" then
         args = roomList
@@ -289,6 +298,20 @@ function StageAPI.ChooseRoomLayout(roomList, seed, shape, rtype, requireRoomType
 
     local validRooms, totalWeight, err = StageAPI.GetValidRoomsForLayout(args)
     if err then StageAPI.LogErr(err) end
+
+    if args.RequireSubtype and not args.ForceRequiredSubtype
+    and #validRooms == 0 then
+        StageAPI.LogWarn("No room for subtype ", args.RequireSubtype, " found, trying with any...")
+
+        local requireSubtype = args.RequireSubtype
+        args.RequireSubtype = nil
+
+        validRooms, totalWeight, err = StageAPI.GetValidRoomsForLayout(args)
+        if err then StageAPI.LogErr(err) end
+
+        -- In case it's a static external object, do not alter it
+        args.RequireSubtype = requireSubtype
+    end
 
     if #validRooms > 0 then
         StageAPI.RoomChooseRNG:SetSeed(args.Seed, 0)
@@ -666,7 +689,21 @@ function StageAPI.LoadEntitiesFromEntitySets(entitysets, doGrids, doPersistentOn
                                 if followRoomRules then
                                     if entityData.Type == EntityType.ENTITY_PICKUP and entityData.Variant == PickupVariant.PICKUP_COLLECTIBLE then
                                         if currentRoom.RoomType == RoomType.ROOM_TREASURE then
-                                            if currentRoom.Layout.Variant > 0 or string.find(string.lower(currentRoom.Layout.Name), "choice") or string.find(string.lower(currentRoom.Layout.Name), "choose") then
+                                            local hasBrokenGlasses = StageAPI.AnyPlayerHasTrinket(TrinketType.TRINKET_BROKEN_GLASSES)
+                                    
+                                            --[[
+                                            Base game treasure rooms have:
+                                            - Subtype 0: normal treasure rooms (includes rare double item treasure rooms)
+                                            - Subtype 1: double treasure rooms (used by more options / broken glasses)
+                                            - Subtype 2: treasure rooms with restock machine (used by pay to play)
+                                            - Subtype 3: double treasure rooms with restock machine (used by both)
+                                            ]]
+
+                                            if currentRoom.Layout.Variant == 1
+                                            or currentRoom.Layout.Variant == 3
+                                            or string.find(string.lower(currentRoom.Layout.Name), "choice") 
+                                            or string.find(string.lower(currentRoom.Layout.Name), "choose") 
+                                            then
                                                 ent:ToPickup().OptionsPickupIndex = 1
                                             end
 
@@ -681,6 +718,17 @@ function StageAPI.LoadEntitiesFromEntitySets(entitysets, doGrids, doPersistentOn
                                             if isShopItem then
                                                 ent:ToPickup().Price = 15
                                                 ent:ToPickup().AutoUpdatePrice = true
+                                            end
+
+                                            -- Per vanilla behavior, always affects extra item
+                                            -- even with other items that add a choice item
+                                            if hasBrokenGlasses then
+                                                local collectibles = Isaac.FindByType(EntityType.ENTITY_PICKUP, PickupVariant.PICKUP_COLLECTIBLE)
+                                                if collectibles[2] then
+                                                    local sprite = collectibles[2]:GetSprite()
+                                                    sprite:ReplaceSpritesheet(1, "gfx/items/collectibles/questionmark.png")
+                                                    sprite:LoadGraphics()
+                                                end
                                             end
                                         end
                                     end
