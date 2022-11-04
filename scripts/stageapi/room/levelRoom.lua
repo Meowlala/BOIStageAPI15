@@ -237,6 +237,14 @@ Base game treasure rooms have:
 - Subtype 3: double treasure rooms with restock machine
 ]]
 
+--[[
+Shops:
+- Subtype 100: tainted keeper shops
+
+there's a little more nuance to how shops work now in repentance (different subtypes per shop level)
+but this will do for now
+]]
+
 ---@param levelRoom LevelRoom
 ---@return integer? requireSubType
 ---@return boolean? forceRequiredSubtype
@@ -261,6 +269,25 @@ local function GetRequiredLevelRoomSubtype(levelRoom)
         end
         if hasPayToWin then
             requireSubtype = requireSubtype + 2
+        end
+
+        return requireSubtype, false
+    end
+
+    if levelRoom:GetType() == RoomType.ROOM_SHOP then
+        local tKeeper = false
+
+        for _, player in ipairs(shared.Players) do
+            if player:GetPlayerType() == PlayerType.PLAYER_KEEPER_B then
+                tKeeper = true
+                break
+            end
+        end
+
+        local requireSubtype = 0
+        
+        if tKeeper then
+            requireSubtype = 100
         end
 
         return requireSubtype, false
