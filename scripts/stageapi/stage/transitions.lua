@@ -52,11 +52,20 @@ function StageAPI.RenderBlackScreen(alpha)
     StageAPI.BlackScreenOverlay:Render(StageAPI.GetScreenCenterPosition(), Vector.Zero, Vector.Zero)
 end
 
+StageAPI.ShakeOffset = -1
+StageAPI.ShakeOffsetInc = 1 -- Inc = Increment
 mod:AddCallback(ModCallbacks.MC_POST_RENDER, function()
     if StageAPI.TransitionAnimation:IsPlaying("Scene") or StageAPI.TransitionAnimation:IsPlaying("SceneNoShake") or StageAPI.TransitionAnimation:IsPlaying("Intro") then
         if StageAPI.IsOddRenderFrame then
             StageAPI.TransitionAnimation:Update()
             StageAPI.ExtraPortrait:Update()
+
+            StageAPI.ShakeOffset = StageAPI.ShakeOffset + StageAPI.ShakeOffsetInc
+            if StageAPI.ShakeOffset >= 1 then
+                StageAPI.ShakeOffsetInc = -1
+            elseif StageAPI.ShakeOffset <= -1 then
+                StageAPI.ShakeOffsetInc = 1
+            end
         end
 
         local stop
@@ -86,7 +95,7 @@ mod:AddCallback(ModCallbacks.MC_POST_RENDER, function()
         StageAPI.TransitionIsPlaying = true
         StageAPI.RenderBlackScreen()
         StageAPI.TransitionAnimation:Render(StageAPI.GetScreenCenterPosition(), Vector.Zero, Vector.Zero)
-        StageAPI.ExtraPortrait:Render(StageAPI.GetScreenCenterPosition() + Vector(-74, -17)--[[Magic trial and error numbers to make it work without adjusting anm2 files]], Vector.Zero, Vector.Zero)
+        StageAPI.ExtraPortrait:Render(StageAPI.GetScreenCenterPosition() + Vector(-74 + StageAPI.ShakeOffset, -17)--[[Magic trial and error numbers to make it work without adjusting anm2 files]], Vector.Zero, Vector.Zero)
     elseif StageAPI.TransitionIsPlaying then -- Finished transition
         StageAPI.TransitionIsPlaying = false
         if StageAPI.CurrentStage then
@@ -186,6 +195,9 @@ function StageAPI.PlayTransitionAnimationManual(portrait, icon, ground, bg, tran
     else
         StageAPI.ExtraPortrait = Sprite()
     end
+
+    StageAPI.ShakeOffset = -1
+    StageAPI.ShakeOffsetInc = 1
 
     shared.Music:Play(transitionmusic, 0)
     shared.Music:UpdateVolume()

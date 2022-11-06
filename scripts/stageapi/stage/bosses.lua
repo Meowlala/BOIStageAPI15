@@ -167,6 +167,8 @@ StageAPI.PlayerBossInfo[PlayerType.PLAYER_THEFORGOTTEN_B].ControlsFrame = 1
 StageAPI.PlayerBossInfo[PlayerType.PLAYER_THESOUL_B].ControlsFrame = 1
 StageAPI.PlayerBossInfo[PlayerType.PLAYER_THELOST_B].NoShake = true
 
+StageAPI.PlayerBossInfo[PlayerType.PLAYER_EDEN_B].ExtraPortrait = "gfx/ui/stage/eden_b_head.anm2"
+
 -- bossportrait is optional since Repentance, used if you want
 -- your character to have a different boss portrait than the stage one
 function StageAPI.AddPlayerGraphicsInfo(playertype, portrait, namefile, noshake, bossportrait, extraportrait)
