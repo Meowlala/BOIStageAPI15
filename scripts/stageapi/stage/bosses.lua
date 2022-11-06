@@ -169,11 +169,12 @@ StageAPI.PlayerBossInfo[PlayerType.PLAYER_THELOST_B].NoShake = true
 
 -- bossportrait is optional since Repentance, used if you want
 -- your character to have a different boss portrait than the stage one
-function StageAPI.AddPlayerGraphicsInfo(playertype, portrait, namefile, noshake, bossportrait)
+function StageAPI.AddPlayerGraphicsInfo(playertype, portrait, namefile, noshake, bossportrait, extraportrait)
     local args = portrait
     if type(args) ~= "table" then
         args = {
             Portrait = portrait,
+            ExtraPortrait = extraportrait,
             Name = namefile,
             BossPortrait = bossportrait,
             NoShake = noshake,

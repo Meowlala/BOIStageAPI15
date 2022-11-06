@@ -32,6 +32,7 @@ StageAPI.StageTypes = {
 
 StageAPI.TransitionAnimation = Sprite()
 StageAPI.TransitionAnimation:Load("stageapi/transition/customnightmare.anm2", true)
+StageAPI.ExtraPortrait = Sprite()
 
 StageAPI.RemovedHUD = false
 StageAPI.TransitionIsPlaying = false
@@ -55,6 +56,7 @@ mod:AddCallback(ModCallbacks.MC_POST_RENDER, function()
     if StageAPI.TransitionAnimation:IsPlaying("Scene") or StageAPI.TransitionAnimation:IsPlaying("SceneNoShake") or StageAPI.TransitionAnimation:IsPlaying("Intro") then
         if StageAPI.IsOddRenderFrame then
             StageAPI.TransitionAnimation:Update()
+            StageAPI.ExtraPortrait:Update()
         end
 
         local stop
@@ -84,6 +86,7 @@ mod:AddCallback(ModCallbacks.MC_POST_RENDER, function()
         StageAPI.TransitionIsPlaying = true
         StageAPI.RenderBlackScreen()
         StageAPI.TransitionAnimation:Render(StageAPI.GetScreenCenterPosition(), Vector.Zero, Vector.Zero)
+        StageAPI.ExtraPortrait:Render(StageAPI.GetScreenCenterPosition(), Vector.Zero, Vector.Zero)
     elseif StageAPI.TransitionIsPlaying then -- Finished transition
         StageAPI.TransitionIsPlaying = false
         if StageAPI.CurrentStage then
@@ -153,7 +156,7 @@ function StageAPI.GetLevelTransitionIcon(stage, stype)
     return "stageapi/transition/levelicons/" .. base .. ".png"
 end
 
-function StageAPI.PlayTransitionAnimationManual(portrait, icon, ground, bg, transitionmusic, queue, noshake)
+function StageAPI.PlayTransitionAnimationManual(portrait, icon, ground, bg, transitionmusic, queue, noshake, extraportrait)
     portrait = portrait or "gfx/ui/stage/playerportrait_isaac.png"
     icon = icon or "stageapi/transition/levelicons/unknown.png"
     ground = ground or "stageapi/transition/bossspot_01_basement.png"
@@ -177,6 +180,13 @@ function StageAPI.PlayTransitionAnimationManual(portrait, icon, ground, bg, tran
     StageAPI.TransitionAnimation:LoadGraphics()
     StageAPI.TransitionAnimation:Play("Intro", true)
 
+    if extraportrait then
+        StageAPI.ExtraPortrait:Load(extraportrait, true)
+        StageAPI.ExtraPortrait:Play("Idle", true)
+    else
+        StageAPI.ExtraPortrait = Sprite()
+    end
+
     shared.Music:Play(transitionmusic, 0)
     shared.Music:UpdateVolume()
 
@@ -187,7 +197,7 @@ end
 
 function StageAPI.PlayTransitionAnimation(stage)
     local gfxData = StageAPI.TryGetPlayerGraphicsInfo(shared.Players[1])
-    StageAPI.PlayTransitionAnimationManual(gfxData.Portrait, stage.TransitionIcon, stage.TransitionGround, stage.TransitionBackground, stage.TransitionMusic, stage.Music and stage.Music[RoomType.ROOM_DEFAULT], gfxData.NoShake)
+    StageAPI.PlayTransitionAnimationManual(gfxData.Portrait, stage.TransitionIcon, stage.TransitionGround, stage.TransitionBackground, stage.TransitionMusic, stage.Music and stage.Music[RoomType.ROOM_DEFAULT], gfxData.NoShake, gfxData.ExtraPortrait)
 end
 
 StageAPI.StageRNG = RNG()
