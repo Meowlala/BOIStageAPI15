@@ -86,7 +86,7 @@ mod:AddCallback(ModCallbacks.MC_POST_RENDER, function()
         StageAPI.TransitionIsPlaying = true
         StageAPI.RenderBlackScreen()
         StageAPI.TransitionAnimation:Render(StageAPI.GetScreenCenterPosition(), Vector.Zero, Vector.Zero)
-        StageAPI.ExtraPortrait:Render(StageAPI.GetScreenCenterPosition(), Vector.Zero, Vector.Zero)
+        StageAPI.ExtraPortrait:Render(StageAPI.GetScreenCenterPosition() + Vector(-74, -17)--[[Magic trial and error numbers to make it work without adjusting anm2 files]], Vector.Zero, Vector.Zero)
     elseif StageAPI.TransitionIsPlaying then -- Finished transition
         StageAPI.TransitionIsPlaying = false
         if StageAPI.CurrentStage then
