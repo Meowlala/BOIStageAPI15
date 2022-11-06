@@ -54,6 +54,29 @@ end
 
 StageAPI.ShakeOffset = -1
 StageAPI.ShakeOffsetInc = 1 -- Inc = Increment
+
+StageAPI.StageTransitionFadeIn = {
+    10,  --0
+    10,  --1
+    11,  --2
+    12,  --3
+    13,  --4
+    15,  --5
+    42,  --6
+    70,  --7
+    97,  --8
+    125, --9
+    152, --10
+    180, --11
+    192, --12
+    205, --13
+    217, --14
+    230, --15
+    242, --16
+    255  --17
+}
+StageAPI.StageTransitionFadeInCounter = 0
+
 mod:AddCallback(ModCallbacks.MC_POST_RENDER, function()
     if StageAPI.TransitionAnimation:IsPlaying("Scene") or StageAPI.TransitionAnimation:IsPlaying("SceneNoShake") or StageAPI.TransitionAnimation:IsPlaying("Intro") then
         if StageAPI.IsOddRenderFrame then
@@ -66,7 +89,15 @@ mod:AddCallback(ModCallbacks.MC_POST_RENDER, function()
             elseif StageAPI.ShakeOffset <= -1 then
                 StageAPI.ShakeOffsetInc = 1
             end
+
+            StageAPI.StageTransitionFadeInCounter = math.min(StageAPI.StageTransitionFadeInCounter + 1, 16)
         end
+        local FadeInTint = Color(
+                             StageAPI.StageTransitionFadeIn[StageAPI.StageTransitionFadeInCounter] / 255, --R
+                             StageAPI.StageTransitionFadeIn[StageAPI.StageTransitionFadeInCounter] / 255, --G
+                             StageAPI.StageTransitionFadeIn[StageAPI.StageTransitionFadeInCounter] / 255  --B
+                            )
+        
 
         local stop
         for _, player in ipairs(shared.Players) do
@@ -95,6 +126,8 @@ mod:AddCallback(ModCallbacks.MC_POST_RENDER, function()
         StageAPI.TransitionIsPlaying = true
         StageAPI.RenderBlackScreen()
         StageAPI.TransitionAnimation:Render(StageAPI.GetScreenCenterPosition(), Vector.Zero, Vector.Zero)
+
+        StageAPI.ExtraPortrait.Color = FadeInTint
         StageAPI.ExtraPortrait:Render(StageAPI.GetScreenCenterPosition() + Vector(-72 + StageAPI.ShakeOffset, -19)--[[Magic trial and error numbers to make it work without adjusting anm2 files]], Vector.Zero, Vector.Zero)
     elseif StageAPI.TransitionIsPlaying then -- Finished transition
         StageAPI.TransitionIsPlaying = false
@@ -198,6 +231,7 @@ function StageAPI.PlayTransitionAnimationManual(portrait, icon, ground, bg, tran
 
     StageAPI.ShakeOffset = -1
     StageAPI.ShakeOffsetInc = 1
+    StageAPI.StageTransitionFadeInCounter = 0
 
     shared.Music:Play(transitionmusic, 0)
     shared.Music:UpdateVolume()
