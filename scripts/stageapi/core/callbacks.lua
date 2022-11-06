@@ -1072,7 +1072,7 @@ mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, function()
                 end
             end
         else
-            local text = shared.Players[1]:GetName() .. " VS " .. boss.Name
+            local text = StageAPI.SanitizeString(shared.Players[1]:GetName()) .. " VS " .. boss.Name
 
             local ret = StageAPI.CallCallbacks(Callbacks.PRE_PLAY_MINIBOSS_STREAK, true, currentRoom, boss, text)
 

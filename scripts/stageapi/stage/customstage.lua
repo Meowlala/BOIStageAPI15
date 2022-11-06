@@ -474,7 +474,7 @@ function StageAPI.CustomStageGenerateRoom(currentStage, roomDescriptor, isStarti
             if usingRoomsList:GetRooms(shape) then
                 local replaceVsText
                 if lastReplacedSuperSin then
-                    replaceVsText = shared.Players[1]:GetName() .. " VS " .. lastReplacedSuperSin
+                    replaceVsText = StageAPI.SanitizeString(shared.Players[1]:GetName()) .. " VS " .. lastReplacedSuperSin
                 end
 
                 local newRoom = StageAPI.LevelRoom(StageAPI.Merged({
