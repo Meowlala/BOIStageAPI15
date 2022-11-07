@@ -402,7 +402,7 @@ gfxTabl.DreamCatcherItems = {}
 function gfxTabl.DreamCatcherCheck()
 	local check = false
 	local TwoItem = false
-	for i=0,Game().GetNumPlayers(Game())-1 do
+	for i=0,Game():GetNumPlayers()-1 do
 		if Isaac.GetPlayer(i):HasCollectible(CollectibleType.COLLECTIBLE_DREAM_CATCHER,false) then
 			check = true
 		end
@@ -671,7 +671,7 @@ local function DreamCatcherItemReplace() --Instead of predicting the next items,
 end
 
 local function TransitionRender(_, name)
-	for i=0,Game().GetNumPlayers(Game())-1 do
+	for i=0,Game():GetNumPlayers()-1 do
 		Isaac.GetPlayer(i).ControlsCooldown = math.max(Isaac.GetPlayer(i).ControlsCooldown,80)
 	end
 
@@ -1038,7 +1038,7 @@ function self.PreGenProgressAnm(stage,notAutoStage)
 	NextStage = stage
 	CTGfx.Nightmare_bg(Nightmare_bg)
 
-	for i=0,Game().GetNumPlayers(Game())-1 do
+	for i=0,Game():GetNumPlayers()-1 do
 		Isaac.GetPlayer(i):ThrowHeldEntity(Vector(0,0))
 	end
 	
@@ -1151,7 +1151,7 @@ local function ShaderRender(_, name)
 	BlackCube:Render(bg_RenderPos) 
 	
 	if Sdelay > 150 then
-		for i=0,Game().GetNumPlayers(Game())-1 do
+		for i=0,Game():GetNumPlayers()-1 do
 			Isaac.GetPlayer(i):ThrowHeldEntity(Vector(10,10))
 			Isaac.GetPlayer(i).PositionOffset = Vector.Zero
 		end
@@ -1172,7 +1172,7 @@ local function ShaderRender(_, name)
 	end
 	BlackCube.Color = Color(1,1,1,(PIxelAmonStart*Sdelay)*3.5)
 	BlackCube:Render(bg_RenderPos)
-	for i=0,Game().GetNumPlayers(Game())-1 do
+	for i=0,Game():GetNumPlayers()-1 do
 		Isaac.GetPlayer(i).ControlsCooldown = math.max(Isaac.GetPlayer(i).ControlsCooldown,80)
 
 		if not Isaac.GetPlayer(i):IsHoldingItem() then
