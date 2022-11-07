@@ -776,7 +776,13 @@ mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, function()
             StageAPI.DoubleTransitioning = true
             local replace = StageAPI.NextStage.Replaces
             shared.Level:SetStage(replace.OverrideStage, replace.OverrideStageType)
-            shared.Level:ChangeRoom(shared.Level:GetCurrentRoomIndex())
+            local currentRoomIndex = shared.Level:GetCurrentRoomIndex()
+
+            -- let on first room visit effects trigger (like The Stairway item)
+            local editableCurrentDesc = shared.Level:GetRoomByIdx(currentRoomIndex)
+            editableCurrentDesc.VisitedCount = 0
+
+            shared.Level:ChangeRoom(currentRoomIndex)
             return
         end
     end
@@ -1067,7 +1073,7 @@ mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, function()
                 end
             end
         else
-            local text = shared.Players[1]:GetName() .. " VS " .. boss.Name
+            local text = StageAPI.SanitizeString(shared.Players[1]:GetName()) .. " VS " .. boss.Name
 
             local ret = StageAPI.CallCallbacks(Callbacks.PRE_PLAY_MINIBOSS_STREAK, true, currentRoom, boss, text)
 

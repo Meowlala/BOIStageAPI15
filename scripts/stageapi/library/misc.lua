@@ -194,3 +194,7 @@ function StageAPI.AnyPlayerHasTrinket(trinketType)
 
     return false
 end
+
+function StageAPI.SanitizeString(playerName)
+    return string.gsub(playerName, "%​", "") -- Unicode 8203 "Zero Width Space"
+end
