@@ -192,7 +192,7 @@ StageAPI.NonOverrideMusic = {
     {Music.MUSIC_GAME_OVER, false, true},
     Music.MUSIC_JINGLE_GAME_OVER,
     Music.MUSIC_JINGLE_SECRETROOM_FIND,
-    --{Music.MUSIC_JINGLE_NIGHTMARE, true},
+    {Music.MUSIC_JINGLE_NIGHTMARE, true},
     Music.MUSIC_JINGLE_GAME_START,
     Music.MUSIC_JINGLE_BOSS,
     Music.MUSIC_JINGLE_BOSS_OVER,
