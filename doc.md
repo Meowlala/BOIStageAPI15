@@ -213,12 +213,12 @@ Callback List:
 
   - Called when the number of grids changes or grids are reprocessed, after room grid graphics are changed. Good for postfixes.
 
-- PRE_CHANGE_ROOM_GFX(currentRoom, usingGfx, onRoomLoad)
+- PRE_CHANGE_ROOM_GFX(currentRoom, usingGfx, onRoomLoad, currentDimension)
 
   - Allows returning roomgfx to use in place of the stage's.
   - Runs both on room load and when the backdrop is changed
 
-- POST_CHANGE_ROOM_GFX(currentRoom, usingGfx, onRoomLoad)
+- POST_CHANGE_ROOM_GFX(currentRoom, usingGfx, onRoomLoad, currentDimension)
 
   - Runs both on room load and when the backdrop is changed
 
@@ -236,12 +236,12 @@ Callback List:
 
   - Runs before most but not all stageapi room functionality. guaranteed to run before any room loads.
 
-- PRE_STAGEAPI_NEW_ROOM_GENERATION(currentRoom, justGenerated, currentListIndex)
+- PRE_STAGEAPI_NEW_ROOM_GENERATION(currentRoom, justGenerated, currentListIndex, currentDimension))
 
   - Allows returning currentRoom, justGenerated, boss
   - Run before normal room generation
 
-- POST_STAGEAPI_NEW_ROOM_GENERATION(currentRoom, justGenerated, currentListIndex, boss)
+- POST_STAGEAPI_NEW_ROOM_GENERATION(currentRoom, justGenerated, currentListIndex, boss, currentDimension))
 
   - Allows returning currentRoom, justGenerated, boss
   - Run after normal room generation but before reloading old rooms.
