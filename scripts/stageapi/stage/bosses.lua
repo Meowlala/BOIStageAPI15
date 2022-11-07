@@ -166,14 +166,16 @@ StageAPI.PlayerBossInfo[PlayerType.PLAYER_THESOUL_B].NoShake = true
 StageAPI.PlayerBossInfo[PlayerType.PLAYER_THEFORGOTTEN_B].ControlsFrame = 1
 StageAPI.PlayerBossInfo[PlayerType.PLAYER_THESOUL_B].ControlsFrame = 1
 StageAPI.PlayerBossInfo[PlayerType.PLAYER_THELOST_B].NoShake = true
+StageAPI.PlayerBossInfo[PlayerType.PLAYER_EDEN_B].ExtraPortrait = "gfx/ui/stage/eden_b_head.anm2"
 
 -- bossportrait is optional since Repentance, used if you want
 -- your character to have a different boss portrait than the stage one
-function StageAPI.AddPlayerGraphicsInfo(playertype, portrait, namefile, noshake, bossportrait)
+function StageAPI.AddPlayerGraphicsInfo(playertype, portrait, namefile, noshake, bossportrait, extraportrait)
     local args = portrait
     if type(args) ~= "table" then
         args = {
             Portrait = portrait,
+            ExtraPortrait = extraportrait,
             Name = namefile,
             BossPortrait = bossportrait,
             NoShake = noshake,
@@ -191,6 +193,22 @@ StageAPI.AddPlayerGraphicsInfo(PlayerType.PLAYER_LAZARUS2, "gfx/ui/stage/playerp
 StageAPI.AddPlayerGraphicsInfo(PlayerType.PLAYER_LAZARUS2_B, "gfx/ui/stage/playerportrait_lazarus_b_dead.png", "gfx/ui/boss/playername_10_lazarus.png")
 StageAPI.AddPlayerGraphicsInfo(PlayerType.PLAYER_JACOB, "gfx/ui/stage/playerportrait_jacob.png", "gfx/ui/boss/playername_02x_jacob_esau.png")
 StageAPI.AddPlayerGraphicsInfo(PlayerType.PLAYER_JACOB_B, "gfx/ui/stage/playerportrait_jacob_b.png", "gfx/ui/boss/playername_02x_jacob.png")
+
+local ExtraAnimatedPortraitsCheckSpr = Sprite()		--Extra support for "Extra animated portraits" mod
+ExtraAnimatedPortraitsCheckSpr:Load("gfx/ui/stage/extra_b_apollyon.anm2",true)  --I don't know of another way
+if ExtraAnimatedPortraitsCheckSpr:GetDefaultAnimation() == "Idle" then
+	StageAPI.PlayerBossInfo[PlayerType.PLAYER_THELOST].ExtraPortrait = {"gfx/ui/stage/extra_thelost.anm2",true}
+	StageAPI.PlayerBossInfo[PlayerType.PLAYER_THESOUL].ExtraPortrait = {"gfx/ui/stage/extra_theforgotten.anm2",true}
+	StageAPI.PlayerBossInfo[PlayerType.PLAYER_THEFORGOTTEN].ExtraPortrait = {"gfx/ui/stage/extra_theforgotten.anm2",true}
+	StageAPI.PlayerBossInfo[PlayerType.PLAYER_APOLLYON_B].ExtraPortrait = {"gfx/ui/stage/extra_b_apollyon.anm2",true}
+	StageAPI.PlayerBossInfo[PlayerType.PLAYER_BLUEBABY_B].ExtraPortrait = {"gfx/ui/stage/extra_b_bluebaby.anm2",true}
+	StageAPI.PlayerBossInfo[PlayerType.PLAYER_JACOB_B].ExtraPortrait = {"gfx/ui/stage/extra_b_jacob.anm2",true}
+	StageAPI.PlayerBossInfo[PlayerType.PLAYER_JACOB2_B] = {Name = "gfx/ui/boss/playername_02x_jacob.png", Portrait = "gfx/ui/stage/playerportrait_jacob_b.png", NoShake = true}
+	StageAPI.PlayerBossInfo[PlayerType.PLAYER_JACOB2_B].ExtraPortrait = {"gfx/ui/stage/extra_b_jacob2.anm2",true}
+	StageAPI.PlayerBossInfo[PlayerType.PLAYER_THEFORGOTTEN_B].ExtraPortrait = {"gfx/ui/stage/extra_b_theforgotten.anm2",true}
+	StageAPI.PlayerBossInfo[PlayerType.PLAYER_THESOUL_B].ExtraPortrait = {"gfx/ui/stage/extra_b_theforgotten.anm2",true}
+	StageAPI.PlayerBossInfo[PlayerType.PLAYER_THELOST_B].ExtraPortrait = {"gfx/ui/stage/extra_b_thelost.anm2",true}
+end
 
 StageAPI.PlayerBossInfo[PlayerType.PLAYER_JACOB].ControlsFrame = 2
 
