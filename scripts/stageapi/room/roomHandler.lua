@@ -19,7 +19,8 @@ local excludeTypesFromClearing = {
         [EffectVariant.HEAVEN_LIGHT_DOOR] = {
             [EFFECT_SUBTYPE_MOONLIGHT] = true,
         },
-        [EffectVariant.BLOOD_SPLAT] = true
+        [EffectVariant.BLOOD_SPLAT] = true,
+        [EffectVariant.WISP] = true,
     },
 }
 
