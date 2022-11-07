@@ -1,5 +1,6 @@
 local shared = require("scripts.stageapi.shared")
 local mod = require("scripts.stageapi.mod")
+local fakeTR = require("scripts.stageapi.stage.transitionRender")
 
 StageAPI.LogMinor("Loading Transition Handler")
 
@@ -29,6 +30,32 @@ StageAPI.StageTypes = {
     StageType.STAGETYPE_REPENTANCE,
     StageType.STAGETYPE_REPENTANCE_B
 }
+
+StageAPI.TransitionNightmaresList = {
+	"gfx/ui/stage/nightmare1.anm2",
+	"gfx/ui/stage/nightmare2.anm2",
+	"gfx/ui/stage/nightmare3.anm2",
+	"gfx/ui/stage/nightmare4.anm2",
+	"gfx/ui/stage/nightmare5.anm2",
+	"gfx/ui/stage/nightmare6.anm2",
+	"gfx/ui/stage/nightmare7.anm2",
+	"gfx/ui/stage/nightmare8.anm2",
+	"gfx/ui/stage/nightmare9.anm2",
+	"gfx/ui/stage/nightmare10.anm2",
+	"gfx/ui/stage/nightmare11.anm2",
+	"gfx/ui/stage/nightmare12.anm2",
+	"gfx/ui/stage/nightmare13.anm2",
+	"gfx/ui/stage/nightmare14.anm2",
+	"gfx/ui/stage/nightmare15.anm2",
+	"gfx/ui/stage/nightmare16.anm2",
+	"gfx/ui/stage/nightmare17.anm2",
+	}
+
+function StageAPI.AddTransitionNightmare(anm)
+	if type(anm) == 'string' then
+		StageAPI.NightmaresList[#StageAPI.NightmaresList+1] = anm
+	end
+end
 
 StageAPI.TransitionAnimation = Sprite()
 StageAPI.TransitionAnimation:Load("stageapi/transition/customnightmare.anm2", true)
@@ -226,33 +253,60 @@ function StageAPI.GotoCustomStage(stage, playTransition, noForgetSeed)
             end
         end
 
-        if playTransition then
-            local gfxData = StageAPI.TryGetPlayerGraphicsInfo(shared.Players[1])
-            local floorInfo = StageAPI.GetBaseFloorInfo()
-            local ground
-            if floorInfo then
-                ground = "gfx/ui/boss/bossspot_" .. floorInfo.Prefix .. ".png"
-            else
-                ground = "stageapi/none.png"
+        if playTransition then  ----Because of the principle of new animation, the old way remains, but is not used
+            --local gfxData = StageAPI.TryGetPlayerGraphicsInfo(shared.Players[1])
+            --local floorInfo = StageAPI.GetBaseFloorInfo()
+            --local ground
+            --if floorInfo then
+            --    ground = "gfx/ui/boss/bossspot_" .. floorInfo.Prefix .. ".png"
+            --else
+            --    ground = "stageapi/none.png"
+            --end
+
+            --local bg = "stageapi/transition/nightmares_bg_mask.png"
+            --StageAPI.PlayTransitionAnimationManual(gfxData.Portrait, StageAPI.GetLevelTransitionIcon(stage.Stage, stageType), ground, bg, nil, nil, gfxData.NoShake)
+
+            fakeTR.PreGenProgressAnm(tostring(stage.Stage) .. StageAPI.StageTypeToString[stageType])
+            local CurrentPos = nil 
+            if StageAPI.CurrentStage and StageAPI.CurrentStage.StageNumber then
+            	CurrentPos = StageAPI.CurrentStage.StageNumber
             end
+            fakeTR.SetIndicatorPos(CurrentPos)  
 
-            local bg = "stageapi/transition/nightmares_bg_mask.png"
-            StageAPI.PlayTransitionAnimationManual(gfxData.Portrait, StageAPI.GetLevelTransitionIcon(stage.Stage, stageType), ground, bg, nil, nil, gfxData.NoShake)
+            fakeTR.StartTransition()
+        else
+
+            Isaac.ExecuteCommand("stage " .. tostring(stage.Stage) .. StageAPI.StageTypeToString[stageType])
         end
-
-        Isaac.ExecuteCommand("stage " .. tostring(stage.Stage) .. StageAPI.StageTypeToString[stageType])
     else
         local replace = stage.Replaces
         local absolute = replace.OverrideStage
         StageAPI.NextStage = stage
         if playTransition then
-            StageAPI.PlayTransitionAnimation(stage)
-        end
+            --StageAPI.PlayTransitionAnimation(stage)
+            
+		    if stage.LevelgenStage then   --
+            	fakeTR.PreGenProgressAnm(tostring(stage.LevelgenStage.Stage) .. StageAPI.StageTypeToString[stage.LevelgenStage.StageType], true)
+		    else
+			    fakeTR.PreGenProgressAnm(tostring(absolute) .. StageAPI.StageTypeToString[replace.OverrideStageType], true)
+		    end
+		    local CurrentPos,NextPos = nil, stage.StageNumber
+		    if StageAPI.CurrentStage and StageAPI.CurrentStage.StageNumber then
+		    	CurrentPos = StageAPI.CurrentStage.StageNumber
+		    end
+		    fakeTR.SetIndicatorPos(CurrentPos,NextPos)  
+		    fakeTR.SetStageIcon(stage.StageNumber, stage.TransitionIcon)
+		    if stage.BossSpot then 
+		    	fakeTR.SetStageSpot(stage.BossSpot)
+		    end
 
-        if stage.LevelgenStage then
-            Isaac.ExecuteCommand("stage " .. tostring(stage.LevelgenStage.Stage) .. StageAPI.StageTypeToString[stage.LevelgenStage.StageType])
-        else
-            Isaac.ExecuteCommand("stage " .. tostring(absolute) .. StageAPI.StageTypeToString[replace.OverrideStageType])
+		    fakeTR.StartTransition()
+	    else
+	        if stage.LevelgenStage then
+                Isaac.ExecuteCommand("stage " .. tostring(stage.LevelgenStage.Stage) .. StageAPI.StageTypeToString[stage.LevelgenStage.StageType])
+             else
+               Isaac.ExecuteCommand("stage " .. tostring(absolute) .. StageAPI.StageTypeToString[replace.OverrideStageType])
+             end
         end
     end
 end
@@ -281,8 +335,23 @@ function StageAPI.SpawnCustomTrapdoor(position, goesTo, anm2, size, alreadyEnter
     return trapdoor
 end
 
+local function CheckLazarusHologram(player)
+	if player and player:ToPlayer() then
+		if player:GetPlayerType() == PlayerType.PLAYER_LAZARUS_B or player:GetPlayerType() == PlayerType.PLAYER_LAZARUS2_B then
+			if player:HasCollectible(CollectibleType.COLLECTIBLE_BIRTHRIGHT) or
+			(player:GetOtherTwin() and player:GetOtherTwin():HasCollectible(CollectibleType.COLLECTIBLE_BIRTHRIGHT)) then
+				if player:GetMainTwin().Index ~= player.Index or player:GetMainTwin().InitSeed ~= player.InitSeed then
+					return true
+				end
+			end
+		end
+	end
+	return nil
+end
+
+
 mod:AddCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, function(_, eff)
-    local sprite, data = eff:GetSprite(), eff:GetData()
+    --[[local sprite, data = eff:GetSprite(), eff:GetData()      --Old ai
     if sprite:IsFinished("Open Animation") then
         sprite:Play("Opened", true)
     elseif (sprite:IsPlaying("Closed") or sprite:IsFinished("Closed")) and shared.Room:IsClear() then
@@ -327,5 +396,161 @@ mod:AddCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, function(_, eff)
                 StageAPI.GotoCustomStage(data.GoesTo, true)
             end
         end
-    end
+    end]]
+
+	local s = eff:GetSprite()
+	local d = eff:GetData()
+	local Room = Game():GetRoom()
+
+	--[[if d.GoesTo and e.FrameCount < 2 then  --Thing to fix spawn position. Causes problems
+		e.DepthOffset = -50
+		local NewPos = e.Position
+		for i=0,DoorSlot.NUM_DOOR_SLOTS-1 do
+			local door = Room:GetDoor(i)
+			if door then
+				local GVec = Vector(0,40)	
+				local loop = 0
+
+				::redo::
+				local doorCheck = true
+				if door.Position:Distance(NewPos) < 100 then
+					doorCheck = false
+					local angle = (NewPos-door.Position):GetAngleDegrees()
+					NewPos = Room:FindFreeTilePosition(NewPos+GVec:Rotated(angle+math.random(-90,90)),80)
+					NewPos = Room:GetGridPosition(Room:GetGridIndex(NewPos))
+
+					GVec = GVec + Vector(0,10)
+
+					loop = loop + 1
+					if loop< 100 and not doorCheck then
+						goto redo
+					end
+				end
+			end
+		end
+		e.Position = NewPos or e.Position
+	else]] 
+    if d.GoesTo and (eff.FrameCount < 30 or d.PlayerToClose) then
+		local PlayerToClose = false
+		s:Play("Open Animation",false)
+		for _, player in ipairs(shared.Players) do
+			local size = (eff.Size + player.Size + 40)
+			if not player.Parent and player.Position:DistanceSquared(eff.Position) < size * size then
+			--if not player.Parent and player.Position:Distance(eff.Position)<100 then
+				PlayerToClose = true
+				break
+			end
+		end
+		if PlayerToClose then
+			d.PlayerToClose = true
+			s:Play("Closed",true)
+		elseif eff.FrameCount > 40 then
+			d.PlayerToClose = false
+		end
+	end
+	if d.GoesTo and not d.PlayerToClose and eff.FrameCount > 30 then
+		if s:IsPlaying("Closed") or s:IsFinished("Closed") then
+			s:Play("Open Animation",true)
+		elseif s:IsFinished("Open Animation") then
+			s:Play("Opened",true)
+			d.trapdoorState = 2
+		end
+
+		if d.trapdoorState and d.trapdoorState == 2 then  
+			
+			if not d.StartTransition and not d.Transition then
+				d.PlayerCollision = {}
+				d.PlayerReady = {}
+				d.Playerquery = {}
+				for _, player in ipairs(shared.Players) do
+					local size = (eff.Size + player.Size)
+					--if not player.Parent and not CheckLazarusHologram(player)    --Too big a radius, temporarily left it
+					--and player.Position:DistanceSquared(eff.Position) < size * size then
+                    if not player.Parent and player.Position:Distance(e.Position)<30   
+                    and not CheckLazarusHologram(player) then
+						d.StartTransition = true
+						break
+					end
+				end
+				if d.StartTransition then
+					
+					for i=0,Game():GetNumPlayers()-1 do
+						local player = Isaac.GetPlayer(i)
+						player.ControlsCooldown = math.max(Isaac.GetPlayer(i).ControlsCooldown,100)
+						player.Velocity = Vector.Zero
+						d.Playerquery[i] = player
+						d.PlayerCollision[i] = player.GridCollisionClass
+						player.GridCollisionClass = EntityGridCollisionClass.GRIDCOLL_NONE
+						d.NumPlayer = Game():GetNumPlayers()
+						d.Num = 0
+						d.INNum = 0
+						d.Timeout = 0
+					end
+					table.sort(d.Playerquery, function(a,b) if a and b then 
+						return a.Position:Distance(eff.Position) < b.Position:Distance(eff.Position) 
+						else return nil end 
+					end)
+				end
+			elseif d.StartTransition and not d.Transition then
+				if d.Timeout<=0 and d.NumPlayer-d.Num ~= 0 then
+					d.Timeout = 5
+					if Isaac.GetPlayer(d.Num):GetSprite():GetAnimation() ~= "Trapdoor" then 
+						Isaac.GetPlayer(d.Num):AnimateTrapdoor()
+					end
+					d.Num = d.Num+1
+				end
+				d.Timeout = d.Timeout - 1
+				if d.Num>0 then
+					for i=0,d.Num-1 do
+						local player = Isaac.GetPlayer(i)
+						if player then
+							
+							local angle = (eff.Position-player.Position):GetAngleDegrees()
+							local dist = player.Position:Distance(eff.Position)
+							player.Velocity = Vector.FromAngle(angle):Resized(dist/4)
+
+							if  player.Position:Distance(eff.Position)<40          
+							and (player:IsExtraAnimationFinished() or player:GetSprite():GetFrame() >= 15 ) 
+							and not d.PlayerReady[i] then
+
+								player.PositionOffset = Vector(0,800)
+								s:Play("Player Exit",true)
+								
+								d.PlayerReady[i] = true
+								
+								local poof = Isaac.Spawn(1000,EffectVariant.POOF01,2,eff.Position+Vector(0,10),Vector(0,0),eff)
+								poof.DepthOffset = -10
+								poof:GetSprite().Color = Color(1,1,1,0.5)
+								poof:GetSprite():SetFrame(3)
+							end
+							
+							if player:GetSprite():GetAnimation() ~= "Trapdoor" and player.PositionOffset.Y<400 then  
+								player:AnimateTrapdoor()
+							end
+						end
+					end
+					local num = 0
+					for k,player in pairs(d.PlayerReady) do
+						num = num + 1
+					end
+					if num >= d.NumPlayer then
+						d.Transition = 1
+						for i, coll in pairs(d.PlayerCollision) do
+							Isaac.GetPlayer(i).GridCollisionClass = coll
+						end
+					end
+				end
+			elseif d.Transition == 1 then
+				StageAPI.GotoCustomStage(d.GoesTo, true)
+				d.Transition = 2
+			elseif d.Transition == 2 then
+				for _, player in ipairs(shared.Players) do
+					local angle = (eff.Position-player.Position):GetAngleDegrees()
+					local dist = player.Position:Distance(eff.Position)
+					player.Velocity = Vector.FromAngle(angle):Resized(dist/10)
+				end
+			end
+		end
+	end
+
 end, StageAPI.E.Trapdoor.V)
