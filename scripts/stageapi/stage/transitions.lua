@@ -53,7 +53,7 @@ StageAPI.TransitionNightmaresList = {
 
 function StageAPI.AddTransitionNightmare(anm)
 	if type(anm) == 'string' then
-		StageAPI.NightmaresList[#StageAPI.NightmaresList+1] = anm
+		StageAPI.TransitionNightmaresList[#StageAPI.TransitionNightmaresList+1] = anm
 	end
 end
 
