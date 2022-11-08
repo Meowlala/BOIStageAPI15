@@ -2,8 +2,6 @@ local self = {}
 local mod = require("scripts.stageapi.mod")   --This shit is written by Goganidze. If it doesn't work, blame him.
 local shared = require("scripts.stageapi.shared")
 
---local CTGfx = require("scripts.stageapi.stage.CTGfx")
-
 local gfxTabl = {}  --It was a separate file
 
 gfxTabl.StartStageNum = 8
@@ -403,7 +401,6 @@ gfxTabl.DreamCatcherItems = {}
 function gfxTabl.DreamCatcherCheck()
 	local check = false
 	local TwoItem = false
-	--for i=0,Game().GetNumPlayers(Game())-1 do --Isaac.GetPlayer(i)
 	for _, player in ipairs(shared.Players) do
 		if player:HasCollectible(CollectibleType.COLLECTIBLE_DREAM_CATCHER,false) then
 			check = true
@@ -415,7 +412,6 @@ function gfxTabl.DreamCatcherCheck()
 	if check then
 		local bossSubType
 
-		--local level = shared.Level  
 		local RoomsTable = shared.Level:GetRooms()
 		gfxTabl.DreamCatcherItemType = -1
 		for i=1,#RoomsTable do
@@ -1159,7 +1155,7 @@ local function ShaderRender(_, name)
 			player.PositionOffset = Vector.Zero
 		end
 		RenderTrick()
-		--mod:AddCallback(ModCallbacks.MC_POST_PLAYER_RENDER,RenderTrick)
+		--mod:AddCallback(ModCallbacks.MC_POST_PLAYER_RENDER,RenderTrick)  --Incompatible with Rev
 		
 		local Tabl = {PixelAm = 0}
 		return Tabl
@@ -1175,7 +1171,6 @@ local function ShaderRender(_, name)
 	end
 	BlackCube.Color = Color(1,1,1,(PIxelAmonStart*Sdelay)*3.5)
 	BlackCube:Render(bg_RenderPos)
-	--for i=0,Game().GetNumPlayers(Game())-1 do
 	for _, player in ipairs(shared.Players) do
 		player.ControlsCooldown = math.max(player.ControlsCooldown,80)
 
