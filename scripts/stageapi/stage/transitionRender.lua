@@ -1,5 +1,6 @@
 local self = {}
 local mod = require("scripts.stageapi.mod")   --This shit is written by Goganidze. If it doesn't work, blame him.
+local shared = require("scripts.stageapi.shared")
 
 --local CTGfx = require("scripts.stageapi.stage.CTGfx")
 
@@ -358,42 +359,42 @@ gfxTabl.DreamCatcherSprites.Nightmare:Load("gfx/ui/stage/nightmare_dc.anm2",true
 gfxTabl.DreamCatcherSprites.Item1 = Sprite()
 gfxTabl.DreamCatcherSprites.Item1:Load("gfx/ui/death screen.anm2",true)
 gfxTabl.DreamCatcherSprites.Item1:Play(gfxTabl.DreamCatcherSprites.Item1:GetDefaultAnimation())
-gfxTabl.DreamCatcherSprites.Item1:ReplaceSpritesheet(0,"gfx/blank.png")
-gfxTabl.DreamCatcherSprites.Item1:ReplaceSpritesheet(1,"gfx/blank.png")
-gfxTabl.DreamCatcherSprites.Item1:ReplaceSpritesheet(2,"gfx/blank.png")
-gfxTabl.DreamCatcherSprites.Item1:ReplaceSpritesheet(3,"gfx/blank.png")
-gfxTabl.DreamCatcherSprites.Item1:ReplaceSpritesheet(4,"gfx/blank.png")
-gfxTabl.DreamCatcherSprites.Item1:ReplaceSpritesheet(5,"gfx/blank.png")
-gfxTabl.DreamCatcherSprites.Item1:ReplaceSpritesheet(7,"gfx/blank.png")
-gfxTabl.DreamCatcherSprites.Item1:ReplaceSpritesheet(8,"gfx/blank.png")
+gfxTabl.DreamCatcherSprites.Item1:ReplaceSpritesheet(0,"stageapi/none.png")
+gfxTabl.DreamCatcherSprites.Item1:ReplaceSpritesheet(1,"stageapi/none.png")
+gfxTabl.DreamCatcherSprites.Item1:ReplaceSpritesheet(2,"stageapi/none.png")
+gfxTabl.DreamCatcherSprites.Item1:ReplaceSpritesheet(3,"stageapi/none.png")
+gfxTabl.DreamCatcherSprites.Item1:ReplaceSpritesheet(4,"stageapi/none.png")
+gfxTabl.DreamCatcherSprites.Item1:ReplaceSpritesheet(5,"stageapi/none.png")
+gfxTabl.DreamCatcherSprites.Item1:ReplaceSpritesheet(7,"stageapi/none.png")
+gfxTabl.DreamCatcherSprites.Item1:ReplaceSpritesheet(8,"stageapi/none.png")
 gfxTabl.DreamCatcherSprites.Item1.Offset = Vector(84,-10)
 gfxTabl.DreamCatcherSprites.Item1:LoadGraphics(true)
 
 gfxTabl.DreamCatcherSprites.Item2 = Sprite()
 gfxTabl.DreamCatcherSprites.Item2:Load("gfx/ui/death screen.anm2",true)
 gfxTabl.DreamCatcherSprites.Item2:Play(gfxTabl.DreamCatcherSprites.Item2:GetDefaultAnimation())
-gfxTabl.DreamCatcherSprites.Item2:ReplaceSpritesheet(0,"gfx/blank.png")
-gfxTabl.DreamCatcherSprites.Item2:ReplaceSpritesheet(1,"gfx/blank.png")
-gfxTabl.DreamCatcherSprites.Item2:ReplaceSpritesheet(2,"gfx/blank.png")
-gfxTabl.DreamCatcherSprites.Item2:ReplaceSpritesheet(3,"gfx/blank.png")
-gfxTabl.DreamCatcherSprites.Item2:ReplaceSpritesheet(4,"gfx/blank.png")
-gfxTabl.DreamCatcherSprites.Item2:ReplaceSpritesheet(5,"gfx/blank.png")
-gfxTabl.DreamCatcherSprites.Item2:ReplaceSpritesheet(7,"gfx/blank.png")
-gfxTabl.DreamCatcherSprites.Item2:ReplaceSpritesheet(8,"gfx/blank.png")
+gfxTabl.DreamCatcherSprites.Item2:ReplaceSpritesheet(0,"stageapi/none.png")
+gfxTabl.DreamCatcherSprites.Item2:ReplaceSpritesheet(1,"stageapi/none.png")
+gfxTabl.DreamCatcherSprites.Item2:ReplaceSpritesheet(2,"stageapi/none.png")
+gfxTabl.DreamCatcherSprites.Item2:ReplaceSpritesheet(3,"stageapi/none.png")
+gfxTabl.DreamCatcherSprites.Item2:ReplaceSpritesheet(4,"stageapi/none.png")
+gfxTabl.DreamCatcherSprites.Item2:ReplaceSpritesheet(5,"stageapi/none.png")
+gfxTabl.DreamCatcherSprites.Item2:ReplaceSpritesheet(7,"stageapi/none.png")
+gfxTabl.DreamCatcherSprites.Item2:ReplaceSpritesheet(8,"stageapi/none.png")
 gfxTabl.DreamCatcherSprites.Item2.Offset = Vector(84,-10)
 gfxTabl.DreamCatcherSprites.Item2:LoadGraphics(true)
 
 gfxTabl.DreamCatcherSprites.Boss = Sprite()
 gfxTabl.DreamCatcherSprites.Boss:Load("gfx/ui/death screen.anm2",true)
 gfxTabl.DreamCatcherSprites.Boss:Play(gfxTabl.DreamCatcherSprites.Boss:GetDefaultAnimation())
-gfxTabl.DreamCatcherSprites.Boss:ReplaceSpritesheet(0,"gfx/blank.png")
-gfxTabl.DreamCatcherSprites.Boss:ReplaceSpritesheet(1,"gfx/blank.png")
-gfxTabl.DreamCatcherSprites.Boss:ReplaceSpritesheet(2,"gfx/blank.png")
-gfxTabl.DreamCatcherSprites.Boss:ReplaceSpritesheet(4,"gfx/blank.png")
-gfxTabl.DreamCatcherSprites.Boss:ReplaceSpritesheet(5,"gfx/blank.png")
-gfxTabl.DreamCatcherSprites.Boss:ReplaceSpritesheet(6,"gfx/blank.png")
-gfxTabl.DreamCatcherSprites.Boss:ReplaceSpritesheet(7,"gfx/blank.png")
-gfxTabl.DreamCatcherSprites.Boss:ReplaceSpritesheet(8,"gfx/blank.png")
+gfxTabl.DreamCatcherSprites.Boss:ReplaceSpritesheet(0,"stageapi/none.png")
+gfxTabl.DreamCatcherSprites.Boss:ReplaceSpritesheet(1,"stageapi/none.png")
+gfxTabl.DreamCatcherSprites.Boss:ReplaceSpritesheet(2,"stageapi/none.png")
+gfxTabl.DreamCatcherSprites.Boss:ReplaceSpritesheet(4,"stageapi/none.png")
+gfxTabl.DreamCatcherSprites.Boss:ReplaceSpritesheet(5,"stageapi/none.png")
+gfxTabl.DreamCatcherSprites.Boss:ReplaceSpritesheet(6,"stageapi/none.png")
+gfxTabl.DreamCatcherSprites.Boss:ReplaceSpritesheet(7,"stageapi/none.png")
+gfxTabl.DreamCatcherSprites.Boss:ReplaceSpritesheet(8,"stageapi/none.png")
 gfxTabl.DreamCatcherSprites.Boss.Offset = Vector(-21,30)
 gfxTabl.DreamCatcherSprites.Boss:LoadGraphics(true)
 
@@ -402,19 +403,20 @@ gfxTabl.DreamCatcherItems = {}
 function gfxTabl.DreamCatcherCheck()
 	local check = false
 	local TwoItem = false
-	for i=0,Game():GetNumPlayers()-1 do
-		if Isaac.GetPlayer(i):HasCollectible(CollectibleType.COLLECTIBLE_DREAM_CATCHER,false) then
+	--for i=0,Game().GetNumPlayers(Game())-1 do --Isaac.GetPlayer(i)
+	for _, player in ipairs(shared.Players) do
+		if player:HasCollectible(CollectibleType.COLLECTIBLE_DREAM_CATCHER,false) then
 			check = true
 		end
-		if Isaac.GetPlayer(i):HasCollectible(CollectibleType.COLLECTIBLE_MORE_OPTIONS,false) then
+		if player:HasCollectible(CollectibleType.COLLECTIBLE_MORE_OPTIONS,false) then
 			TwoItem = true
 		end
 	end
 	if check then
 		local bossSubType
 
-		local level = Game():GetLevel()
-		local RoomsTable = level:GetRooms()
+		--local level = shared.Level  
+		local RoomsTable = shared.Level:GetRooms()
 		gfxTabl.DreamCatcherItemType = -1
 		for i=1,#RoomsTable do
 	   	   if RoomsTable:Get(i-1) then
@@ -437,8 +439,8 @@ function gfxTabl.DreamCatcherCheck()
 			end
 		   end
 		end
-		local pool = Game():GetItemPool()
-		local seed = Game():GetSeeds():GetStartSeed()
+		local pool = shared.Game:GetItemPool()
+		local seed = shared.Game:GetSeeds():GetStartSeed()
 		local item1 = gfxTabl.DreamCatcherItemType > 0 and pool:GetCollectible(ItemPoolType.POOL_TREASURE,false,nil,CollectibleType.COLLECTIBLE_NULL)
 		local item2 = gfxTabl.DreamCatcherItemType > 1 and pool:GetCollectible(ItemPoolType.POOL_TREASURE,false,nil,CollectibleType.COLLECTIBLE_NULL)
 		gfxTabl.DreamCatcherItems = { item1,item2 }
@@ -638,10 +640,8 @@ local function DreamCatcherNightmare()
 	end
 end
 
---DCSprite.Items
 local function DreamCatcherItemReplace() --Instead of predicting the next items, the code overrides them
-	local level = Game():GetLevel()
-	local RoomDesc = level:GetCurrentRoomDesc()
+	local RoomDesc = shared.Level:GetCurrentRoomDesc()
 	local RoomData = RoomDesc.Data	
 	
 	if RoomData and RoomData.Type and RoomData.Type == RoomType.ROOM_TREASURE then
@@ -655,7 +655,7 @@ local function DreamCatcherItemReplace() --Instead of predicting the next items,
 			end
 		end	
 
-		local pool = Game():GetItemPool()
+		local pool = shared.Game:GetItemPool()
 		if not CantReplace and num == CTGfx.DreamCatcherItemType then
 			for i,e in pairs(Isaac.FindByType(5,100,-1,false,false)) do
 
@@ -671,8 +671,8 @@ local function DreamCatcherItemReplace() --Instead of predicting the next items,
 end
 
 local function TransitionRender(_, name)
-	for i=0,Game():GetNumPlayers()-1 do
-		Isaac.GetPlayer(i).ControlsCooldown = math.max(Isaac.GetPlayer(i).ControlsCooldown,80)
+	for _, player in ipairs(shared.Players) do
+		player.ControlsCooldown = math.max(player.ControlsCooldown,80)
 	end
 
 	Nightmare_bg:Render(bg_RenderPos,Vector.Zero,Vector.Zero)
@@ -736,16 +736,16 @@ local function TransitionRender(_, name)
 				end
 			end
 		end
-		if Game().TimeCounter < Game().BossRushParTime then
+		if shared.Game.TimeCounter < shared.Game.BossRushParTime then
 			ProgressAnm.Clock:Render(ProgressAnm.ClockPos)
 		end
-		ProgressAnm.IsaacIndicator:Render(ProgressAnm.IsaacIndicatorPos)
 		ProgressAnm.BossIndicator:Render(ProgressAnm.BossIndicatorPos)
+		ProgressAnm.IsaacIndicator:Render(ProgressAnm.IsaacIndicatorPos)
 	end
 
 	BlackCube:Render(bg_RenderPos)
 
-	if  (Input.IsActionTriggered(ButtonAction.ACTION_MENUCONFIRM, Isaac.GetPlayer(0).ControllerIndex) or --not Nightmare_bg:IsPlaying("Intro") and
+	if  (Input.IsActionTriggered(ButtonAction.ACTION_MENUCONFIRM, Isaac.GetPlayer(0).ControllerIndex) or 
 	Input.IsActionTriggered(ButtonAction.ACTION_MENUBACK, Isaac.GetPlayer(0).ControllerIndex)) then
 		StartDisap = true
 	end
@@ -755,11 +755,11 @@ local function TransitionRender(_, name)
 		NightmareAnm.Color = Color(1,1,1,1)
 
 		if MusikID then
-			MusicManager():Play(MusikID,Options.MusicVolume)
+			shared.Music:Play(MusikID,Options.MusicVolume)
 		end
 		MusicOnPause = false
 
-		Game():GetHUD():SetVisible(true)
+		shared.Game:GetHUD():SetVisible(true)
 
 		ExtraFrame = CTGfx.PlayersExtraFrame
 		ShaderState = 3
@@ -801,7 +801,7 @@ end]]
 
 function self.AddDefaultProgressStage()
 	if not DontAddStage then
-		local level = Game():GetLevel()
+		local level = shared.Level
 		local StageI = level:GetAbsoluteStage()
 		
 		if not BlueWomb and ( level:GetAbsoluteStage() == LevelStage.STAGE4_3 or
@@ -818,17 +818,20 @@ function self.AddDefaultProgressStage()
 			Stages[StageI] = {frame = CTGfx.StageIcons[StageI][level:GetStageType()],IsSecond = (StageI)%2==0 and StageI<9}
 		end
 	end
-
+	if DCSprite.ItemCallbackActivated then
+		mod:RemoveCallback(ModCallbacks.MC_POST_NEW_ROOM, DreamCatcherItemReplace)
+		DCSprite.ItemCallbackActivated = false
+	end
 	DreamCatcher = false
 end
 
 local function TransitionActivation()
-	local level = Game():GetLevel()
-	local Room = Game():GetRoom()
+	local level = shared.Level
+	local Room = shared.Room
 
-	Game():GetHUD():SetVisible(false)
+	shared.Game:GetHUD():SetVisible(false)
 
-	local player = Isaac.GetPlayer(0)
+	local player = shared.Players[1] 
 
 	if StageAPI.PlayerBossInfo[player:GetPlayerType()] then  
 		PlayerGfx = StageAPI.PlayerBossInfo[player:GetPlayerType()]
@@ -890,10 +893,10 @@ local function TransitionActivation()
 	ShaderState = 2
 	local PIxelAmon = PIxelAmonStart
 
-	local queue = MusicManager():GetCurrentMusicID()
+	local queue = shared.Music:GetCurrentMusicID()
 
 	TransitionMusik = StageAPI.NextStage and StageAPI.NextStage.TransitionMusic or DefaultTransitionMusik
-	MusicManager():Play(TransitionMusik,Options.MusicVolume)
+	shared.Music:Play(TransitionMusik,Options.MusicVolume)
 
 	if DreamCatcher then
 		CTGfx.DreamCatcherSprites.Bubble(NightmareAnm)
@@ -964,7 +967,7 @@ local function GenProgressAnm()
 					ProgressAnm[i].spr:LoadGraphics()
 				end
 
-				if i < NextStageID then --CurrentStage
+				if i < NextStageID then 
 					ProgressAnm[i].spr:SetLayerFrame(3,1)
 					if i == CurrentStage then
 						IsaacIndicatorPos = nPos
@@ -977,7 +980,7 @@ local function GenProgressAnm()
 				end
 				if i == NextStageID then
 					IsaacIndicatorNextPos = nPos
-					if NextStage:find("c") or NextStage:find("d") then    --level:GetStageType()>=4 then
+					if NextStage:find("c") or NextStage:find("d") then    
 						IsaacIndicatorNextPos = Vector(CenPos+26*(i-1)+i,nm_RenderPos.Y)
 					end
 				end
@@ -1009,14 +1012,14 @@ local function GenProgressAnm()
 	ProgressAnm.IsaacIndicator:Play("IsaacIndicator",true)
 	ProgressAnm.IsaacIndicator.Color = Color(0,0,0,1)
 	ProgressAnm.IsaacIndicatorPos = IsaacIndicatorPos
-	ProgressAnm.IsaacIndicatorNextPos = IsaacIndicatorNextPos  --IsaacIndicatorPos + Vector(27,0)
+	ProgressAnm.IsaacIndicatorNextPos = IsaacIndicatorNextPos  
 	ProgressAnm.IsaacIndicatorMovSpeed = ProgressAnm.IsaacIndicatorPos:Distance(ProgressAnm.IsaacIndicatorNextPos)/40
 
 	ProgressAnm.Clock = Sprite()
 	ProgressAnm.Clock:Load("stageapi/transition/progress.anm2",true)
 	ProgressAnm.Clock:Play("Clock",true)
 	ProgressAnm.Clock.Color = Color(0,0,0,1)
-	local Procent = Game().TimeCounter / Game().BossRushParTime
+	local Procent = shared.Game.TimeCounter / shared.Game.BossRushParTime
 	local BREndPos = 26*(6-1)+6
 	local ClockPos = BREndPos*Procent
 	ProgressAnm.ClockPos = Vector(CenPos+ClockPos+1,nm_RenderPos.Y)
@@ -1032,14 +1035,14 @@ function self.PreGenProgressAnm(stage,notAutoStage)
 	if notAutoStage then
 		DontAddStage = true
 	end
-	local level = Game():GetLevel()
+	local level = shared.Level
 	local preId = level:GetAbsoluteStage()
 	
 	NextStage = stage
 	CTGfx.Nightmare_bg(Nightmare_bg)
 
-	for i=0,Game():GetNumPlayers()-1 do
-		Isaac.GetPlayer(i):ThrowHeldEntity(Vector(0,0))
+	for _, player in ipairs(shared.Players) do
+		player:ThrowHeldEntity(Vector(0,0))
 	end
 	
 	if not Stages[preId] then
@@ -1062,7 +1065,7 @@ function self.PreGenProgressAnm(stage,notAutoStage)
 		end
 	end
 	NextStageID = tonumber(NextId)
-	if NextStage:find("c") or NextStage:find("d") then NextStageID = NextStageID+1 end  --level:GetStageType()>=4
+	if NextStage:find("c") or NextStage:find("d") then NextStageID = NextStageID+1 end  
 	
 	StageProgNum = math.max(StageProgNum,(BlueWomb and 9 or 8), tonumber(NextId)) 
 	Sdelay = 1
@@ -1130,9 +1133,9 @@ local function RenderTrick()  --very strange way to fix the backdrop in Dark Roo
 		mod:RemoveCallback(ModCallbacks.MC_POST_PLAYER_RENDER,RenderTrick)
 		
 		if NextStage == "11" then
-			local backdropID = Game():GetRoom():GetBackdropType() 
-			Game():ShowHallucination(0,backdropID)
-			SFXManager():Stop(SoundEffect.SOUND_DEATH_CARD)
+			local backdropID = shared.Room:GetBackdropType() 
+			shared.Game:ShowHallucination(0,backdropID)
+			shared.Sfx:Stop(SoundEffect.SOUND_DEATH_CARD)
 		end
 	end
 end
@@ -1145,15 +1148,15 @@ local function ShaderRender(_, name)
 	return Tabl
      elseif ShaderState == 1 then
 	if Isaac.GetFrameCount()%2 == 0 then
-		Sdelay = Sdelay+2.6  --Sdelay = Sdelay+2.2
+		Sdelay = Sdelay+2.6  
 	end
 	BlackCube.Color = Color(1,1,1,(PIxelAmonStart*Sdelay)*3.5)
 	BlackCube:Render(bg_RenderPos) 
 	
 	if Sdelay > 150 then
-		for i=0,Game():GetNumPlayers()-1 do
-			Isaac.GetPlayer(i):ThrowHeldEntity(Vector(10,10))
-			Isaac.GetPlayer(i).PositionOffset = Vector.Zero
+		for _, player in ipairs(shared.Players) do
+			player:ThrowHeldEntity(Vector(10,10))
+			player.PositionOffset = Vector.Zero
 		end
 		RenderTrick()
 		--mod:AddCallback(ModCallbacks.MC_POST_PLAYER_RENDER,RenderTrick)
@@ -1172,15 +1175,16 @@ local function ShaderRender(_, name)
 	end
 	BlackCube.Color = Color(1,1,1,(PIxelAmonStart*Sdelay)*3.5)
 	BlackCube:Render(bg_RenderPos)
-	for i=0,Game():GetNumPlayers()-1 do
-		Isaac.GetPlayer(i).ControlsCooldown = math.max(Isaac.GetPlayer(i).ControlsCooldown,80)
+	--for i=0,Game().GetNumPlayers(Game())-1 do
+	for _, player in ipairs(shared.Players) do
+		player.ControlsCooldown = math.max(player.ControlsCooldown,80)
 
-		if not Isaac.GetPlayer(i):IsHoldingItem() then
-			Isaac.GetPlayer(i):AnimateAppear()
+		if not player:IsHoldingItem() then
+			player:AnimateAppear()
 		end
 	end
 	if Sdelay <= 0 then
-		Game():GetHUD():SetVisible(true)
+		shared.Game:GetHUD():SetVisible(true)
 		ShaderState = 0
 	else
 		return ShaTabl
@@ -1197,7 +1201,7 @@ end
 local function TrCommand(_, cmd, params) 
 	if cmd == "StadeapiCTT" then
 		self.PreGenProgressAnm(params)
-		self.StartTransition() --ShaderState = 1
+		self.StartTransition() 
 	end
 end
 
