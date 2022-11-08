@@ -398,9 +398,8 @@ mod:AddCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, function(_, eff)
         end
     end]]
 
-	local s = eff:GetSprite()
-	local d = eff:GetData()
-	local Room = Game():GetRoom()
+	local s,d = eff:GetSprite(),eff:GetData()
+	local Room = shared.Room
 
 	--[[if d.GoesTo and e.FrameCount < 2 then  --Thing to fix spawn position. Causes problems
 		e.DepthOffset = -50
@@ -436,7 +435,6 @@ mod:AddCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, function(_, eff)
 		for _, player in ipairs(shared.Players) do
 			local size = (eff.Size + player.Size + 40)
 			if not player.Parent and player.Position:DistanceSquared(eff.Position) < size * size then
-			--if not player.Parent and player.Position:Distance(eff.Position)<100 then
 				PlayerToClose = true
 				break
 			end
@@ -466,22 +464,21 @@ mod:AddCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, function(_, eff)
 					local size = (eff.Size + player.Size)
 					--if not player.Parent and not CheckLazarusHologram(player)    --Too big a radius, temporarily left it
 					--and player.Position:DistanceSquared(eff.Position) < size * size then
-                    if not player.Parent and player.Position:Distance(e.Position)<30   
-                    and not CheckLazarusHologram(player) then
+					if not player.Parent and player.Position:Distance(e.Position)<30   
+					and not CheckLazarusHologram(player) then
 						d.StartTransition = true
 						break
 					end
 				end
 				if d.StartTransition then
 					
-					for i=0,Game():GetNumPlayers()-1 do
-						local player = Isaac.GetPlayer(i)
-						player.ControlsCooldown = math.max(Isaac.GetPlayer(i).ControlsCooldown,100)
+					for i, player in ipairs(shared.Players) do
+						player.ControlsCooldown = math.max(player.ControlsCooldown,100)
 						player.Velocity = Vector.Zero
 						d.Playerquery[i] = player
 						d.PlayerCollision[i] = player.GridCollisionClass
 						player.GridCollisionClass = EntityGridCollisionClass.GRIDCOLL_NONE
-						d.NumPlayer = Game():GetNumPlayers()
+						d.NumPlayer = shared.Game:GetNumPlayers()
 						d.Num = 0
 						d.INNum = 0
 						d.Timeout = 0
