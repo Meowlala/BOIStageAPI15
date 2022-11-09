@@ -1,0 +1,4 @@
+DeadSeaScrollsMenu = {}
+REVEL = {}
+
+include = require
