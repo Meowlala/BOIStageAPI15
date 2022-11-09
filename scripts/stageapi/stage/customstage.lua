@@ -75,7 +75,7 @@ end
 
 function StageAPI.CustomStage:SetStageNumber(num, stageHPNumber)
     self.StageNumber = num
-    self.StageHPNumber = self.StageHPNumber or num
+    self.StageHPNumber = stageHPNumber or num
 end
 
 function StageAPI.CustomStage:SetNoChampions(bool)
