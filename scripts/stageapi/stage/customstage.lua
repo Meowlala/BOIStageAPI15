@@ -75,7 +75,7 @@ end
 
 function StageAPI.CustomStage:SetStageNumber(num, stageHPNumber)
     self.StageNumber = num
-    self.StageHPNumber = self.StageHPNumber or num
+    self.StageHPNumber = stageHPNumber or num
 end
 
 function StageAPI.CustomStage:SetNoChampions(bool)
@@ -153,11 +153,16 @@ function StageAPI.CustomStage:SetRooms(rooms, rtype, subtype)
     end
 end
 
+local DIMENSION_DEATH_CERTIFICATE = 2
+
 function StageAPI.CustomStage:WillOverrideRoom(roomDesc)
     local rtype = roomDesc.Data.Type
     local isStartingRoom = roomDesc.SafeGridIndex == shared.Level:GetStartingRoomIndex()
+    local dimension = StageAPI.GetDimension(roomDesc)
 
-    if rtype == RoomType.ROOM_BOSS and self.Bosses then
+    if dimension == DIMENSION_DEATH_CERTIFICATE then
+        return false
+    elseif rtype == RoomType.ROOM_BOSS and self.Bosses then
         return true
     elseif isStartingRoom and self.StartingRooms then
         return true
@@ -408,7 +413,16 @@ local function SinMatchesSplitData(stage, entry, sin)
         replacedSuper and (sin.ListName or sin.MultipleListName)
 end
 
+local DIMENSION_DEATH_CERTIFICATE = 2
+
 -- To more easily replace GenerateRoom on your stage, can call this function after running custom generation logic
+---@param currentStage CustomStage
+---@param roomDescriptor? RoomDescriptor
+---@param isStartingRoom? boolean
+---@param fromLevelGenerator? boolean
+---@param roomArgs? LevelRoomArgs
+---@return LevelRoom?
+---@return BossData?
 function StageAPI.CustomStageGenerateRoom(currentStage, roomDescriptor, isStartingRoom, fromLevelGenerator, roomArgs)
     local roomData
     if roomDescriptor then
@@ -422,6 +436,7 @@ function StageAPI.CustomStageGenerateRoom(currentStage, roomDescriptor, isStarti
     local rtype = (roomArgs and roomArgs.RoomType) or (roomData and roomData.Type) or RoomType.ROOM_DEFAULT
     local shape = (roomArgs and roomArgs.Shape) or (roomData and roomData.Shape) or RoomShape.ROOMSHAPE_1x1
     local subtype = (roomArgs and roomArgs.Subtype) or (roomData and roomData.Subtype) or 0
+    local dimension = StageAPI.GetDimension(roomDescriptor)
 
     if currentStage.SinRooms and (rtype == RoomType.ROOM_MINIBOSS or rtype == RoomType.ROOM_SECRET or rtype == RoomType.ROOM_SHOP) then
         local usingRoomsList
@@ -489,7 +504,9 @@ function StageAPI.CustomStageGenerateRoom(currentStage, roomDescriptor, isStarti
         end
     end
 
-    if not isStartingRoom and currentStage.Rooms and currentStage.Rooms[rtype] then
+    if not isStartingRoom and currentStage.Rooms and currentStage.Rooms[rtype]
+    and dimension ~= DIMENSION_DEATH_CERTIFICATE 
+    then
         local rooms = currentStage.Rooms[rtype].Default
         if currentStage.Rooms[rtype].Subtypes and currentStage.Rooms[rtype].Subtypes[subtype] ~= nil then -- can set rooms for a subtype to "false" to not override them
             rooms = currentStage.Rooms[rtype].Subtypes[subtype]

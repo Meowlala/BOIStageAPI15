@@ -17,6 +17,7 @@ local Callbacks = require("scripts.stageapi.enums.Callbacks")
 ---@field ReplaceVSStreak string
 ---@field Music Music # If set, will play this regardless of being in a custom stage
 ---@field NoChampions boolean
+---@field Subtype integer
 
 ---Default room args, but not necessarily only possible ones
 ---@param layoutName string
@@ -123,6 +124,7 @@ end
 ---@field ChallengeDone boolean
 ---@field NoChampions boolean
 ---@field JustCleared boolean
+---@field IsPersistentRoom boolean
 StageAPI.LevelRoom = StageAPI.Class("LevelRoom")
 StageAPI.NextUniqueRoomIdentifier = 0
 function StageAPI.LevelRoom:Init(args, ...)
