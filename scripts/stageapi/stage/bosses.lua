@@ -412,6 +412,18 @@ mod:AddCallback(ModCallbacks.MC_POST_RENDER, function()
     end
 end)
 
+---@class BossData
+---@field Name string
+---@field Weight number
+---@field NameTwo string
+---@field Portrait string
+---@field PortraitTwo string
+---@field Horseman boolean
+---@field Rooms RoomsList
+---@field Shapes RoomShape[]
+---@field BaseGameBoss boolean
+
+---@type table<string, BossData>
 StageAPI.Bosses = {}
 function StageAPI.AddBossData(id, bossData)
     StageAPI.Bosses[id] = bossData

@@ -4,6 +4,8 @@ local Callbacks = require("scripts.stageapi.enums.Callbacks")
 
 StageAPI.LogMinor("Loading Core Callbacks")
 
+local DIMENSION_DEATH_CERTIFICATE = 2
+
 mod:AddCallback(ModCallbacks.MC_POST_UPDATE, function()
     local currentRoom = StageAPI.GetCurrentRoom()
     if currentRoom and currentRoom.Loaded then
@@ -283,41 +285,49 @@ mod:AddCallback(ModCallbacks.MC_POST_RENDER, function()
         shared.Sfx:Play(StageAPI.S.BossIntro, 1, 0, false, 1)
     end
 
-    if StageAPI.InOverriddenStage() and StageAPI.CurrentStage then
+    local inCustomStage = StageAPI.InOverriddenStage() and StageAPI.CurrentStage 
+    local currentDimension = StageAPI.GetDimension()
+
+    if inCustomStage then
         local roomType = shared.Room:GetType()
         local rtype = StageAPI.GetCurrentRoomType()
-        local grids
 
-        local gridsOverride = StageAPI.CallCallbacks(Callbacks.PRE_UPDATE_GRID_GFX, false)
+        -- Grid Gfx
 
-        local currentRoom = StageAPI.GetCurrentRoom()
-        if gridsOverride then
-            grids = gridsOverride
-        elseif currentRoom and currentRoom.Data.RoomGfx then
-            grids = currentRoom.Data.RoomGfx.Grids
-        elseif StageAPI.CurrentStage.RoomGfx and StageAPI.CurrentStage.RoomGfx[rtype] and StageAPI.CurrentStage.RoomGfx[rtype].Grids then
-            grids = StageAPI.CurrentStage.RoomGfx[rtype].Grids
-        end
+        if currentDimension ~= DIMENSION_DEATH_CERTIFICATE then
+            local grids
 
-        if grids then
-            if grids.Bridges then
-                for _, grid in ipairs(pits) do
-                    StageAPI.CheckBridge(grid[1], grid[2], grids.Bridges)
+            local gridsOverride = StageAPI.CallCallbacks(Callbacks.PRE_UPDATE_GRID_GFX, false)
+
+            local currentRoom = StageAPI.GetCurrentRoom()
+            if gridsOverride then
+                grids = gridsOverride
+            elseif currentRoom and currentRoom.Data.RoomGfx then
+                grids = currentRoom.Data.RoomGfx.Grids
+            elseif StageAPI.CurrentStage.RoomGfx and StageAPI.CurrentStage.RoomGfx[rtype] and StageAPI.CurrentStage.RoomGfx[rtype].Grids then
+                grids = StageAPI.CurrentStage.RoomGfx[rtype].Grids
+            end
+
+            if grids then
+                if grids.Bridges then
+                    for _, grid in ipairs(pits) do
+                        StageAPI.CheckBridge(grid[1], grid[2], grids.Bridges)
+                    end
+                end
+
+                if not StageAPI.RoomRendered and updatedGrids then
+                    StageAPI.ChangeGrids(grids)
+                elseif updatedDoors then
+                    for _, newDoorSlot in ipairs(newDoors) do
+                        local door = shared.Room:GetDoor(newDoorSlot)
+                        StageAPI.ChangeSingleGrid(door, grids, door:GetGridIndex())
+                    end
                 end
             end
 
             if not StageAPI.RoomRendered and updatedGrids then
-                StageAPI.ChangeGrids(grids)
-            elseif updatedDoors then
-                for _, newDoorSlot in ipairs(newDoors) do
-                    local door = shared.Room:GetDoor(newDoorSlot)
-                    StageAPI.ChangeSingleGrid(door, grids, door:GetGridIndex())
-                end
+                StageAPI.CallCallbacks(Callbacks.POST_UPDATE_GRID_GFX, false, grids)
             end
-        end
-
-        if not StageAPI.RoomRendered and updatedGrids then
-            StageAPI.CallCallbacks(Callbacks.POST_UPDATE_GRID_GFX, false, grids)
         end
 
         local anyPlayerPressingTab = false
@@ -374,9 +384,10 @@ mod:AddCallback(ModCallbacks.MC_POST_RENDER, function()
         musicRoom = StageAPI.GetLevelRoom(roomId, StageAPI.PreviousExtraRoomData.MapID)
     end
 
-    if StageAPI.InOverriddenStage() and StageAPI.CurrentStage 
-    or musicRoom
-    then
+    if (
+        inCustomStage
+        and currentDimension ~= DIMENSION_DEATH_CERTIFICATE
+    ) or musicRoom then
         local id = shared.Music:GetCurrentMusicID()
         local musicID, shouldLayer, shouldQueue, disregardNonOverride
         if musicRoom then
@@ -426,7 +437,7 @@ mod:AddCallback(ModCallbacks.MC_POST_RENDER, function()
         -- is the second arg, won't change for backwards compat
         local callbacks = StageAPI.GetCallbacks(Callbacks.PRE_CHANGE_ROOM_GFX)
         for _, callback in ipairs(callbacks) do
-            local success, ret = StageAPI.TryCallback(callback, currentRoom, usingGfx, true)
+            local success, ret = StageAPI.TryCallback(callback, currentRoom, usingGfx, true, currentDimension)
             if success and ret ~= nil then
                 usingGfx = ret
             end
@@ -439,7 +450,7 @@ mod:AddCallback(ModCallbacks.MC_POST_RENDER, function()
             end
         end
 
-        StageAPI.CallCallbacks(Callbacks.POST_CHANGE_ROOM_GFX, false, currentRoom, usingGfx, true)
+        StageAPI.CallCallbacks(Callbacks.POST_CHANGE_ROOM_GFX, false, currentRoom, usingGfx, true, currentDimension)
 
         StageAPI.LastBackdropType = backdropType
     end
@@ -792,6 +803,7 @@ mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, function()
 
     local isNewStage, override = StageAPI.InOverriddenStage()
     local inStartingRoom = StageAPI.InStartingRoom()
+    local currentDimension = StageAPI.GetDimension()
 
     for _, customGrid in ipairs(StageAPI.GetCustomGrids()) do
         if not customGrid.JustSpawned then
@@ -846,7 +858,13 @@ mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, function()
         }
     end
 
-    if (not shared.Level:GetStateFlag(LevelStateFlag.STATE_LEVEL_START_TRIGGERED) and shared.Level:GetCurrentRoomIndex() == shared.Level:GetPreviousRoomIndex()) or (isNewStage and not StageAPI.CurrentStage) then
+    if (
+        not shared.Level:GetStateFlag(LevelStateFlag.STATE_LEVEL_START_TRIGGERED) 
+        and shared.Level:GetCurrentRoomIndex() == shared.Level:GetPreviousRoomIndex()
+    ) or (
+        isNewStage 
+        and not StageAPI.CurrentStage
+    ) then
         local previousAscentIndex = StageAPI.GetStageAscentIndex(StageAPI.PreviousNewRoomStage, StageAPI.PreviousNewRoomStageType)
         if previousAscentIndex then
             local ascentData = {}
@@ -1009,7 +1027,7 @@ mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, function()
     local currentListIndex = StageAPI.GetCurrentRoomID()
     local currentRoom, justGenerated, boss = StageAPI.GetCurrentRoom(), nil, nil
 
-    local retCurrentRoom, retJustGenerated, retBoss = StageAPI.CallCallbacks(Callbacks.PRE_STAGEAPI_NEW_ROOM_GENERATION, true, currentRoom, justGenerated, currentListIndex)
+    local retCurrentRoom, retJustGenerated, retBoss = StageAPI.CallCallbacks(Callbacks.PRE_STAGEAPI_NEW_ROOM_GENERATION, true, currentRoom, justGenerated, currentListIndex, currentDimension)
     local prevRoom = currentRoom
     currentRoom, justGenerated, boss = retCurrentRoom or currentRoom, retJustGenerated or justGenerated, retBoss or boss
     if prevRoom ~= currentRoom then
@@ -1041,7 +1059,7 @@ mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, function()
         end
     end
 
-    retCurrentRoom, retJustGenerated, retBoss = StageAPI.CallCallbacks(Callbacks.POST_STAGEAPI_NEW_ROOM_GENERATION, true, currentRoom, justGenerated, currentListIndex, boss)
+    retCurrentRoom, retJustGenerated, retBoss = StageAPI.CallCallbacks(Callbacks.POST_STAGEAPI_NEW_ROOM_GENERATION, true, currentRoom, justGenerated, currentListIndex, boss, currentDimension)
     prevRoom = currentRoom
     currentRoom, justGenerated, boss = retCurrentRoom or currentRoom, retJustGenerated or justGenerated, retBoss or boss
     if prevRoom ~= currentRoom then
@@ -1154,7 +1172,9 @@ mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, function()
     local usingGfx
     if currentRoom and currentRoom.Data.RoomGfx then
         usingGfx = currentRoom.Data.RoomGfx
-    elseif isNewStage and StageAPI.CurrentStage.RoomGfx then
+    elseif isNewStage and StageAPI.CurrentStage.RoomGfx 
+    and currentDimension ~= DIMENSION_DEATH_CERTIFICATE
+    then
         local rtype = StageAPI.GetCurrentRoomType()
 
         -- Handle Devil's crown room gfx
@@ -1170,7 +1190,7 @@ mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, function()
     -- is the second arg, won't change for backwards compat
     local callbacks = StageAPI.GetCallbacks(Callbacks.PRE_CHANGE_ROOM_GFX)
     for _, callback in ipairs(callbacks) do
-        local success, ret = StageAPI.TryCallback(callback, currentRoom, usingGfx, false)
+        local success, ret = StageAPI.TryCallback(callback, currentRoom, usingGfx, false, currentDimension)
         if success and ret ~= nil then
             usingGfx = ret
         end
@@ -1183,7 +1203,7 @@ mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, function()
         end
     end
 
-    StageAPI.CallCallbacks(Callbacks.POST_CHANGE_ROOM_GFX, false, currentRoom, usingGfx, false)
+    StageAPI.CallCallbacks(Callbacks.POST_CHANGE_ROOM_GFX, false, currentRoom, usingGfx, false, currentDimension)
 
     StageAPI.LastBackdropType = shared.Room:GetBackdropType()
     StageAPI.RoomRendered = false
