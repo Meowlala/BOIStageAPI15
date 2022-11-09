@@ -192,9 +192,6 @@ StageAPI.AddCallback("StageAPI", Callbacks.POST_SELECT_BOSS_MUSIC, 0, function(s
 end)
 
 StageAPI.NonOverrideTrapdoors = {
-    ["gfx/grid/trapdoor_downpour.anm2"] = true,
-    ["gfx/grid/trapdoor_mines.anm2"] = true,
-    ["gfx/grid/trapdoor_mausoleum.anm2"] = true,
     ["gfx/grid/trapdoor_corpse_big.anm2"] = true
 }
 
@@ -216,7 +213,12 @@ function StageAPI.CheckStageTrapdoor(grid, index)
     if not entering then return end
 
     local currStage = StageAPI.CurrentStage or {}
-    local nextStage = StageAPI.CallCallbacks(Callbacks.PRE_SELECT_NEXT_STAGE, true, StageAPI.CurrentStage) or currStage.NextStage
+    local isSecretExit = shared.Room:GetType() == RoomType.ROOM_SECRET_EXIT
+    local nextStage = StageAPI.CallCallbacks(Callbacks.PRE_SELECT_NEXT_STAGE, true, StageAPI.CurrentStage, isSecretExit)
+    if not isSecretExit then
+        nextStage = nextStage or currStage.NextStage
+    end
+
     if nextStage and not currStage.OverridingTrapdoors then
         StageAPI.SpawnCustomTrapdoor(shared.Room:GetGridPosition(index), nextStage, grid:GetSprite():GetFilename(), 32, true)
         shared.Room:RemoveGridEntity(index, 0, false)
