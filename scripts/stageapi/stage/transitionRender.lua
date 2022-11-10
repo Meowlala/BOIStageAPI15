@@ -966,7 +966,7 @@ local function GenProgressAnm()
 					ProgressAnm[i].spr:LoadGraphics()
 				end
 
-				if i < NextStageID then --CurrentStage
+				if i < NextStageID then 
 					ProgressAnm[i].spr:SetLayerFrame(3,1)
 					if i == CurrentStage then
 						IsaacIndicatorPos = nPos
@@ -1011,7 +1011,7 @@ local function GenProgressAnm()
 	ProgressAnm.IsaacIndicator:Play("IsaacIndicator",true)
 	ProgressAnm.IsaacIndicator.Color = Color(0,0,0,1)
 	ProgressAnm.IsaacIndicatorPos = IsaacIndicatorPos
-	ProgressAnm.IsaacIndicatorNextPos = IsaacIndicatorNextPos  --IsaacIndicatorPos + Vector(27,0)
+	ProgressAnm.IsaacIndicatorNextPos = IsaacIndicatorNextPos  
 	ProgressAnm.IsaacIndicatorMovSpeed = ProgressAnm.IsaacIndicatorPos:Distance(ProgressAnm.IsaacIndicatorNextPos)/40
 
 	ProgressAnm.Clock = Sprite()
