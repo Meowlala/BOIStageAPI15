@@ -493,10 +493,12 @@ local PlSpot
 local DontReplacePlSpot
 local PlayerGfx 
 local Sdelay = 0
+local RenderFrame = 0
 local StartDisap
 local ExtraFrame = CTGfx.PlayersExtraFrame
 local MusicOnPause = false
 local DreamCatcher = false
+local OnlyAnim = false
 
 local DefaultTransitionMusik = Music.MUSIC_JINGLE_NIGHTMARE
 local TransitionMusik = DefaultTransitionMusik
@@ -667,6 +669,7 @@ local function DreamCatcherItemReplace() --Instead of predicting the next items,
 end
 
 local function TransitionRender(_, name)
+	RenderFrame = RenderFrame+1
 	for _, player in ipairs(shared.Players) do
 		player.ControlsCooldown = math.max(player.ControlsCooldown,80)
 	end
@@ -702,7 +705,6 @@ local function TransitionRender(_, name)
 					
 			if not MusicOnPause and MusicManager():GetCurrentMusicID() ~= TransitionMusik then
 				MusicOnPause = true
-				--MusicManager():Play(TransitionMusik,0)
 				MusicManager():Pause()
 			end
 
@@ -754,11 +756,13 @@ local function TransitionRender(_, name)
 			shared.Music:Play(MusikID,Options.MusicVolume)
 		end
 		MusicOnPause = false
+		TransitionMusik = DefaultTransitionMusik
 
 		shared.Game:GetHUD():SetVisible(true)
 
 		ExtraFrame = CTGfx.PlayersExtraFrame
 		ShaderState = 3
+		RenderFrame = 0
 		
 		BlockCallbacks(true)
 	end
@@ -806,14 +810,13 @@ function self.AddDefaultProgressStage()
 			BlueWomb = true
 		end
 	
-		--local StageOffset = calcStageOffset(StageI)
-
 		if level:GetStageType()>=4 and StageI<9 then
 			Stages[StageI+1] = { frame = CTGfx.StageIcons[StageI][level:GetStageType()], IsSecond = (StageI)%2==0}
 		else
 			Stages[StageI] = {frame = CTGfx.StageIcons[StageI][level:GetStageType()],IsSecond = (StageI)%2==0 and StageI<9}
 		end
 	end
+
 	if DCSprite.ItemCallbackActivated then
 		mod:RemoveCallback(ModCallbacks.MC_POST_NEW_ROOM, DreamCatcherItemReplace)
 		DCSprite.ItemCallbackActivated = false
@@ -827,7 +830,7 @@ local function TransitionActivation()
 
 	shared.Game:GetHUD():SetVisible(false)
 
-	local player = shared.Players[1] 
+	local player = shared.Players[1]  
 
 	if StageAPI.PlayerBossInfo[player:GetPlayerType()] then  
 		PlayerGfx = StageAPI.PlayerBossInfo[player:GetPlayerType()]
@@ -837,9 +840,9 @@ local function TransitionActivation()
 
 	if not DontReplacePlSpot then
 		PlSpot = CTGfx.BossSpots[level:GetAbsoluteStage()][level:GetStageType()]
-		if StageAPI.NextStage and StageAPI.NextStage.BossSpot then
-			PlSpot = StageAPI.NextStage.BossSpot
-		end
+		--if StageAPI.NextStage and StageAPI.NextStage.BossSpot then
+		--	PlSpot = StageAPI.NextStage.BossSpot
+		--end
 		Nightmare_bg:ReplaceSpritesheet(3,PlSpot)
 	else
 		DontReplacePlSpot = nil
@@ -891,8 +894,8 @@ local function TransitionActivation()
 
 	local queue = shared.Music:GetCurrentMusicID()
 
-	TransitionMusik = StageAPI.NextStage and StageAPI.NextStage.TransitionMusic or DefaultTransitionMusik
-	shared.Music:Play(TransitionMusik,Options.MusicVolume)
+	local Musik = TransitionMusik or DefaultTransitionMusik
+	shared.Music:Play(Musik,Options.MusicVolume)
 
 	if DreamCatcher then
 		CTGfx.DreamCatcherSprites.Bubble(NightmareAnm)
@@ -963,7 +966,7 @@ local function GenProgressAnm()
 					ProgressAnm[i].spr:LoadGraphics()
 				end
 
-				if i < NextStageID then 
+				if i < NextStageID then --CurrentStage
 					ProgressAnm[i].spr:SetLayerFrame(3,1)
 					if i == CurrentStage then
 						IsaacIndicatorPos = nPos
@@ -1008,7 +1011,7 @@ local function GenProgressAnm()
 	ProgressAnm.IsaacIndicator:Play("IsaacIndicator",true)
 	ProgressAnm.IsaacIndicator.Color = Color(0,0,0,1)
 	ProgressAnm.IsaacIndicatorPos = IsaacIndicatorPos
-	ProgressAnm.IsaacIndicatorNextPos = IsaacIndicatorNextPos  
+	ProgressAnm.IsaacIndicatorNextPos = IsaacIndicatorNextPos  --IsaacIndicatorPos + Vector(27,0)
 	ProgressAnm.IsaacIndicatorMovSpeed = ProgressAnm.IsaacIndicatorPos:Distance(ProgressAnm.IsaacIndicatorNextPos)/40
 
 	ProgressAnm.Clock = Sprite()
@@ -1088,12 +1091,19 @@ function self.SetStageSpot(gfx)
 	Nightmare_bg:LoadGraphics(true)
 end
 
-function self.StartTransition()
+function self.StartTransition(OA)
 	ShaderState = 1
+	OnlyAnim = OA
 end
 
 function self.IsTransitionPlaying()
 	return ShaderState == 1 or ShaderState == 2
+end
+
+function self.SetTransitionMusic(music)
+	if music then
+		TransitionMusik = music
+	end
 end
 
 local function CTAClean(_,NewGame)
@@ -1113,12 +1123,15 @@ end
 
 local function RenderTrick()  --very strange way to fix the backdrop in Dark Room
 	if Sdelay > 150 then
-		Isaac.ExecuteCommand("stage " .. NextStage)
+		if OnlyAnim ~= true then
+			Isaac.ExecuteCommand("stage " .. NextStage)
 
-		if not DontAddStage then
-			self.AddDefaultProgressStage()
+			if not DontAddStage then
+				self.AddDefaultProgressStage()
+			end
 		end
 		DontAddStage = false
+		OnlyAnim = false
 
 		GenProgressAnm()
 		DreamCatcher = CTGfx.DreamCatcherCheck()
@@ -1155,7 +1168,7 @@ local function ShaderRender(_, name)
 			player.PositionOffset = Vector.Zero
 		end
 		RenderTrick()
-		--mod:AddCallback(ModCallbacks.MC_POST_PLAYER_RENDER,RenderTrick)  --Incompatible with Rev
+		--mod:AddCallback(ModCallbacks.MC_POST_PLAYER_RENDER,RenderTrick)
 		
 		local Tabl = {PixelAm = 0}
 		return Tabl
@@ -1185,6 +1198,10 @@ local function ShaderRender(_, name)
 		return ShaTabl
 	end
      elseif ShaderState == 2 then
+	if RenderFrame < 2 and MusicManager():GetCurrentMusicID() ~= TransitionMusik then
+		shared.Music:Play(TransitionMusik,Options.MusicVolume)
+	end
+
      	TransitionRender()
 
 	local Tabl = {PixelAm = 0}
