@@ -658,7 +658,7 @@ local function DreamCatcherItemReplace() --Instead of predicting the next items,
 			for i,e in pairs(Isaac.FindByType(5,100,-1,false,false)) do
 
 				if DCSprite.Items[i] then
-					print("Item has been replaced, original ID =",e.SubType)
+					print("[StageAPI]: Item has been replaced, original ID =",e.SubType)
 					e:ToPickup():Morph(5,100,DCSprite.Items[i],false,true,false)
 				end
 			end
