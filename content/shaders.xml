@@ -39,4 +39,72 @@
             }
         ]]></fragment>
     </shader>
+
+<shader name="StageAPI-TransitionPixelation">
+		<parameters>
+			<param name="PixelAm" type="float"/>
+		</parameters>
+  	<vertex><![CDATA[
+attribute vec3 Position;
+attribute vec4 Color;
+attribute vec2 TexCoord;
+attribute float PixelAm;
+attribute vec4 RenderData;
+attribute float Scale;
+
+varying vec4 Color0;
+varying vec2 TexCoord0;
+varying float OutPixelAm;
+varying vec4 RenderDataOut;
+varying float ScaleOut;
+
+uniform mat4 Transform;
+	
+void main(void) {
+	OutPixelAm = PixelAm;
+	RenderDataOut = RenderData;
+	Color0 = Color;
+	gl_Position = Transform * vec4(Position.xyz, 1.0);
+	TexCoord0 = TexCoord;
+}
+ 	]]></vertex>
+ 	<fragment><![CDATA[
+varying vec4 Color0;
+varying vec2 TexCoord0;
+varying float OutPixelAm;
+varying vec4 RenderDataOut;
+varying float ScaleOut;
+uniform sampler2D Texture0;
+
+//const int Samples = 4;
+
+
+// SNES style mosaic effect, it's cheap, simple, and more crisp looking
+void main(void)
+{
+	//vec4 Color = Color0 * texture2D(Texture0, TexCoord0);
+	
+	if (OutPixelAm > 0.001) {
+
+		vec2 pa = OutPixelAm * 0.5 * min(RenderDataOut.z, RenderDataOut.w) / RenderDataOut.zw;
+		//vec2 snapCoord = TexCoord0.st - mod(TexCoord0.st, pa) + pa * 0.5;
+	
+		// Centered pixelation
+		// This is less faithful to the SNES mosaic effect but it looks better overall
+		vec2 center = RenderDataOut.xy * 0.5 / RenderDataOut.zw;
+		vec2 snapCoord = TexCoord0.st - mod(TexCoord0.st - center, pa) + pa * 0.5;
+
+		vec4 Color = Color0 * texture2D(Texture0, snapCoord); 
+		//Color.rgb *= 1-OutPixelAm*3.5;
+		
+		gl_FragColor = Color; //Color0 * texture2D(Texture0, snapCoord); 
+	} else {
+
+		vec4 Color = Color0 * texture2D(Texture0, TexCoord0);
+		gl_FragColor = Color; //Color0 * texture2D(Texture0, TexCoord0);
+	}
+}
+]]></fragment>
+    </shader>
+
 </shaders>
