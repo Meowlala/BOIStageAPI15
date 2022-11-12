@@ -489,7 +489,6 @@ mod:AddCallback(ModCallbacks.MC_POST_RENDER, function()
             StageAPI.PlayingBossSpriteBg:Update()
             StageAPI.PlayingBossSpriteDirt:Update()
             StageAPI.PlayerPortraitExtra:Update()
-            StageAPI.IsOddRenderFrame = 0
         end
 
         local centerPos = StageAPI.GetScreenCenterPosition()
