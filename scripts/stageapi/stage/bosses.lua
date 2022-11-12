@@ -34,6 +34,100 @@ local noBossStages = {
     [LevelStage.STAGE4_2] = true
 }
 
+--frame, offset, scale, color, interpolated
+local ExtraPortraitFrameNoShake = {
+	{0,Vector(-510,53),Vector(1.0,1.0),Color(1,1,1,0),true},
+	{4,Vector(-510,53),Vector(1.6,0.4),Color(1,1,1,0),true},
+	{11,Vector(-220,-24),Vector(1.0,1.0),Color(1,1,1,1),true},
+	{12,Vector(-194,-50),Vector(0.8,1.2),Color(1,1,1,1),true},
+	{14,Vector(-228,-11),Vector(1.1,0.9),Color(1,1,1,1),true},
+	{16,Vector(-215,-24),Vector(1.0,1.0),Color(1,1,1,1)},
+	{89,Vector(-201,-24),Vector(1.0,1.0),Color(1,1,1,1),true},
+	{91,Vector(-187,-49),Vector(0.8,1.2),Color(1,1,1,1),true},
+	{92,Vector(-187,-49),Vector(0.8,1.2),Color(1,1,1,1),true},
+	{98,Vector(-510,53),Vector(1.6,0.4),Color(1,1,1,0),true},
+}
+
+local ExtraPortraitFrameShake = {
+	{0,Vector(-510,53),Vector(1.0,1.0),Color(1,1,1,0),true},
+	{4,Vector(-510,53),Vector(1.6,0.4),Color(1,1,1,0),true},
+	{11,Vector(-220,-24),Vector(1.0,1.0),Color(1,1,1,1),true},
+	{12,Vector(-194,-50),Vector(0.8,1.2),Color(1,1,1,1),true},
+	{14,Vector(-228,-11),Vector(1.1,0.9),Color(1,1,1,1),true},
+	{16,Vector(-215,-24),Vector(1.0,1.0),Color(1,1,1,1),true},
+	{17,Vector(-214,-24),Vector(1.0,1.0),Color(1,1,1,1)},
+	{19,Vector(-216,-24),Vector(1.0,1.0),Color(1,1,1,1)},
+	{21,Vector(-213,-24),Vector(1.0,1.0),Color(1,1,1,1)},
+	{23,Vector(-215,-24),Vector(1.0,1.0),Color(1,1,1,1)},
+	{25,Vector(-213,-24),Vector(1.0,1.0),Color(1,1,1,1)},
+	{27,Vector(-214,-24),Vector(1.0,1.0),Color(1,1,1,1)},
+	{29,Vector(-212,-24),Vector(1.0,1.0),Color(1,1,1,1)},
+	{31,Vector(-214,-24),Vector(1.0,1.0),Color(1,1,1,1)},
+	{33,Vector(-211,-24),Vector(1.0,1.0),Color(1,1,1,1)},
+	{35,Vector(-213,-24),Vector(1.0,1.0),Color(1,1,1,1)},
+	{37,Vector(-211,-24),Vector(1.0,1.0),Color(1,1,1,1)},
+	{39,Vector(-212,-24),Vector(1.0,1.0),Color(1,1,1,1)},
+	{41,Vector(-210,-24),Vector(1.0,1.0),Color(1,1,1,1)},
+	{43,Vector(-212,-24),Vector(1.0,1.0),Color(1,1,1,1)},
+	{45,Vector(-209,-24),Vector(1.0,1.0),Color(1,1,1,1)},
+	{47,Vector(-211,-24),Vector(1.0,1.0),Color(1,1,1,1)},
+	{49,Vector(-209,-24),Vector(1.0,1.0),Color(1,1,1,1)},
+	{51,Vector(-210,-24),Vector(1.0,1.0),Color(1,1,1,1)},
+	{53,Vector(-208,-24),Vector(1.0,1.0),Color(1,1,1,1)},
+	{55,Vector(-210,-24),Vector(1.0,1.0),Color(1,1,1,1)},
+	{57,Vector(-207,-24),Vector(1.0,1.0),Color(1,1,1,1)},
+	{59,Vector(-209,-24),Vector(1.0,1.0),Color(1,1,1,1)},
+	{61,Vector(-207,-24),Vector(1.0,1.0),Color(1,1,1,1)},
+	{63,Vector(-208,-24),Vector(1.0,1.0),Color(1,1,1,1)},
+	{65,Vector(-206,-24),Vector(1.0,1.0),Color(1,1,1,1)},
+	{67,Vector(-208,-24),Vector(1.0,1.0),Color(1,1,1,1)},
+	{69,Vector(-205,-24),Vector(1.0,1.0),Color(1,1,1,1)},
+	{71,Vector(-207,-24),Vector(1.0,1.0),Color(1,1,1,1)},
+	{73,Vector(-204,-24),Vector(1.0,1.0),Color(1,1,1,1)},
+	{75,Vector(-206,-24),Vector(1.0,1.0),Color(1,1,1,1)},
+	{77,Vector(-203,-24),Vector(1.0,1.0),Color(1,1,1,1)},
+	{79,Vector(-205,-24),Vector(1.0,1.0),Color(1,1,1,1)},
+	{81,Vector(-202,-24),Vector(1.0,1.0),Color(1,1,1,1)},
+	{83,Vector(-204,-24),Vector(1.0,1.0),Color(1,1,1,1)},
+	{85,Vector(-201,-24),Vector(1.0,1.0),Color(1,1,1,1)},
+	{87,Vector(-203,-24),Vector(1.0,1.0),Color(1,1,1,1)},
+	{89,Vector(-201,-24),Vector(1.0,1.0),Color(1,1,1,1),true},
+	{91,Vector(-187,-49),Vector(0.8,1.2),Color(1,1,1,1)},
+	{92,Vector(-187,-49),Vector(0.8,1.2),Color(1,1,1,1),true},
+	{98,Vector(-510,53),Vector(1.6,0.4),Color(1,1,1,0),true},
+}
+
+local function InterpolateAnim(anm,frame,animTabl)
+    if anm and frame and animTabl then
+        local startdata,enddata
+        for i,data in ipairs(animTabl) do
+            if frame<data[1] then
+                startdata,enddata = animTabl[i-1],data
+                break
+            end
+        end
+        if startdata and enddata then
+            if enddata[5] then
+                local procent = (frame-startdata[1])/(enddata[1]-startdata[1])
+                local offset = startdata[2]+(enddata[2]-startdata[2])*procent
+                local scale = startdata[3]+(enddata[3]-startdata[3])*procent
+                local color = Color(
+	            startdata[4].R+(enddata[4].R-startdata[4].R)*procent,
+                    startdata[4].G+(enddata[4].G-startdata[4].G)*procent,
+                    startdata[4].B+(enddata[4].B-startdata[4].B)*procent,
+                    startdata[4].A+(enddata[4].A-startdata[4].A)*procent)
+                anm.Offset = offset
+                anm.Scale = scale
+                anm.Color = color
+            else
+                anm.Offset = startdata[2]
+                anm.Scale = startdata[3]
+                anm.Color = startdata[4]
+            end
+        end
+    end
+end
+
 -- if doGreed is false, will not add to greed at all, if true, will only add to greed. nil for both.
 -- if stagetype is true, will set floorinfo for all stagetypes
 function StageAPI.SetFloorInfo(info, stage, stagetype, doGreed)
@@ -294,13 +388,17 @@ for i=0, 14 do
     StageAPI.BossSpriteDirt:ReplaceSpritesheet(i, "none.png")
 end
 
+StageAPI.PlayerPortraitExtra = Sprite()
+
 StageAPI.PlayingBossSprite = nil
 StageAPI.PlayingBossSpriteBg = nil
 StageAPI.PlayingBossSpriteDirt = nil
 StageAPI.UnskippableBossAnim = nil
 StageAPI.BossOffset = nil
+StageAPI.UsePlayerPortraitExtra = nil
+local Render_Extra_Offset = Vector(-71,-125) --Vector(69,128)
 
-function StageAPI.PlayBossAnimationManual(portrait, name, spot, playerPortrait, playerName, playerSpot, portraitTwo, unskippable, bgColor, dirtColor, noShake)
+function StageAPI.PlayBossAnimationManual(portrait, name, spot, playerPortrait, playerName, playerSpot, portraitTwo, unskippable, bgColor, dirtColor, noShake, PlayerExtra)
     local paramTable = portrait
     if type(paramTable) ~= "table" then
         paramTable = {
@@ -309,6 +407,7 @@ function StageAPI.PlayBossAnimationManual(portrait, name, spot, playerPortrait, 
             BossName = name,
             BossSpot = spot,
             PlayerPortrait = playerPortrait,
+            PlayerPortraitExtra = PlayerExtra,
             PlayerName = playerName,
             PlayerSpot = playerSpot,
             Unskippable = unskippable,
@@ -339,6 +438,17 @@ function StageAPI.PlayBossAnimationManual(portrait, name, spot, playerPortrait, 
         else
             StageAPI.PlayingBossSprite:ReplaceSpritesheet(5, paramTable.PlayerPortrait or "gfx/ui/boss/portrait_20.0_monstro.png")
             StageAPI.PlayingBossSprite:ReplaceSpritesheet(12, "none.png")
+        end
+
+        StageAPI.UsePlayerPortraitExtra = nil
+        if paramTable.PlayerPortraitExtra then
+            StageAPI.PlayerPortraitExtra:Load(paramTable.PlayerPortraitExtra,true)
+            if paramTable.NoShake then
+                StageAPI.UsePlayerPortraitExtra = false
+            else
+                StageAPI.UsePlayerPortraitExtra = true
+            end
+            StageAPI.PlayerPortraitExtra:Play(StageAPI.PlayerPortraitExtra:GetDefaultAnimationName(),true)
         end
 
         if paramTable.BossPortraitTwo then
@@ -378,6 +488,8 @@ mod:AddCallback(ModCallbacks.MC_POST_RENDER, function()
             StageAPI.PlayingBossSprite:Update()
             StageAPI.PlayingBossSpriteBg:Update()
             StageAPI.PlayingBossSpriteDirt:Update()
+            StageAPI.PlayerPortraitExtra:Update()
+            StageAPI.IsOddRenderFrame = 0
         end
 
         local centerPos = StageAPI.GetScreenCenterPosition()
@@ -401,7 +513,12 @@ mod:AddCallback(ModCallbacks.MC_POST_RENDER, function()
                 end
             end
 
-            if layer == 13 or layer == 14 then
+            if StageAPI.UsePlayerPortraitExtra ~= nil and layer == 12 and StageAPI.PlayingBossSprite:GetFrame()<98 then
+                local animTabl = StageAPI.UsePlayerPortraitExtra and ExtraPortraitFrameShake or ExtraPortraitFrameNoShake
+                InterpolateAnim(StageAPI.PlayerPortraitExtra,StageAPI.PlayingBossSprite:GetFrame(),animTabl)
+                StageAPI.PlayerPortraitExtra:Render(pos)
+		
+            elseif layer == 13 or layer == 14 then
                 StageAPI.PlayingBossSpriteDirt:RenderLayer(layer, pos)
             else
                 StageAPI.PlayingBossSprite:RenderLayer(layer, pos)
@@ -452,12 +569,24 @@ end
 function StageAPI.PlayBossAnimation(boss, unskippable)
     local bSpot, pSpot, bgColor, dirtColor = StageAPI.GetStageSpot()
     local gfxData = StageAPI.TryGetPlayerGraphicsInfo(shared.Players[1])
+
+    local Playerportrait = gfxData.BossPortrait or gfxData.Portrait
+    local ExtraPortrait = nil
+    if gfxData.ExtraPortrait then
+        if type(gfxData.ExtraPortrait) == 'table' then
+            Playerportrait = gfxData.ExtraPortrait[2] and "stageapi/none.png" or Playerportrait
+            ExtraPortrait = gfxData.ExtraPortrait[1]
+        else
+            ExtraPortrait = gfxData.ExtraPortrait
+        end
+    end
     StageAPI.PlayBossAnimationManual({
         BossPortrait = boss.Portrait,
         BossPortraitTwo = boss.PortraitTwo,
         BossName = boss.BossName or boss.Bossname,
         BossSpot = boss.Spot or bSpot,
-        PlayerPortrait = gfxData.BossPortrait or gfxData.Portrait,
+        PlayerPortrait = Playerportrait, 
+        PlayerPortraitExtra = ExtraPortrait,
         PlayerName = gfxData.Name,
         PlayerSpot = pSpot,
         Unskippable = unskippable,
