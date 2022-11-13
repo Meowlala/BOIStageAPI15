@@ -216,7 +216,9 @@ function StageAPI.PlayTransitionAnimation(stage, UseNew)
     if UseNew then
         fakeTR.PreGenProgressAnm(stage.stage, stage.IsCustomStage)
         
-        fakeTR.SetIndicatorPos(stage.indicatorPos[1], stage.indicatorPos[2])  
+        if stage.indicatorPos then
+            fakeTR.SetIndicatorPos(stage.indicatorPos[1], stage.indicatorPos[2])
+        end  
         if stage.stageNum and stage.icon then
             fakeTR.SetStageIcon(stage.stageNum, stage.icon)
         end
@@ -415,11 +417,10 @@ mod:AddCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, function(_, eff)
             end
         end
     end]]
-
 	local s,d = eff:GetSprite(),eff:GetData()
 	local Room = shared.Room
 
-	--[[if d.GoesTo and e.FrameCount < 2 then  --spawn position fix, causes errors
+	--[[if d.GoesTo and e.FrameCount < 2 then --spawn position fix, causes errors
 		e.DepthOffset = -50
 		local NewPos = e.Position
 		for i=0,DoorSlot.NUM_DOOR_SLOTS-1 do
