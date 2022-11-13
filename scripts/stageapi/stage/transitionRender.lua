@@ -411,7 +411,7 @@ function gfxTabl.DreamCatcherCheck()
 	end
 	if check then
 		local bossSubType
-
+ 
 		local RoomsTable = shared.Level:GetRooms()
 		gfxTabl.DreamCatcherItemType = -1
 		for i=1,#RoomsTable do
@@ -506,6 +506,7 @@ local TransitionMusik = DefaultTransitionMusik
 local ShaderState = 0
 local PIxelAmonStart = 0.002
 local PIxelAmon = PIxelAmonStart
+local IsOddRenderFrame = false
 
 local function BlockCallbacks(mode)
     if not mode then
@@ -525,7 +526,7 @@ end
 
 local NightmareFrameCount = nil
 local function StandartNightmare()
-	if Isaac.GetFrameCount()%2 == 0 then
+	if IsOddRenderFrame then
 		Nightmare_bg:Update()
 
 		if Nightmare_bg:IsFinished("Intro") then
@@ -561,7 +562,7 @@ DCSprite.Items = CTGfx.DreamCatcherItems
 DCSprite.ItemCallbackActivated = false
 
 local function DreamCatcherNightmare()
-	if Isaac.GetFrameCount()%2 == 0 then
+	if IsOddRenderFrame then
 		Nightmare_bg:Update()
 
 		if Nightmare_bg:IsFinished("Intro") then
@@ -683,7 +684,7 @@ local function TransitionRender(_, name)
 		PlayerExtra:Render(bg_RenderPos+Render_Extra_Offset)
 		PlayerExtra.Color = not (Nightmare_bg:IsPlaying("Intro") and Nightmare_bg:GetFrame()<=19) and Nightmare_bg.Color or PlayerExtra.Color
 		
-		if Isaac.GetFrameCount()%2 == 0 then
+		if IsOddRenderFrame then
 			PlayerExtra:Update()
 			ExtraFrame = ExtraFrame + 1
 			if ExtraFrame >= 5 then ExtraFrame = 1 end
@@ -701,7 +702,7 @@ local function TransitionRender(_, name)
 	end
 	
 	if ProgressAnm and #ProgressAnm>0 then
-		if Isaac.GetFrameCount()%2 == 0 then
+		if IsOddRenderFrame then
 					
 			if not MusicOnPause and MusicManager():GetCurrentMusicID() ~= TransitionMusik then
 				MusicOnPause = true
@@ -727,7 +728,7 @@ local function TransitionRender(_, name)
 			if type(i) == "number" then
 				local RPos = k.pos
 				k.spr:Render(RPos)
-				if Isaac.GetFrameCount()%2 == 0 then
+				if IsOddRenderFrame then
 					if Nightmare_bg:IsPlaying("Intro") and k.spr.Color.R < 1 then
 						k.spr.Color = Color(k.spr.Color.R+0.05, k.spr.Color.G+0.05, k.spr.Color.B+0.05, 1)
 					end
@@ -830,7 +831,7 @@ local function TransitionActivation()
 
 	shared.Game:GetHUD():SetVisible(false)
 
-	local player = shared.Players[1]  
+	local player = shared.Players[1] 
 
 	if StageAPI.PlayerBossInfo[player:GetPlayerType()] then  
 		PlayerGfx = StageAPI.PlayerBossInfo[player:GetPlayerType()]
@@ -840,9 +841,6 @@ local function TransitionActivation()
 
 	if not DontReplacePlSpot then
 		PlSpot = CTGfx.BossSpots[level:GetAbsoluteStage()][level:GetStageType()]
-		--if StageAPI.NextStage and StageAPI.NextStage.BossSpot then
-		--	PlSpot = StageAPI.NextStage.BossSpot
-		--end
 		Nightmare_bg:ReplaceSpritesheet(3,PlSpot)
 	else
 		DontReplacePlSpot = nil
@@ -1150,13 +1148,14 @@ local function RenderTrick()  --very strange way to fix the backdrop in Dark Roo
 end
 
 local function ShaderRender(_, name)
+  IsOddRenderFrame = not IsOddRenderFrame
   if name == "StageAPI-TransitionPixelation" then
      local ShaTabl = { PixelAm = 0.005 + PIxelAmon*Sdelay}
      if ShaderState == 0 then
 	local Tabl = {PixelAm = 0}
 	return Tabl
      elseif ShaderState == 1 then
-	if Isaac.GetFrameCount()%2 == 0 then
+	if IsOddRenderFrame then
 		Sdelay = Sdelay+2.6  
 	end
 	BlackCube.Color = Color(1,1,1,(PIxelAmonStart*Sdelay)*3.5)
@@ -1179,7 +1178,7 @@ local function ShaderRender(_, name)
 		return ShaTabl
 	end
      elseif ShaderState == 3 then
-	if Isaac.GetFrameCount()%2 == 0 then	
+	if IsOddRenderFrame then	
 		Sdelay = Sdelay-2.6
 	end
 	BlackCube.Color = Color(1,1,1,(PIxelAmonStart*Sdelay)*3.5)
@@ -1210,17 +1209,9 @@ local function ShaderRender(_, name)
   end
 end
 
-local function TrCommand(_, cmd, params) 
-	if cmd == "StadeapiCTT" then
-		self.PreGenProgressAnm(params)
-		self.StartTransition() 
-	end
-end
-
 mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, DreamCatcherItemReplace)
 mod:AddCallback(ModCallbacks.MC_POST_NEW_LEVEL, self.AddDefaultProgressStage)
 mod:AddCallback(ModCallbacks.MC_POST_GAME_STARTED, CTAClean)
---mod:AddCallback(ModCallbacks.MC_EXECUTE_CMD, TrCommand)
 mod:AddCallback(ModCallbacks.MC_GET_SHADER_PARAMS,ShaderRender)
 
 return self
