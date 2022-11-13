@@ -396,7 +396,6 @@ StageAPI.PlayingBossSpriteDirt = nil
 StageAPI.UnskippableBossAnim = nil
 StageAPI.BossOffset = nil
 StageAPI.UsePlayerPortraitExtra = nil
-local Render_Extra_Offset = Vector(-71,-125) --Vector(69,128)
 
 function StageAPI.PlayBossAnimationManual(portrait, name, spot, playerPortrait, playerName, playerSpot, portraitTwo, unskippable, bgColor, dirtColor, noShake, PlayerExtra)
     local paramTable = portrait
@@ -449,6 +448,7 @@ function StageAPI.PlayBossAnimationManual(portrait, name, spot, playerPortrait, 
                 StageAPI.UsePlayerPortraitExtra = true
             end
             StageAPI.PlayerPortraitExtra:Play(StageAPI.PlayerPortraitExtra:GetDefaultAnimationName(),true)
+            StageAPI.PlayerPortraitExtra.Offset = Vector(-500,200)
         end
 
         if paramTable.BossPortraitTwo then
@@ -489,6 +489,8 @@ mod:AddCallback(ModCallbacks.MC_POST_RENDER, function()
             StageAPI.PlayingBossSpriteBg:Update()
             StageAPI.PlayingBossSpriteDirt:Update()
             StageAPI.PlayerPortraitExtra:Update()
+            local animTabl = StageAPI.UsePlayerPortraitExtra and ExtraPortraitFrameShake or ExtraPortraitFrameNoShake
+            InterpolateAnim(StageAPI.PlayerPortraitExtra,StageAPI.PlayingBossSprite:GetFrame(),animTabl)
         end
 
         local centerPos = StageAPI.GetScreenCenterPosition()
@@ -513,10 +515,7 @@ mod:AddCallback(ModCallbacks.MC_POST_RENDER, function()
             end
 
             if StageAPI.UsePlayerPortraitExtra ~= nil and layer == 12 and StageAPI.PlayingBossSprite:GetFrame()<98 then
-                local animTabl = StageAPI.UsePlayerPortraitExtra and ExtraPortraitFrameShake or ExtraPortraitFrameNoShake
-                InterpolateAnim(StageAPI.PlayerPortraitExtra,StageAPI.PlayingBossSprite:GetFrame(),animTabl)
-                StageAPI.PlayerPortraitExtra:Render(pos)
-		
+                StageAPI.PlayerPortraitExtra:Render(pos)		
             elseif layer == 13 or layer == 14 then
                 StageAPI.PlayingBossSpriteDirt:RenderLayer(layer, pos)
             else
@@ -584,7 +583,7 @@ function StageAPI.PlayBossAnimation(boss, unskippable)
         BossPortraitTwo = boss.PortraitTwo,
         BossName = boss.BossName or boss.Bossname,
         BossSpot = boss.Spot or bSpot,
-        PlayerPortrait = Playerportrait, 
+        PlayerPortrait = Playerportrait,
         PlayerPortraitExtra = ExtraPortrait,
         PlayerName = gfxData.Name,
         PlayerSpot = pSpot,
