@@ -1173,7 +1173,7 @@ mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, function()
     local usingGfx
     if currentRoom and currentRoom.Data.RoomGfx then
         usingGfx = currentRoom.Data.RoomGfx
-    elseif isNewStage and StageAPI.CurrentStage.RoomGfx 
+    elseif StageAPI.CurrentStage and StageAPI.CurrentStage.RoomGfx 
     and currentDimension ~= DIMENSION_DEATH_CERTIFICATE
     then
         local rtype = StageAPI.GetCurrentRoomType()

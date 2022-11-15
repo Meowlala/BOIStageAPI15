@@ -206,14 +206,14 @@ local function RenderStreaksInTable(streakTable)
 
             local height = streakPlaying.Font:GetLineHeight() * streakPlaying.LineSpacing * streakPlaying.FontScale.Y
             for i, line in ipairs(streakPlaying.Text) do
-                streakPlaying.Font:DrawStringScaled(line.Text,
+                streakPlaying.Font:DrawStringScaledUTF8(line.Text,
                                                     line.PositionX + streakPlaying.TextOffset.X,
                                                     streakPlaying.RenderPos.Y - 9 + (i - 1) * height  + streakPlaying.TextOffset.Y,
                                                     streakPlaying.FontScale.X, streakPlaying.FontScale.Y,
                                                     streakPlaying.Color, 0, true)
             end
             if streakPlaying.ExtraText then
-                streakPlaying.SmallFont:DrawStringScaled(streakPlaying.ExtraText, streakPlaying.ExtraPositionX + streakPlaying.ExtraOffset.X, (streakPlaying.RenderPos.Y - 9) + streakPlaying.ExtraOffset.Y, streakPlaying.FontScale.X * streakPlaying.ExtraFontScale.X, 1 * streakPlaying.ExtraFontScale.Y, streakPlaying.Color, 0, true)
+                streakPlaying.SmallFont:DrawStringScaledUTF8(streakPlaying.ExtraText, streakPlaying.ExtraPositionX + streakPlaying.ExtraOffset.X, (streakPlaying.RenderPos.Y - 9) + streakPlaying.ExtraOffset.Y, streakPlaying.FontScale.X * streakPlaying.ExtraFontScale.X, 1 * streakPlaying.ExtraFontScale.Y, streakPlaying.Color, 0, true)
             end
 
             StageAPI.CallCallbacks(Callbacks.POST_STREAK_RENDER, false, streakPlaying.RenderPos, streakPlaying)
