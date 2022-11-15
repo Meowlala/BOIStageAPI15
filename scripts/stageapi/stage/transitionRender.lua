@@ -738,7 +738,9 @@ local function TransitionRender(_, name)
 		if shared.Game.TimeCounter < shared.Game.BossRushParTime then
 			ProgressAnm.Clock:Render(ProgressAnm.ClockPos)
 		end
-		ProgressAnm.BossIndicator:Render(ProgressAnm.BossIndicatorPos)
+		if StageProgNum<10 then
+			ProgressAnm.BossIndicator:Render(ProgressAnm.BossIndicatorPos)
+		end
 		ProgressAnm.IsaacIndicator:Render(ProgressAnm.IsaacIndicatorPos)
 	end
 
@@ -994,7 +996,9 @@ local function GenProgressAnm()
 				end
 			end
 			if i == StageProgNum then
-				BossIndicatorPos = nPos
+				local ni = i>9 and not BlueWomb and 2 or 1
+				local BPos = Vector(CenPos+26*(i-ni)+i,nm_RenderPos.Y)
+				BossIndicatorPos = BPos
 			end
 		end
 	end
