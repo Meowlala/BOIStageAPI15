@@ -1152,8 +1152,8 @@ local function RenderTrick()  --very strange way to fix the backdrop in Dark Roo
 end
 
 local function ShaderRender(_, name)
-  IsOddRenderFrame = not IsOddRenderFrame
   if name == "StageAPI-TransitionPixelation" then
+     IsOddRenderFrame = not IsOddRenderFrame
      local ShaTabl = { PixelAm = 0.005 + PIxelAmon*Sdelay}
      if ShaderState == 0 then
 	local Tabl = {PixelAm = 0}
