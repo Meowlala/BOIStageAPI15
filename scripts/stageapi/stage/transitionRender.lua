@@ -315,6 +315,10 @@ gfxTabl.Callbacks = {
 	{ModCallbacks.MC_POST_EFFECT_INIT , function()  --MomFootBlockCallback 
 			e:Remove()
 		end, EffectVariant.MOM_FOOT_STOMP},
+	{ModCallbacks.MC_FAMILIAR_UPDATE , function(_,npc)  --FamiliarBlock --Blood Oath fix
+			npc:GetSprite():SetFrame(0)
+			npc.Velocity = Vector(0,0)
+		end, },
 	}
 
 gfxTabl.BossDeathPortrait = {
@@ -411,7 +415,7 @@ function gfxTabl.DreamCatcherCheck()
 	end
 	if check then
 		local bossSubType
- 
+
 		local RoomsTable = shared.Level:GetRooms()
 		gfxTabl.DreamCatcherItemType = -1
 		for i=1,#RoomsTable do
@@ -767,7 +771,7 @@ local function TransitionRender(_, name)
 		ShaderState = 3
 		RenderFrame = 0
 		
-		BlockCallbacks(true)
+		--BlockCallbacks(true)
 	end
 end
 
@@ -813,6 +817,8 @@ function self.AddDefaultProgressStage()
 			BlueWomb = true
 		end
 	
+		--local StageOffset = calcStageOffset(StageI)
+
 		if level:GetStageType()>=4 and StageI<9 then
 			Stages[StageI+1] = { frame = CTGfx.StageIcons[StageI][level:GetStageType()], IsSecond = (StageI)%2==0}
 		else
@@ -833,7 +839,7 @@ local function TransitionActivation()
 
 	shared.Game:GetHUD():SetVisible(false)
 
-	local player = shared.Players[1] 
+	local player = shared.Players[1]  
 
 	if StageAPI.PlayerBossInfo[player:GetPlayerType()] then  
 		PlayerGfx = StageAPI.PlayerBossInfo[player:GetPlayerType()]
@@ -1013,7 +1019,7 @@ local function GenProgressAnm()
 	ProgressAnm.IsaacIndicator:Play("IsaacIndicator",true)
 	ProgressAnm.IsaacIndicator.Color = Color(0,0,0,1)
 	ProgressAnm.IsaacIndicatorPos = IsaacIndicatorPos
-	ProgressAnm.IsaacIndicatorNextPos = IsaacIndicatorNextPos  
+	ProgressAnm.IsaacIndicatorNextPos = IsaacIndicatorNextPos 
 	ProgressAnm.IsaacIndicatorMovSpeed = ProgressAnm.IsaacIndicatorPos:Distance(ProgressAnm.IsaacIndicatorNextPos)/40
 
 	ProgressAnm.Clock = Sprite()
@@ -1066,7 +1072,7 @@ function self.PreGenProgressAnm(stage,notAutoStage)
 		end
 	end
 	NextStageID = tonumber(NextId)
-	if NextStage:find("c") or NextStage:find("d") then NextStageID = NextStageID+1 end  
+	if NextStage:find("c") or NextStage:find("d") then NextStageID = NextStageID+1 end 
 	
 	StageProgNum = math.max(StageProgNum,(BlueWomb and 9 or 8), tonumber(NextId)) 
 	Sdelay = 1
@@ -1080,11 +1086,16 @@ function self.SetIndicatorPos(CurrentPos,NextPos)
 	end
 	if NextPos then
 		NextStageID = NextPos
+		StageProgNum = math.max(StageProgNum,NextStageID)
 	end
 end
 
 function self.SetStageIcon(stagenum,gfx)
-	Stages[stagenum] = {custom = gfx}
+	if type(gfx) == "string" then
+		Stages[stagenum] = {custom = gfx}
+	elseif type(gfx) == "number" then
+		Stages[stagenum] = {frame = gfx}
+	end
 end
 
 function self.SetStageSpot(gfx)
@@ -1141,7 +1152,7 @@ local function RenderTrick()  --very strange way to fix the backdrop in Dark Roo
 		
 		BlackCube.Color = Color(1,1,1,0)
 
-		mod:RemoveCallback(ModCallbacks.MC_POST_PLAYER_RENDER,RenderTrick)
+		--mod:RemoveCallback(ModCallbacks.MC_POST_PLAYER_RENDER,RenderTrick)
 		
 		if NextStage == "11" then
 			local backdropID = shared.Room:GetBackdropType() 
@@ -1195,6 +1206,7 @@ local function ShaderRender(_, name)
 		end
 	end
 	if Sdelay <= 0 then
+		BlockCallbacks(true)
 		shared.Game:GetHUD():SetVisible(true)
 		ShaderState = 0
 	else
@@ -1213,7 +1225,7 @@ local function ShaderRender(_, name)
   end
 end
 
-mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, DreamCatcherItemReplace)
+--mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, DreamCatcherItemReplace)
 mod:AddCallback(ModCallbacks.MC_POST_NEW_LEVEL, self.AddDefaultProgressStage)
 mod:AddCallback(ModCallbacks.MC_POST_GAME_STARTED, CTAClean)
 mod:AddCallback(ModCallbacks.MC_GET_SHADER_PARAMS,ShaderRender)
