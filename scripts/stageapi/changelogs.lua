@@ -32,7 +32,7 @@ mod:AddCallback(ModCallbacks.MC_POST_GAME_STARTED, function()
             REVEL.AddedStageAPIChangelogs = true
         end
 
-        TryAddChangelog("v2.18 - 20", [[- StageAPI now loads entities2
+        TryAddChangelog("v2.18 - 22", [[- StageAPI now loads entities2
 xml data and uses it for
 champion validation and stage hp
 
@@ -47,6 +47,15 @@ for pay to play and broken glasses
 - Fixes for member card relocator
 
 - Fixes for reloading in custom stages
+
+- Secret exit trapdoors can now
+be overridden by StageAPI
+
+- Fixed Death Certificate in
+custom stages
+
+- Streaks use UTF8 string
+drawing functions
 ]])
 
         TryAddChangelog("v2.15 - 17", [[- Fixed MinimapAPI placement for

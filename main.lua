@@ -19,7 +19,7 @@ for _, module in ipairs(loadOrder) do
 end
 
 StageAPI.LogMinor("Fully Loaded, loading dependent mods.")
-StageAPI.MarkLoaded("StageAPI", "2.21", true, true)
+StageAPI.MarkLoaded("StageAPI", "2.23", true, true)
 
 StageAPI.Loaded = true
 if StageAPI.ToCall then
