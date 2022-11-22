@@ -658,7 +658,7 @@ mod:AddCallback(ModCallbacks.MC_POST_RENDER, function()
             if shadowAnim and not (shadowSprite:IsPlaying(shadowAnim) or shadowSprite:IsFinished(shadowAnim)) then
                 shadowSprite:Play(shadowAnim, true)
             end
-
+            shadowSprite.Color = shadow.Color
             shadowSprite:Render(Isaac.WorldToRenderPosition(shadow.Position) + shared.Room:GetRenderScrollOffset(), Vector.Zero, Vector.Zero)
         end
     end
