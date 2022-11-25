@@ -225,9 +225,7 @@ function StageAPI.GetValidRoomsForLayout(args)
 
         if isValid and requireSubtype then
             isValid = layout.SubType == requireSubtype
-        end
-
-        if isValid and mindiff and maxdiff then
+        elseif isValid and mindiff and maxdiff then
             isValid = (layout.Difficulty >= mindiff or layout.Difficulty <= maxdiff)
         end
 
@@ -293,8 +291,6 @@ function StageAPI.ChooseRoomLayout(roomList, seed, shape, rtype, requireRoomType
     local args
     if roomList.Type ~= "RoomsList" then
         args = roomList
-        --StageAPI.Log(args.MinDifficulty)
-        --StageAPI.Log(args.MaxDifficulty)
     else
         args = {
             RoomList = roomList,
