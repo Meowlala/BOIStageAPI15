@@ -305,6 +305,11 @@ local function GetDifficultyRange(levelRoom)
             maxdiff = maxdiff + 5
         end
         if StageAPI.GetCurrentStage() then
+            local ignoreDifficulty = StageAPI.GetCurrentStage().IgnoreDifficultyRules == true
+            if ignoreDifficulty then
+                return
+            end
+
             if StageAPI.GetCurrentStage().IsSecondStage then
                 if isHard then
                     mindiff = mindiff + 10

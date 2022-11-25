@@ -82,6 +82,10 @@ function StageAPI.CustomStage:SetNoChampions(bool)
     self.NoChampions = bool
 end
 
+function StageAPI.CustomStage:SetIgnoreDifficultyRules(bool)
+    self.IgnoreDifficultyRules = bool
+end
+
 function StageAPI.CustomStage:SetIsSecondStage(isSecondStage)
     self.IsSecondStage = isSecondStage
 end
