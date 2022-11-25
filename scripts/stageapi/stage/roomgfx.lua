@@ -190,9 +190,10 @@ function StageAPI.ChangeBackdrop(backdrop, justWalls, storeBackdropEnts)
 end
 
 StageAPI.StageShadowRNG = RNG()
-function StageAPI.ChangeStageShadow(prefix, count)
+function StageAPI.ChangeStageShadow(prefix, count, opacity)
     prefix = prefix or "stageapi/floors/catacombs/overlays/"
     count = count or 5
+    opacity = opacity or 1
 
     local shadows = Isaac.FindByType(StageAPI.E.StageShadow.T, StageAPI.E.StageShadow.V, -1, false, false)
     for _, e in ipairs(shadows) do
@@ -217,6 +218,11 @@ function StageAPI.ChangeStageShadow(prefix, count)
         shadowEntity:GetData().Sheet = sheet
         shadowEntity:GetData().Animation = anim
         shadowEntity.Position = StageAPI.Lerp(shared.Room:GetTopLeftPos(), shared.Room:GetBottomRightPos(), 0.5)
+        shadowEntity.Color = Color(1,1,1,opacity)
+        shadowEntity.DepthOffset = 99999
+        shadowEntity:GetSprite():ReplaceSpritesheet(0, sheet)
+        shadowEntity:GetSprite():LoadGraphics()
+        shadowEntity:GetSprite():SetFrame(anim, 0)
         shadowEntity:AddEntityFlags(EntityFlag.FLAG_DONT_OVERWRITE)
     end
 end

@@ -645,7 +645,7 @@ mod:AddCallback(ModCallbacks.MC_POST_RENDER, function()
             end
         end
 
-        local shadows = Isaac.FindByType(StageAPI.E.StageShadow.T, StageAPI.E.StageShadow.V, -1, false, false)
+        --[[local shadows = Isaac.FindByType(StageAPI.E.StageShadow.T, StageAPI.E.StageShadow.V, -1, false, false)
         local shadow = shadows[1]
         if shadow then
             local shadowSheet, shadowAnim = shadow:GetData().Sheet, shadow:GetData().Animation
@@ -658,9 +658,9 @@ mod:AddCallback(ModCallbacks.MC_POST_RENDER, function()
             if shadowAnim and not (shadowSprite:IsPlaying(shadowAnim) or shadowSprite:IsFinished(shadowAnim)) then
                 shadowSprite:Play(shadowAnim, true)
             end
-
+            shadowSprite.Color = shadow.Color
             shadowSprite:Render(Isaac.WorldToRenderPosition(shadow.Position) + shared.Room:GetRenderScrollOffset(), Vector.Zero, Vector.Zero)
-        end
+        end]]
     end
 
     StageAPI.CallCallbacks(Callbacks.PRE_TRANSITION_RENDER)
