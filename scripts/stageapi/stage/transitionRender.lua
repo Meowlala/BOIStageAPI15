@@ -2,6 +2,140 @@ local self = {}
 local mod = require("scripts.stageapi.mod")   --This shit is written by Goganidze. If it doesn't work, blame him.
 local shared = require("scripts.stageapi.shared")
 
+local horsemanRoomSubtypes = {
+    9, -- Famine
+    10, -- Pestilence
+    11, -- War
+    12, -- Death
+    22, -- Headless Horseman
+    38 -- Conquest
+}
+
+local BossEncountered = {}
+
+local function TryPredictBoss(roomDesc)
+    if roomDesc then
+        local bossID
+        local bosses
+        if StageAPI.CurrentStage and StageAPI.CurrentStage.Bosses then
+	    bosses = StageAPI.CurrentStage.Bosses
+        else
+	    bosses = StageAPI.GetBaseFloorInfo(shared.Level:GetAbsoluteStage(), shared.Level:GetStageType(), false)
+            if not bosses.Bosses then return 
+            else
+                 bosses = bosses.Bosses
+            end 
+        end
+        local roomSubtype = roomDesc.Data.Subtype
+        local isHorsemanRoom = StageAPI.IsIn(horsemanRoomSubtypes, roomSubtype)
+
+        local floatWeights
+        local totalUnencounteredWeight = 0
+        local totalValidWeight = 0
+        local totalForcedWeight = 0
+        local unencounteredBosses = {}
+        local validBosses = {}
+        local forcedBosses = {}
+        local pool = bosses.Pool or bosses
+        for _, potentialBossID in ipairs(pool) do
+            local poolEntry
+            if type(potentialBossID) == "table" then
+                poolEntry = potentialBossID
+                potentialBossID = poolEntry.BossID
+            else
+                poolEntry = {
+                    BossID = potentialBossID
+                }
+            end
+
+            local potentialBoss = StageAPI.GetBossData(potentialBossID)
+            local encountered = StageAPI.GetBossEncountered(potentialBoss.Name) or BossEncountered[potentialBossID]
+            if not encountered and potentialBoss.NameTwo then
+                encountered = StageAPI.GetBossEncountered(potentialBoss.NameTwo)
+            end
+
+            local weight = poolEntry.Weight or potentialBoss.Weight or 1
+            local forced
+            local invalid
+            if potentialBoss.Rooms then
+                local validRooms, validRoomWeights = StageAPI.GetValidRoomsForLayout{
+                    RoomList = potentialBoss.Rooms,
+                    RoomDescriptor = roomDesc
+                }
+
+                if #validRooms == 0 or validRoomWeights == 0 then
+                    invalid = true
+                end
+            end
+
+            if not invalid then
+                if isHorsemanRoom then
+                    if poolEntry.AlwaysReplaceHorsemen or potentialBoss.AlwaysReplaceHorsemen then
+                        forced = true
+                    elseif poolEntry.TryReplaceHorsemen or potentialBoss.TryReplaceHorsemen then
+                        forced = not encountered
+                    elseif not (poolEntry.Horseman or potentialBoss.Horseman) then
+                        invalid = true
+                    end
+                elseif poolEntry.OnlyReplaceHorsemen or potentialBoss.OnlyReplaceHorsemen then
+                    invalid = true
+                end
+
+                if poolEntry.AlwaysReplaceSubtype and not invalid then
+                    if roomSubtype == poolEntry.AlwaysReplaceSubtype then
+                        forced = true
+                    end
+                elseif poolEntry.TryReplaceSubtype and not invalid then
+                    if roomSubtype == poolEntry.TryReplaceSubtype then
+                        forced = not encountered
+                    end
+                end
+
+                if poolEntry.OnlyReplaceSubtype and not invalid then
+                    if roomSubtype ~= poolEntry.OnlyReplaceSubtype then
+                        invalid = true
+                    end
+                end
+            end
+
+            if not invalid then
+                if forced then
+                    totalForcedWeight = totalForcedWeight + weight
+                    forcedBosses[#forcedBosses + 1] = {potentialBossID, weight}
+                end
+
+                if not encountered then
+                    totalUnencounteredWeight = totalUnencounteredWeight + weight
+                    unencounteredBosses[#unencounteredBosses + 1] = {potentialBossID, weight}
+                end
+
+                totalValidWeight = totalValidWeight + weight
+                validBosses[#validBosses + 1] = {potentialBossID, weight}
+            end
+
+            if weight % 1 ~= 0 then
+                floatWeights = true
+            end
+        end
+
+        local rng = StageAPI.BossSelectRNG
+        rng:SetSeed(roomDesc.SpawnSeed, 0)
+
+        if #forcedBosses > 0 then
+            bossID = StageAPI.WeightedRNG(forcedBosses, rng, nil, totalForcedWeight, floatWeights)
+        elseif #unencounteredBosses > 0 then
+            bossID = StageAPI.WeightedRNG(unencounteredBosses, rng, nil, totalUnencounteredWeight, floatWeights)
+        elseif #validBosses > 0 then
+            bossID = StageAPI.WeightedRNG(validBosses, rng, nil, totalValidWeight, floatWeights)
+        end
+	if bossID then
+	    BossEncountered[bossID] = true
+        end
+
+        return bossID
+    end
+end
+
 local gfxTabl = {}  --It was a separate file
 
 gfxTabl.StartStageNum = 8
@@ -31,12 +165,12 @@ gfxTabl.IconAnm.Scale = Vector(1,1)
 
 function gfxTabl.Nightmare_bg(anm)
 	if not anm then
-		spr = Sprite()
-		spr:Load("stageapi/transition/nightmare_bg.anm2",true)
+		local spr = Sprite() --stageapi/transition/nightmare_bg.anm2
+		spr:Load("gfx/ui/stage/nightmare_bg.anm2",true)
 		spr:Play("Intro",true)
 		return spr
 	else
-		anm:Load("stageapi/transition/nightmare_bg.anm2",true)
+		anm:Load("gfx/ui/stage/nightmare_bg.anm2",true)
 		anm:Play("Intro",true)
 	end
 end
@@ -334,9 +468,11 @@ gfxTabl.BossDeathPortrait = {
 	      -- 101   102   103
 	}
 
+gfxTabl.ItemsDeathPortrait = {}
+
 gfxTabl.DreamCatcherSprites = {}
 
-gfxTabl.DreamCatcherItemType = 1
+gfxTabl.DreamCatcherItemType = 1 
 
 gfxTabl.DreamCatcher1ItemPos = {[29]=Vector(-5,-32),[33]=Vector(-5,-33),[37]=Vector(-5,-32),[41]=Vector(-5,-33),
 	[45]=Vector(-5,-32),[49]=Vector(-5,-33),[53]=Vector(-5,-32),[57]=Vector(-5,-33),[61]=Vector(-5,-32),[65]=Vector(-5,-33),}
@@ -344,12 +480,48 @@ gfxTabl.DreamCatcher2ItemPos = {[29]=Vector(24,-32),[33]=Vector(24,-33),[37]=Vec
 	[45]=Vector(24,-32),[49]=Vector(24,-33),[53]=Vector(24,-32),[57]=Vector(24,-33),[61]=Vector(24,-32),[65]=Vector(24,-33),}
 
 gfxTabl.DreamCatcherItemPos = {
-		[0]=Vector(5,-31),[2]=Vector(5,-30.5),[5]=Vector(5,-30),[10]=Vector(5,-30.5),[11]=Vector(5,-31)
+		[0]=Vector(5,-21),[2]=Vector(5,-20.5),[5]=Vector(5,-20),[10]=Vector(5,-20.5),[11]=Vector(5,-21)
 	}
-
 gfxTabl.DreamCatcherBossPos = {[0]={Vector(100,-48),0,1.1}, [1]={Vector(90,-48),0.25,1.13}, [2]={Vector(80,-48),0.5,1.15}, [3]={Vector(70,-48),0.75,1.17}, [4]={Vector(60,-48),1,1.2},
 		[5]={Vector(57,-48),1,1.0}, [6]={Vector(55,-48),1,0.8}, [8]={Vector(55,-48),1,1.0}, [64]={Vector(45,-48),1,1.0},
 	}
+
+gfxTabl.DreamCatcherBossPosNew = {
+	{0,Vector(100,-48),Vector(1.1,0.9),Color(1,1,1,0),true},
+	{1,Vector(90,-48),Vector(1.13,0.87),Color(1,1,1,0.25),true},
+	{2,Vector(80,-48),Vector(1.15,0.85),Color(1,1,1,0.5),true},
+	{3,Vector(70,-48),Vector(1.17,0.83),Color(1,1,1,0.75),true},
+	{4,Vector(60,-48),Vector(1.2,0.8),Color(1,1,1,1.0),true},
+	{5,Vector(57,-48),Vector(1.0,1.0),Color(1,1,1,1.0),true},
+	{6,Vector(55,-48),Vector(0.8,1.2),Color(1,1,1,1.0),true},
+	{8,Vector(55,-48),Vector(1.0,1.0),Color(1,1,1,1.0),true},
+	{64,Vector(45,-48),Vector(1.0,1.0),Color(1,1,1,1.0),true},
+	{68,Vector(45,-48),Vector(1.0,1.0),Color(1,1,1,-1.0),true},
+}
+gfxTabl.DreamCatcherBossPosBestiary = {
+	{0,Vector(121,-48-30),Vector(1.1,0.9),Color(1,1,1,0),true},
+	{1,Vector(111,-48-30),Vector(1.13,0.87),Color(1,1,1,0.25),true},
+	{2,Vector(101,-48-30),Vector(1.15,0.85),Color(1,1,1,0.5),true},
+	{3,Vector(70+21,-48-30),Vector(1.17,0.83),Color(1,1,1,0.75),true},
+	{4,Vector(60+21,-48-30),Vector(1.2,0.8),Color(1,1,1,1.0),true},
+	{5,Vector(57+21,-48-30),Vector(1.0,1.0),Color(1,1,1,1.0),true},
+	{6,Vector(55+21,-48-30),Vector(0.8,1.2),Color(1,1,1,1.0),true},
+	{8,Vector(55+21,-48-30),Vector(1.0,1.0),Color(1,1,1,1.0),true},
+	{64,Vector(45+21,-48-30),Vector(1.0,1.0),Color(1,1,1,1.0),true},
+	{68,Vector(45+21,-48-30),Vector(1.0,1.0),Color(1,1,1,-1.0),true},
+}
+gfxTabl.DreamCatcherBossPosName = {
+	{0,Vector(100-48,-48+32),Vector(0.55,0.45),Color(1,1,1,0),true},
+	{1,Vector(90-48,-48+32),Vector(0.565,0.435),Color(1,1,1,0.25),true},
+	{2,Vector(80-48,-48+32),Vector(0.575,0.425),Color(1,1,1,0.5),true},
+	{3,Vector(70-48,-48+32),Vector(0.585,0.415),Color(1,1,1,0.75),true},
+	{4,Vector(60-48,-48+32),Vector(0.6,0.4),Color(1,1,1,1.0),true},
+	{5,Vector(57-48,-48+32),Vector(0.5,0.5),Color(1,1,1,1.0),true},
+	{6,Vector(55-48,-48+32),Vector(0.4,0.6),Color(1,1,1,1.0),true},
+	{8,Vector(55-48,-48+32),Vector(0.5,0.5),Color(1,1,1,1.0),true},
+	{64,Vector(45-48,-48+32),Vector(0.5,0.5),Color(1,1,1,1.0),true},
+	{68,Vector(45-48,-48+32),Vector(0.5,0.5),Color(1,1,1,-1.0),true},
+}
 
 function gfxTabl.DreamCatcherSprites.Bubble(anm)
 	anm:Load("gfx/ui/stage/nightmare_dc.anm2",true)
@@ -402,7 +574,46 @@ gfxTabl.DreamCatcherSprites.Boss:LoadGraphics(true)
 
 gfxTabl.DreamCatcherItems = {}
 
+gfxTabl.DreamCatcherScenes = {}
+gfxTabl.DreamCatcherRoomReplace = {}
+
+local function SetDreamCatcherBoss(bossID)
+	local bossData 
+	if type(bossID) == "table" then
+		bossData = bossID
+	else
+		bossData = StageAPI.GetBossData(bossID)
+	end
+
+	local spr = Sprite()
+	local tablPos = gfxTabl.DreamCatcherBossPosName
+	if bossData.BestiaryIcon then
+		spr = bossData.BestiaryIcon[1]
+		spr:Play(spr:GetDefaultAnimation())
+		spr:SetFrame(bossData.BestiaryIcon[2])
+		tablPos = gfxTabl.DreamCatcherBossPosBestiary
+	elseif bossData.Bossname then
+		spr:Load('gfx/ui/boss/versusscreen.anm2',false)
+		spr:Play(spr:GetDefaultAnimation())
+		for l=0,14 do
+			if l~=7 then
+				spr:ReplaceSpritesheet(l,"stageapi/none.png")
+			end
+		end
+		spr:ReplaceSpritesheet(7,bossData.Bossname)
+		spr:SetFrame(37)
+		spr.Offset = Vector(-117,94)
+		spr:LoadGraphics(true)  
+		tablPos = gfxTabl.DreamCatcherBossPosName
+	end
+	return spr,tablPos
+end
+
 function gfxTabl.DreamCatcherCheck()
+	gfxTabl.DreamCatcherScenes = {}
+	gfxTabl.DreamCatcherRoomReplace = {}
+	BossEncountered = {}
+
 	local check = false
 	local TwoItem = false
 	for _, player in ipairs(shared.Players) do
@@ -416,66 +627,181 @@ function gfxTabl.DreamCatcherCheck()
 	if check then
 		local bossSubType
 
-		local RoomsTable = shared.Level:GetRooms()
+		local pool = Game():GetItemPool()
+		local seed = Game():GetSeeds():GetStartSeed()
+		
+		local level = Game():GetLevel()
+		local RoomsTable = level:GetRooms()
+
+		local bossroomlist = {}
 		gfxTabl.DreamCatcherItemType = -1
-		for i=1,#RoomsTable do
-	   	   if RoomsTable:Get(i-1) then
-		   	local roomdata = RoomsTable:Get(i-1).Data
-		   	if roomdata.Type == RoomType.ROOM_TREASURE then
+		local blacklist = {}
+		for i=0,168 do
+		   roomdesc = level:GetRoomByIdx(i,0)
+	   	   if roomdesc and roomdesc.Data and not blacklist[roomdesc.SafeGridIndex] then 
+			blacklist[roomdesc.SafeGridIndex] = true
+
+		   	local roomdata = roomdesc.Data 
+			
+		   	if roomdata and roomdata.Type == RoomType.ROOM_TREASURE then
 				local spawnlist = roomdata.Spawns
 				local itemcount = 0
 				for j=0,#spawnlist-1 do
 					local spawnEntry = spawnlist:Get(j)
-					local entR = spawnEntry:PickEntry(0)
-					if entR.Type == 5 and entR.Variant == 100 then
-						itemcount = itemcount + 1
+					for i=0,#spawnEntry.Entries - 1 do
+						local entr = spawnEntry.Entries:Get(i)
+						
+						if entr.Type == 5 and entr.Variant == 100 then
+							itemcount = itemcount + 1
+						end
 					end
 				end
-				gfxTabl.DreamCatcherItemType = itemcount < 3 and itemcount or 2
-				if gfxTabl.DreamCatcherItemType > 0 and TwoItem then gfxTabl.DreamCatcherItemType = 2 end
-				TwoItem = itemcount >= 2
+				if TwoItem then 
+					itemcount = 2
+				end  
+
+				local rng = RNG()
+				rng:SetSeed(roomdesc.SpawnSeed, 35)
+				local I1 = pool:GetCollectible(ItemPoolType.POOL_TREASURE,false,rng:GetSeed(),CollectibleType.COLLECTIBLE_NULL)
+				rng:Next()
+				local I2 = pool:GetCollectible(ItemPoolType.POOL_TREASURE,false,rng:GetSeed(),CollectibleType.COLLECTIBLE_NULL)
+				local S1,S2 = Sprite(),Sprite()
+				if itemcount > 0 then
+					if StageAPI.GetItemDeathPortrait(I1) then
+						S1 = StageAPI.GetItemDeathPortrait(I1)
+						--S1.Offset = Vector(0,10)
+					else
+						S1:Load("gfx/ui/death screen.anm2",true)
+						S1:Play(S1:GetDefaultAnimation())
+						for g=0,8 do
+							if g~=6 then
+								S1:ReplaceSpritesheet(g,"stageapi/none.png")
+							end
+						end
+						S1.Offset = Vector(84,-20)
+						S1:LoadGraphics(true)
+						S1:SetFrame(I1 and (I1-1>731 and 669 or I1-1))
+					end
+					local GreyColor = Color(1, 1, 1, 1)
+					GreyColor:SetColorize(1, 1, 1, 1)
+					S1.Color = GreyColor
+				end
+				if itemcount > 1 then
+					if StageAPI.GetItemDeathPortrait(I2) then
+						S2 = StageAPI.GetItemDeathPortrait(I2)
+					else
+						S2:Load("gfx/ui/death screen.anm2",true)
+						S2:Play(S2:GetDefaultAnimation())
+						for g=0,8 do
+							if g~=6 then
+								S2:ReplaceSpritesheet(g,"stageapi/none.png")
+							end
+						end
+						S2.Offset = Vector(84,-20)
+						S2:LoadGraphics(true)
+						S2:SetFrame(I2 and (I2-1>731 and 669 or I2-1))
+					end
+					local GreyColor = Color(1, 1, 1, 1)
+					GreyColor:SetColorize(1, 1, 1, 1)
+					S2.Color = GreyColor
+				end
+
+				gfxTabl.DreamCatcherScenes[#gfxTabl.DreamCatcherScenes+1] = {
+					SceneType = itemcount > 1 and "TreasureRoomDouble" or itemcount > 0 and "TreasureRoom" or "TreasureRoomPoop",
+					Index = roomdesc.SafeGridIndex,   
+					num = itemcount,
+					ItemType = itemcount < 3 and itemcount or 2,
+					Item1 = S1,
+					Item2 = S2,
+				}
+				gfxTabl.DreamCatcherRoomReplace[roomdesc.SafeGridIndex] = {  
+					(itemcount > 0 and I1 or nil),
+					(itemcount > 1 and I2 or nil), 
+					hash = GetPtrHash(roomdesc),
+				}
+				gfxTabl.DreamCatcherRoomReplace.num = gfxTabl.DreamCatcherRoomReplace.num and gfxTabl.DreamCatcherRoomReplace.num+1 or 1
+				
 			elseif roomdata.Type == RoomType.ROOM_BOSS then
-				bossSubType = roomdata.Subtype
+				bossroomlist[#bossroomlist+1] = roomdesc
 			end
 		   end
 		end
-		local pool = shared.Game:GetItemPool()
-		local seed = shared.Game:GetSeeds():GetStartSeed()
-		local item1 = gfxTabl.DreamCatcherItemType > 0 and pool:GetCollectible(ItemPoolType.POOL_TREASURE,false,nil,CollectibleType.COLLECTIBLE_NULL)
-		local item2 = gfxTabl.DreamCatcherItemType > 1 and pool:GetCollectible(ItemPoolType.POOL_TREASURE,false,nil,CollectibleType.COLLECTIBLE_NULL)
-		gfxTabl.DreamCatcherItems = { item1,item2 }
 
-		if item1 then 
-			gfxTabl.DreamCatcherSprites.Item1:SetFrame((item1-1)<731 and item1-1 or 669)
-		end
-		if item2 then 
-			gfxTabl.DreamCatcherSprites.Item2:SetFrame((item2-1)<731 and item2-1 or 669) 
-		end
-		if bossSubType then
-			if gfxTabl.BossDeathPortrait[bossSubType] then
-				local frame = tonumber(gfxTabl.BossDeathPortrait[bossSubType])
-				gfxTabl.DreamCatcherSprites.Boss:SetFrame(frame)
+		for i,p in pairs(bossroomlist) do
+			local num = #gfxTabl.DreamCatcherScenes+1
+			gfxTabl.DreamCatcherScenes[num] = {
+				SceneType = "Boss",
+				Index = p.SafeGridIndex, 
+				bossSubType = p.Data.Subtype,
+			}
+			local bossID = TryPredictBoss(p)
+			local bossData = StageAPI.GetBossData(bossID)
+			
+			if bossData and not bossData.BaseGameBoss then
+				gfxTabl.DreamCatcherScenes[num].Sprite,gfxTabl.DreamCatcherScenes[num].PosTabl = SetDreamCatcherBoss(bossID)
+				gfxTabl.DreamCatcherScenes[num].Frame = gfxTabl.DreamCatcherScenes[num].Sprite:GetFrame()
 			else
-				gfxTabl.DreamCatcherSprites.Boss:SetFrame(bossSubType-1)
+				local S1 = Sprite()
+				S1:Load("gfx/ui/death screen.anm2",true)
+				S1:Play(S1:GetDefaultAnimation())
+				for g=0,8 do
+					if g~=3 then
+						S1:ReplaceSpritesheet(g,"stageapi/none.png")
+					end
+				end
+				S1.Offset = Vector(84,-10)
+				S1:LoadGraphics(true)
+				S1:SetFrame(p.Data.Subtype and tonumber(gfxTabl.BossDeathPortrait[p.Data.Subtype]) or 0)
+				gfxTabl.DreamCatcherScenes[num].Sprite = S1
+				gfxTabl.DreamCatcherScenes[num].Frame = S1:GetFrame()
 			end
 		end
 	end
 	return check
 end
 
+local function InterpolateAnim(anm,frame,animTabl)
+    if anm and frame and animTabl then
+        local startdata,enddata
+        for i,data in ipairs(animTabl) do
+            if frame<data[1] then
+                startdata,enddata = animTabl[i-1],data
+                break
+            end
+        end
+        if startdata and enddata then
+            if enddata[5] then
+                local procent = (frame-startdata[1])/(enddata[1]-startdata[1])
+                local offset = startdata[2]+(enddata[2]-startdata[2])*procent
+                local scale = startdata[3]+(enddata[3]-startdata[3])*procent
+                local color = Color(
+	            startdata[4].R+(enddata[4].R-startdata[4].R)*procent,
+                    startdata[4].G+(enddata[4].G-startdata[4].G)*procent,
+                    startdata[4].B+(enddata[4].B-startdata[4].B)*procent,
+                    startdata[4].A+(enddata[4].A-startdata[4].A)*procent)
+                anm.Offset = offset
+                anm.Scale = scale
+                anm.Color = color
+            else
+                anm.Offset = startdata[2]
+                anm.Scale = startdata[3]
+                anm.Color = startdata[4]
+            end
+        end
+    end
+end
+
 local CTGfx = gfxTabl
+local TRData = {}
 
-local NightmareNum = 1
-local DontAddStage = false
+TRData.DontAddStage = false
 
-local IconAnm = CTGfx.IconAnm  
+TRData.Nightmare_bg = CTGfx.Nightmare_bg()
+TRData.BlackCube = CTGfx.BlackNotCube
 
-local Nightmare_bg = CTGfx.Nightmare_bg()
-local BlackCube = CTGfx.BlackNotCube
+TRData.NightmareAnm = Sprite()
 
-local NightmareAnm = Sprite()
-
-local PlayerExtra = Sprite()
+TRData.PlayerExtra = Sprite()
 
 local bg_RenderPos = Vector(240,135)  
 local nm_RenderPos = Vector(240,20)
@@ -483,23 +809,23 @@ local Render_Extra_Offset = Vector(-72,-19)
 
 local ProgressAnm = {}
 
-local BlueWomb = CTGfx.StartBlueWomb 
-local StageProgNum = CTGfx.StartStageNum
-local CurrentStage = CTGfx.StartCurrentStage 
-local NextStageID = 2
-local NextStage = "2"
-local MusikID
-local Stages = {}
+TRData.BlueWomb = CTGfx.StartBlueWomb 
+TRData.StageProgNum = CTGfx.StartStageNum
+TRData.CurrentStage = CTGfx.StartCurrentStage 
+TRData.NextStageID = 2
+TRData.NextStage = "2"
+TRData.MusikID = 0
+TRData.Stages = {}
 --local FakeStages = {}
 --local OffsetStages = {}
-local Nightmare
-local PlSpot 
-local DontReplacePlSpot
-local PlayerGfx 
-local Sdelay = 0
-local RenderFrame = 0
-local StartDisap
-local ExtraFrame = CTGfx.PlayersExtraFrame
+TRData.Nightmare = nil
+TRData.PlSpot = nil
+TRData.DontReplacePlSpot = nil
+TRData.PlayerGfx = nil
+TRData.Sdelay = 0
+TRData.RenderFrame = 0
+TRData.StartDisap = nil
+TRData.ExtraFrame = CTGfx.PlayersExtraFrame
 local MusicOnPause = false
 local DreamCatcher = false
 local OnlyAnim = false
@@ -507,7 +833,7 @@ local OnlyAnim = false
 local DefaultTransitionMusik = Music.MUSIC_JINGLE_NIGHTMARE
 local TransitionMusik = DefaultTransitionMusik
 
-local ShaderState = 0
+TRData.ShaderState = 0
 local PIxelAmonStart = 0.002
 local PIxelAmon = PIxelAmonStart
 local IsOddRenderFrame = false
@@ -531,24 +857,24 @@ end
 local NightmareFrameCount = nil
 local function StandartNightmare()
 	if IsOddRenderFrame then
-		Nightmare_bg:Update()
+		TRData.Nightmare_bg:Update()
 
-		if Nightmare_bg:IsFinished("Intro") then
-			Nightmare_bg:Play("Loop",true)
-		elseif Nightmare_bg:IsPlaying("Loop") then
-			if NightmareAnm:GetFrame() == 0 then
-				NightmareAnm:SetLastFrame()
-				NightmareFrameCount = NightmareAnm:GetFrame()
-				NightmareAnm:SetFrame(0)
+		if TRData.Nightmare_bg:IsFinished("Intro") then
+			TRData.Nightmare_bg:Play("Loop",true)
+		elseif TRData.Nightmare_bg:IsPlaying("Loop") then
+			if TRData.NightmareAnm:GetFrame() == 0 then
+				TRData.NightmareAnm:SetLastFrame()
+				NightmareFrameCount = TRData.NightmareAnm:GetFrame()
+				TRData.NightmareAnm:SetFrame(0)
 			end
-			NightmareAnm:Update()
+			TRData.NightmareAnm:Update()
 		end
-		if NightmareFrameCount and NightmareAnm:GetFrame() >= NightmareFrameCount-20  or 
-		NightmareAnm:IsFinished("Scene") then
-			if BlackCube.Color.A >= 2.0 then
-				StartDisap = true
+		if NightmareFrameCount and TRData.NightmareAnm:GetFrame() >= NightmareFrameCount-20  or 
+		TRData.NightmareAnm:IsFinished("Scene") then
+			if TRData.BlackCube.Color.A >= 2.0 then
+				TRData.StartDisap = true
 			end  
-			BlackCube.Color = Color(1,1,1,BlackCube.Color.A+0.05)
+			TRData.BlackCube.Color = Color(1,1,1,TRData.BlackCube.Color.A+0.05)
 		end
 	end
 end
@@ -567,77 +893,138 @@ DCSprite.ItemCallbackActivated = false
 
 local function DreamCatcherNightmare()
 	if IsOddRenderFrame then
-		Nightmare_bg:Update()
+		TRData.Nightmare_bg:Update()
 
-		if Nightmare_bg:IsFinished("Intro") then
-			Nightmare_bg:Play("Loop",true)
-		elseif Nightmare_bg:IsPlaying("Loop") then
-			NightmareAnm:Update()
+		if TRData.Nightmare_bg:IsFinished("Intro") then
+			TRData.Nightmare_bg:Play("Loop",true)
+		elseif TRData.Nightmare_bg:IsPlaying("Loop") then
+			TRData.NightmareAnm:Update()
 		end
-		if NightmareAnm:IsFinished("Scene") then
+		
+		if TRData.NightmareAnm:IsFinished("Scene") then
 			DCSprite.nightmare:Update()
-			if DCSprite.State == 0 then 
+			
+			if not NightmareFrameCount and DCSprite.State == #CTGfx.DreamCatcherScenes then
+				DCSprite.nightmare:SetLastFrame()
+				NightmareFrameCount = TRData.NightmareAnm:GetFrame()
+				DCSprite.nightmare:SetFrame(0)
+			end
+
+			local currentScene = CTGfx.DreamCatcherScenes[DCSprite.State]
+			
+			if currentScene and CTGfx.DreamCatcherScenes[DCSprite.State+1]
+			or (currentScene and NightmareFrameCount and DCSprite.nightmare:GetFrame() <= NightmareFrameCount-20) then 
+			   
+			    if currentScene.SceneType == "Boss" then 
+				local postabl = currentScene.PosTabl or CTGfx.DreamCatcherBossPosNew
+				InterpolateAnim(currentScene.Sprite,DCSprite.nightmare:GetFrame(),postabl)
+				local GreyColor = Color(1, 1, 1, currentScene.Sprite.Color.A)
+				GreyColor:SetColorize(1, 1, 1, 1)
+				currentScene.Sprite.Color = GreyColor
+
+				if DCSprite.nightmare:IsFinished(currentScene.SceneType) then
+
+					DCSprite.State = DCSprite.State+1
+
+					if CTGfx.DreamCatcherScenes[DCSprite.State] then
+						local curScene = CTGfx.DreamCatcherScenes[DCSprite.State]
+						if curScene.Sprite then
+							if curScene.Frame then
+								curScene.Sprite:SetFrame(curScene.Frame)
+							end
+							curScene.Sprite.Color = Color(1,1,1,0.0)
+						end
+						DCSprite.nightmare:Play(curScene.SceneType,true)
+					end
+				end
+			    else
 				if DCSprite.nightmare:GetFrame() == 64 then
-					DCSprite.item1.Color = Color(1,1,1,0.5)
-					DCSprite.item2.Color = Color(1,1,1,0.5)
+					currentScene.Item1.Color = Color(1,1,1,0.5)
+					currentScene.Item2.Color = Color(1,1,1,0.5)
 				elseif DCSprite.nightmare:GetFrame() >= 65 then
-					DCSprite.State = 1
-					DCSprite.item1.Color = Color(1,1,1,0.0)
-					DCSprite.item2.Color = Color(1,1,1,0.0)
-					DCSprite.nightmare:Play("Boss",true)
+					DCSprite.State = DCSprite.State+1
+					if CTGfx.DreamCatcherScenes[DCSprite.State] then
+						local curScene = CTGfx.DreamCatcherScenes[DCSprite.State]
+						if curScene.Sprite then
+							if curScene.Frame then
+								curScene.Sprite:SetFrame(curScene.Frame)
+							end
+							curScene.Sprite.Color = Color(1,1,1,0.0)
+						end
+						DCSprite.nightmare:Play(curScene.SceneType,true)
+					else
+						if TRData.BlackCube.Color.A >= 2.0 then
+							TRData.StartDisap = true
+						end  
+						TRData.BlackCube.Color = Color(1,1,1,TRData.BlackCube.Color.A+0.05)
+					end
 				end
-			elseif DCSprite.State == 1 then 
-				if DCSprite.nightmare:GetFrame() >= 48 then
-					if BlackCube.Color.A >= 2.0 then
-						StartDisap = true
-					end  
-					BlackCube.Color = Color(1,1,1,BlackCube.Color.A+0.05)
+			    end
+			else
+				if CTGfx.DreamCatcherScenes[DCSprite.State] and CTGfx.DreamCatcherScenes[DCSprite.State].SceneType == "Boss"  then 
+				  
+					local currentScene = CTGfx.DreamCatcherScenes[DCSprite.State]
+					local postabl = currentScene.PosTabl or CTGfx.DreamCatcherBossPosNew
+					InterpolateAnim(currentScene.Sprite,DCSprite.nightmare:GetFrame(),postabl)
+					local GreyColor = Color(1, 1, 1, currentScene.Sprite.Color.A)
+					GreyColor:SetColorize(1, 1, 1, 1)
+					currentScene.Sprite.Color = GreyColor
+				elseif CTGfx.DreamCatcherScenes[DCSprite.State-1] and CTGfx.DreamCatcherScenes[DCSprite.State-1].SceneType == "Boss" then
+				  
+					local currentScene = CTGfx.DreamCatcherScenes[DCSprite.State-1]
+					local postabl = currentScene.PosTabl or CTGfx.DreamCatcherBossPosNew
+					InterpolateAnim(currentScene.Sprite,DCSprite.nightmare:GetFrame(),postabl)
+					local GreyColor = Color(1, 1, 1, currentScene.Sprite.Color.A)
+					GreyColor:SetColorize(1, 1, 1, 1)
+					currentScene.Sprite.Color = GreyColor
 				end
+				if TRData.BlackCube.Color.A >= 2.0 then
+					TRData.StartDisap = true
+				end  
+				TRData.BlackCube.Color = Color(1,1,1,TRData.BlackCube.Color.A+0.05)
 			end
 		end
 	end
-	if NightmareAnm:IsFinished("Scene") then
+	if TRData.NightmareAnm:IsFinished("Scene") then
 		local Ioffset = CTGfx.DreamCatcherItemPos
 		local Ioffset1 = CTGfx.DreamCatcher1ItemPos
 		local Ioffset2 = CTGfx.DreamCatcher2ItemPos
 		local Boffset = CTGfx.DreamCatcherBossPos
 
 		DCSprite.nightmare:Render(bg_RenderPos)
-		if DCSprite.State == 0 and DCSprite.nightmare:GetFrame() >= 29 then
-			local frame = DCSprite.nightmare:GetFrame()
-			if CTGfx.DreamCatcherItemType > 1 then
-				DCSprite.item1Offset = Vector(Ioffset1[29] and Ioffset1[29].X or DCSprite.item1Offset.X,Ioffset[(frame-29)%12] and Ioffset[(frame-29)%12].Y or DCSprite.item1Offset.Y)-- or DCSprite.item1Offset
-				DCSprite.item2Offset = Vector(Ioffset2[29] and Ioffset2[29].X or DCSprite.item2Offset.X,Ioffset[(frame-29)%12] and Ioffset[(frame-29)%12].Y or DCSprite.item2Offset.Y)-- or DCSprite.item2Offset
+		local currentScene = CTGfx.DreamCatcherScenes[DCSprite.State]
 
-				DCSprite.item1:Render(bg_RenderPos+DCSprite.item1Offset)
-				DCSprite.item2:Render(bg_RenderPos+DCSprite.item2Offset)
-			elseif CTGfx.DreamCatcherItemType > 0 then
+		if currentScene then
+		    if currentScene.SceneType ~= "Boss" and DCSprite.nightmare:GetFrame() >= 29 then
+			local frame = DCSprite.nightmare:GetFrame()
+			if currentScene.SceneType == "TreasureRoomDouble" then  
+				DCSprite.item1Offset = Vector(Ioffset1[29] and Ioffset1[29].X or DCSprite.item1Offset.X,Ioffset[(frame-29)%12] and Ioffset[(frame-29)%12].Y or DCSprite.item1Offset.Y)
+				DCSprite.item2Offset = Vector(Ioffset2[29] and Ioffset2[29].X or DCSprite.item2Offset.X,Ioffset[(frame-29)%12] and Ioffset[(frame-29)%12].Y or DCSprite.item2Offset.Y)
+
+				currentScene.Item1:Render(bg_RenderPos+DCSprite.item1Offset)
+				currentScene.Item2:Render(bg_RenderPos+DCSprite.item2Offset)
+			elseif currentScene.SceneType == "TreasureRoom" then  
 				DCSprite.item1Offset = Ioffset[(frame-29)%12] or DCSprite.item1Offset
 
-				DCSprite.item1:Render(bg_RenderPos+DCSprite.item1Offset)
+				currentScene.Item1:Render(bg_RenderPos+DCSprite.item1Offset)
 			end
-		elseif DCSprite.State == 1 then
+		    elseif currentScene.SceneType == "Boss" then
 			DCSprite.nightmare:Render(bg_RenderPos)
 			local frame = DCSprite.nightmare:GetFrame()
+			
 			if frame < 8 then
-				local GreyColor = Color(1, 1, 1, Boffset[frame] and Boffset[frame][2] or DCSprite.boss.Color.A, 0, 0, 0)
-				GreyColor:SetColorize(1, 1, 1, 1)
-
-				DCSprite.item1Offset = Boffset[frame] and Boffset[frame][1] or DCSprite.item1Offset
-				
-				DCSprite.boss.Color = GreyColor
-				DCSprite.boss.Scale = Vector(Boffset[frame] and Boffset[frame][3] or DCSprite.boss.Scale.X,
-					Boffset[frame] and Boffset[frame][3] and (2-Boffset[frame][3]) or DCSprite.boss.Scale.Y)
-				DCSprite.boss:Render(bg_RenderPos+DCSprite.item1Offset)
+				local Offset = Vector(0,28) 
+				currentScene.Sprite:Render(bg_RenderPos+Offset*1.54)
 			elseif frame >= 8 then
-				DCSprite.boss.Scale = Vector(Boffset[frame] and Boffset[frame][3] or DCSprite.boss.Scale.X,
-					Boffset[frame] and Boffset[frame][3] and (2-Boffset[frame][3]) or DCSprite.boss.Scale.Y)
-				local Pos1 = Boffset[8][1]
-				local Pos2 = Boffset[64][1]
-				local cof = ((frame-8)/59)
-				local RenderPos = Pos1 * (1-cof) + Pos2 * (cof)
-
-				DCSprite.boss:Render(bg_RenderPos+RenderPos)
+				local RenderPos = Vector(0,29)  
+				currentScene.Sprite:Render(bg_RenderPos+RenderPos*1.54)
+			end
+		    end
+		elseif CTGfx.DreamCatcherScenes[DCSprite.State-1] then
+			local currentScene = CTGfx.DreamCatcherScenes[DCSprite.State-1]
+			if currentScene.SceneType == "Boss" then
+				local RenderPos = Vector(0,28) 
+				currentScene.Sprite:Render(bg_RenderPos+RenderPos*1.54)
 			end
 		end
 	end
@@ -646,8 +1033,12 @@ end
 local function DreamCatcherItemReplace() --Instead of predicting the next items, the code overrides them
 	local RoomDesc = shared.Level:GetCurrentRoomDesc()
 	local RoomData = RoomDesc.Data	
-	
-	if RoomData and RoomData.Type and RoomData.Type == RoomType.ROOM_TREASURE then
+
+	if RoomData and RoomData.Type and RoomData.Type == RoomType.ROOM_TREASURE
+	and CTGfx.DreamCatcherRoomReplace[RoomDesc.SafeGridIndex] 
+	and CTGfx.DreamCatcherRoomReplace[RoomDesc.SafeGridIndex].hash == GetPtrHash(RoomDesc)
+	and shared.Room:IsFirstVisit() then
+		local items = CTGfx.DreamCatcherRoomReplace[RoomDesc.SafeGridIndex]
 		local num = 0
 		local CantReplace = nil
 		for i,e in pairs(Isaac.FindByType(5,100,-1,true,false)) do
@@ -659,45 +1050,47 @@ local function DreamCatcherItemReplace() --Instead of predicting the next items,
 		end	
 
 		local pool = shared.Game:GetItemPool()
-		if not CantReplace and num == CTGfx.DreamCatcherItemType then
-			for i,e in pairs(Isaac.FindByType(5,100,-1,false,false)) do
 
-				if DCSprite.Items[i] then
+		if not CantReplace and num == #items then 
+			for i,e in pairs(Isaac.FindByType(5,100,-1,false,false)) do
+				if items[i] then
 					print("[StageAPI]: Item has been replaced, original ID =",e.SubType)
-					e:ToPickup():Morph(5,100,DCSprite.Items[i],false,true,false)
+					e:ToPickup():Morph(5,100,items[i] or e.SubType,false,true,false)
 				end
 			end
 		end
-		mod:RemoveCallback(ModCallbacks.MC_POST_NEW_ROOM, DreamCatcherItemReplace)
-		DCSprite.ItemCallbackActivated = false
+		if CTGfx.DreamCatcherRoomReplace.num <= 0 then
+			mod:RemoveCallback(ModCallbacks.MC_POST_NEW_ROOM, DreamCatcherItemReplace)
+			DCSprite.ItemCallbackActivated = false
+		end
 	end
 end
 
 local function TransitionRender(_, name)
-	RenderFrame = RenderFrame+1
+	TRData.RenderFrame = TRData.RenderFrame+1
 	for _, player in ipairs(shared.Players) do
 		player.ControlsCooldown = math.max(player.ControlsCooldown,80)
 	end
 
-	Nightmare_bg:Render(bg_RenderPos,Vector.Zero,Vector.Zero)
+	TRData.Nightmare_bg:Render(bg_RenderPos,Vector.Zero,Vector.Zero)
 
-	if StageAPI.PlayerBossInfo[Isaac.GetPlayer(0):GetPlayerType()].ExtraPortrait then
-		if not PlayerGfx.NoShake then
-			PlayerExtra.Offset = CTGfx.ExtraAnmOffset[ExtraFrame]
+	if StageAPI.PlayerBossInfo[shared.Players[1]:GetPlayerType()].ExtraPortrait then
+		if not TRData.PlayerGfx.NoShake then
+			TRData.PlayerExtra.Offset = CTGfx.ExtraAnmOffset[TRData.ExtraFrame]
 		end
-		PlayerExtra:Render(bg_RenderPos+Render_Extra_Offset)
-		PlayerExtra.Color = not (Nightmare_bg:IsPlaying("Intro") and Nightmare_bg:GetFrame()<=19) and Nightmare_bg.Color or PlayerExtra.Color
+		TRData.PlayerExtra:Render(bg_RenderPos+Render_Extra_Offset)
+		TRData.PlayerExtra.Color = not (TRData.Nightmare_bg:IsPlaying("Intro") and TRData.Nightmare_bg:GetFrame()<=19) and TRData.Nightmare_bg.Color or TRData.PlayerExtra.Color
 		
 		if IsOddRenderFrame then
-			PlayerExtra:Update()
-			ExtraFrame = ExtraFrame + 1
-			if ExtraFrame >= 5 then ExtraFrame = 1 end
+			TRData.PlayerExtra:Update()
+			TRData.ExtraFrame = TRData.ExtraFrame + 1
+			if TRData.ExtraFrame >= 5 then TRData.ExtraFrame = 1 end
 		end
-		if Nightmare_bg:IsPlaying("Intro") and Nightmare_bg:GetFrame()<=18 then
-			PlayerExtra.Color = CTGfx.ExtraAnmColor[Nightmare_bg:GetFrame()+2]
+		if TRData.Nightmare_bg:IsPlaying("Intro") and TRData.Nightmare_bg:GetFrame()<=18 then
+			TRData.PlayerExtra.Color = CTGfx.ExtraAnmColor[TRData.Nightmare_bg:GetFrame()+2]
 		end
 	end
-	NightmareAnm:Render(bg_RenderPos,Vector.Zero,Vector.Zero)
+	TRData.NightmareAnm:Render(bg_RenderPos,Vector.Zero,Vector.Zero)
 
 	if not DreamCatcher then
 		StandartNightmare()
@@ -715,11 +1108,11 @@ local function TransitionRender(_, name)
 
 			ProgressAnm.IsaacIndicator:Update()
 
-			if Nightmare_bg:IsPlaying("Loop") and ProgressAnm.IsaacIndicatorPos:Distance(ProgressAnm.IsaacIndicatorNextPos) > 1 then
+			if TRData.Nightmare_bg:IsPlaying("Loop") and ProgressAnm.IsaacIndicatorPos:Distance(ProgressAnm.IsaacIndicatorNextPos) > 1 then
 				local Ang = (ProgressAnm.IsaacIndicatorNextPos-ProgressAnm.IsaacIndicatorPos):GetAngleDegrees()
 				local Nextpos = Vector.FromAngle(Ang):Resized(ProgressAnm.IsaacIndicatorMovSpeed)
 				ProgressAnm.IsaacIndicatorPos = ProgressAnm.IsaacIndicatorPos+Nextpos
-			elseif Nightmare_bg:IsPlaying("Intro") and ProgressAnm.IsaacIndicator.Color.R < 1 then
+			elseif TRData.Nightmare_bg:IsPlaying("Intro") and ProgressAnm.IsaacIndicator.Color.R < 1 then
 				local IIC = ProgressAnm.IsaacIndicator.Color 
 				ProgressAnm.IsaacIndicator.Color = Color(IIC.R+0.05, IIC.G+0.05, IIC.B+0.05, 1)
 				ProgressAnm.BossIndicator.Color = Color(IIC.R+0.05, IIC.G+0.05, IIC.B+0.05, 1)
@@ -733,7 +1126,7 @@ local function TransitionRender(_, name)
 				local RPos = k.pos
 				k.spr:Render(RPos)
 				if IsOddRenderFrame then
-					if Nightmare_bg:IsPlaying("Intro") and k.spr.Color.R < 1 then
+					if TRData.Nightmare_bg:IsPlaying("Intro") and k.spr.Color.R < 1 then
 						k.spr.Color = Color(k.spr.Color.R+0.05, k.spr.Color.G+0.05, k.spr.Color.B+0.05, 1)
 					end
 				end
@@ -742,34 +1135,34 @@ local function TransitionRender(_, name)
 		if shared.Game.TimeCounter < shared.Game.BossRushParTime then
 			ProgressAnm.Clock:Render(ProgressAnm.ClockPos)
 		end
-		if StageProgNum<10 then
+		if TRData.StageProgNum<10 then
 			ProgressAnm.BossIndicator:Render(ProgressAnm.BossIndicatorPos)
 		end
 		ProgressAnm.IsaacIndicator:Render(ProgressAnm.IsaacIndicatorPos)
 	end
 
-	BlackCube:Render(bg_RenderPos)
+	TRData.BlackCube:Render(bg_RenderPos)
 
-	if  (Input.IsActionTriggered(ButtonAction.ACTION_MENUCONFIRM, Isaac.GetPlayer(0).ControllerIndex) or 
-	Input.IsActionTriggered(ButtonAction.ACTION_MENUBACK, Isaac.GetPlayer(0).ControllerIndex)) then
-		StartDisap = true
+	if  (Input.IsActionTriggered(ButtonAction.ACTION_MENUCONFIRM, shared.Players[1].ControllerIndex) or 
+	Input.IsActionTriggered(ButtonAction.ACTION_MENUBACK, shared.Players[1].ControllerIndex)) then
+		TRData.StartDisap = true
 	end
 
-	if StartDisap then
-		Nightmare_bg.Color = Color(1,1,1,1)
-		NightmareAnm.Color = Color(1,1,1,1)
+	if TRData.StartDisap then
+		TRData.Nightmare_bg.Color = Color(1,1,1,1)
+		TRData.NightmareAnm.Color = Color(1,1,1,1)
 
-		if MusikID then
-			shared.Music:Play(MusikID,Options.MusicVolume)
+		if TRData.MusikID then
+			shared.Music:Play(TRData.MusikID,Options.MusicVolume)
 		end
 		MusicOnPause = false
 		TransitionMusik = DefaultTransitionMusik
 
 		shared.Game:GetHUD():SetVisible(true)
 
-		ExtraFrame = CTGfx.PlayersExtraFrame
-		ShaderState = 3
-		RenderFrame = 0
+		TRData.ExtraFrame = CTGfx.PlayersExtraFrame
+		TRData.ShaderState = 3
+		TRData.RenderFrame = 0
 		
 		--BlockCallbacks(true)
 	end
@@ -795,34 +1188,34 @@ end]]
 		
 		local StageOffset = calcStageOffset(OriginalId)
 
-		for i=StageProgNum,1,-1 do
+		for i=TRData.StageProgNum,1,-1 do
 			if i>OriginalId+StageOffset then
-				Stages[i+1] = Stages[i]
+				TRData.Stages[i+1] = TRData.Stages[i]
 			end
 		end
 
-		Stages[OriginalId+StageOffset] = {frame = frame,IsSecond = (OriginalId)%2==0 and OriginalId<9}
+		TRData.Stages[OriginalId+StageOffset] = {frame = frame,IsSecond = (OriginalId)%2==0 and OriginalId<9}
 	end
 end]]
 
 
 function self.AddDefaultProgressStage()
-	if not DontAddStage then
+	if not TRData.DontAddStage then
 		local level = shared.Level
 		local StageI = level:GetAbsoluteStage()
 		
-		if not BlueWomb and ( level:GetAbsoluteStage() == LevelStage.STAGE4_3 or
+		if not TRData.BlueWomb and ( level:GetAbsoluteStage() == LevelStage.STAGE4_3 or
 		((level:GetAbsoluteStage() == LevelStage.STAGE4_1 or level:GetAbsoluteStage() == LevelStage.STAGE4_2)
 		and level:GetStageType()>=4)) then
-			BlueWomb = true
+			TRData.BlueWomb = true
 		end
 	
 		--local StageOffset = calcStageOffset(StageI)
 
 		if level:GetStageType()>=4 and StageI<9 then
-			Stages[StageI+1] = { frame = CTGfx.StageIcons[StageI][level:GetStageType()], IsSecond = (StageI)%2==0}
+			TRData.Stages[StageI+1] = { frame = CTGfx.StageIcons[StageI][level:GetStageType()], IsSecond = (StageI)%2==0}
 		else
-			Stages[StageI] = {frame = CTGfx.StageIcons[StageI][level:GetStageType()],IsSecond = (StageI)%2==0 and StageI<9}
+			TRData.Stages[StageI] = {frame = CTGfx.StageIcons[StageI][level:GetStageType()],IsSecond = (StageI)%2==0 and StageI<9}
 		end
 	end
 
@@ -842,60 +1235,60 @@ local function TransitionActivation()
 	local player = shared.Players[1]  
 
 	if StageAPI.PlayerBossInfo[player:GetPlayerType()] then  
-		PlayerGfx = StageAPI.PlayerBossInfo[player:GetPlayerType()]
+		TRData.PlayerGfx = StageAPI.PlayerBossInfo[player:GetPlayerType()]
 	else
-		PlayerGfx = StageAPI.PlayerBossInfo[0]
+		TRData.PlayerGfx = StageAPI.PlayerBossInfo[0]
 	end
 
-	if not DontReplacePlSpot then
-		PlSpot = CTGfx.BossSpots[level:GetAbsoluteStage()][level:GetStageType()]
-		Nightmare_bg:ReplaceSpritesheet(3,PlSpot)
+	if not TRData.DontReplacePlSpot then
+		TRData.PlSpot = CTGfx.BossSpots[level:GetAbsoluteStage()][level:GetStageType()]
+		TRData.Nightmare_bg:ReplaceSpritesheet(3,TRData.PlSpot)
 	else
-		DontReplacePlSpot = nil
+		TRData.DontReplacePlSpot = nil
 	end	
 
-	if not PlayerGfx.NoShake then
-		Nightmare_bg:ReplaceSpritesheet(2,PlayerGfx.Portrait)
-		Nightmare_bg:ReplaceSpritesheet(6,"stageapi/none.png")
+	if not TRData.PlayerGfx.NoShake then
+		TRData.Nightmare_bg:ReplaceSpritesheet(2,TRData.PlayerGfx.Portrait)
+		TRData.Nightmare_bg:ReplaceSpritesheet(6,"stageapi/none.png")
 	else
-		Nightmare_bg:ReplaceSpritesheet(6,PlayerGfx.Portrait)
-		Nightmare_bg:ReplaceSpritesheet(2,"stageapi/none.png")
+		TRData.Nightmare_bg:ReplaceSpritesheet(6,TRData.PlayerGfx.Portrait)
+		TRData.Nightmare_bg:ReplaceSpritesheet(2,"stageapi/none.png")
 	end
-	Nightmare_bg:Play("Intro",true)
+	TRData.Nightmare_bg:Play("Intro",true)
 
-	if PlayerGfx.ExtraPortrait then
-		if type(PlayerGfx.ExtraPortrait) == 'table' then
-			PlayerExtra:Load(PlayerGfx.ExtraPortrait[1],true)
-			if PlayerGfx.ExtraPortrait[2] then
-				Nightmare_bg:ReplaceSpritesheet(6,"stageapi/none.png")
-				Nightmare_bg:ReplaceSpritesheet(2,"stageapi/none.png")
+	if TRData.PlayerGfx.ExtraPortrait then
+		if type(TRData.PlayerGfx.ExtraPortrait) == 'table' then
+			TRData.PlayerExtra:Load(TRData.PlayerGfx.ExtraPortrait[1],true)
+			if TRData.PlayerGfx.ExtraPortrait[2] then
+				TRData.Nightmare_bg:ReplaceSpritesheet(6,"stageapi/none.png")
+				TRData.Nightmare_bg:ReplaceSpritesheet(2,"stageapi/none.png")
 			end
 		else
-			PlayerExtra:Load(PlayerGfx.ExtraPortrait,true)
+			TRData.PlayerExtra:Load(TRData.PlayerGfx.ExtraPortrait,true)
 		end
-		PlayerExtra:Play(PlayerExtra:GetDefaultAnimation(),true)
-		PlayerExtra.Color = Color(0,0,0,1) 
+		TRData.PlayerExtra:Play(TRData.PlayerExtra:GetDefaultAnimation(),true)
+		TRData.PlayerExtra.Color = Color(0,0,0,1) 
 	end
 
-	Nightmare_bg:LoadGraphics(true)
+	TRData.Nightmare_bg:LoadGraphics(true)
 
-	Nightmare = StageAPI.TransitionNightmaresList[math.random(1,#StageAPI.TransitionNightmaresList)]
-	NightmareAnm:Load(Nightmare,true)
-	NightmareAnm:Play("Scene",true)
+	TRData.Nightmare = StageAPI.TransitionNightmaresList[math.random(1,#StageAPI.TransitionNightmaresList)]
+	TRData.NightmareAnm:Load(TRData.Nightmare,true)
+	TRData.NightmareAnm:Play("Scene",true)
 	
-	StartDisap = false
-	ExtraFrame = 1
+	TRData.StartDisap = false
+	TRData.ExtraFrame = 1
 
 	if CTGfx.StageMusicID[level:GetAbsoluteStage()] and CTGfx.StageMusicID[level:GetAbsoluteStage()][level:GetStageType()] then
-		MusikID = CTGfx.StageMusicID[level:GetAbsoluteStage()][level:GetStageType()]
+		TRData.MusikID = CTGfx.StageMusicID[level:GetAbsoluteStage()][level:GetStageType()]
 	else
-		MusikID = nil	
+		TRData.MusikID = nil	
 	end
 	if StageAPI.NextStage and StageAPI.NextStage.Music and StageAPI.NextStage.Music[1] then
-		MusikID = StageAPI.NextStage.Music[1]
+		TRData.MusikID = StageAPI.NextStage.Music[1]
 	end
 
-	ShaderState = 2
+	TRData.ShaderState = 2
 	local PIxelAmon = PIxelAmonStart
 
 	local queue = shared.Music:GetCurrentMusicID()
@@ -903,28 +1296,24 @@ local function TransitionActivation()
 	local Musik = TransitionMusik or DefaultTransitionMusik
 	shared.Music:Play(Musik,Options.MusicVolume)
 
+	NightmareFrameCount = nil
+
 	if DreamCatcher then
-		CTGfx.DreamCatcherSprites.Bubble(NightmareAnm)
-		NightmareAnm:Play("Scene",true)
+		CTGfx.DreamCatcherSprites.Bubble(TRData.NightmareAnm)
+		TRData.NightmareAnm:Play("Scene",true)
 
 		DCSprite.item1.Color = Color.Default
 		DCSprite.item2.Color = Color.Default
 
-		local INanm = CTGfx.DreamCatcherItemType > 1 and "TreasureRoomDouble"
-			or CTGfx.DreamCatcherItemType > 0 and "TreasureRoom"
-			or CTGfx.DreamCatcherItemType >= 0 and "TreasureRoomPoop"
-		if INanm then
-			DCSprite.nightmare:Play(INanm,true)
-			DCSprite.State = 0
-		elseif CTGfx.DreamCatcherItemType == -1 then
-			DCSprite.nightmare:Play("Boss",true)
+		if CTGfx.DreamCatcherScenes[1] and CTGfx.DreamCatcherScenes[1].SceneType then
 			DCSprite.State = 1
-		end
-		DCSprite.Items = CTGfx.DreamCatcherItems
-
-		if not DCSprite.ItemCallbackActivated then
-			mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, DreamCatcherItemReplace)
-			DCSprite.ItemCallbackActivated = true
+			DCSprite.nightmare:Play(CTGfx.DreamCatcherScenes[1].SceneType,true)
+			DCSprite.boss.Offset = Vector(0,250)
+			
+			if not DCSprite.ItemCallbackActivated then
+				mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, DreamCatcherItemReplace)
+				DCSprite.ItemCallbackActivated = true
+			end
 		end
 	end
 	
@@ -935,16 +1324,16 @@ local function GenProgressAnm()
 	bg_RenderPos = Vector(ScreenWidth/2,135)   
 	nm_RenderPos = Vector(ScreenWidth/2,20)
 
-	local Num = not BlueWomb and (StageProgNum-1) or StageProgNum+0
-	Num = math.max(Num,StageProgNum-1,8)
+	local Num = not TRData.BlueWomb and (TRData.StageProgNum-1) or TRData.StageProgNum+0
+	Num = math.max(Num,TRData.StageProgNum-1,8)
 	local leght = (Num-1)*26 + Num
 	local CenPos = nm_RenderPos.X-leght/2
 	local IsaacIndicatorPos	= nm_RenderPos
 	local IsaacIndicatorNextPos = nm_RenderPos
 	local BossIndicatorPos = nm_RenderPos
 
-	for i=1,StageProgNum do
-		if i ~= 9 or BlueWomb then 
+	for i=1,TRData.StageProgNum do
+		if i ~= 9 or TRData.BlueWomb then 
 
 			local nPos = Vector(CenPos+26*(i-1)+i,nm_RenderPos.Y)
 
@@ -954,55 +1343,55 @@ local function GenProgressAnm()
 			ProgressAnm[i].spr.Color = Color(0,0,0,1)
 			ProgressAnm[i].spr:Load("stageapi/transition/progress.anm2",true)
 			ProgressAnm[i].ID = i
-			if not Stages[i] then
+			if not TRData.Stages[i] then
 				ProgressAnm[i].spr:Play("NotClearFloor",true)
-				if i <= NextStageID then
+				if i <= TRData.NextStageID then
 					ProgressAnm[i].spr:SetFrame(1)
 				else
 					ProgressAnm[i].spr:SetFrame(0)
 				end
-			elseif Stages[i] then
+			elseif TRData.Stages[i] then
 				ProgressAnm[i].spr:Play("Levels",true)
 
-				if Stages[i].frame then
-					ProgressAnm[i].spr:SetLayerFrame(0,Stages[i].frame)
-				elseif Stages[i].custom then
+				if TRData.Stages[i].frame then
+					ProgressAnm[i].spr:SetLayerFrame(0,TRData.Stages[i].frame)
+				elseif TRData.Stages[i].custom then
 					ProgressAnm[i].spr:SetLayerFrame(0,28)
-					ProgressAnm[i].spr:ReplaceSpritesheet(4, Stages[i].custom)
+					ProgressAnm[i].spr:ReplaceSpritesheet(4, TRData.Stages[i].custom)
 					ProgressAnm[i].spr:LoadGraphics()
 				end
 
-				if i < NextStageID then 
+				if i < TRData.NextStageID then 
 					ProgressAnm[i].spr:SetLayerFrame(3,1)
-					if i == CurrentStage then
+					if i == TRData.CurrentStage then
 						IsaacIndicatorPos = nPos
 					end
 				else
 					ProgressAnm[i].spr:SetLayerFrame(3,0)
 				end
-				if i == CurrentStage then
+				if i == TRData.CurrentStage then
 					IsaacIndicatorPos = nPos
 				end
-				if i == NextStageID then
+				if i == TRData.NextStageID then
 					IsaacIndicatorNextPos = nPos
-					if NextStage:find("c") or NextStage:find("d") then    
+					if TRData.NextStage:find("c") or TRData.NextStage:find("d") then    
 						IsaacIndicatorNextPos = Vector(CenPos+26*(i-1)+i,nm_RenderPos.Y)
 					end
 				end
 			end
-			if i>9 and not BlueWomb then
+			if i>9 and not TRData.BlueWomb then
 				local nPos = Vector(CenPos+26*(i-2)+i,nm_RenderPos.Y)
 				ProgressAnm[i].pos = nPos
-				if i == CurrentStage then
+				if i == TRData.CurrentStage then
 					IsaacIndicatorPos = nPos
 				end
 				
-				if i == NextStageID then
+				if i == TRData.NextStageID then
 					IsaacIndicatorNextPos = nPos
 				end
 			end
-			if i == StageProgNum then
-				local ni = i>9 and not BlueWomb and 2 or 1
+			if i == TRData.StageProgNum then
+				local ni = i>9 and not TRData.BlueWomb and 2 or 1
 				local BPos = Vector(CenPos+26*(i-ni)+i,nm_RenderPos.Y)
 				BossIndicatorPos = BPos
 			end
@@ -1040,77 +1429,77 @@ end
 
 function self.PreGenProgressAnm(stage,notAutoStage)
 	if notAutoStage then
-		DontAddStage = true
+		TRData.DontAddStage = true
 	end
 	local level = shared.Level
 	local preId = level:GetAbsoluteStage()
 	
-	NextStage = stage
-	CTGfx.Nightmare_bg(Nightmare_bg)
+	TRData.NextStage = stage
+	CTGfx.Nightmare_bg(TRData.Nightmare_bg)
 
 	for _, player in ipairs(shared.Players) do
 		player:ThrowHeldEntity(Vector(0,0))
 	end
 	
-	if not Stages[preId] then
+	if not TRData.Stages[preId] then
 		self.AddDefaultProgressStage()
 	end
 
 	local AltOffset = level:GetStageType()>=4 and 1 or 0
-	CurrentStage = preId+AltOffset
-	if CurrentStage == 9 then BlueWomb = true end
+	TRData.CurrentStage = preId+AltOffset
+	if TRData.CurrentStage == 9 then TRData.BlueWomb = true end
 
-	if (NextStage:find("8") or NextStage:find("7")) and (NextStage:find("c") or NextStage:find("d")) then
-		BlueWomb = true
+	if (TRData.NextStage:find("8") or TRData.NextStage:find("7")) and (TRData.NextStage:find("c") or TRData.NextStage:find("d")) then
+		TRData.BlueWomb = true
 	end
 	
 	local NextId 
 	for i=1,2 do
-		local IsNum = tonumber(NextStage:sub(i,i))
+		local IsNum = tonumber(TRData.NextStage:sub(i,i))
 		if IsNum then
 			NextId = NextId and (NextId .. IsNum) or IsNum
 		end
 	end
-	NextStageID = tonumber(NextId)
-	if NextStage:find("c") or NextStage:find("d") then NextStageID = NextStageID+1 end 
+	TRData.NextStageID = tonumber(NextId)
+	if TRData.NextStage:find("c") or TRData.NextStage:find("d") then TRData.NextStageID = TRData.NextStageID+1 end 
 	
-	StageProgNum = math.max(StageProgNum,(BlueWomb and 9 or 8), tonumber(NextId)) 
-	Sdelay = 1
+	TRData.StageProgNum = math.max(TRData.StageProgNum,(TRData.BlueWomb and 9 or 8), tonumber(NextId)) 
+	TRData.Sdelay = 1
 
 	BlockCallbacks()
 end
 
 function self.SetIndicatorPos(CurrentPos,NextPos)
 	if CurrentPos then
-		CurrentStage = CurrentPos
+		TRData.CurrentStage = CurrentPos
 	end
 	if NextPos then
-		NextStageID = NextPos
-		StageProgNum = math.max(StageProgNum,NextStageID)
+		TRData.NextStageID = NextPos
+		TRData.StageProgNum = math.max(TRData.StageProgNum,TRData.NextStageID)
 	end
 end
 
 function self.SetStageIcon(stagenum,gfx)
 	if type(gfx) == "string" then
-		Stages[stagenum] = {custom = gfx}
+		TRData.Stages[stagenum] = {custom = gfx}
 	elseif type(gfx) == "number" then
-		Stages[stagenum] = {frame = gfx}
+		TRData.Stages[stagenum] = {frame = gfx}
 	end
 end
 
 function self.SetStageSpot(gfx)
-	DontReplacePlSpot = true
-	Nightmare_bg:ReplaceSpritesheet(3,gfx)
-	Nightmare_bg:LoadGraphics(true)
+	TRData.DontReplacePlSpot = true
+	TRData.Nightmare_bg:ReplaceSpritesheet(3,gfx)
+	TRData.Nightmare_bg:LoadGraphics(true)
 end
 
 function self.StartTransition(OA)
-	ShaderState = 1
+	TRData.ShaderState = 1
 	OnlyAnim = OA
 end
 
 function self.IsTransitionPlaying()
-	return ShaderState == 1 or ShaderState == 2
+	return TRData.ShaderState == 1 or TRData.ShaderState == 2
 end
 
 function self.SetTransitionMusic(music)
@@ -1119,14 +1508,58 @@ function self.SetTransitionMusic(music)
 	end
 end
 
+
+function StageAPI.SetItemsDeathPortrait(anm,firstItemID,FirstFrame,LastFrame)
+	local firstFrame,lastFrame = FirstFrame or 1,LastFrame
+ 	if anm and type(anm) == 'string' and firstItemID then
+		if not lastFrame then
+			spr:SetLastFrame()
+			lastFrame = spr:GetFrame()
+			spr:SetFrame(0)
+		end
+		for i=firstFrame,lastFrame do
+			gfxTabl.ItemsDeathPortrait[firstItemID+i-firstFrame] = {anm,i}
+		end
+	elseif anm and type(anm) == 'table' and firstItemID then
+		for i,e in pairs(anm) do
+			if type(i) == 'number' then
+				gfxTabl.ItemsDeathPortrait[i+firstItemID-firstFrame] = {anm.anm,e}
+			end
+		end
+	end
+end
+
+function StageAPI.GetItemDeathPortrait(ItemID)
+	if ItemID and ItemID<732 then
+		local spr = Sprite()
+		spr:Load("gfx/ui/death screen.anm2",true)
+		spr:Play(spr:GetDefaultAnimation())
+		for g=0,8 do
+			if g~=6 then
+				spr:ReplaceSpritesheet(g,"stageapi/none.png")
+			end
+		end
+		spr.Offset = Vector(84,-20)
+		spr:LoadGraphics(true)
+		spr:SetFrame(ItemID-1)
+		return spr
+	elseif ItemID and gfxTabl.ItemsDeathPortrait[ItemID] then
+		local spr = Sprite()
+		spr:Load(gfxTabl.ItemsDeathPortrait[ItemID][1],true)
+		spr:Play(spr:GetDefaultAnimation(),true)
+		spr:SetFrame(gfxTabl.ItemsDeathPortrait[ItemID][2])
+		return spr
+	end
+end
+
 local function CTAClean(_,NewGame)
 	if NewGame == false then
-		CurrentStage = CTGfx.StartCurrentStage 
-		NextStageID = nil
-		NextStage = 2	
-		BlueWomb = CTGfx.StartBlueWomb
-		StageProgNum = CTGfx.StartStageNum
-		Stages = {}
+		TRData.CurrentStage = CTGfx.StartCurrentStage 
+		TRData.NextStageID = nil
+		TRData.NextStage = 2	
+		TRData.BlueWomb = CTGfx.StartBlueWomb
+		TRData.StageProgNum = CTGfx.StartStageNum
+		TRData.Stages = {}
 		ProgressAnm = {}
 
 		self.AddDefaultProgressStage()
@@ -1135,26 +1568,26 @@ end
 
 
 local function RenderTrick()  --very strange way to fix the backdrop in Dark Room
-	if Sdelay > 150 then
+	if TRData.Sdelay > 150 then
 		if OnlyAnim ~= true then
-			Isaac.ExecuteCommand("stage " .. NextStage)
+			Isaac.ExecuteCommand("stage " .. TRData.NextStage)
 
-			if not DontAddStage then
+			if not TRData.DontAddStage then
 				self.AddDefaultProgressStage()
 			end
 		end
-		DontAddStage = false
+		TRData.DontAddStage = false
 		OnlyAnim = false
 
 		GenProgressAnm()
 		DreamCatcher = CTGfx.DreamCatcherCheck()
 		TransitionActivation()
 		
-		BlackCube.Color = Color(1,1,1,0)
+		TRData.BlackCube.Color = Color(1,1,1,0)
 
 		--mod:RemoveCallback(ModCallbacks.MC_POST_PLAYER_RENDER,RenderTrick)
 		
-		if NextStage == "11" then
+		if TRData.NextStage == "11" then
 			local backdropID = shared.Room:GetBackdropType() 
 			shared.Game:ShowHallucination(0,backdropID)
 			shared.Sfx:Stop(SoundEffect.SOUND_DEATH_CARD)
@@ -1165,18 +1598,18 @@ end
 local function ShaderRender(_, name)
   if name == "StageAPI-TransitionPixelation" then
      IsOddRenderFrame = not IsOddRenderFrame
-     local ShaTabl = { PixelAm = 0.005 + PIxelAmon*Sdelay}
-     if ShaderState == 0 then
+     local ShaTabl = { PixelAm = 0.005 + PIxelAmon*TRData.Sdelay}
+     if TRData.ShaderState == 0 then
 	local Tabl = {PixelAm = 0}
 	return Tabl
-     elseif ShaderState == 1 then
+     elseif TRData.ShaderState == 1 then
 	if IsOddRenderFrame then
-		Sdelay = Sdelay+2.6  
+		TRData.Sdelay = TRData.Sdelay+2.6  
 	end
-	BlackCube.Color = Color(1,1,1,(PIxelAmonStart*Sdelay)*3.5)
-	BlackCube:Render(bg_RenderPos) 
+	TRData.BlackCube.Color = Color(1,1,1,(PIxelAmonStart*TRData.Sdelay)*3.5)
+	TRData.BlackCube:Render(bg_RenderPos) 
 	
-	if Sdelay > 150 then
+	if TRData.Sdelay > 150 then
 		for _, player in ipairs(shared.Players) do
 			player:ThrowHeldEntity(Vector(10,10))
 			player.PositionOffset = Vector.Zero
@@ -1186,18 +1619,18 @@ local function ShaderRender(_, name)
 		
 		local Tabl = {PixelAm = 0}
 		return Tabl
-	elseif Sdelay > 145 then
+	elseif TRData.Sdelay > 145 then
 		local Tabl = {PixelAm = 0}
 		return Tabl
 	else
 		return ShaTabl
 	end
-     elseif ShaderState == 3 then
+     elseif TRData.ShaderState == 3 then
 	if IsOddRenderFrame then	
-		Sdelay = Sdelay-2.6
+		TRData.Sdelay = TRData.Sdelay-2.6
 	end
-	BlackCube.Color = Color(1,1,1,(PIxelAmonStart*Sdelay)*3.5)
-	BlackCube:Render(bg_RenderPos)
+	TRData.BlackCube.Color = Color(1,1,1,(PIxelAmonStart*TRData.Sdelay)*3.5)
+	TRData.BlackCube:Render(bg_RenderPos)
 	for _, player in ipairs(shared.Players) do
 		player.ControlsCooldown = math.max(player.ControlsCooldown,80)
 
@@ -1205,15 +1638,15 @@ local function ShaderRender(_, name)
 			player:AnimateAppear()
 		end
 	end
-	if Sdelay <= 0 then
+	if TRData.Sdelay <= 0 then
 		BlockCallbacks(true)
 		shared.Game:GetHUD():SetVisible(true)
-		ShaderState = 0
+		TRData.ShaderState = 0
 	else
 		return ShaTabl
 	end
-     elseif ShaderState == 2 then
-	if RenderFrame < 2 and MusicManager():GetCurrentMusicID() ~= TransitionMusik then
+     elseif TRData.ShaderState == 2 then
+	if TRData.RenderFrame < 2 and MusicManager():GetCurrentMusicID() ~= TransitionMusik then
 		shared.Music:Play(TransitionMusik,Options.MusicVolume)
 	end
 
