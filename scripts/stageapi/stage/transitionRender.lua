@@ -1074,7 +1074,8 @@ local function TransitionRender(_, name)
 
 	TRData.Nightmare_bg:Render(bg_RenderPos,Vector.Zero,Vector.Zero)
 
-	if StageAPI.PlayerBossInfo[shared.Players[1]:GetPlayerType()].ExtraPortrait then
+	if StageAPI.PlayerBossInfo[Isaac.GetPlayer():GetPlayerType()] and
+	StageAPI.PlayerBossInfo[Isaac.GetPlayer():GetPlayerType()].ExtraPortrait then
 		if not TRData.PlayerGfx.NoShake then
 			TRData.PlayerExtra.Offset = CTGfx.ExtraAnmOffset[TRData.ExtraFrame]
 		end
@@ -1143,8 +1144,8 @@ local function TransitionRender(_, name)
 
 	TRData.BlackCube:Render(bg_RenderPos)
 
-	if  (Input.IsActionTriggered(ButtonAction.ACTION_MENUCONFIRM, shared.Players[1].ControllerIndex) or 
-	Input.IsActionTriggered(ButtonAction.ACTION_MENUBACK, shared.Players[1].ControllerIndex)) then
+	if  (Input.IsActionTriggered(ButtonAction.ACTION_MENUCONFIRM, shared.Players[1].ControllerIndex or Isaac.GetPlayer().ControllerIndex) or 
+	Input.IsActionTriggered(ButtonAction.ACTION_MENUBACK, shared.Players[1].ControllerIndex or Isaac.GetPlayer().ControllerIndex)) then
 		TRData.StartDisap = true
 	end
 
@@ -1232,12 +1233,12 @@ local function TransitionActivation()
 
 	shared.Game:GetHUD():SetVisible(false)
 
-	local player = shared.Players[1]  
+	local player = shared.Players[1] or Isaac.GetPlayer()
 
 	if StageAPI.PlayerBossInfo[player:GetPlayerType()] then  
 		TRData.PlayerGfx = StageAPI.PlayerBossInfo[player:GetPlayerType()]
 	else
-		TRData.PlayerGfx = StageAPI.PlayerBossInfo[0]
+		TRData.PlayerGfx = StageAPI.TryGetPlayerGraphicsInfo(player)
 	end
 
 	if not TRData.DontReplacePlSpot then
@@ -1658,7 +1659,6 @@ local function ShaderRender(_, name)
   end
 end
 
---mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, DreamCatcherItemReplace)
 mod:AddCallback(ModCallbacks.MC_POST_NEW_LEVEL, self.AddDefaultProgressStage)
 mod:AddCallback(ModCallbacks.MC_POST_GAME_STARTED, CTAClean)
 mod:AddCallback(ModCallbacks.MC_GET_SHADER_PARAMS,ShaderRender)
