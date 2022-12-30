@@ -572,14 +572,22 @@ function StageAPI.CustomStage:GenerateLevel()
 
     local startingRoomIndex = shared.Level:GetStartingRoomIndex()
     local roomsList = shared.Level:GetRooms()
+    local hasMirror = (self.LevelgenStage.Stage == LevelStage.STAGE1_2 and self.LevelgenStage.StageType == StageType.STAGETYPE_REPENTANCE)
     for i = 0, roomsList.Size - 1 do
         local roomDesc = roomsList:Get(i)
-        if roomDesc then
+        if roomDesc and not (hasMirror and StageAPI.GetDimension(roomDesc) == 1) then
             local isStartingRoom = startingRoomIndex == roomDesc.SafeGridIndex
             local newRoom = self:GenerateRoom(roomDesc, isStartingRoom, true)
             if newRoom then
                 local listIndex = roomDesc.ListIndex
                 StageAPI.SetLevelRoom(newRoom, listIndex)
+
+                if hasMirror and roomDesc.SafeGridIndex > -1 and StageAPI.GetDimension(roomDesc) == 0 then
+                    local mirroredRoom = newRoom:Copy(roomDesc)
+					local mirroredDesc = shared.Level:GetRoomByIdx(roomDesc.SafeGridIndex, 1)
+					StageAPI.SetLevelRoom(mirroredRoom, mirroredDesc.ListIndex, 1)
+                    StageAPI.LogMinor("Mirroring!")
+                end
             end
         end
     end
