@@ -296,6 +296,43 @@ local function GetRequiredLevelRoomSubtype(levelRoom)
     end
 end
 
+local function GetDifficultyRange(levelRoom)
+    if levelRoom:GetType() == RoomType.ROOM_DEFAULT then
+        local mindiff = 0
+        local maxdiff = 5
+        local isHard = shared.Game.Difficulty == Difficulty.DIFFICULTY_HARD
+        if isHard then
+            maxdiff = maxdiff + 5
+        end
+        if StageAPI.GetCurrentStage() then
+            local ignoreDifficulty = StageAPI.GetCurrentStage().IgnoreDifficultyRules == true
+            if ignoreDifficulty then
+                return
+            end
+
+            if StageAPI.GetCurrentStage().IsSecondStage then
+                if isHard then
+                    mindiff = mindiff + 10
+                else
+                    mindiff = mindiff + 5
+                end
+                maxdiff = maxdiff + 5
+            end
+        else
+            local levelstage = shared.Game:GetLevel():GetStage()
+            if levelstage % 2 == 0 or levelstage > 8 then
+                if isHard then
+                    mindiff = mindiff + 10
+                else
+                    mindiff = mindiff + 5
+                end
+                maxdiff = maxdiff + 5
+            end
+        end
+        return mindiff, maxdiff
+    end
+end
+
 function StageAPI.LevelRoom:GetLayout()
     if self.FromData and not self.Layout then
         local roomDesc = shared.Level:GetRooms():Get(self.FromData)
@@ -340,7 +377,7 @@ function StageAPI.LevelRoom:GetLayout()
                 end
             else
                 local requireSubtype, forceRequiredSubtype = GetRequiredLevelRoomSubtype(self)
-
+                local minDifficulty, maxDifficulty = GetDifficultyRange(self)
                 self.Layout = StageAPI.ChooseRoomLayout{
                     RoomList = roomsList,
                     Seed = self.SpawnSeed,
@@ -352,6 +389,8 @@ function StageAPI.LevelRoom:GetLayout()
                     Doors = self.Doors,
                     RequireSubtype = requireSubtype,
                     ForceRequiredSubtype = forceRequiredSubtype,
+                    MinDifficulty = minDifficulty,
+                    MaxDifficulty = maxDifficulty,
                 }
 
                 if self.IgnoreShape then

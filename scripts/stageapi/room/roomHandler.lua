@@ -172,6 +172,8 @@ end
 ---@field DisallowIDs any[]
 ---@field RequireSubtype integer?
 ---@field ForceRequiredSubtype boolean
+---@field MinDifficulty integer
+---@field MaxDifficulty integer
 
 -- returns list of rooms, error message if no rooms valid
 ---@param args GetValidRoomsForLayout.Args
@@ -206,6 +208,9 @@ function StageAPI.GetValidRoomsForLayout(args)
 
     local requireSubtype = args.RequireSubtype
 
+    local mindiff = args.MinDifficulty
+    local maxdiff = args.MaxDifficulty
+
     for listID, layout in ipairs(possibleRooms) do
         shape = layout.Shape
 
@@ -220,6 +225,8 @@ function StageAPI.GetValidRoomsForLayout(args)
 
         if isValid and requireSubtype then
             isValid = layout.SubType == requireSubtype
+        elseif isValid and mindiff and maxdiff then
+            isValid = (layout.Difficulty >= mindiff or layout.Difficulty <= maxdiff)
         end
 
         if isValid and disallowIDs then
@@ -293,16 +300,15 @@ function StageAPI.ChooseRoomLayout(roomList, seed, shape, rtype, requireRoomType
             RequireRoomType = requireRoomType,
             IgnoreDoors = ignoreDoors,
             Doors = doors,
-            DisallowIDs = disallowIDs
+            DisallowIDs = disallowIDs,
         }
     end
 
     local validRooms, totalWeight, err = StageAPI.GetValidRoomsForLayout(args)
     if err then StageAPI.LogErr(err) end
 
-    if args.RequireSubtype and not args.ForceRequiredSubtype
-    and #validRooms == 0 then
-        StageAPI.LogWarn("No room for subtype ", args.RequireSubtype, " found, trying with any...")
+    if args.RequireSubtype and not args.ForceRequiredSubtype and #validRooms == 0 then
+        StageAPI.LogWarn("No room with subtype ", args.RequireSubtype, " found, trying with any...")
 
         local requireSubtype = args.RequireSubtype
         args.RequireSubtype = nil
@@ -312,6 +318,22 @@ function StageAPI.ChooseRoomLayout(roomList, seed, shape, rtype, requireRoomType
 
         -- In case it's a static external object, do not alter it
         args.RequireSubtype = requireSubtype
+    end
+
+    if args.MinDifficulty and args.MaxDifficulty and #validRooms == 0 then
+        StageAPI.LogWarn("No room in difficulty range ", args.MinDifficulty, "-", args.MaxDifficulty, " found, trying with any...")
+
+        local minDiff = args.MinDifficulty
+        local maxDiff = args.MaxDifficulty
+        args.MinDifficulty = nil
+        args.MaxDifficulty = nil
+
+        validRooms, totalWeight, err = StageAPI.GetValidRoomsForLayout(args)
+        if err then StageAPI.LogErr(err) end
+
+        -- In case it's a static external object, do not alter it
+        args.MinDifficulty = minDiff
+        args.MaxDifficulty = maxDiff
     end
 
     if #validRooms > 0 then
