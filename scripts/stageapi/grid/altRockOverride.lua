@@ -17,7 +17,10 @@ StageAPI.AddCallback("StageAPI", "POST_CUSTOM_GRID_DESTROY", 1, function(customG
     if projectile then
         customGrid.DoOverridenGridBreakLater = true
     else
-        StageAPI.CallCallbacks(Callbacks.POST_OVERRIDDEN_GRID_BREAK, true, customGrid.Position, customGrid.GridVariant, customGrid.BrokenData, customGrid, projectile)
+        if customGrid.GridEntity then
+            StageAPI.CallCallbacks(Callbacks.POST_OVERRIDDEN_GRID_BREAK, true, customGrid.GridEntity:GetGridIndex(), customGrid.GridEntity, customGrid.BrokenData)
+        end
+        StageAPI.CallCallbacks(Callbacks.POST_OVERRIDDEN_ALT_ROCK_BREAK, true, customGrid.Position, customGrid.GridVariant, customGrid.BrokenData, customGrid, projectile)
     end
 end, "StageAPIOverridenAltRock")
 
@@ -26,7 +29,10 @@ StageAPI.AddCallback("StageAPI", "POST_CUSTOM_GRID_DESTROY", 1, function(customG
         if projectile then
             customGrid.DoOverridenGridBreakLater = true
         else
-            StageAPI.CallCallbacks(Callbacks.POST_OVERRIDDEN_GRID_BREAK, true, customGrid.Position, customGrid.GridVariant, customGrid.BrokenData, customGrid, projectile)
+            if customGrid.GridEntity then
+                StageAPI.CallCallbacks(Callbacks.POST_OVERRIDDEN_GRID_BREAK, true, customGrid.GridEntity:GetGridIndex(), customGrid.GridEntity, customGrid.BrokenData)
+            end
+            StageAPI.CallCallbacks(Callbacks.POST_OVERRIDDEN_ALT_ROCK_BREAK, true, customGrid.Position, customGrid.GridVariant, customGrid.BrokenData, customGrid, projectile)
         end
     end
 end)

@@ -304,7 +304,7 @@ function StageAPI.CustomGridEntity:Update()
         end
     elseif self.ProjectilePositionTimer then
         if self.DoOverridenGridBreakLater then
-            StageAPI.CallCallbacks(Callbacks.POST_OVERRIDDEN_GRID_BREAK, true, self.Position, self.GridVariant, self.BrokenData, self, self.Projectile)
+            StageAPI.CallCallbacks(Callbacks.POST_OVERRIDDEN_ALT_ROCK_BREAK, true, self.Position, self.GridVariant, self.BrokenData, self, self.Projectile)
             self.DoOverridenGridBreakLater = false
         end
     
@@ -383,13 +383,12 @@ function StageAPI.CustomGridEntity:Update()
     if self:IsOnGrid() and self.GridConfig.BaseType then
         self.LastFilename = self.GridEntity:GetSprite():GetFilename()
     end
-
-    self.JustBrokenGridSpawns = nil
 end
 
 function StageAPI.CustomGridEntity:UpdateProjectile(projectile)
     self.Projectile = projectile
     if self.Projectile.Type == EntityType.ENTITY_TEAR then
+        self.HeldByPlayer = false
         self.ThrownByPlayer = true
     end
 
@@ -467,14 +466,16 @@ function StageAPI.CustomGridEntity:CheckDirtyMind(familiar)
 end
 
 function StageAPI.CustomGridEntity:Unload()
-    self.Unloaded = true
-    for i, grid in StageAPI.ReverseIterate(StageAPI.CustomGridEntities) do
-        if grid.PersistentIndex == self.PersistentIndex then
-            table.remove(StageAPI.CustomGridEntities, i)
+    if not self.HeldByPlayer then
+        self.Unloaded = true
+        for i, grid in StageAPI.ReverseIterate(StageAPI.CustomGridEntities) do
+            if grid.PersistentIndex == self.PersistentIndex then
+                table.remove(StageAPI.CustomGridEntities, i)
+            end
         end
-    end
 
-    self:CallCallbacks(Callbacks.POST_CUSTOM_GRID_UNLOAD)
+        self:CallCallbacks(Callbacks.POST_CUSTOM_GRID_UNLOAD)
+    end
 end
 
 function StageAPI.CustomGridEntity:RemoveFromGrid()
