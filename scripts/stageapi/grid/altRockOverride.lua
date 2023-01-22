@@ -110,7 +110,7 @@ mod:AddCallback(ModCallbacks.MC_PRE_ENTITY_SPAWN, function(_, id, variant, subty
             }
 
             customGrid.BrokenData[#customGrid.BrokenData + 1] = dat
-            customGrid.CheckedForOverride = true
+            customGrid.UpdateCheckForOverride = true
 
             if id == EntityType.ENTITY_EFFECT then
                 return {

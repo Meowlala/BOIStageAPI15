@@ -336,6 +336,11 @@ function StageAPI.CustomGridEntity:Update()
         self.Position = shared.Room:GetGridPosition(self.GridIndex)
     end
 
+    if self.UpdateCheckForOverride then
+        self.CheckedForOverride = true
+        self.UpdateCheckForOverride = false
+    end
+
     if self:IsOnGrid() then
         if self.GridConfig.BaseType then
             self.GridEntity = shared.Room:GetGridEntity(self.GridIndex)
