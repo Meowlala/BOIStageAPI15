@@ -197,9 +197,9 @@ Callback List:
 
   - If a boss is returned, uses it instead.
 
-- POST_OVERRIDDEN_GRID_BREAK(grindex, grid, justBrokenGridSpawns)
+- POST_OVERRIDDEN_ALT_ROCK_BREAK(gridpos, gridvar, brokenData, customGrid, projectile)
 
-  - Called when an overridden grid reaches its break state and is considered broken. justBrokenGridSpawns contains all deleted spawns from the grid. Breaks on first non-nil return.
+  - Called when an overridden grid reaches its break state and is considered broken. brokenData contains all deleted spawns from the grid. Breaks on first non-nil return.
 
 - POST_GRID_UPDATE()
 

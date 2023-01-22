@@ -6,37 +6,55 @@ StageAPI.LogMinor("Loading Rock Alt Breaking Override")
 
 local FART_RADIUS = 150
 
-StageAPI.SpawnOverriddenGrids = {}
-StageAPI.JustBrokenGridSpawns = {}
+StageAPI.OverridenAltRock = StageAPI.CustomGrid("StageAPIOverridenAltRock", {
+    BaseType = GridEntityType.GRID_ROCK_ALT,
+    OverrideGridSpawns = true,
+    NoOverrideGridSprite = true,
+    RemoveOnAnm2Change = true,
+})
+
+StageAPI.AddCallback("StageAPI", "POST_CUSTOM_GRID_DESTROY", 1, function(customGrid, projectile)
+    if projectile then
+        customGrid.DoOverridenGridBreakLater = true
+    else
+        if customGrid.GridEntity then
+            StageAPI.CallCallbacks(Callbacks.POST_OVERRIDDEN_GRID_BREAK, true, customGrid.GridEntity:GetGridIndex(), customGrid.GridEntity, customGrid.BrokenData)
+        end
+        StageAPI.CallCallbacks(Callbacks.POST_OVERRIDDEN_ALT_ROCK_BREAK, true, customGrid.Position, customGrid.GridVariant, customGrid.BrokenData, customGrid, projectile)
+    end
+end, "StageAPIOverridenAltRock")
+
+StageAPI.AddCallback("StageAPI", "POST_CUSTOM_GRID_DESTROY", 1, function(customGrid, projectile)
+    if customGrid.PersistentData.OverridenAltRockSpawns then
+        if projectile then
+            customGrid.DoOverridenGridBreakLater = true
+        else
+            if customGrid.GridEntity then
+                StageAPI.CallCallbacks(Callbacks.POST_OVERRIDDEN_GRID_BREAK, true, customGrid.GridEntity:GetGridIndex(), customGrid.GridEntity, customGrid.BrokenData)
+            end
+            StageAPI.CallCallbacks(Callbacks.POST_OVERRIDDEN_ALT_ROCK_BREAK, true, customGrid.Position, customGrid.GridVariant, customGrid.BrokenData, customGrid, projectile)
+        end
+    end
+end)
+
 StageAPI.RecentFarts = {}
-StageAPI.LastRockAltCheckedRoom = nil
 StageAPI.TemporaryIgnoreSpawnOverride = false
 mod:AddCallback(ModCallbacks.MC_PRE_ENTITY_SPAWN, function(_, id, variant, subtype, position, velocity, spawner, seed)
-    if StageAPI.LastRockAltCheckedRoom ~= shared.Level:GetCurrentRoomIndex() then
-        StageAPI.LastRockAltCheckedRoom = shared.Level:GetCurrentRoomIndex()
-        StageAPI.SpawnOverriddenGrids = {}
-    end
-
-    local shouldOverride
     local grindex = shared.Room:GetGridIndex(position)
-    if StageAPI.SpawnOverriddenGrids[grindex] then
-        local grid = shared.Room:GetGridEntity(grindex)
+    local customGrid = StageAPI.GetCustomGrid(grindex)
+    local shouldOverride
 
-        local stateCheck
-        if type(StageAPI.SpawnOverriddenGrids[grindex]) == "number" then
-            stateCheck = StageAPI.SpawnOverriddenGrids[grindex]
-        elseif grid then
-            stateCheck = StageAPI.DefaultBrokenGridStateByType[grid.Desc.Type] or 2
+    if customGrid and customGrid.GridConfig.OverrideGridSpawns and customGrid.GridEntity and not customGrid.CheckedForOverride then
+        local breakstate = customGrid.GridConfig.OverrideGridSpawnsState or StageAPI.DefaultBrokenGridStateByType[customGrid.GridConfig.BaseType]
+        if customGrid.GridEntity.State == breakstate then
+            shouldOverride = true
         end
-
-        shouldOverride = not grid or grid.State == stateCheck
     end
 
-    local customGrid
     if not shouldOverride then
         local customGrids = StageAPI.GetCustomGrids()
         for _, grid in ipairs(customGrids) do
-            if grid.GridConfig.OverrideGridSpawns then
+            if grid.GridConfig.OverrideGridSpawns and not grid.CheckedForOverride then
                 local projPosition = (grid.Projectile and grid.Projectile:IsDead() and grid.Projectile.Position) or grid.RecentProjectilePosition
                 if projPosition and projPosition:DistanceSquared(position) < 20 ^ 2 then
                     shouldOverride = true
@@ -46,7 +64,7 @@ mod:AddCallback(ModCallbacks.MC_PRE_ENTITY_SPAWN, function(_, id, variant, subty
         end
     end
 
-    if shouldOverride and not StageAPI.TemporaryIgnoreSpawnOverride then
+    if shouldOverride and customGrid and not StageAPI.TemporaryIgnoreSpawnOverride then
         if (id == EntityType.ENTITY_PICKUP and (variant == PickupVariant.PICKUP_COLLECTIBLE or variant == PickupVariant.PICKUP_TAROTCARD or variant == PickupVariant.PICKUP_HEART or variant == PickupVariant.PICKUP_COIN or variant == PickupVariant.PICKUP_TRINKET or variant == PickupVariant.PICKUP_PILL))
         or id == EntityType.ENTITY_SPIDER
         or (id == EntityType.ENTITY_EFFECT and (variant == EffectVariant.FART or variant == EffectVariant.POOF01 or variant == EffectVariant.CREEP_RED))
@@ -57,7 +75,7 @@ mod:AddCallback(ModCallbacks.MC_PRE_ENTITY_SPAWN, function(_, id, variant, subty
         or id == EntityType.ENTITY_HOST
         or id == EntityType.ENTITY_MUSHROOM then
             if id == EntityType.ENTITY_EFFECT and variant == EffectVariant.FART then
-                StageAPI.RecentFarts[grindex] = 2
+                StageAPI.RecentFarts[customGrid.Position] = 2
                 shared.Sfx:Stop(SoundEffect.SOUND_FART)
 
                 for _, player in ipairs(shared.Players) do
@@ -91,19 +109,8 @@ mod:AddCallback(ModCallbacks.MC_PRE_ENTITY_SPAWN, function(_, id, variant, subty
                 Seed = seed
             }
 
-            if not customGrid then
-                if not StageAPI.JustBrokenGridSpawns[grindex] then
-                    StageAPI.JustBrokenGridSpawns[grindex] = {}
-                end
-
-                StageAPI.JustBrokenGridSpawns[grindex][#StageAPI.JustBrokenGridSpawns[grindex] + 1] = dat
-            else
-                if not customGrid.JustBrokenGridSpawns then
-                    customGrid.JustBrokenGridSpawns = {}
-                end
-
-                customGrid.JustBrokenGridSpawns[#customGrid.JustBrokenGridSpawns + 1] = dat
-            end
+            customGrid.BrokenData[#customGrid.BrokenData + 1] = dat
+            customGrid.UpdateCheckForOverride = true
 
             if id == EntityType.ENTITY_EFFECT then
                 return {
@@ -160,7 +167,7 @@ mod:AddCallback(ModCallbacks.MC_POST_PLAYER_RENDER, function(_, player)
     if data.Farted then
         local stoppedFart
         for fart, timer in pairs(StageAPI.RecentFarts) do
-            if shared.Room:GetGridPosition(fart):Distance(player.Position) < FART_RADIUS + player.Size then
+            if fart:Distance(player.Position) < FART_RADIUS + player.Size then
                 stoppedFart = true
                 break
             end
@@ -187,7 +194,7 @@ mod:AddCallback(ModCallbacks.MC_POST_NPC_RENDER, function(_, npc)
     if data.Farted then
         local stoppedFart
         for fart, timer in pairs(StageAPI.RecentFarts) do
-            if shared.Room:GetGridPosition(fart):Distance(npc.Position) < FART_RADIUS + npc.Size then
+            if fart:Distance(npc.Position) < FART_RADIUS + npc.Size then
                 stoppedFart = true
                 break
             end
@@ -256,21 +263,6 @@ mod:AddCallback(ModCallbacks.MC_POST_UPDATE, function()
             StageAPI.RecentFarts[fart] = nil
         end
     end
-
-    for grindex, exists in pairs(StageAPI.SpawnOverriddenGrids) do
-        local grid = shared.Room:GetGridEntity(grindex)
-        local stateCheck = 2
-        if type(exists) == "number" then
-            stateCheck = exists
-        end
-
-        if not grid or grid.State == stateCheck then
-            StageAPI.SpawnOverriddenGrids[grindex] = nil
-            StageAPI.CallCallbacks(Callbacks.POST_OVERRIDDEN_GRID_BREAK, true, grindex, grid, StageAPI.JustBrokenGridSpawns[grindex])
-        end
-    end
-
-    StageAPI.JustBrokenGridSpawns = {}
 end)
 
 function StageAPI.AreRockAltEffectsOverridden()
@@ -293,16 +285,23 @@ end
 mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, function()
     StageAPI.TemporaryOverrideRockAltEffects = nil
     StageAPI.RecentFarts = {}
-    StageAPI.SpawnOverriddenGrids = {}
-    StageAPI.JustBrokenGridSpawns = {}
 end)
 
 StageAPI.AddCallback("StageAPI", Callbacks.POST_GRID_UPDATE, 0, function()
     if StageAPI.AreRockAltEffectsOverridden() then
         for i = shared.Room:GetGridWidth(), shared.Room:GetGridSize() do
             local grid = shared.Room:GetGridEntity(i)
-            if not StageAPI.SpawnOverriddenGrids[i] and grid and (grid.Desc.Type == GridEntityType.GRID_ROCK_ALT and grid.State ~= 2) then
-                StageAPI.SpawnOverriddenGrids[i] = true
+            if grid and grid.Desc.Type == GridEntityType.GRID_ROCK_ALT and grid.State ~= 2 then
+                local grindex = grid:GetGridIndex()
+                local customGrid = StageAPI.GetCustomGrid(grindex)
+                if not customGrid then
+                    StageAPI.OverridenAltRock:Spawn(grindex, false, false, nil)
+                else
+                    if customGrid.GridConfig.AllowAltRockOverride then
+                        customGrid.PersistentData.OverridenAltRockSpawns = true
+                        customGrid.GridConfig.OverrideGridSpawns = true
+                    end
+                end
             end
         end
     end
