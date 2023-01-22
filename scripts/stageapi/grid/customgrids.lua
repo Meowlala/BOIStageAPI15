@@ -16,6 +16,7 @@ StageAPI.CustomGridTypes = {}
 ---@field VariantFrames integer max number of random frame to choose from
 ---@field Offset Vector
 ---@field OverrideGridSpawns boolean
+---@field AllowAltRockOverride boolean
 ---@field OverrideGridSpawnsState integer
 ---@field ForceSpawning boolean
 ---@field NoOverrideGridSprite boolean used for GridGfx
@@ -54,6 +55,7 @@ end
 ---@field VariantFrames integer max number of random frame to choose from
 ---@field Offset Vector
 ---@field OverrideGridSpawns boolean
+---@field AllowAltRockOverride boolean
 ---@field OverrideGridSpawnsState integer
 ---@field ForceSpawning boolean
 ---@field NoOverrideGridSprite boolean used for GridGfx
@@ -261,6 +263,7 @@ function StageAPI.CustomGridEntity:Init(gridConfig, index, force, respawning, se
     end
 
     self.GridIndex = index
+    self.BrokenData = {}
     self.Data = {}
 
     ---either argument, checked if gridData nil, set if gridData not nil
@@ -299,9 +302,12 @@ function StageAPI.CustomGridEntity:Update()
             self:CallCallbacks(Callbacks.POST_CUSTOM_GRID_DESTROY)
             StageAPI.TemporaryIgnoreSpawnOverride = false
         end
-    end
-
-    if self.ProjectilePositionTimer then
+    elseif self.ProjectilePositionTimer then
+        if self.DoOverridenGridBreakLater then
+            StageAPI.CallCallbacks(Callbacks.POST_OVERRIDDEN_GRID_BREAK, true, self.Position, self.GridVariant, self.BrokenData, self, self.Projectile)
+            self.DoOverridenGridBreakLater = false
+        end
+    
         self.ProjectilePositionTimer = self.ProjectilePositionTimer - 1
         if self.ProjectilePositionTimer <= 0 then
             self.RecentProjectilePosition = nil
@@ -323,6 +329,9 @@ function StageAPI.CustomGridEntity:Update()
         self.Position = self.RecentProjectilePosition
     elseif self.GridEntity then
         self.Position = self.GridEntity.Position
+        if self.GridEntity:GetVariant() ~= 1000 then
+            self.GridVariant = self.GridEntity:GetVariant()
+        end
     elseif self.GridIndex then
         self.Position = shared.Room:GetGridPosition(self.GridIndex)
     end
@@ -361,14 +370,6 @@ function StageAPI.CustomGridEntity:Update()
 
         if self.Lifted and not self.RecentlyLifted then
             self:RemoveFromGrid()
-        elseif self.GridConfig.OverrideGridSpawns then
-            local grid = self.GridEntity or shared.Room:GetGridEntity(self.GridIndex)
-            if grid then
-                local overrideState = self.GridConfig.OverrideGridSpawnsState or StageAPI.DefaultBrokenGridStateByType[grid.Desc.Type] or 2
-                if grid.State ~= overrideState then
-                    StageAPI.SpawnOverriddenGrids[self.GridIndex] = overrideState
-                end
-            end
         end
     else
         if not self.ProjectileHelper and not self.RecentProjectileHelper and not self.Projectile and not self.RecentProjectilePosition then
@@ -522,6 +523,20 @@ function StageAPI.GetCustomGrids(index, name)
     end
 
     return matches
+end
+
+function StageAPI.GetNearestCustomGrid(position, name)
+    local nearest
+    local dist = 99999
+    local grids = StageAPI.GetCustomGrids(nil, name)
+    for _, customGrid in ipairs(grids) do
+        if customGrid.Position:Distance(position) < dist then
+            nearest = customGrid
+            dist = customGrid.Position:Distance(position)
+        end
+    end
+
+    return customGrid
 end
 
 function StageAPI.GetLiftedCustomGrids(ignoreMarked, includeRecent)
