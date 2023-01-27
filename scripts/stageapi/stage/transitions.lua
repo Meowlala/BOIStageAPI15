@@ -30,10 +30,104 @@ StageAPI.StageTypes = {
     StageType.STAGETYPE_REPENTANCE_B
 }
 
-StageAPI.TransitionAnimation = Sprite()
-StageAPI.TransitionAnimation:Load("stageapi/transition/customnightmare.anm2", true)
+StageAPI.TransitionNightmares = {}
+for i = 1, 17 do
+    StageAPI.TransitionNightmares[i] = "gfx/ui/stage/nightmare" .. i .. ".anm2"
+end
 
-StageAPI.RemovedHUD = false
+function StageAPI.AddTransitionNightmare(anm)
+    if type(anm) == 'string' then
+        StageAPI.TransitionNightmares[#StageAPI.TransitionNightmares+1] = anm
+    end
+end
+
+local IntroAlpha = {[0] = 0,[2] = 0.02,[4] = 0.04,[6] = 0.06,[8] = 0.24,[10] = 0.47,[12] = 0.7,[14] = 0.78,[16] = 0.86,[18] = 1,}
+local ExtraPortraitOffsets = {
+    [false] = {
+        [0] = Vector(-73,-19),
+        [1] = Vector(-72,-19),
+        [2] = Vector(-71,-19),
+        [3] = Vector(-72,-19), 
+    },
+    [true] = {
+        [0] = Vector(-72,-19),
+    }
+}
+
+local SetBlockCallbacks
+local BlockCallbacks = {
+    {ModCallbacks.MC_ENTITY_TAKE_DMG , function() --PlayerDamageBlockCallback
+        if StageAPI.TransitionAnimationData.State ~= 0 then
+            return false
+        else
+            SetBlockCallbacks(true)
+        end
+    end, EntityType.ENTITY_PLAYER},
+    {ModCallbacks.MC_PRE_USE_ITEM , function() --PlayerItemBlockCallback 
+        if StageAPI.TransitionAnimationData.State ~= 0 then
+            return true
+        else
+            SetBlockCallbacks(true)
+        end
+    end},
+    {ModCallbacks.MC_POST_EFFECT_INIT , function()  --MomFootBlockCallback 
+        if StageAPI.TransitionAnimationData.State ~= 0 then
+            e:Remove()
+        else
+            SetBlockCallbacks(true)
+        end
+    end, EffectVariant.MOM_FOOT_STOMP},
+    {ModCallbacks.MC_FAMILIAR_UPDATE , function(_,npc)  --FamiliarBlock For Blood Oath
+        if StageAPI.TransitionAnimationData.State ~= 0 then
+            npc:GetSprite():SetFrame(0)
+            npc.Velocity = Vector(0,0)
+        else
+            SetBlockCallbacks(true)
+        end
+    end},
+}
+
+SetBlockCallbacks = function(bool)
+    if not bool then
+        for i,cal in pairs(BlockCallbacks) do
+            if cal[1] and cal[2] then
+                mod:AddCallback(cal[1],cal[2],cal[3])
+            end
+        end
+    else
+        for i,cal in pairs(BlockCallbacks) do
+            if cal[1] and cal[2] then
+                mod:RemoveCallback(cal[1],cal[2])
+            end
+        end
+    end
+end
+
+StageAPI.TransitionAnimationData = {
+    Progress = {},
+    LoadedProgress = {},
+    Sprites = {},
+    State = 0,
+    Frame = 0,
+}
+
+StageAPI.TransitionAnimationData.Sprites.BG = Sprite()
+StageAPI.TransitionAnimationData.Sprites.BG:Load("gfx/ui/stage/nightmare_bg.anm2", true)
+
+StageAPI.TransitionAnimationData.Sprites.Connector = Sprite()
+StageAPI.TransitionAnimationData.Sprites.Connector:Load("stageapi/transition/progress.anm2",true)
+StageAPI.TransitionAnimationData.Sprites.Connector:Play("Connector",true)
+	
+StageAPI.TransitionAnimationData.Sprites.IsaacIndicator = Sprite()
+StageAPI.TransitionAnimationData.Sprites.IsaacIndicator:Load("stageapi/transition/progress.anm2",true)
+StageAPI.TransitionAnimationData.Sprites.IsaacIndicator:Play("IsaacIndicator",true)
+
+StageAPI.TransitionAnimationData.Sprites.Clock = Sprite()
+StageAPI.TransitionAnimationData.Sprites.Clock:Load("stageapi/transition/progress.anm2",true)
+StageAPI.TransitionAnimationData.Sprites.Clock:Play("Clock",true)
+
+StageAPI.TransitionAnimationData.Sprites.Nightmare = Sprite()
+
 StageAPI.TransitionIsPlaying = false
 
 StageAPI.Seeds = shared.Game:GetSeeds()
@@ -46,70 +140,229 @@ StageAPI.BlackScreenOverlay:LoadGraphics()
 StageAPI.BlackScreenOverlay:Play("Idle", true)
 function StageAPI.RenderBlackScreen(alpha)
     alpha = alpha or 1
-    StageAPI.BlackScreenOverlay.Scale = StageAPI.GetScreenScale(true) * 8
+    StageAPI.BlackScreenOverlay.Scale = StageAPI.GetScreenScale(true) * 20
     StageAPI.BlackScreenOverlay.Color = Color(1, 1, 1, alpha, 0, 0, 0)
     StageAPI.BlackScreenOverlay:Render(StageAPI.GetScreenCenterPosition(), Vector.Zero, Vector.Zero)
 end
 
-mod:AddCallback(ModCallbacks.MC_POST_RENDER, function()
-    if StageAPI.TransitionAnimation:IsPlaying("Scene") or StageAPI.TransitionAnimation:IsPlaying("SceneNoShake") or StageAPI.TransitionAnimation:IsPlaying("Intro") then
-        if StageAPI.IsOddRenderFrame then
-            StageAPI.TransitionAnimation:Update()
+local renderListOrder = {0,3,1,5,4,2,6,7,8,9,10}
+
+local IsOddRenderFrame
+function StageAPI.TransitionAnimationData.DefaultTransition(data)
+    local stop
+    for _, player in ipairs(shared.Players) do
+        player.ControlsCooldown = 80
+
+        if Input.IsActionTriggered(ButtonAction.ACTION_MENUCONFIRM, player.ControllerIndex) or
+        Input.IsActionTriggered(ButtonAction.ACTION_MENUBACK, player.ControllerIndex) then
+            stop = true
+        end
+    end
+        
+    if IsOddRenderFrame then
+        data.Sprites.BG:Update()
+        if data.Sprites.Stages then
+            data.Sprites.Connector:Update()
+            data.Sprites.IsaacIndicator:Update()
+            if data.Sprites.BG:IsPlaying('Loop') and data.IsaacIndicatorNextPos then
+                local dist = data.IsaacIndicatorNextPos:Distance(data.IsaacIndicatorPos)
+                if dist > 0.5 then
+                    data.IsaacIndicatorPos = data.IsaacIndicatorPos + (data.IsaacIndicatorNextPos-data.IsaacIndicatorPos):Resized(math.max(1,dist/40))
+                end
+            end
         end
 
-        local stop
-        for _, player in ipairs(shared.Players) do
-            player.ControlsCooldown = 80
-
-            if Input.IsActionTriggered(ButtonAction.ACTION_MENUCONFIRM, player.ControllerIndex) or
-            Input.IsActionTriggered(ButtonAction.ACTION_MENUBACK, player.ControllerIndex) then
+        if data.Sprites.Stages and data.Sprites.BG:GetAnimation() == 'Intro' and IntroAlpha[data.Sprites.BG:GetFrame()] then
+            local alpha = IntroAlpha[data.Sprites.BG:GetFrame()]
+            data.Sprites.Connector.Color = Color(alpha,alpha,alpha,1)
+            data.Sprites.Clock.Color = Color(alpha,alpha,alpha,1)
+            data.Sprites.IsaacIndicator.Color = Color(alpha,alpha,alpha,1)
+            if data.Sprites.BossIndicator then
+                data.Sprites.BossIndicator.Color = Color(alpha,alpha,alpha,1)
+            end
+        end
+        if data.UseExtraPortrait ~= nil then
+            StageAPI.PlayerPortraitExtra:Update()
+            if ExtraPortraitOffsets[data.UseExtraPortrait] and ExtraPortraitOffsets[data.UseExtraPortrait][data.Sprites.BG:GetFrame()%4] then
+                StageAPI.PlayerPortraitExtra.Offset = ExtraPortraitOffsets[data.UseExtraPortrait][data.Sprites.BG:GetFrame()%4]
+            end
+            if data.Sprites.BG:GetAnimation() == 'Intro' and IntroAlpha[data.Sprites.BG:GetFrame()] then
+                local alpha = IntroAlpha[data.Sprites.BG:GetFrame()]
+                StageAPI.PlayerPortraitExtra.Color = Color(alpha,alpha,alpha,1)
+            end
+        end  
+        if data.Sprites.BG:IsEventTriggered('startNightmare') or data.Sprites.BG:IsFinished('Intro') 
+        and not data.Sprites.BG:WasEventTriggered('startNightmare') then
+            data.Sprites.BG:Play('Loop')
+            data.Sprites.Nightmare:SetLastFrame()
+            data.NightmareLastFrame = data.Sprites.Nightmare:GetFrame()
+            data.Sprites.Nightmare:SetFrame(0)
+        elseif data.Sprites.BG:IsPlaying('Loop') then
+            data.Sprites.Nightmare:Update()
+            if data.Sprites.Nightmare:IsFinished(data.Sprites.Nightmare:GetAnimation()) or
+            data.NightmareLastFrame == data.Sprites.Nightmare:GetFrame() then
                 stop = true
             end
         end
-
-        -- Animate player appearance after stage transition animation is finished playing or cancelled
-        if stop or StageAPI.TransitionAnimation:IsEventTriggered("LastFrame") then
-            for _, player in ipairs(shared.Players) do
-                if not shared.Game:IsGreedMode() then
-                    player.Position = shared.Room:GetCenterPos()
-                else
-                    player.Position = shared.Room:GetGridPosition(67)
-                end
-                player:AnimateAppear()
-            end
-
-            StageAPI.TransitionAnimation:Stop()
-        end
-
-        StageAPI.TransitionIsPlaying = true
-        StageAPI.RenderBlackScreen()
-        StageAPI.TransitionAnimation:Render(StageAPI.GetScreenCenterPosition(), Vector.Zero, Vector.Zero)
-    elseif StageAPI.TransitionIsPlaying then -- Finished transition
-        StageAPI.TransitionIsPlaying = false
-        if StageAPI.CurrentStage then
-            local name = StageAPI.CurrentStage:GetDisplayName()
-            StageAPI.PlayTextStreak{
-                Text = name,
-                AboveHud = true,
-            }
-        end
     end
 
-    if StageAPI.IsHUDAnimationPlaying() then
-        if StageAPI.HUD:IsVisible() then
-            StageAPI.HUD:SetVisible(false)
-            StageAPI.RemovedHUD = true
+    local pos = StageAPI.GetScreenCenterPosition()
+    for _, layer in pairs(renderListOrder) do
+        data.Sprites.BG:RenderLayer(layer, pos)
+
+        if layer == 6  then
+            if StageAPI.TransitionAnimationData.UseExtraPortrait ~= nil then
+                StageAPI.PlayerPortraitExtra:Render(pos)
+            end
+            if data.Sprites.BG:IsPlaying('Loop') then
+                data.Sprites.Nightmare:Render(pos)
+            end
+            
+            data.Sprites.Nightmare:Render(pos)
+            if data.Sprites.Stages then
+                data.Sprites.Connector:Render(data.ConnectorPos)
+                for _,spr in pairs(data.Sprites.Stages) do
+                    if data.Sprites.BG:GetAnimation() == 'Intro' and IntroAlpha[data.Sprites.BG:GetFrame()] then
+                        local alpha = IntroAlpha[data.Sprites.BG:GetFrame()]
+                        spr.sprite.Color = Color(alpha,alpha,alpha,1)
+                    end
+                    spr.sprite:Render(spr.pos)
+                end
+                data.Sprites.Clock:Render(data.ClockPos)
+                if data.Sprites.BossIndicator then
+                    data.Sprites.BossIndicator:Render(data.BossIndicatorPos)
+                end
+                data.Sprites.IsaacIndicator:Render(data.IsaacIndicatorPos)
+            end
         end
-    elseif not StageAPI.HUD:IsVisible() and StageAPI.RemovedHUD then
-        StageAPI.HUD:SetVisible(true)
-        StageAPI.RemovedHUD = false
+    end
+    if data.NightmareLastFrame and (data.Sprites.Nightmare:GetFrame() >= data.NightmareLastFrame-20) then
+        StageAPI.RenderBlackScreen( (data.Sprites.Nightmare:GetFrame()-data.NightmareLastFrame+21) / 20 )
+    end
+    if shared.Music:GetCurrentMusicID() ~= data.TransitionMusic then
+        data.TransitionMusic = shared.Music:GetCurrentMusicID()
+        shared.Music:Pause()             
+    end
+
+    if stop then
+        data.State = 3
+        data.Sprites.Stages = {}
+        shared.Music:Play(data.QueueMusic,Options.MusicVolume)
+    end
+end
+
+
+mod:AddCallback(ModCallbacks.MC_GET_SHADER_PARAMS, function(_, name)
+    if name == "StageAPI-TransitionPixelation" then
+        IsOddRenderFrame = not IsOddRenderFrame
+        local ShaTabl = { PixelAmount = 0.005 + 0.002*StageAPI.TransitionAnimationData.Frame}
+
+        if StageAPI.TransitionAnimationData.State == 0 then  --no transition
+            local Tabl = {PixelAmount = 0}
+	    return Tabl
+        elseif StageAPI.TransitionAnimationData.State == 1 then  --fade in
+	    if IsOddRenderFrame then
+                StageAPI.TransitionAnimationData.Frame = StageAPI.TransitionAnimationData.Frame + 2.6
+            end
+            for _, player in ipairs(shared.Players) do
+                player.ControlsCooldown = math.max(player.ControlsCooldown,80)
+            end
+
+            StageAPI.RenderBlackScreen(StageAPI.TransitionAnimationData.Frame*0.007) 
+
+            if StageAPI.TransitionAnimationData.Frame > 150 then 
+                for _, player in ipairs(shared.Players) do --drop Bforgotten down from the soul
+                    player:ThrowHeldEntity(Vector(10,10))
+                end
+
+                if StageAPI.TransitionAnimationData.GotoStage then
+                    Isaac.ExecuteCommand("stage " .. StageAPI.TransitionAnimationData.GotoStage)
+                end
+                local queue = shared.Music:GetCurrentMusicID() 
+                StageAPI.TransitionAnimationData.QueueMusic = StageAPI.TransitionAnimationData.QueueMusic or queue
+                shared.Music:Play(StageAPI.TransitionAnimationData.TransitionMusic,0)
+                shared.Music:Queue(StageAPI.TransitionAnimationData.QueueMusic)
+                shared.Music:UpdateVolume()
+                
+                if StageAPI.TransitionAnimationData.StageIcon then
+                    StageAPI.TransitionAnimationData.Progress[StageAPI.TransitionAnimationData.NextStageID] = {path = StageAPI.TransitionAnimationData.StageIcon}
+                end
+                if StageAPI.TransitionAnimationData.NextStageID then
+                    if shared.Level:GetCurses() & 2 ~= 0 and StageAPI.InNewStage() then --XL Stage
+                        StageAPI.TransitionAnimationData.Progress[StageAPI.CurrentStage.StageNumber - 1] = {path = 17}
+                        StageAPI.TransitionAnimationData.NextStageID = StageAPI.CurrentStage.StageNumber or StageAPI.TransitionAnimationData.NextStageID
+                    end
+                    StageAPI.TransitionAnimationData.GenProgressBar()
+                end
+
+                StageAPI.TransitionAnimationData.StageIcon = nil
+                StageAPI.TransitionAnimationData.CurrentStageID = nil
+                StageAPI.TransitionAnimationData.NextStageID = nil
+                StageAPI.TransitionAnimationData.GotoStage = nil
+                StageAPI.TransitionAnimationData.State = 2
+		
+                local Tabl = {PixelAmount = 0}
+	        return Tabl
+            elseif StageAPI.TransitionAnimationData.Frame > 145 then
+                local Tabl = {PixelAmount = 0}
+	        return Tabl
+            else
+                return ShaTabl
+            end
+
+        elseif StageAPI.TransitionAnimationData.State == 2 then  -- transition animation
+            for _, player in ipairs(shared.Players) do
+                player.ControlsCooldown = math.max(player.ControlsCooldown,80)
+            end
+            if StageAPI.TransitionAnimationData.TransitionRenderFunction then
+                StageAPI.TransitionAnimationData.TransitionRenderFunction(StageAPI.TransitionAnimationData)
+            else
+                StageAPI.TransitionAnimationData.State = 3
+            end
+            StageAPI.TransitionIsPlaying = true
+
+            local Tabl = {PixelAmount = 0}
+	    return Tabl
+        elseif StageAPI.TransitionAnimationData.State == 3 then  --fade out
+            if IsOddRenderFrame then
+                StageAPI.TransitionAnimationData.Frame = StageAPI.TransitionAnimationData.Frame - 2.6
+            end
+            StageAPI.RenderBlackScreen(StageAPI.TransitionAnimationData.Frame*0.007)
+
+            for _, player in ipairs(shared.Players) do
+                player.ControlsCooldown = math.max(player.ControlsCooldown,80)
+                if not player:IsHoldingItem() then
+                    player:AnimateAppear()
+                end
+            end
+            StageAPI.TransitionIsPlaying = false
+            if StageAPI.TransitionAnimationData.Frame <= 0 then
+                StageAPI.TransitionAnimationData.Frame = 0
+                StageAPI.TransitionAnimationData.State = 0
+                SetBlockCallbacks(true)
+
+                if StageAPI.CurrentStage then
+                    local name = StageAPI.CurrentStage:GetDisplayName()
+                    StageAPI.PlayTextStreak{
+                        Text = name,
+                        AboveHud = true,
+                    }
+                end
+            end
+            
+            return ShaTabl
+        end
     end
 end)
 
+function StageAPI.TransitionAnimationData.StartTransition()
+    StageAPI.TransitionAnimationData.State = 1
+    SetBlockCallbacks(true)
+    SetBlockCallbacks()
+end
+
 function StageAPI.IsHUDAnimationPlaying(spriteOnly)
-    return StageAPI.TransitionAnimation:IsPlaying("Scene")
-    or StageAPI.TransitionAnimation:IsPlaying("SceneNoShake")
-    or StageAPI.TransitionAnimation:IsPlaying("Intro")
+    return StageAPI.TransitionIsPlaying
     or StageAPI.BossSprite:IsPlaying("Scene")
     or StageAPI.BossSprite:IsPlaying("DoubleTrouble")
     or (
@@ -121,26 +374,41 @@ function StageAPI.IsHUDAnimationPlaying(spriteOnly)
     )
 end
 
-mod:AddCallback(ModCallbacks.MC_PRE_USE_ITEM, function()
-    if StageAPI.IsHUDAnimationPlaying() then
-        return true
+function StageAPI.TransitionAnimationData.StagesProgressTracking()
+    local StageID = shared.Level:GetStage()
+    local id = shared.Level:GetAbsoluteStage()
+    local Stype = shared.Level:GetStageType()
+    if StageID == 9 then
+        StageAPI.TransitionAnimationData.Saw9Stage = true  --Blue Womb and Corpse 2
+    end
+    if StageAPI.InNewStage() then
+        StageID = StageAPI.CurrentStage.StageNumber or StageID
+        StageAPI.TransitionAnimationData.Progress[StageID] = {path = StageAPI.CurrentStage.TransitionIcon, IsCustomStage = true, Name = StageAPI.CurrentStage.Name} 
+    else
+        if Stype > 3 then
+            StageID = StageID + 1
+        end
+        local icon = StageAPI.GetLevelTransitionIcon(id, Stype)
+        StageAPI.TransitionAnimationData.Progress[StageID] = {path = icon, stage = id, StageType = Stype} 
+    end
+end
+
+mod:AddCallback(ModCallbacks.MC_POST_NEW_LEVEL, function()
+    StageAPI.TransitionAnimationData.StagesProgressTracking()
+end)
+
+mod:AddCallback(ModCallbacks.MC_POST_GAME_STARTED, function()
+    StageAPI.TransitionAnimationData.Progress = {}
+    StageAPI.TransitionAnimationData.StagesProgressTracking()
+    if StageAPI.TransitionAnimationData.LoadedProgress then
+        StageAPI.TransitionAnimationData.Progress = StageAPI.DeepCopy(StageAPI.TransitionAnimationData.LoadedProgress)
+        StageAPI.TransitionAnimationData.LoadedProgress = nil 
     end
 end)
 
-mod:AddCallback(ModCallbacks.MC_ENTITY_TAKE_DMG, function(_, e)
-    if StageAPI.IsHUDAnimationPlaying() then
-        return false
-    end
-end, EntityType.ENTITY_PLAYER)
-
-mod:AddCallback(ModCallbacks.MC_POST_EFFECT_INIT, function(_, eff)
-    if StageAPI.IsHUDAnimationPlaying() then
-        eff:Remove()
-    end
-end, EffectVariant.MOM_FOOT_STOMP)
 
 function StageAPI.GetLevelTransitionIcon(stage, stype)
-    local floorInfo = StageAPI.GetBaseFloorInfo()
+    local floorInfo = StageAPI.GetBaseFloorInfo(stage, stype)
     if not floorInfo then
         return "stageapi/none.png"
     end
@@ -153,41 +421,217 @@ function StageAPI.GetLevelTransitionIcon(stage, stype)
     return "stageapi/transition/levelicons/" .. base .. ".png"
 end
 
-function StageAPI.PlayTransitionAnimationManual(portrait, icon, ground, bg, transitionmusic, queue, noshake)
+local function GetStageProgressNum() --Number of icons in the progress bar
+    local maxnum = 0
+    for i in pairs(StageAPI.TransitionAnimationData.Progress) do
+        maxnum = math.max(maxnum,i)
+        if not StageAPI.TransitionAnimationData.Saw9Stage and i == 9 then
+            StageAPI.TransitionAnimationData.Saw9Stage = true
+        end
+    end
+    local num = math.max(shared.Game:IsGreedMode() and 7 or 8, 
+        StageAPI.TransitionAnimationData.NextStageID or 0,
+        maxnum or 0,
+        shared.Level:GetStage())
+    return not StageAPI.TransitionAnimationData.Saw9Stage and num > 8 and num-1 or num, num
+end
+
+function StageAPI.TransitionAnimationData.GenProgressBar() 
+    local renderPos = Vector(StageAPI.GetScreenCenterPosition().X, 20)
+
+    StageAPI.TransitionAnimationData.Sprites.Stages = {}
+    local Stages = StageAPI.TransitionAnimationData.Sprites.Stages
+    
+    local Stagenum, trueStagenum = GetStageProgressNum()
+    local length = (Stagenum-1)*26 + Stagenum
+    local CenPos = renderPos.X-length/2
+    local IsaacIndicatorPos = renderPos
+    local IsaacIndicatorNextPos = renderPos
+    local BossIndicatorPos
+    local num = 1
+
+    for i=1, trueStagenum do
+        if i ~= 9 or StageAPI.TransitionAnimationData.Saw9Stage then
+            local onetwo = not StageAPI.TransitionAnimationData.Saw9Stage and i > 9 and 2 or 1
+            local nPos = Vector(CenPos+26*(i-onetwo)+i,renderPos.Y)
+            Stages[num] = {}
+            Stages[num].pos = nPos
+            Stages[num].sprite = Sprite()
+            Stages[num].sprite.Color = Color(0,0,0,1)
+            Stages[num].sprite:Load("stageapi/transition/progress.anm2",true)
+            if StageAPI.TransitionAnimationData.Progress[i] and type(StageAPI.TransitionAnimationData.Progress[i].path) == "string" then
+                Stages[num].sprite:ReplaceSpritesheet(2, StageAPI.TransitionAnimationData.Progress[i].path)   
+                Stages[num].sprite:Play('Levels')
+                Stages[num].sprite:SetLayerFrame(2, 1)
+                Stages[num].sprite:LoadGraphics(true)
+            elseif StageAPI.TransitionAnimationData.Progress[i] and type(StageAPI.TransitionAnimationData.Progress[i].path) == "number" then
+                Stages[num].sprite:Play('Levels')
+                Stages[num].sprite:SetLayerFrame(0, StageAPI.TransitionAnimationData.Progress[i].path)
+            else
+                if i < StageAPI.TransitionAnimationData.NextStageID then 
+                    Stages[num].sprite:Play('Levels')
+                    Stages[num].sprite:SetLayerFrame(0, 17)
+                    Stages[num].sprite:SetLayerFrame(3, 1)
+                else
+                    Stages[num].sprite:Play('NotClearFloor')
+                end
+            end
+            if i == StageAPI.TransitionAnimationData.CurrentStageID then
+                IsaacIndicatorPos = nPos
+            end
+            if i == StageAPI.TransitionAnimationData.NextStageID then
+                IsaacIndicatorNextPos = nPos
+            elseif StageAPI.TransitionAnimationData.Progress[i] then
+                Stages[num].sprite:SetLayerFrame(3, 1)
+            end
+            if i < 9 and num == Stagenum then
+                BossIndicatorPos = nPos
+            end
+
+            num = num + 1
+        end
+    end
+
+    StageAPI.TransitionAnimationData.Sprites.Connector.Scale = Vector(Stagenum/1.5,1)
+    StageAPI.TransitionAnimationData.ConnectorPos = renderPos
+
+    StageAPI.TransitionAnimationData.Sprites.IsaacIndicator:Play("IsaacIndicator",true)
+    StageAPI.TransitionAnimationData.Sprites.IsaacIndicator.Color = Color(0,0,0,1)
+    StageAPI.TransitionAnimationData.IsaacIndicatorPos = IsaacIndicatorPos
+    StageAPI.TransitionAnimationData.IsaacIndicatorNextPos = IsaacIndicatorNextPos 
+
+    StageAPI.TransitionAnimationData.Sprites.Clock.Color = Color(0,0,0,1)
+    local Procent = shared.Game.TimeCounter / shared.Game.BossRushParTime
+    local dist = 136  
+    local ClockPos = dist*Procent
+    StageAPI.TransitionAnimationData.ClockPos = Vector(CenPos+ClockPos+1,renderPos.Y)
+
+    if BossIndicatorPos then
+        StageAPI.TransitionAnimationData.Sprites.BossIndicator = Sprite()
+        StageAPI.TransitionAnimationData.Sprites.BossIndicator:Load("stageapi/transition/progress.anm2",true)
+        local anim = shared.Game:IsGreedMode() and "GreedIndicator" or "BossIndicator"
+        StageAPI.TransitionAnimationData.Sprites.BossIndicator:Play(anim,true)
+        StageAPI.TransitionAnimationData.Sprites.BossIndicator.Color = Color(0,0,0,1)
+        StageAPI.TransitionAnimationData.BossIndicatorPos = BossIndicatorPos
+    else
+        StageAPI.TransitionAnimationData.Sprites.BossIndicator = nil
+    end 
+end
+
+function StageAPI.PlayTransitionAnimationManual(portrait, icon, ground, bg, transitionmusic, queue, noshake, extraportrait, nightmare)
     portrait = portrait or "gfx/ui/stage/playerportrait_isaac.png"
     icon = icon or "stageapi/transition/levelicons/unknown.png"
     ground = ground or "stageapi/transition/bossspot_01_basement.png"
     bg = bg or "stageapi/transition/nightmares_bg_mask.png"
     transitionmusic = transitionmusic or Music.MUSIC_JINGLE_NIGHTMARE
+    nightmare = nightmare or StageAPI.TransitionNightmares[StageAPI.Random(1, #StageAPI.TransitionNightmares)]
 
-    if queue ~= false then
-        queue = queue or shared.Music:GetCurrentMusicID()
-    end
+    StageAPI.TransitionAnimationData.Sprites.BG:Load("stageapi/transition/customnightmare.anm2", true)
 
-    StageAPI.TransitionAnimation:ReplaceSpritesheet(3, ground)
-    StageAPI.TransitionAnimation:ReplaceSpritesheet(1, bg)
+    StageAPI.TransitionAnimationData.Sprites.BG:ReplaceSpritesheet(3, ground)
+    StageAPI.TransitionAnimationData.Sprites.BG:ReplaceSpritesheet(1, bg)
     if noshake then
-        StageAPI.TransitionAnimation:ReplaceSpritesheet(6, portrait)
-        StageAPI.TransitionAnimation:ReplaceSpritesheet(2, "none.png")
+        StageAPI.TransitionAnimationData.Sprites.BG:ReplaceSpritesheet(6, portrait)
+        StageAPI.TransitionAnimationData.Sprites.BG:ReplaceSpritesheet(2, "stageapi/none.png")
     else
-        StageAPI.TransitionAnimation:ReplaceSpritesheet(2, portrait)
-        StageAPI.TransitionAnimation:ReplaceSpritesheet(6, "none.png")
+        StageAPI.TransitionAnimationData.Sprites.BG:ReplaceSpritesheet(2, portrait)
+        StageAPI.TransitionAnimationData.Sprites.BG:ReplaceSpritesheet(6, "stageapi/none.png")
     end
-    StageAPI.TransitionAnimation:ReplaceSpritesheet(7, icon)
-    StageAPI.TransitionAnimation:LoadGraphics()
-    StageAPI.TransitionAnimation:Play("Intro", true)
+    StageAPI.TransitionAnimationData.Sprites.BG:ReplaceSpritesheet(7, icon)
+    StageAPI.TransitionAnimationData.Sprites.BG:LoadGraphics()
+    StageAPI.TransitionAnimationData.Sprites.BG:Play("Intro", true)
 
-    shared.Music:Play(transitionmusic, 0)
-    shared.Music:UpdateVolume()
+    StageAPI.TransitionAnimationData.Sprites.Nightmare:Load(nightmare, true)
+    StageAPI.TransitionAnimationData.Sprites.Nightmare:Play(StageAPI.TransitionAnimationData.Sprites.Nightmare:GetDefaultAnimationName(), true)
 
-    if queue ~= false then
-        shared.Music:Queue(queue)
+    if extraportrait then
+        StageAPI.PlayerPortraitExtra:Load(extraportrait,true)
+        StageAPI.PlayerPortraitExtra:Play(StageAPI.PlayerPortraitExtra:GetDefaultAnimationName(),true)
+        StageAPI.TransitionAnimationData.UseExtraPortrait = noshake or false
+        StageAPI.PlayerPortraitExtra.Offset = ExtraPortraitOffsets[StageAPI.TransitionAnimationData.UseExtraPortrait][0]
+        StageAPI.PlayerPortraitExtra.Color = Color(0,0,0,1)
+        StageAPI.PlayerPortraitExtra.Scale = Vector(1,1)
+    else
+        StageAPI.TransitionAnimationData.UseExtraPortrait = nil
+    end
+
+    StageAPI.TransitionAnimationData.TransitionMusic = transitionmusic
+
+    StageAPI.TransitionAnimationData.QueueMusic = queue
+    
+    StageAPI.TransitionAnimationData.Sprites.Stages = nil
+    StageAPI.TransitionAnimationData.StartTransition()
+end
+
+function StageAPI.PlayFullStageTransition(tab)
+    local gfxData = StageAPI.TryGetPlayerGraphicsInfo(shared.Players[1])
+    local nightmare = tab.Nightmare or StageAPI.TransitionNightmares[StageAPI.Random(1, #StageAPI.TransitionNightmares)]
+    local floorInfo = StageAPI.GetBaseFloorInfo()
+    local ground
+    if floorInfo then
+        ground = "gfx/ui/boss/bossspot_" .. floorInfo.Prefix .. ".png"
+    else
+        ground = "stageapi/none.png"
+    end
+    StageAPI.PlayTransitionAnimationManual(gfxData.Portrait, tab.TransitionIcon, tab.TransitionGround or ground, tab.TransitionBackground, tab.TransitionMusic, tab.Music, gfxData.NoShake, gfxData.ExtraPortrait)
+    
+    StageAPI.TransitionAnimationData.Sprites.BG:Load("gfx/ui/stage/nightmare_bg.anm2", true)
+    StageAPI.TransitionAnimationData.Sprites.BG:ReplaceSpritesheet(3, tab.TransitionGround or ground)
+    if tab.TransitionBackground then
+        StageAPI.TransitionAnimationData.Sprites.BG:ReplaceSpritesheet(1, tab.TransitionBackground)
+    end
+    if gfxData.NoShake then
+        StageAPI.TransitionAnimationData.Sprites.BG:ReplaceSpritesheet(6, gfxData.Portrait or "gfx/ui/stage/playerportrait_isaac.png")
+        StageAPI.TransitionAnimationData.Sprites.BG:ReplaceSpritesheet(2, "stageapi/none.png")
+    else
+        StageAPI.TransitionAnimationData.Sprites.BG:ReplaceSpritesheet(2, gfxData.Portrait or "gfx/ui/stage/playerportrait_isaac.png")
+        StageAPI.TransitionAnimationData.Sprites.BG:ReplaceSpritesheet(6, "stageapi/none.png")
+    end
+    StageAPI.TransitionAnimationData.Sprites.BG:LoadGraphics()
+    StageAPI.TransitionAnimationData.Sprites.BG:Play("Intro", true)
+
+    StageAPI.TransitionAnimationData.Sprites.Nightmare:Load(nightmare, true)
+    StageAPI.TransitionAnimationData.Sprites.Nightmare:Play(StageAPI.TransitionAnimationData.Sprites.Nightmare:GetDefaultAnimationName(), true)
+
+    StageAPI.TransitionAnimationData.StageIcon = tab.TransitionIcon
+    StageAPI.TransitionAnimationData.CurrentStageID = tab.CurrentStageID or StageAPI.CurrentStage and StageAPI.CurrentStage.StageNumber or shared.Level:GetStage()
+    StageAPI.TransitionAnimationData.NextStageID = tab.NextStageID or StageAPI.NextStage and StageAPI.NextStage.StageNumber or shared.Level:GetStage()
+
+    StageAPI.TransitionAnimationData.GotoStage = tab.GotoStage
+    StageAPI.TransitionAnimationData.TransitionRenderFunction = tab.RenderFunction or StageAPI.TransitionAnimationData.DefaultTransition 
+
+    StageAPI.TransitionAnimationData.StartTransition()
+    if tab.Immediately then
+        StageAPI.TransitionAnimationData.State = 2
     end
 end
 
-function StageAPI.PlayTransitionAnimation(stage)
+function StageAPI.PlayTransitionAnimation(stage, full) --if full is false, then the transition animation plays without a full progress bar, if true then with a full
     local gfxData = StageAPI.TryGetPlayerGraphicsInfo(shared.Players[1])
-    StageAPI.PlayTransitionAnimationManual(gfxData.Portrait, stage.TransitionIcon, stage.TransitionGround, stage.TransitionBackground, stage.TransitionMusic, stage.Music and stage.Music[RoomType.ROOM_DEFAULT], gfxData.NoShake)
+    if not full then
+        StageAPI.PlayTransitionAnimationManual(gfxData.Portrait, stage.TransitionIcon, stage.TransitionGround, stage.TransitionBackground, stage.TransitionMusic, stage.Music and stage.Music[RoomType.ROOM_DEFAULT], gfxData.NoShake, gfxData.ExtraPortrait)
+    else
+        local extraData = type(full) == "table" and full or {}
+
+        local Currentstage = StageAPI.CurrentStage and StageAPI.CurrentStage.StageNumber 
+            or not StageAPI.CurrentStage and shared.Level:GetStageType() > 3 and shared.Level:GetStage() + 1 or shared.Level:GetStage()
+        local Nextstageoffset = stage.NormalStage and stage.StageType > 3 and 1 or 0
+
+        local tab = {
+            TransitionIcon = extraData.TransitionIcon or stage.TransitionIcon,
+            TransitionGround = extraData.TransitionGround or stage.TransitionGround,
+            TransitionBackground = extraData.TransitionBackground or stage.TransitionBackground,
+            TransitionMusic = extraData.TransitionMusic or stage.TransitionMusic,
+            Music = extraData.Music or (stage.Music and stage.Music[RoomType.ROOM_DEFAULT]),
+            CurrentStageID = extraData.CurrentStageID or Currentstage, --for Isaac indicator icon
+            NextStageID = extraData.NextStageID or (stage.StageNumber + Nextstageoffset),
+            GotoStage = extraData.GotoStage, --if nil there will be no transition to the stage at the end of the animation
+            Nightmare = extraData.Nightmare, --if nil will be random
+            RenderFunction = extraData.RenderFunction,
+            Immediately = extraData.Immediately, --skipping initial pixelation
+        }
+        StageAPI.PlayFullStageTransition(tab)
+    end
 end
 
 StageAPI.StageRNG = RNG()
@@ -228,31 +672,41 @@ function StageAPI.GotoCustomStage(stage, playTransition, noForgetSeed)
 
         if playTransition then
             local gfxData = StageAPI.TryGetPlayerGraphicsInfo(shared.Players[1])
-            local floorInfo = StageAPI.GetBaseFloorInfo()
+            local floorInfo = StageAPI.GetBaseFloorInfo(stage.Stage, stageType)
             local ground
             if floorInfo then
                 ground = "gfx/ui/boss/bossspot_" .. floorInfo.Prefix .. ".png"
             else
                 ground = "stageapi/none.png"
             end
-
             local bg = "stageapi/transition/nightmares_bg_mask.png"
-            StageAPI.PlayTransitionAnimationManual(gfxData.Portrait, StageAPI.GetLevelTransitionIcon(stage.Stage, stageType), ground, bg, nil, nil, gfxData.NoShake)
-        end
 
-        Isaac.ExecuteCommand("stage " .. tostring(stage.Stage) .. StageAPI.StageTypeToString[stageType])
+            local tab = {
+                TransitionIcon = StageAPI.GetLevelTransitionIcon(stage.Stage, stageType),
+                TransitionGround = ground,
+                CurrentStageID = StageAPI.CurrentStage and StageAPI.CurrentStage.StageNumber or shared.Level:GetStage(),
+                NextStageID = stageType > 3 and stage.Stage + 1 or stage.Stage,
+                GotoStage = (tostring(stage.Stage) .. StageAPI.StageTypeToString[stageType]),
+            }
+            StageAPI.PlayFullStageTransition(tab)
+        else
+            Isaac.ExecuteCommand("stage " .. tostring(stage.Stage) .. StageAPI.StageTypeToString[stageType])
+        end
     else
         local replace = stage.Replaces
         local absolute = replace.OverrideStage
         StageAPI.NextStage = stage
         if playTransition then
-            StageAPI.PlayTransitionAnimation(stage)
-        end
+            local gotoStage = stage.LevelgenStage and (tostring(stage.LevelgenStage.Stage) .. StageAPI.StageTypeToString[stage.LevelgenStage.StageType])
+                or (tostring(absolute) .. StageAPI.StageTypeToString[replace.OverrideStageType])
 
-        if stage.LevelgenStage then
-            Isaac.ExecuteCommand("stage " .. tostring(stage.LevelgenStage.Stage) .. StageAPI.StageTypeToString[stage.LevelgenStage.StageType])
+            StageAPI.PlayTransitionAnimation(stage, {GotoStage = gotoStage}) 
         else
-            Isaac.ExecuteCommand("stage " .. tostring(absolute) .. StageAPI.StageTypeToString[replace.OverrideStageType])
+            if stage.LevelgenStage then
+                Isaac.ExecuteCommand("stage " .. tostring(stage.LevelgenStage.Stage) .. StageAPI.StageTypeToString[stage.LevelgenStage.StageType])
+            else
+                Isaac.ExecuteCommand("stage " .. tostring(absolute) .. StageAPI.StageTypeToString[replace.OverrideStageType])
+            end
         end
     end
 end
@@ -260,19 +714,17 @@ end
 function StageAPI.SpawnCustomTrapdoor(position, goesTo, anm2, size, alreadyEntering)
     anm2 = anm2 or "gfx/grid/door_11_trapdoor.anm2"
     size = size or 24
-    local trapdoor = Isaac.Spawn(StageAPI.E.FloorEffectCreep.T, StageAPI.E.FloorEffectCreep.V, StageAPI.E.FloorEffectCreep.S, position, Vector.Zero, nil)
-    trapdoor.Variant = StageAPI.E.Trapdoor.V
-    trapdoor.SubType = StageAPI.E.Trapdoor.S
+    local trapdoor = Isaac.Spawn(StageAPI.E.Trapdoor.T, StageAPI.E.Trapdoor.V, StageAPI.E.Trapdoor.S, position, Vector.Zero, nil)
+    trapdoor.SortingLayer = 0
     trapdoor.Size = size
     local sprite, data = trapdoor:GetSprite(), trapdoor:GetData()
     sprite:Load(anm2, true)
 
     if alreadyEntering then
         sprite:Play("Opened", true)
-        data.BeingEntered = true
-        for _, player in ipairs(shared.Players) do
-            player:AnimateTrapdoor()
-        end
+        data.alreadyEntering = true
+        data.TrapdoorOpened = true
+        data.StartTransition = true
     else
         sprite:Play("Closed", true)
     end
@@ -281,50 +733,140 @@ function StageAPI.SpawnCustomTrapdoor(position, goesTo, anm2, size, alreadyEnter
     return trapdoor
 end
 
-mod:AddCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, function(_, eff)
+function StageAPI.IsFullFledgedPlayer(player)
+    if not player.Parent 
+    and not player:IsCoopGhost()
+    and not ((player:GetPlayerType() == PlayerType.PLAYER_LAZARUS_B or player:GetPlayerType() == PlayerType.PLAYER_LAZARUS2_B) 
+    and (player:HasCollectible(CollectibleType.COLLECTIBLE_BIRTHRIGHT) or (player:GetOtherTwin() and player:GetOtherTwin():HasCollectible(CollectibleType.COLLECTIBLE_BIRTHRIGHT))) 
+    and (player:GetMainTwin().Index ~= player.Index or player:GetMainTwin().InitSeed ~= player.InitSeed)) then
+        return true
+    end
+    return false
+end
+
+local PlayersCollision = {}
+local function SavePlayersGridCollision()  --removing the grid collision for jumping into the trapdoor
+    for i, player in ipairs(shared.Players) do
+        PlayersCollision[i] = player.GridCollisionClass
+    end
+end
+
+local function ReturnPlayersGridCollision()
+    for i, player in ipairs(shared.Players) do
+        player.GridCollisionClass = PlayersCollision[i]
+    end
+end
+
+mod:AddCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, function(_, eff) --custom trapdoor logic
     local sprite, data = eff:GetSprite(), eff:GetData()
-    if sprite:IsFinished("Open Animation") then
-        sprite:Play("Opened", true)
-    elseif (sprite:IsPlaying("Closed") or sprite:IsFinished("Closed")) and shared.Room:IsClear() then
-        local playerTooClose
+
+    if data.GoesTo and (eff.FrameCount < 30 or data.PlayerToClose) and not data.TrapdoorOpened then
+        local PlayerToClose = false
+        sprite:Play("Open Animation",false)
         for _, player in ipairs(shared.Players) do
-            local size = (eff.Size + player.Size + 40)
-            if player.Position:DistanceSquared(eff.Position) < size * size then
-                playerTooClose = true
+            local size = (eff.Size + player.Size + 30)
+            if not player.Parent and player.Position:DistanceSquared(eff.Position) < size * size then
+                PlayerToClose = true
+                break
             end
         end
-
-        if not playerTooClose then
-            sprite:Play("Open Animation", true)
+        if PlayerToClose then
+            data.PlayerToClose = true
+            sprite:Play("Closed",true)
+        elseif eff.FrameCount > 40 then
+            data.PlayerToClose = false
         end
-    elseif sprite:IsPlaying("Opened") or sprite:IsFinished("Opened") then
-        if not data.BeingEntered then
-            local touchingTrapdoor
-            for _, player in ipairs(shared.Players) do
-                local size = (eff.Size + player.Size)
-                if player.Position:DistanceSquared(eff.Position) < size * size then
-                    touchingTrapdoor = true
-                end
-            end
-
-            if touchingTrapdoor then
-                data.BeingEntered = true
+    end
+    if data.GoesTo and not data.PlayerToClose and (eff.FrameCount > 30 or data.TrapdoorOpened) then
+        if sprite:IsPlaying("Closed") or sprite:IsFinished("Closed") then
+            sprite:Play("Open Animation",true)
+        elseif sprite:IsFinished("Open Animation") then
+            sprite:Play("Opened",true)
+            data.TrapdoorOpened = true
+        end
+        if data.TrapdoorOpened then  
+            if not data.StartTransition and not data.Transition or data.alreadyEntering then
+                data.PlayerCollision = {}
+                data.PlayerReady = {}
+                data.Playerquery = {}
                 for _, player in ipairs(shared.Players) do
-                    player:AnimateTrapdoor()
+                    local size = (eff.Size + player.Size)
+                    if StageAPI.IsFullFledgedPlayer(player) and player.Position:Distance(eff.Position) < eff.Size then
+                        data.StartTransition = true
+                        break
+                    end
                 end
-            end
-        else
-            local animationOver
-            for _, player in ipairs(shared.Players) do
-                player.ControlsCooldown = 5
-                player.Velocity = (StageAPI.Lerp(player.Position, eff.Position, 0.5) - player.Position) / 2
-                if player:IsExtraAnimationFinished() then
-                    animationOver = true
-                end
-            end
+                if data.StartTransition or data.alreadyEntering then
+                    SavePlayersGridCollision()
+                    for i, player in ipairs(shared.Players) do
+                        player.ControlsCooldown = math.max(Isaac.GetPlayer(i).ControlsCooldown,100)
+                        player.Velocity = Vector.Zero
+                        data.Playerquery[i] = player
+                        player.GridCollisionClass = EntityGridCollisionClass.GRIDCOLL_NONE
+                    end
+                    data.NumPlayer = shared.Game:GetNumPlayers()
+                    data.Num = 0
+                    data.INNum = 0
+                    data.Timeout = 0
+                    data.alreadyEntering = nil
 
-            if animationOver then
+                    table.sort(data.Playerquery, function(a,b) if a and b then 
+                        return a.Position:Distance(eff.Position) < b.Position:Distance(eff.Position) 
+                        else return nil end 
+                    end)
+
+                    for _, ent in pairs(Isaac.FindByType(eff.Type, eff.Variant, eff.SubType, false, false)) do
+                        if eff.Index ~= ent.Index then
+                            ent:GetData().GoesTo = nil
+                        end
+                    end
+                end
+            elseif data.StartTransition and not data.Transition then
+                if data.Timeout<=0 and data.NumPlayer-data.Num ~= 0 then
+                    data.Timeout = 5
+                    if data.Playerquery[data.Num+1] and data.Playerquery[data.Num+1]:GetSprite():GetAnimation() ~= "Trapdoor" then
+                        data.Playerquery[data.Num+1]:AnimateTrapdoor()
+                    end
+                    data.Num = data.Num+1
+                    if data.NumPlayer-data.Num == 0 then
+                        data.Timeout = 20
+                    end
+                elseif data.Timeout<=0 and data.NumPlayer-data.Num == 0 then
+                    data.Transition = 1
+                    ReturnPlayersGridCollision()
+                end
+                data.Timeout = data.Timeout - 1
+                if data.Num>0 then
+                    for i=0,data.Num-1 do
+                        local player = data.Playerquery[i+1]  
+                        if player then
+                            local dist = player.Position:Distance(eff.Position)
+                            player.Velocity = (eff.Position-player.Position):Resized(dist / 4)
+                            if player.Position:Distance(eff.Position)<40          
+                            and (player:IsExtraAnimationFinished() or player:GetSprite():GetFrame() >= 15 ) 
+                            and not data.PlayerReady[i] then
+                                player.PositionOffset = Vector(0, 800)
+                                sprite:Play("Player Exit",true)
+                                data.PlayerReady[i] = true
+                                local poof = Isaac.Spawn(1000, EffectVariant.POOF01, 2, eff.Position+Vector(0, 10), Vector(0, 0), eff)
+                                poof.DepthOffset = -10
+                                poof:GetSprite().Color = Color(1,1,1,0.5)
+                                poof:GetSprite():SetFrame(3)
+                            end
+                            if player:GetSprite():GetAnimation() ~= "Trapdoor" and player.PositionOffset.Y<400 then  
+                                player:AnimateTrapdoor()
+                            end
+                        end
+                    end
+                end
+            elseif data.Transition == 1 then
                 StageAPI.GotoCustomStage(data.GoesTo, true)
+                data.Transition = 2
+            elseif data.Transition == 2 then
+                for _, player in ipairs(shared.Players) do
+                    local dist = player.Position:Distance(eff.Position)
+                    player.Velocity = (eff.Position-player.Position):Resized(dist/10)   
+                end
             end
         end
     end
