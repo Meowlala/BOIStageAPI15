@@ -606,7 +606,7 @@ function StageAPI.PlayFullStageTransition(tab)
     end
 end
 
-function StageAPI.PlayTransitionAnimation(stage, full) --if full is false, then the transition animation plays without a full progress bar, if true then with a full
+function StageAPI.PlayTransitionAnimation(stage, full) --if full is false, then the transition animation plays without a full progress bar
     local gfxData = StageAPI.TryGetPlayerGraphicsInfo(shared.Players[1])
     if not full then
         StageAPI.PlayTransitionAnimationManual(gfxData.Portrait, stage.TransitionIcon, stage.TransitionGround, stage.TransitionBackground, stage.TransitionMusic, stage.Music and stage.Music[RoomType.ROOM_DEFAULT], gfxData.NoShake, gfxData.ExtraPortrait)
@@ -751,7 +751,7 @@ local function SavePlayersGridCollision()  --removing the grid collision for jum
     end
 end
 
-local function ReturnPlayersGridCollision()
+local function ReturnPlayersGridCollision()  --return the grid collision after jumping into the trapdoor
     for i, player in ipairs(shared.Players) do
         player.GridCollisionClass = PlayersCollision[i]
     end
@@ -786,11 +786,9 @@ mod:AddCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, function(_, eff) --custom tr
         end
         if data.TrapdoorOpened then  
             if not data.StartTransition and not data.Transition or data.alreadyEntering then
-                data.PlayerCollision = {}
                 data.PlayerReady = {}
                 data.Playerquery = {}
                 for _, player in ipairs(shared.Players) do
-                    local size = (eff.Size + player.Size)
                     if StageAPI.IsFullFledgedPlayer(player) and player.Position:Distance(eff.Position) < eff.Size then
                         data.StartTransition = true
                         break
