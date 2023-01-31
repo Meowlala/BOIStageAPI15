@@ -67,13 +67,14 @@ mod:AddCallback(ModCallbacks.MC_PRE_ENTITY_SPAWN, function(_, id, variant, subty
     if shouldOverride and customGrid and not StageAPI.TemporaryIgnoreSpawnOverride then
         if (id == EntityType.ENTITY_PICKUP and (variant == PickupVariant.PICKUP_COLLECTIBLE or variant == PickupVariant.PICKUP_TAROTCARD or variant == PickupVariant.PICKUP_HEART or variant == PickupVariant.PICKUP_COIN or variant == PickupVariant.PICKUP_TRINKET or variant == PickupVariant.PICKUP_PILL))
         or id == EntityType.ENTITY_SPIDER
-        or (id == EntityType.ENTITY_EFFECT and (variant == EffectVariant.FART or variant == EffectVariant.POOF01 or variant == EffectVariant.CREEP_RED))
+        or (id == EntityType.ENTITY_EFFECT and (variant == EffectVariant.FART or variant == EffectVariant.POOF01 or variant == EffectVariant.CREEP_RED or variant == EffectVariant.CREEP_GREEN))
         or id == EntityType.ENTITY_PROJECTILE
         or id == EntityType.ENTITY_STRIDER
         or id == EntityType.ENTITY_SMALL_LEECH
         or id == EntityType.ENTITY_DRIP
         or id == EntityType.ENTITY_HOST
-        or id == EntityType.ENTITY_MUSHROOM then
+        or id == EntityType.ENTITY_MUSHROOM 
+        or id == EntityType.ENTITY_SMALL_MAGGOT then
             if id == EntityType.ENTITY_EFFECT and variant == EffectVariant.FART then
                 StageAPI.RecentFarts[customGrid.Position] = 2
                 shared.Sfx:Stop(SoundEffect.SOUND_FART)
