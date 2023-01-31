@@ -216,7 +216,7 @@ mod:AddCallback(ModCallbacks.MC_POST_NPC_RENDER, function(_, npc)
     end
 
     for fart, timer in pairs(StageAPI.RecentFarts) do
-        if npc:HasEntityFlags(EntityFlag.FLAG_POISON) and shared.Room:GetGridPosition(fart):Distance(npc.Position) < 150 + npc.Size then
+        if npc:HasEntityFlags(EntityFlag.FLAG_POISON) and fart:Distance(npc.Position) < 150 + npc.Size then
             npc:RemoveStatusEffects()
             break
         end
