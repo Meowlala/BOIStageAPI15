@@ -193,7 +193,6 @@ StageAPI.AddCallback("StageAPI", Callbacks.POST_SELECT_BOSS_MUSIC, 0, function(s
     end
 end)
 
-
 StageAPI.NonOverrideTrapdoors = {
     ["gfx/grid/trapdoor_corpse_big.anm2"] = true
 }

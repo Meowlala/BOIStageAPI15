@@ -36,7 +36,7 @@
     <stage id="30" name="#ASHPIT_NAME" path="30.Ashpit.xml" playerspot="playerspot_04x_ashpit.png" bossspot="bossspot_04x_ashpit.png" music="109" backdrop="46" suffix="_ashpit" />
     <stage id="31" name="#MAUSOLEUM_NAME" path="31.Mausoleum.xml" playerspot="playerspot_05x_mausoleum.png" bossspot="bossspot_05x_mausoleum.png" music="106" backdrop="33" suffix="_mausoleum" />
     <stage id="32" name="#GEHENNA_NAME" path="32.Gehenna.xml" playerspot="playerspot_06x_gehenna.png" bossspot="bossspot_06x_gehenna.png" music="110" backdrop="47" suffix="_gehenna" />
-    <stage id="33" name="#CORPSE_NAME" path="33.Corpse.xml" playerspot="playerspot_07x_corpse.png" bossspot="bossspot_07x_corpse.png" music="0" backdrop="34" suffix="_corpse" />
+    <stage id="33" name="#CORPSE_NAME" path="33.Corpse.xml" playerspot="playerspot_07x_corpse.png" bossspot="bossspot_07x_corpse.png" music="107" backdrop="34" suffix="_corpse" />
 
     <stage id="35" name="#HOME_NAME" path="35.Home.xml" playerspot="playerspot_02_cellar.png" bossspot="bossspot_02_cellar.png" music="112" backdrop="50" suffix="_home" />
     <stage id="36" name="#BACKWARDS_NAME" path="36.Backwards.xml" playerspot="playerspot_01_basement.png" bossspot="bossspot_01_basement.png" music="102" backdrop="1" />

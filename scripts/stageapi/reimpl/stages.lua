@@ -71,23 +71,3 @@ StageAPI.UteroGreed.DisplayName = "Utero"
 StageAPI.AddOverrideStage("UteroOne", LevelStage.STAGE4_1, StageType.STAGETYPE_WOTL, StageAPI.Utero)
 StageAPI.AddOverrideStage("UteroTwo", LevelStage.STAGE4_2, StageType.STAGETYPE_WOTL, StageAPI.UteroTwo)
 StageAPI.AddOverrideStage("UteroGreed", LevelStage.STAGE4_GREED, StageType.STAGETYPE_WOTL, StageAPI.UteroGreed, true)
-
--- Corpse --
-StageAPI.Corpse = StageAPI.CustomStage("Corpse", nil, true)
-StageAPI.Corpse:SetStageMusic(Music.MUSIC_CORPSE)
-StageAPI.Corpse.GenerateLevel = StageAPI.GenerateBaseLevel
-StageAPI.Corpse.DisplayName = "Corpse I"
-
-StageAPI.CorpseTwo = StageAPI.Corpse("Corpse 2")
-StageAPI.CorpseTwo.DisplayName = "Corpse II"
-
-StageAPI.CorpseXL = StageAPI.Corpse("Corpse XL")
-StageAPI.CorpseXL.DisplayName = "Corpse XL"
-StageAPI.Corpse:SetXLStage(StageAPI.CorpseXL)
-
-StageAPI.CorpseGreed = StageAPI.Corpse("Corpse Greed")
-StageAPI.CorpseGreed.DisplayName = "Corpse"
-
-StageAPI.AddOverrideStage("CorpseOne", LevelStage.STAGE4_1, StageType.STAGETYPE_REPENTANCE, StageAPI.Corpse)
-StageAPI.AddOverrideStage("CorpseTwo", LevelStage.STAGE4_2, StageType.STAGETYPE_REPENTANCE, StageAPI.CorpseTwo)
-StageAPI.AddOverrideStage("CorpseGreed", LevelStage.STAGE4_GREED, StageType.STAGETYPE_REPENTANCE, StageAPI.CorpseGreed, true)
