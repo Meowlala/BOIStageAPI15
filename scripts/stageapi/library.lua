@@ -11,6 +11,7 @@ local subModules = {
     "tables",
     "misc",
     "pauseDetection",
+	"deadendDetection",
 }
 
 for _, subModule in ipairs(subModules) do
