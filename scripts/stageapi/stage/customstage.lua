@@ -572,7 +572,7 @@ function StageAPI.CustomStage:GenerateLevel()
 
     local startingRoomIndex = shared.Level:GetStartingRoomIndex()
     local roomsList = shared.Level:GetRooms()
-    local hasMirror = (self.LevelgenStage.Stage == LevelStage.STAGE1_2 and self.LevelgenStage.StageType == StageType.STAGETYPE_REPENTANCE)
+    local hasMirror = (self.LevelgenStage.Stage == LevelStage.STAGE1_2 and (self.LevelgenStage.StageType == StageType.STAGETYPE_REPENTANCE or self.LevelgenStage.StageType == StageType.STAGETYPE_REPENTANCE_B))
     for i = 0, roomsList.Size - 1 do
         local roomDesc = roomsList:Get(i)
         if roomDesc and not (hasMirror and StageAPI.GetDimension(roomDesc) == 1) then

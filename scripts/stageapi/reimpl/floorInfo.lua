@@ -209,6 +209,7 @@ StageAPI.SetFloorInfo({
         {BossID = "The Shell"},
         {BossID = "Singe"},
         {BossID = "Great Gideon"},
+        {BossID = "Clutch"},
     }
 }, settingStage, StageType.STAGETYPE_REPENTANCE_B)
 
@@ -262,7 +263,7 @@ StageAPI.SetFloorInfo({
         {BossID = "The Cage"},
         {BossID = "Monstro 2"},
         {BossID = "The Gate"},
-        {BossID = "Gish", Weight = 0.25},
+        {BossID = "Gish"},
         {BossID = "Loki"},
         {BossID = "Brownie"},
         {BossID = "Sisters Vis"},
