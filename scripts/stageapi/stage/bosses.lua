@@ -34,6 +34,41 @@ local noBossStages = {
     [LevelStage.STAGE4_2] = true
 }
 
+local ExtraPortraitAnimationTable = {
+    NoShake = {
+        {0,Vector(-510,53),Vector(1.0,1.0),Color(1,1,1,0),true}, {4,Vector(-510,53),Vector(1.6,0.4),Color(1,1,1,0),true},
+        {11,Vector(-220,-24),Vector(1.0,1.0),Color(1,1,1,1),true}, {12,Vector(-194,-50),Vector(0.8,1.2),Color(1,1,1,1),true},
+        {14,Vector(-228,-11),Vector(1.1,0.9),Color(1,1,1,1),true}, {16,Vector(-215,-24),Vector(1.0,1.0),Color(1,1,1,1)},
+        {89,Vector(-201,-24),Vector(1.0,1.0),Color(1,1,1,1),true}, {91,Vector(-187,-49),Vector(0.8,1.2),Color(1,1,1,1),true},
+        {92,Vector(-187,-49),Vector(0.8,1.2),Color(1,1,1,1),true}, {98,Vector(-510,53),Vector(1.6,0.4),Color(1,1,1,0),true},
+    },
+    Shake = {
+        {0,Vector(-510,53),Vector(1.0,1.0),Color(1,1,1,0),true}, {4,Vector(-510,53),Vector(1.6,0.4),Color(1,1,1,0),true},
+        {11,Vector(-220,-24),Vector(1.0,1.0),Color(1,1,1,1),true}, {12,Vector(-194,-50),Vector(0.8,1.2),Color(1,1,1,1),true},
+        {14,Vector(-228,-11),Vector(1.1,0.9),Color(1,1,1,1),true}, {16,Vector(-215,-24),Vector(1.0,1.0),Color(1,1,1,1),true},
+        {17,Vector(-214,-24),Vector(1.0,1.0),Color(1,1,1,1)}, {19,Vector(-216,-24),Vector(1.0,1.0),Color(1,1,1,1)},
+        {21,Vector(-213,-24),Vector(1.0,1.0),Color(1,1,1,1)}, {23,Vector(-215,-24),Vector(1.0,1.0),Color(1,1,1,1)},
+        {25,Vector(-213,-24),Vector(1.0,1.0),Color(1,1,1,1)}, {27,Vector(-214,-24),Vector(1.0,1.0),Color(1,1,1,1)},
+        {29,Vector(-212,-24),Vector(1.0,1.0),Color(1,1,1,1)}, {31,Vector(-214,-24),Vector(1.0,1.0),Color(1,1,1,1)},
+        {33,Vector(-211,-24),Vector(1.0,1.0),Color(1,1,1,1)}, {35,Vector(-213,-24),Vector(1.0,1.0),Color(1,1,1,1)},
+        {37,Vector(-211,-24),Vector(1.0,1.0),Color(1,1,1,1)}, {39,Vector(-212,-24),Vector(1.0,1.0),Color(1,1,1,1)},
+        {41,Vector(-210,-24),Vector(1.0,1.0),Color(1,1,1,1)}, {43,Vector(-212,-24),Vector(1.0,1.0),Color(1,1,1,1)},
+        {45,Vector(-209,-24),Vector(1.0,1.0),Color(1,1,1,1)}, {47,Vector(-211,-24),Vector(1.0,1.0),Color(1,1,1,1)},
+        {49,Vector(-209,-24),Vector(1.0,1.0),Color(1,1,1,1)}, {51,Vector(-210,-24),Vector(1.0,1.0),Color(1,1,1,1)},
+        {53,Vector(-208,-24),Vector(1.0,1.0),Color(1,1,1,1)}, {55,Vector(-210,-24),Vector(1.0,1.0),Color(1,1,1,1)},
+        {57,Vector(-207,-24),Vector(1.0,1.0),Color(1,1,1,1)}, {59,Vector(-209,-24),Vector(1.0,1.0),Color(1,1,1,1)},
+        {61,Vector(-207,-24),Vector(1.0,1.0),Color(1,1,1,1)}, {63,Vector(-208,-24),Vector(1.0,1.0),Color(1,1,1,1)},
+        {65,Vector(-206,-24),Vector(1.0,1.0),Color(1,1,1,1)}, {67,Vector(-208,-24),Vector(1.0,1.0),Color(1,1,1,1)},
+        {69,Vector(-205,-24),Vector(1.0,1.0),Color(1,1,1,1)}, {71,Vector(-207,-24),Vector(1.0,1.0),Color(1,1,1,1)},
+        {73,Vector(-204,-24),Vector(1.0,1.0),Color(1,1,1,1)}, {75,Vector(-206,-24),Vector(1.0,1.0),Color(1,1,1,1)},
+        {77,Vector(-203,-24),Vector(1.0,1.0),Color(1,1,1,1)}, {79,Vector(-205,-24),Vector(1.0,1.0),Color(1,1,1,1)},
+        {81,Vector(-202,-24),Vector(1.0,1.0),Color(1,1,1,1)}, {83,Vector(-204,-24),Vector(1.0,1.0),Color(1,1,1,1)},
+        {85,Vector(-201,-24),Vector(1.0,1.0),Color(1,1,1,1)}, {87,Vector(-203,-24),Vector(1.0,1.0),Color(1,1,1,1)},
+        {89,Vector(-201,-24),Vector(1.0,1.0),Color(1,1,1,1),true}, {91,Vector(-187,-49),Vector(0.8,1.2),Color(1,1,1,1)},
+        {92,Vector(-187,-49),Vector(0.8,1.2),Color(1,1,1,1),true}, {98,Vector(-510,53),Vector(1.6,0.4),Color(1,1,1,0),true},
+    }
+}
+
 -- if doGreed is false, will not add to greed at all, if true, will only add to greed. nil for both.
 -- if stagetype is true, will set floorinfo for all stagetypes
 function StageAPI.SetFloorInfo(info, stage, stagetype, doGreed)
@@ -166,14 +201,16 @@ StageAPI.PlayerBossInfo[PlayerType.PLAYER_THESOUL_B].NoShake = true
 StageAPI.PlayerBossInfo[PlayerType.PLAYER_THEFORGOTTEN_B].ControlsFrame = 1
 StageAPI.PlayerBossInfo[PlayerType.PLAYER_THESOUL_B].ControlsFrame = 1
 StageAPI.PlayerBossInfo[PlayerType.PLAYER_THELOST_B].NoShake = true
+StageAPI.PlayerBossInfo[PlayerType.PLAYER_EDEN_B].ExtraPortrait = "gfx/ui/stage/eden_b_head.anm2"
 
 -- bossportrait is optional since Repentance, used if you want
 -- your character to have a different boss portrait than the stage one
-function StageAPI.AddPlayerGraphicsInfo(playertype, portrait, namefile, noshake, bossportrait)
+function StageAPI.AddPlayerGraphicsInfo(playertype, portrait, namefile, noshake, bossportrait, extraportrait)
     local args = portrait
     if type(args) ~= "table" then
         args = {
             Portrait = portrait,
+            ExtraPortrait = extraportrait,
             Name = namefile,
             BossPortrait = bossportrait,
             NoShake = noshake,
@@ -276,13 +313,16 @@ for i=0, 14 do
     StageAPI.BossSpriteDirt:ReplaceSpritesheet(i, "none.png")
 end
 
+StageAPI.PlayerPortraitExtra = Sprite()
+
 StageAPI.PlayingBossSprite = nil
 StageAPI.PlayingBossSpriteBg = nil
 StageAPI.PlayingBossSpriteDirt = nil
 StageAPI.UnskippableBossAnim = nil
 StageAPI.BossOffset = nil
+StageAPI.UsePlayerExtraPortrait = nil
 
-function StageAPI.PlayBossAnimationManual(portrait, name, spot, playerPortrait, playerName, playerSpot, portraitTwo, unskippable, bgColor, dirtColor, noShake)
+function StageAPI.PlayBossAnimationManual(portrait, name, spot, playerPortrait, playerName, playerSpot, portraitTwo, unskippable, bgColor, dirtColor, noShake, playerExtraPortrait)
     local paramTable = portrait
     if type(paramTable) ~= "table" then
         paramTable = {
@@ -291,6 +331,7 @@ function StageAPI.PlayBossAnimationManual(portrait, name, spot, playerPortrait, 
             BossName = name,
             BossSpot = spot,
             PlayerPortrait = playerPortrait,
+            PlayerExtraPortrait = playerExtraPortrait,
             PlayerName = playerName,
             PlayerSpot = playerSpot,
             Unskippable = unskippable,
@@ -321,6 +362,18 @@ function StageAPI.PlayBossAnimationManual(portrait, name, spot, playerPortrait, 
         else
             StageAPI.PlayingBossSprite:ReplaceSpritesheet(5, paramTable.PlayerPortrait or "gfx/ui/boss/portrait_20.0_monstro.png")
             StageAPI.PlayingBossSprite:ReplaceSpritesheet(12, "none.png")
+        end
+
+        StageAPI.UsePlayerExtraPortrait = nil
+        if paramTable.PlayerExtraPortrait then
+            StageAPI.PlayerPortraitExtra:Load(paramTable.PlayerExtraPortrait,true)
+            if paramTable.NoShake then
+                StageAPI.UsePlayerExtraPortrait = false
+            else
+                StageAPI.UsePlayerExtraPortrait = true
+            end
+            StageAPI.PlayerPortraitExtra:Play(StageAPI.PlayerPortraitExtra:GetDefaultAnimationName(),true)
+            StageAPI.PlayerPortraitExtra.Offset = Vector(-500,200)
         end
 
         if paramTable.BossPortraitTwo then
@@ -360,6 +413,9 @@ mod:AddCallback(ModCallbacks.MC_POST_RENDER, function()
             StageAPI.PlayingBossSprite:Update()
             StageAPI.PlayingBossSpriteBg:Update()
             StageAPI.PlayingBossSpriteDirt:Update()
+            StageAPI.PlayerPortraitExtra:Update()
+            local tab = StageAPI.UsePlayerExtraPortrait and 'Shake' or 'NoShake'
+            StageAPI.InterpolateSprite(StageAPI.PlayerPortraitExtra,StageAPI.PlayingBossSprite:GetFrame(),ExtraPortraitAnimationTable[tab])
         end
 
         local centerPos = StageAPI.GetScreenCenterPosition()
@@ -383,6 +439,9 @@ mod:AddCallback(ModCallbacks.MC_POST_RENDER, function()
                 end
             end
 
+            if StageAPI.UsePlayerExtraPortrait ~= nil and layer == 12 then
+                StageAPI.PlayerPortraitExtra:Render(pos)
+            end
             if layer == 13 or layer == 14 then
                 StageAPI.PlayingBossSpriteDirt:RenderLayer(layer, pos)
             else
@@ -452,6 +511,7 @@ function StageAPI.PlayBossAnimation(boss, unskippable)
         BossName = boss.BossName or boss.Bossname,
         BossSpot = boss.Spot or bSpot,
         PlayerPortrait = gfxData.BossPortrait or gfxData.Portrait,
+	PlayerExtraPortrait = gfxData.ExtraPortrait,
         PlayerName = gfxData.Name,
         PlayerSpot = pSpot,
         Unskippable = unskippable,

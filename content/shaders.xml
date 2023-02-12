@@ -39,4 +39,62 @@
             }
         ]]></fragment>
     </shader>
+    
+    <!-- Shaders for transition animation -->
+    <shader name="StageAPI-TransitionPixelation">
+	<parameters>
+		<param name="PixelAmount" type="float"/>
+	</parameters>
+  	<vertex><![CDATA[
+
+	attribute vec3 Position;
+	attribute vec4 Color;
+	attribute vec2 TexCoord;
+	attribute float PixelAmount;
+	attribute vec4 RenderData;
+	attribute float Scale;
+
+	varying vec4 Color0;
+	varying vec2 TexCoord0;
+	varying float OutPixelAmount;
+	varying vec4 RenderDataOut;
+	varying float ScaleOut;
+
+	uniform mat4 Transform;
+	
+	void main(void) {
+		OutPixelAmount = PixelAmount;
+		RenderDataOut = RenderData;
+		Color0 = Color;
+		gl_Position = Transform * vec4(Position.xyz, 1.0);
+		TexCoord0 = TexCoord;
+	}
+ 	]]></vertex>
+ 	<fragment><![CDATA[
+	varying vec4 Color0;
+	varying vec2 TexCoord0;
+	varying float OutPixelAmount;
+	varying vec4 RenderDataOut;
+	varying float ScaleOut;
+	uniform sampler2D Texture0;
+
+	void main(void)
+    {
+	if (OutPixelAmount > 0.001) {
+		vec2 pa = OutPixelAmount * 0.5 * min(RenderDataOut.z, RenderDataOut.w) / RenderDataOut.zw;
+		
+		vec2 center = RenderDataOut.xy * 0.5 / RenderDataOut.zw;
+		vec2 snapCoord = TexCoord0.st - mod(TexCoord0.st - center, pa) + pa * 0.5;
+
+		vec4 Color = Color0 * texture2D(Texture0, snapCoord); 
+		
+		gl_FragColor = Color; //Color0 * texture2D(Texture0, snapCoord); 
+	} else {
+		vec4 Color = Color0 * texture2D(Texture0, TexCoord0);
+		gl_FragColor = Color; //Color0 * texture2D(Texture0, TexCoord0);
+	}
+    }
+    ]]></fragment>
+    </shader>
+
 </shaders>

@@ -198,3 +198,34 @@ end
 function StageAPI.SanitizeString(playerName)
     return string.gsub(playerName, "%​", "") -- Unicode 8203 "Zero Width Space"
 end
+
+function StageAPI.InterpolateSprite(sprite,frame,animTabl)
+    if sprite and frame and animTabl then
+        local startdata,enddata
+        for i,data in ipairs(animTabl) do
+            if frame<data[1] then
+                startdata,enddata = animTabl[i-1],data
+                break
+            end
+        end
+        if startdata and enddata then
+            if enddata[5] then
+                local procent = (frame-startdata[1])/(enddata[1]-startdata[1])
+                local offset = startdata[2]+(enddata[2]-startdata[2])*procent
+                local scale = startdata[3]+(enddata[3]-startdata[3])*procent
+                local color = Color(
+	            startdata[4].R+(enddata[4].R-startdata[4].R)*procent,
+                    startdata[4].G+(enddata[4].G-startdata[4].G)*procent,
+                    startdata[4].B+(enddata[4].B-startdata[4].B)*procent,
+                    startdata[4].A+(enddata[4].A-startdata[4].A)*procent)
+                sprite.Offset = offset
+                sprite.Scale = scale
+                sprite.Color = color
+            else
+                sprite.Offset = startdata[2]
+                sprite.Scale = startdata[3]
+                sprite.Color = startdata[4]
+            end
+        end
+    end
+end

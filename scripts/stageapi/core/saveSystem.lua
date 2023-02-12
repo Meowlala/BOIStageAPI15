@@ -106,6 +106,11 @@ function StageAPI.GetSaveString()
         levelMaps[#levelMaps + 1] = levelMap:GetSaveData()
     end
 
+    local stageProgress = {}
+    for id, data in pairs(StageAPI.TransitionAnimationData.Progress) do
+        stageProgress[tostring(id)] = data
+    end
+
     return json.encode({
         LevelInfo = levelSaveData,
         LevelMaps = levelMaps,
@@ -115,7 +120,8 @@ function StageAPI.GetSaveString()
         CurrentLevelMapRoomID = StageAPI.CurrentLevelMapRoomID,
         AscentData = StageAPI.AscentData,
         PreviousExtraRoomData = StageAPI.PreviousExtraRoomData,
-        EncounteredBosses = encounteredBosses
+        EncounteredBosses = encounteredBosses,
+        StageProgress = stageProgress,
     })
 end
 
@@ -184,6 +190,12 @@ function StageAPI.LoadSaveString(str)
 
     StageAPI.RoomGrids = retRoomGrids
     StageAPI.CustomGrids = retCustomGrids
+
+    StageAPI.TransitionAnimationData.LoadedProgress = {}
+    for id, data in pairs(decoded.StageProgress) do
+        StageAPI.TransitionAnimationData.LoadedProgress[tonumber(id)] = data
+    end
+
     StageAPI.CallCallbacks(Callbacks.POST_STAGEAPI_LOAD_SAVE, false)
 end
 
