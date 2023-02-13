@@ -85,6 +85,19 @@ local BlockCallbacks = {
             SetBlockCallbacks(true)
         end
     end},
+    {ModCallbacks.MC_POST_GAME_STARTED , function()  --Reset transition when restarting
+        StageAPI.TransitionAnimationData.State = 0
+        StageAPI.TransitionAnimationData.Frame = 0
+        StageAPI.TransitionAnimationData.Sprites.Stages = {}
+        StageAPI.TransitionAnimationData.StageIcon = nil
+        StageAPI.TransitionAnimationData.CurrentStageID = nil
+        StageAPI.TransitionAnimationData.NextStageID = nil
+        StageAPI.TransitionAnimationData.GotoStage = nil
+        StageAPI.TransitionAnimationData.QueueMusic = nil
+
+        SetBlockCallbacks(true)
+        
+    end},
 }
 
 SetBlockCallbacks = function(bool)
@@ -274,6 +287,9 @@ mod:AddCallback(ModCallbacks.MC_GET_SHADER_PARAMS, function(_, name)
                 for _, player in ipairs(shared.Players) do --drop Bforgotten down from the soul
                     player:ThrowHeldEntity(Vector(10,10))
                 end
+
+                StageAPI.NextStage = StageAPI.DelayedNextStage
+                StageAPI.DelayedNextStage = nil
 
                 if StageAPI.TransitionAnimationData.GotoStage then
                     Isaac.ExecuteCommand("stage " .. StageAPI.TransitionAnimationData.GotoStage)
@@ -695,7 +711,8 @@ function StageAPI.GotoCustomStage(stage, playTransition, noForgetSeed)
     else
         local replace = stage.Replaces
         local absolute = replace.OverrideStage
-        StageAPI.NextStage = stage
+        --StageAPI.NextStage = stage  --The transition does not happen immediately and it can be triggered by another callback
+        StageAPI.DelayedNextStage = stage
         if playTransition then
             local gotoStage = stage.LevelgenStage and (tostring(stage.LevelgenStage.Stage) .. StageAPI.StageTypeToString[stage.LevelgenStage.StageType])
                 or (tostring(absolute) .. StageAPI.StageTypeToString[replace.OverrideStageType])
