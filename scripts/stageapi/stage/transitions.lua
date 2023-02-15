@@ -288,8 +288,10 @@ mod:AddCallback(ModCallbacks.MC_GET_SHADER_PARAMS, function(_, name)
                     player:ThrowHeldEntity(Vector(10,10))
                 end
 
-                StageAPI.NextStage = StageAPI.DelayedNextStage
-                StageAPI.DelayedNextStage = nil
+                if StageAPI.DelayedNextStage then
+                    StageAPI.NextStage = StageAPI.DelayedNextStage
+                    StageAPI.DelayedNextStage = nil
+                end
 
                 if StageAPI.TransitionAnimationData.GotoStage then
                     Isaac.ExecuteCommand("stage " .. StageAPI.TransitionAnimationData.GotoStage)
@@ -711,7 +713,7 @@ function StageAPI.GotoCustomStage(stage, playTransition, noForgetSeed)
     else
         local replace = stage.Replaces
         local absolute = replace.OverrideStage
-        --StageAPI.NextStage = stage  --The transition does not happen immediately and it can be triggered by another callback
+        StageAPI.NextStage = stage  --The transition does not happen immediately and it can be triggered by another callback
         StageAPI.DelayedNextStage = stage
         if playTransition then
             local gotoStage = stage.LevelgenStage and (tostring(stage.LevelgenStage.Stage) .. StageAPI.StageTypeToString[stage.LevelgenStage.StageType])
