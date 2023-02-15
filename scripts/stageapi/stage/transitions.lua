@@ -620,7 +620,7 @@ function StageAPI.PlayFullStageTransition(tab)
 
     StageAPI.TransitionAnimationData.StartTransition()
     if tab.Immediately then
-        StageAPI.TransitionAnimationData.State = 2
+        StageAPI.TransitionAnimationData.Frame = 151
     end
 end
 
