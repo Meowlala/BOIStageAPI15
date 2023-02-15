@@ -713,9 +713,10 @@ function StageAPI.GotoCustomStage(stage, playTransition, noForgetSeed)
     else
         local replace = stage.Replaces
         local absolute = replace.OverrideStage
-        StageAPI.NextStage = stage  --The transition does not happen immediately and it can be triggered by another callback
-        StageAPI.DelayedNextStage = stage
+        StageAPI.NextStage = stage
         if playTransition then
+            StageAPI.DelayedNextStage = stage  --The transition does not happen immediately and it can be triggered by another callback
+            StageAPI.NextStage = nil
             local gotoStage = stage.LevelgenStage and (tostring(stage.LevelgenStage.Stage) .. StageAPI.StageTypeToString[stage.LevelgenStage.StageType])
                 or (tostring(absolute) .. StageAPI.StageTypeToString[replace.OverrideStageType])
 
