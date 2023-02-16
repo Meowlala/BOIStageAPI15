@@ -1,5 +1,4 @@
 return {
-    "scripts.stageapi.embeddablecallbackhack",
     "scripts.stageapi.basic",
     "scripts.stageapi.library",
     "scripts.stageapi.shadersfix",
