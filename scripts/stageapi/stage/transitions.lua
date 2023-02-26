@@ -95,7 +95,7 @@ local BlockCallbacks = {
         StageAPI.TransitionAnimationData.GotoStage = nil
         StageAPI.TransitionAnimationData.QueueMusic = nil
 
-        SetBlockCallbacks(true)
+        --SetBlockCallbacks(true) --self-removing callbacks break runCallback, for MC_POST_GAME_STARTED this is critical
         
     end},
 }
@@ -104,7 +104,7 @@ SetBlockCallbacks = function(bool)
     if not bool then
         for i,cal in pairs(BlockCallbacks) do
             if cal[1] and cal[2] then
-                mod:AddCallback(cal[1],cal[2],cal[3])
+                mod:AddPriorityCallback(cal[1],CallbackPriority.LATE,cal[2],cal[3])
             end
         end
     else
@@ -114,6 +114,75 @@ SetBlockCallbacks = function(bool)
             end
         end
     end
+end
+
+local TempCollData = {} -- Returns the collision even if the transition has been broke
+TempCollData.ToUpdate = {}
+local function UpdateTempCollision(ent, index)
+    if ent then
+        local data = ent:GetData()
+        local returncol
+        if data.StageAPI_TempCollData then
+            if data.StageAPI_TempCollData.timeout and type(data.StageAPI_TempCollData.timeout) == "number" then
+                data.StageAPI_TempCollData.timeout = data.StageAPI_TempCollData.timeout - 1
+                if data.StageAPI_TempCollData.timeout <= 0 then
+                    returncol = true
+                end
+            else
+                returncol = true
+            end
+            if returncol then
+                if ent:ToPlayer() then
+                    ent:ToPlayer():AddCacheFlags(CacheFlag.CACHE_FLYING)
+                else
+                    ent.GridCollisionClass = data.StageAPI_TempCollData.gridColl or ent.GridCollisionClass
+                end
+                ent.EntityCollisionClass = data.StageAPI_TempCollData.entColl or ent.EntityCollisionClass
+                TempCollData.ToUpdate[ent.Index] = nil
+		data.StageAPI_TempCollData = nil
+            end
+        end
+    elseif index then
+        TempCollData.ToUpdate[Index] = nil
+    end
+end
+
+function SetTempCollision(ent, timeout, gridColl, entColl)
+    if ent and (gridColl or entColl) then
+        local data = ent:GetData()
+        data.StageAPI_TempCollData = data.StageAPI_TempCollData or {}
+        data.StageAPI_TempCollData.timeout = timeout
+        data.StageAPI_TempCollData.gridColl = data.StageAPI_TempCollData.gridColl or ent.GridCollisionClass
+        data.StageAPI_TempCollData.entColl = data.StageAPI_TempCollData.entColl or ent.EntityCollisionClass
+        
+        ent.GridCollisionClass = gridColl or ent.GridCollisionClass
+        ent.EntityCollisionClass = entColl or ent.EntityCollisionClass
+        TempCollData.ToUpdate[ent.Index] = ent
+        if not TempCollData.Callbacked then
+            TempCollData.Callbacked = true
+            mod:AddCallback(ModCallbacks.MC_POST_UPDATE, TempCollData.UpdateCallback)
+        end
+    end
+end
+
+function TempCollData.UpdateCallback()
+    if Game():GetFrameCount() <= 2 then
+        TempCollData.Callbacked = false
+        mod:RemoveCallback(ModCallbacks.MC_POST_UPDATE, TempCollData.UpdateCallback)
+        TempCollData.ToUpdate = {}
+        return
+    end
+    local num = 0
+    for i, k in pairs(TempCollData.ToUpdate) do
+        UpdateTempCollision(k,i)
+        num = num + 1
+    end
+    if num == 0 then
+        if TempCollData.Callbacked then
+            TempCollData.Callbacked = false
+            mod:RemoveCallback(ModCallbacks.MC_POST_UPDATE, TempCollData.UpdateCallback)
+        end
+    end 
 end
 
 StageAPI.TransitionAnimationData = {
@@ -286,6 +355,7 @@ mod:AddCallback(ModCallbacks.MC_GET_SHADER_PARAMS, function(_, name)
             if StageAPI.TransitionAnimationData.Frame > 150 then 
                 for _, player in ipairs(shared.Players) do --drop Bforgotten down from the soul
                     player:ThrowHeldEntity(Vector(10,10))
+                    player:AddCacheFlags(CacheFlag.CACHE_FLYING)
                 end
 
                 if StageAPI.DelayedNextStage then
@@ -764,16 +834,10 @@ function StageAPI.IsFullFledgedPlayer(player)
     return false
 end
 
-local PlayersCollision = {}
-local function SavePlayersGridCollision()  --removing the grid collision for jumping into the trapdoor
-    for i, player in ipairs(shared.Players) do
-        PlayersCollision[i] = player.GridCollisionClass
-    end
-end
-
-local function ReturnPlayersGridCollision()  --return the grid collision after jumping into the trapdoor
-    for i, player in ipairs(shared.Players) do
-        player.GridCollisionClass = PlayersCollision[i]
+local blocking_anim = {WalkLeft = true,WalkUp = true,WalkRight = true,WalkDown = true}
+local function CanInteract(player)
+    if player then
+        return blocking_anim[player:GetSprite():GetAnimation()]
     end
 end
 
@@ -809,18 +873,16 @@ mod:AddCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, function(_, eff) --custom tr
                 data.PlayerReady = {}
                 data.Playerquery = {}
                 for _, player in ipairs(shared.Players) do
-                    if StageAPI.IsFullFledgedPlayer(player) and player.Position:Distance(eff.Position) < eff.Size then
+                    if CanInteract(player) and StageAPI.IsFullFledgedPlayer(player) and player.Position:Distance(eff.Position) < eff.Size then
                         data.StartTransition = true
                         break
                     end
                 end
                 if data.StartTransition or data.alreadyEntering then
-                    SavePlayersGridCollision()
                     for i, player in ipairs(shared.Players) do
                         player.ControlsCooldown = math.max(Isaac.GetPlayer(i).ControlsCooldown,100)
                         player.Velocity = Vector.Zero
                         data.Playerquery[i] = player
-                        player.GridCollisionClass = EntityGridCollisionClass.GRIDCOLL_NONE
                     end
                     data.NumPlayer = shared.Game:GetNumPlayers()
                     data.Num = 0
@@ -844,6 +906,7 @@ mod:AddCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, function(_, eff) --custom tr
                     data.Timeout = 5
                     if data.Playerquery[data.Num+1] and data.Playerquery[data.Num+1]:GetSprite():GetAnimation() ~= "Trapdoor" then
                         data.Playerquery[data.Num+1]:AnimateTrapdoor()
+                        SetTempCollision(data.Playerquery[data.Num+1], 10, EntityGridCollisionClass.GRIDCOLL_NONE)
                     end
                     data.Num = data.Num+1
                     if data.NumPlayer-data.Num == 0 then
@@ -851,7 +914,6 @@ mod:AddCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, function(_, eff) --custom tr
                     end
                 elseif data.Timeout<=0 and data.NumPlayer-data.Num == 0 then
                     data.Transition = 1
-                    ReturnPlayersGridCollision()
                 end
                 data.Timeout = data.Timeout - 1
                 if data.Num>0 then
