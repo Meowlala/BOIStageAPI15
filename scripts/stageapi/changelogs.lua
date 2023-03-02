@@ -31,6 +31,24 @@ mod:AddCallback(ModCallbacks.MC_POST_GAME_STARTED, function()
         if not (DeadSeaScrollsMenu and DeadSeaScrollsMenu.AddChangelog) then
             REVEL.AddedStageAPIChangelogs = true
         end
+		
+		TryAddChangelog("v2.23", [[- Overhauled StageAPI level transition
+screen to be more accurate to
+the base game
+
+- Custom stages now respect room difficulty
+when choosing layouts. This can
+be disabled by the modder if desired
+
+- Alt rock overriding should now
+work better with mom's bracelet
+and similar effects
+
+- Added a library for detecting
+dead ends
+
+- Improvements to stage shadows
+]])
 
         TryAddChangelog("v2.18 - 22", [[- StageAPI now loads entities2
 xml data and uses it for
