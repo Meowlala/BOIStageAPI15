@@ -140,6 +140,7 @@ StageAPI.DefaultBrokenGridStateByType = {
     [GridEntityType.GRID_TNT]           = 4,
     [GridEntityType.GRID_FIREPLACE]     = 4,
     [GridEntityType.GRID_POOP]          = 1000,
+    [GridEntityType.GRID_PILLAR]        = 2,
 }
 
 ---@class CustomGridPersistData
