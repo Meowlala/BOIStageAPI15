@@ -103,17 +103,29 @@ function StageAPI.GetEntityConfigDefaults(id, var, sub)
     return config
 end
 
-function StageAPI.GetChampionChance() --Values taken from Isaac Wiki
-    local chance = 0.05
-    if shared.Game.Difficulty % 2 == 1 then --Hard Mode
-        chance = 0.2
+function StageAPI.GetChampionChance()
+    local chance = 0.05 --Base chance is 5%
+    local isVoid = (shared.Game:GetLevel():GetStage() == LevelStage.STAGE7)
+    local championBelt 
+    if isVoid then --The Void increases base chance from 5% to 75%
+        chance = 0.75
     end
     for i = 0, shared.Game:GetNumPlayers() - 1 do
         local player = Isaac.GetPlayer(i)
-        if player:HasCollectible(CollectibleType.COLLECTIBLE_CHAMPION_BELT) then --Champion Belt
-            chance = chance + 0.2
+        if player:HasCollectible(CollectibleType.COLLECTIBLE_CHAMPION_BELT) then
+            championBelt = true
+            break
+
         end
-        chance = chance + (0.1 * player:GetTrinketMultiplier(TrinketType.TRINKET_PURPLE_HEART)) --Purple Heart
+    end
+    if championBelt and not isVoid then
+        chance = chance + 0.15 --Champion Belt adds flat 15% chance, unless the current stage is The Void
+    end
+    for i = 0, shared.Game:GetNumPlayers() - 1 do 
+        local player = Isaac.GetPlayer(i)
+        for i = 1, player:GetTrinketMultiplier(TrinketType.TRINKET_PURPLE_HEART) do 
+            chance = chance * 2 --Purple Heart doubles the chance for each copy of it
+        end
     end
     return chance
 end
