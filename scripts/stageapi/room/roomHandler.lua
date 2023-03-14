@@ -226,7 +226,7 @@ function StageAPI.GetValidRoomsForLayout(args)
         if isValid and requireSubtype then
             isValid = layout.SubType == requireSubtype
         elseif isValid and mindiff and maxdiff then
-            isValid = (layout.Difficulty >= mindiff or layout.Difficulty <= maxdiff)
+            isValid = (layout.Difficulty >= mindiff and layout.Difficulty <= maxdiff)
         end
 
         if isValid and disallowIDs then
@@ -1096,6 +1096,7 @@ function StageAPI.SetLevelRoom(levelRoom, roomID, dimension)
     if levelRoom then
         levelRoom.LevelIndex = roomID
         levelRoom.Dimension = dimension
+        StageAPI.CallCallbacks(Callbacks.POST_SET_LEVEL_ROOM, true, levelRoom, roomID, dimension)
     end
 end
 

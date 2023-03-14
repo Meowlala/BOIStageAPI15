@@ -393,6 +393,8 @@ function StageAPI.LevelRoom:GetLayout()
                     MaxDifficulty = maxDifficulty,
                 }
 
+                StageAPI.CallCallbacks(Callbacks.POST_ROOM_LAYOUT_CHOOSE, true, self, roomsList)
+
                 if self.IgnoreShape then
                     self.Shape = self.Layout.Shape
                 end

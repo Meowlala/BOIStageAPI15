@@ -32,7 +32,8 @@ StageAPI.Challenge = {
     WaveSpawnFrame = nil,
     WaveSubtype = nil,
     ChoosingWave = false,
-    LastGreedWave = 0
+    LastGreedWave = 0,
+    WaveNumber = 1,
 }
 
 local function checkShouldRemoveGreedEntity()
@@ -105,6 +106,7 @@ mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, function()
     StageAPI.Challenge.WaveChanged = nil
     StageAPI.Challenge.WaveSpawnFrame = nil
     StageAPI.Challenge.WaveSubtype = nil
+    StageAPI.Challenge.WaveNumber = 1
     StageAPI.Challenge.LastGreedWave = shared.Level.GreedModeWave
     StageAPI.ChallengeWaveRNG:SetSeed(shared.Room:GetSpawnSeed(), 0)
 
@@ -154,6 +156,33 @@ StageAPI.AddCallback("StageAPI", Callbacks.POST_CHECK_VALID_ROOM, 0, function(la
     end
 end)
 
+local function GetChallengeRoomWaveDifficulty()
+    if StageAPI.GetCurrentStage() and StageAPI.GetCurrentStage().IgnoreDifficultyRules == true then
+        return
+    else
+        local isHard = shared.Game.Difficulty == Difficulty.DIFFICULTY_HARD
+        if StageAPI.Challenge.WaveNumber == 1 then
+            if isHard then
+                return 5
+            else
+                return 1
+            end
+        elseif StageAPI.Challenge.WaveNumber == 2 then
+            if isHard then
+                return 10
+            else
+                return 5
+            end
+        elseif StageAPI.Challenge.WaveNumber == 3 then
+            if isHard then
+                return 15
+            else
+                return 10
+            end
+        end
+    end
+end
+
 mod:AddCallback(ModCallbacks.MC_POST_UPDATE, function()
     if StageAPI.Challenge.WaveSpawnFrame and shared.Game:GetFrameCount() > StageAPI.Challenge.WaveSpawnFrame then
         StageAPI.Challenge.WaveSpawnFrame = nil
@@ -169,7 +198,9 @@ mod:AddCallback(ModCallbacks.MC_POST_UPDATE, function()
 
         if StageAPI.CurrentStage then
             local useWaves
+            local isGreed
             if shared.Game:IsGreedMode() and StageAPI.CurrentStage.GreedWaves then
+                isGreed = true
                 useWaves = StageAPI.CurrentStage.GreedWaves.Normal
                 if shared.Game.Difficulty == Difficulty.DIFFICULTY_GREED then
                     if shared.Level.GreedModeWave > 8 and shared.Level.GreedModeWave < 11 then
@@ -207,14 +238,33 @@ mod:AddCallback(ModCallbacks.MC_POST_UPDATE, function()
                 end
 
                 local seed = StageAPI.ChallengeWaveRNG:Next()
+                local wave 
                 StageAPI.Challenge.ChoosingWave = true
-                local wave = StageAPI.ChooseRoomLayout(useWaves, seed, shared.Room:GetRoomShape(), shared.Room:GetType(), false, false, nil, challengeWaveIDs)
+                if isGreed then
+                    wave = StageAPI.ChooseRoomLayout(useWaves, seed, shared.Room:GetRoomShape(), shared.Room:GetType(), false, false, nil, challengeWaveIDs)
+                else
+                    local difficulty = GetChallengeRoomWaveDifficulty()
+                    wave = StageAPI.ChooseRoomLayout{
+                        RoomList = useWaves,
+                        Seed = seed,
+                        Shape = shared.Room:GetRoomShape(),
+                        RoomType = shared.Room:GetType(),
+                        RequireRoomType = false,
+                        Doors = nil,
+                        IgnoreDoors = false,
+                        DisallowIDs = challengeWaveIDs,
+                        MinDifficulty = difficulty,
+                        MaxDifficulty = difficulty,
+                    }
+                end
+                
                 StageAPI.Challenge.ChoosingWave = false
                 if currentRoom then
                     table.insert(currentRoom.Data.ChallengeWaveIDs, wave.StageAPIID)
                 end
 
                 StageAPI.Challenge.WaveSubtype = nil
+                StageAPI.Challenge.WaveNumber = StageAPI.Challenge.WaveNumber + 1
 
                 local spawnEntities = StageAPI.ObtainSpawnObjects(wave, seed, not shared.Game:IsGreedMode())
                 StageAPI.SpawningChallengeEnemies = true
