@@ -584,7 +584,7 @@ function StageAPI.CustomStage:GenerateLevel()
             local newRoom = self:GenerateRoom(roomDesc, isStartingRoom, true)
             if newRoom then
                 local listIndex = roomDesc.ListIndex
-                StageAPI.SetLevelRoom(newRoom, listIndex)
+                StageAPI.SetLevelRoom(newRoom, listIndex, 0)
 
                 if hasMirror and roomDesc.SafeGridIndex > -1 and StageAPI.GetDimension(roomDesc) == 0 then
                     local mirroredRoom = newRoom:Copy(roomDesc)

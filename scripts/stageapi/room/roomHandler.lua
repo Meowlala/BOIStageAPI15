@@ -1096,6 +1096,7 @@ function StageAPI.SetLevelRoom(levelRoom, roomID, dimension)
     if levelRoom then
         levelRoom.LevelIndex = roomID
         levelRoom.Dimension = dimension
+        StageAPI.CallCallbacks(Callbacks.POST_SET_LEVEL_ROOM, true, levelRoom, roomID, dimension)
     end
 end
 
