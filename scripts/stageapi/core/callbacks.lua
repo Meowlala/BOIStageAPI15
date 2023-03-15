@@ -683,7 +683,10 @@ function StageAPI.DetectBaseLayoutChanges(generateNewRooms)
             if not previous and generateNewRooms then
                 if StageAPI.CurrentStage then
                     if StageAPI.CurrentStage.PregenerationEnabled then
-                        StageAPI.CurrentStage:GenerateRoom(roomDesc, roomDesc.SafeGridIndex == shared.Level:GetStartingRoomIndex(), true)
+                        local newRoom = StageAPI.CurrentStage:GenerateRoom(roomDesc, roomDesc.SafeGridIndex == shared.Level:GetStartingRoomIndex(), true)
+                        if newRoom then
+                            StageAPI.SetLevelRoom(newRoom, roomDesc.ListIndex, StageAPI.GetDimension(roomDesc))
+                        end
                     end
                 else
                     StageAPI.GenerateBaseRoom(roomDesc)
