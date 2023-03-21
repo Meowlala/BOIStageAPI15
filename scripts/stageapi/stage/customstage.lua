@@ -566,10 +566,11 @@ function StageAPI.CustomStage:SetPregenerationEnabled(setTo)
 end
 
 function StageAPI.CustomStage:HasMirrorDimension()
-    return (self.LevelgenStage.Stage == LevelStage.STAGE1_2 and (self.LevelgenStage.StageType == StageType.STAGETYPE_REPENTANCE or self.LevelgenStage.StageType == StageType.STAGETYPE_REPENTANCE_B))
+    return ((self.LevelgenStage.Stage == LevelStage.STAGE1_2 or (self:IsStage() and shared.Level:GetCurses() & LevelCurse.CURSE_OF_LABYRINTH ~= 0)) and (self.LevelgenStage.StageType == StageType.STAGETYPE_REPENTANCE or self.LevelgenStage.StageType == StageType.STAGETYPE_REPENTANCE_B))
 end
 
 function StageAPI.CustomStage:GenerateLevel()
+    StageAPI.Log("Generating custom level: "..self.Name)
     if not self.PregenerationEnabled then
         return
     end
