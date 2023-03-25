@@ -147,7 +147,7 @@ local function UpdateTempCollision(ent, index)
     end
 end
 
-function SetTempCollision(ent, timeout, gridColl, entColl)
+local function SetTempCollision(ent, timeout, gridColl, entColl)
     if ent and (gridColl or entColl) then
         local data = ent:GetData()
         data.StageAPI_TempCollData = data.StageAPI_TempCollData or {}

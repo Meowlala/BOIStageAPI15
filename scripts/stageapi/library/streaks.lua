@@ -84,10 +84,10 @@ function StageAPI.PlayTextStreak(text, extratext, extratextOffset, extratextScal
     streak.Frame = 0
 
     for _, line in pairs(streak.Text) do
-        line.Width = streak.Font:GetStringWidth(line.Text) / 2
+        line.Width = streak.Font:GetStringWidthUTF8(line.Text) / 2
     end
 
-    streak.ExtraWidth = streak.SmallFont:GetStringWidth(streak.ExtraText or "") / 2
+    streak.ExtraWidth = streak.SmallFont:GetStringWidthUTF8(streak.ExtraText or "") / 2
 
     local streakTable = streak.AboveHud and HudStreaks or Streaks
 
