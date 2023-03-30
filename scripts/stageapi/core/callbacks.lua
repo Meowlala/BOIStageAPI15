@@ -625,11 +625,16 @@ function StageAPI.GenerateBaseLevel()
 end
 
 local uniqueBossDropRoomSubtypes = {
+    9,  -- Famine
+    10, -- Pestilence
+    11, -- War
+    12, -- Conquest
     19, -- Gish
     20, -- Steven
     21, -- Chad
+    22, -- Headless Horseman
     23, -- The Fallen
-    42 -- Triachnid
+    38  -- Conquest
 }
 
 -- Re-randomize fixed boss drops in StageAPI boss rooms

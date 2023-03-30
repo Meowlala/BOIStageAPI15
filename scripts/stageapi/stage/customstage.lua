@@ -281,12 +281,13 @@ function StageAPI.CustomStage:SetTrueCoopSpots(twoPlayersSpot, fourPlayersSpot, 
     self.CoopSpot4P = fourPlayersSpot
 end
 
-function StageAPI.CustomStage:SetBosses(bosses)
+function StageAPI.CustomStage:SetBosses(bosses, noHorsemen)
     if bosses.Pool then
         self.Bosses = bosses
     else
         self.Bosses = {
-            Pool = bosses
+            Pool = bosses,
+            NoHorsemen = noHorsemen
         }
     end
 end
