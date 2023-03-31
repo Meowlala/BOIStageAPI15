@@ -602,7 +602,7 @@ function StageAPI.SelectBoss(bosses, rng, roomDesc, ignoreNoOptions)
                         forced = true
                     elseif poolEntry.TryReplaceHorsemen or potentialBoss.TryReplaceHorsemen then
                         forced = not encountered
-                    elseif not (poolEntry.Horseman or potentialBoss.Horseman) then
+                    elseif not (poolEntry.Horseman or potentialBoss.Horseman or bosses.NoHorsemen) then
                         invalid = true
                     end
                 elseif poolEntry.OnlyReplaceHorsemen or potentialBoss.OnlyReplaceHorsemen then
