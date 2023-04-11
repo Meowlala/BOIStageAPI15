@@ -23,6 +23,7 @@ function StageAPI.GetEntityConfig(id, var, sub)
             end
         end
 
+        StageAPI.LogMinor("Could not find config for entity named \""..id.."\"")
         return nil
     elseif id then
         var, sub = var or 0, sub or 0
@@ -76,9 +77,12 @@ function StageAPI.GetEntityConfig(id, var, sub)
             end
         end
 
+        if not mostSpecific then
+            StageAPI.LogMinor("Could not find config for entity of ID: "..id.."."..var.."."..sub)
+        end
         return mostSpecific
     end
-
+    
     return nil
 end
 
