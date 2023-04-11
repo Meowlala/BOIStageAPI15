@@ -666,6 +666,14 @@ function StageAPI.LoadEntitiesFromEntitySets(entitysets, doGrids, doPersistentOn
                             end
                         end
 
+                        if entityInfo.Data.Type == 970 then --Vanilla metadata ents
+                            shouldSpawnEntity = false
+                            if entityInfo.Data.Variant == 0 and entityInfo.Data.SubType == 0 then
+                                local roomDesc = shared.Level:GetRoomByIdx(shared.Level:GetCurrentRoomIndex(), StageAPI.GetDimension())
+                                roomDesc.Flags = roomDesc.Flags | RoomDescriptor.FLAG_PITCH_BLACK
+                            end
+                        end
+
                         local currentRoom = StageAPI.GetCurrentRoom()
                         local followRoomRules = currentRoom and not currentRoom.IgnoreRoomRules and currentRoom.FirstLoad
                         if followRoomRules and shared.Room:IsMirrorWorld() then -- only slot machines and npcs can spawn in the mirror world
