@@ -866,8 +866,7 @@ function StageAPI.LoadGridsFromDataList(grids, gridInformation, entities)
                     minecart.V1 = vec
                     minecart.V2 = Vector(1,0)
                     minecart.TargetPosition = vec
-                    minecart.State = 4
-                    local testDummy = Isaac.Spawn(10,1,0,minecart.Position,Vector.Zero,nil)
+                    local testDummy = Isaac.Spawn(10,1,0,minecart.Position,vec,nil)
                     StageAPI.LoadIntoMinecart(minecart, testDummy)
                     --[[for _, enemy in pairs(Isaac.FindInRadius(gridpos, 40, EntityPartition.ENEMY)) do
                         if enemy:ToNPC() then
