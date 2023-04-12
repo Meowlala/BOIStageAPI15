@@ -55,8 +55,8 @@ elseif brTestRooms then
             if not StageAPI.OverrideTestRoom then return end
 
             -- makes sure placeholder/meta entities can't spawn
-            if (id >= 1000 and id ~= 10000) or StageAPI.RoomEntitySpawnGridBlacklist[id] or StageAPI.IsMetadataEntity(id, variant) then
-                return { 999, StageAPI.E.DeleteMeEffect.V, 0 }
+            if ((id >= 1000 and id ~= 10000) or StageAPI.RoomEntitySpawnGridBlacklist[id] or StageAPI.IsMetadataEntity(id, variant)) and not StageAPI.ConsoleSpawningGrid then
+                return {999, StageAPI.E.DeleteMeEffect.V, 0}
             end
         end
     }
