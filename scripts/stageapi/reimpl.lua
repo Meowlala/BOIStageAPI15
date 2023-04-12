@@ -12,6 +12,7 @@ local subModules = {
     "floorInfo",
     "music",
     "entityconfig",
+    "minecarts",
 }
 
 local moduleName = "reimpl"

@@ -672,6 +672,8 @@ function StageAPI.LoadEntitiesFromEntitySets(entitysets, doGrids, doPersistentOn
                                 local roomDesc = shared.Level:GetRoomByIdx(shared.Level:GetCurrentRoomIndex(), StageAPI.GetDimension())
                                 roomDesc.Flags = roomDesc.Flags | RoomDescriptor.FLAG_PITCH_BLACK
                             end
+                        elseif entityInfo.Data.Type == EntityType.ENTITY_EFFECT and entityInfo.Data.Variant == EffectVariant.FISSURE_SPAWNER then --Fissure Spawner
+                            Isaac.GridSpawn(GridEntityType.GRID_PIT, 0, entityInfo.Position, true)
                         end
 
                         local currentRoom = StageAPI.GetCurrentRoom()
@@ -837,7 +839,8 @@ function StageAPI.LoadGridsFromDataList(grids, gridInformation, entities)
             end
         end
 
-        if shouldSpawn and shared.Room:IsPositionInRoom(shared.Room:GetGridPosition(index), 0) then
+        local gridpos = shared.Room:GetGridPosition(index)
+        if shouldSpawn and shared.Room:IsPositionInRoom(gridpos, 0) then
             local existingGrid = shared.Room:GetGridEntity(index)
             if existingGrid then
                 shared.Room:RemoveGridEntity(index, 0, false)
@@ -853,10 +856,28 @@ function StageAPI.LoadGridsFromDataList(grids, gridInformation, entities)
                 StageAPI.ConsoleSpawningGrid = false
 
                 if StageAPI.RailGridTypes[gridData.Type] and StageAPI.MinecartRailVariants[gridData.Variant] then
-                    -- TODO: Rail Cart Handling (may require redoing minecart rendering?)
+                    local vec = StageAPI.MinecartRailVectors[gridData.Variant]
+                    local minecart = Isaac.Spawn(EntityType.ENTITY_MINECART, 1, 0, gridpos, vec, nil):ToNPC()
+                    minecart:ClearEntityFlags(EntityFlag.FLAG_APPEAR)
+                    minecart.EntityCollisionClass = EntityCollisionClass.ENTCOLL_NONE
+                    minecart.GridCollisionClass = EntityGridCollisionClass.GRIDCOLL_NONE
+                    minecart.I1 = 1
+                    minecart.I2 = index
+                    minecart.V1 = vec
+                    minecart.V2 = Vector(1,0)
+                    minecart.TargetPosition = vec
+                    minecart.State = 4
+                    local testDummy = Isaac.Spawn(10,1,0,minecart.Position,Vector.Zero,nil)
+                    StageAPI.LoadIntoMinecart(minecart, testDummy)
+                    --[[for _, enemy in pairs(Isaac.FindInRadius(gridpos, 40, EntityPartition.ENEMY)) do
+                        if enemy:ToNPC() then
+                            minecart.Child = enemy
+                            break
+                        end
+                    end]]
                 end
             else
-                grid = Isaac.GridSpawn(gridData.Type, gridData.Variant, shared.Room:GetGridPosition(index), true)
+                grid = Isaac.GridSpawn(gridData.Type, gridData.Variant, gridpos, true)
             end
 
             if grid then

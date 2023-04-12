@@ -189,6 +189,9 @@ function StageAPI.AddObjectToRoomLayout(layout, index, objtype, variant, subtype
 
         if entData.Type == 999 then
             entData.Type = 1000
+        elseif entData.Type == 3001 then
+            entData.Type = 1000
+            entData.Variant = EffectVariant.FISSURE_SPAWNER
         end
 
         if StageAPI.RemappedEntities[entData.Type] then
