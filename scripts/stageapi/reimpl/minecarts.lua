@@ -1,9 +1,27 @@
 local shared = require("scripts.stageapi.shared")
 local mod = require("scripts.stageapi.mod")
 
-function StageAPI.LoadIntoMinecart(minecart, ent)
+function StageAPI.MakeMinecart(gridIndex, railVariant, entToLoad)
+	local vec = StageAPI.MinecartRailVectors[railVariant] or Vector(5.2,0)
+	local minecart = Isaac.Spawn(EntityType.ENTITY_MINECART, 1, 0, shared.Room:GetGridPosition(gridIndex), vec, nil):ToNPC()
+	minecart:ClearEntityFlags(EntityFlag.FLAG_APPEAR)
+	minecart.EntityCollisionClass = EntityCollisionClass.ENTCOLL_NONE
+	minecart.GridCollisionClass = EntityGridCollisionClass.GRIDCOLL_NONE
+	minecart.I1 = 1
+	minecart.I2 = gridIndex
+	minecart.V1 = vec
+	minecart.V2 = Vector(1,0)
+	minecart.TargetPosition = vec:Normalized()
+	minecart:GetData().IsStageAPIMinecart = true
+	if entToLoad then
+		StageAPI.LoadEntIntoMinecart(entToLoad, minecart)
+	end
+	return minecart
+end
+
+function StageAPI.LoadEntIntoMinecart(ent, minecart)
     minecart.Child = ent
-    minecart:GetData().IsStageAPIMinecart = true
+	ent.Position = minecart.Position
     ent:ClearEntityFlags(EntityFlag.FLAG_APPEAR)
     ent:AddEntityFlags(EntityFlag.FLAG_NO_KNOCKBACK | EntityFlag.FLAG_NO_PHYSICS_KNOCKBACK)
     ent.GridCollisionClass = EntityGridCollisionClass.GRIDCOLL_NONE
@@ -13,7 +31,7 @@ end
 
 mod:AddCallback(ModCallbacks.MC_NPC_UPDATE, function(_, minecart)
 	if minecart:GetData().IsStageAPIMinecart and minecart.Child then
-        minecart.Child:AddEntityFlags(EntityFlag.FLAG_NO_KNOCKBACK | EntityFlag.FLAG_NO_PHYSICS_KNOCKBACK)
+		minecart.Child:AddEntityFlags(EntityFlag.FLAG_NO_KNOCKBACK | EntityFlag.FLAG_NO_PHYSICS_KNOCKBACK)
 		minecart.Child.GridCollisionClass = EntityGridCollisionClass.GRIDCOLL_NONE
 	end
 end, EntityType.ENTITY_MINECART)
@@ -54,6 +72,12 @@ mod:AddCallback(ModCallbacks.MC_POST_NPC_RENDER, function(_, minecart, offset)
 		end
 	end
 end, EntityType.ENTITY_MINECART)
+
+mod:AddPriorityCallback(ModCallbacks.MC_NPC_UPDATE, CallbackPriority.LATE, function(_, npc)
+	if npc:GetData().StageAPIMinecart then
+		npc.Velocity = Vector.Zero
+	end
+end)
 
 mod:AddCallback(ModCallbacks.MC_POST_NPC_RENDER, function(_, npc, offset)
 	if npc:GetData().StageAPIMinecart then

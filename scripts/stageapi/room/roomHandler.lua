@@ -819,6 +819,7 @@ StageAPI.ConsoleSpawningGrid = false
 ---@return GridEntity[] gridsSpawned
 function StageAPI.LoadGridsFromDataList(grids, gridInformation, entities)
     local grids_spawned = {}
+    local minecart_points = {}
     StageAPI.GridSpawnRNG:SetSeed(shared.Room:GetSpawnSeed(), 0)
     local callbacks = StageAPI.GetCallbacks(Callbacks.PRE_SPAWN_GRID)
 
@@ -856,24 +857,7 @@ function StageAPI.LoadGridsFromDataList(grids, gridInformation, entities)
                 StageAPI.ConsoleSpawningGrid = false
 
                 if StageAPI.RailGridTypes[gridData.Type] and StageAPI.MinecartRailVariants[gridData.Variant] then
-                    local vec = StageAPI.MinecartRailVectors[gridData.Variant]
-                    local minecart = Isaac.Spawn(EntityType.ENTITY_MINECART, 1, 0, gridpos, vec, nil):ToNPC()
-                    minecart:ClearEntityFlags(EntityFlag.FLAG_APPEAR)
-                    minecart.EntityCollisionClass = EntityCollisionClass.ENTCOLL_NONE
-                    minecart.GridCollisionClass = EntityGridCollisionClass.GRIDCOLL_NONE
-                    minecart.I1 = 1
-                    minecart.I2 = index
-                    minecart.V1 = vec
-                    minecart.V2 = Vector(1,0)
-                    minecart.TargetPosition = vec
-                    local testDummy = Isaac.Spawn(10,1,0,minecart.Position,vec,nil)
-                    StageAPI.LoadIntoMinecart(minecart, testDummy)
-                    --[[for _, enemy in pairs(Isaac.FindInRadius(gridpos, 40, EntityPartition.ENEMY)) do
-                        if enemy:ToNPC() then
-                            minecart.Child = enemy
-                            break
-                        end
-                    end]]
+                    minecart_points[index] = gridData.Variant
                 end
             else
                 grid = Isaac.GridSpawn(gridData.Type, gridData.Variant, gridpos, true)
@@ -964,7 +948,7 @@ function StageAPI.LoadGridsFromDataList(grids, gridInformation, entities)
         end
     end
 
-    return grids_spawned
+    return grids_spawned, minecart_points
 end
 
 ---@return table<integer, GridInformation>
@@ -1003,14 +987,27 @@ end
 ---@return GridEntity[] gridsSpawned
 function StageAPI.LoadRoomLayout(grids, entities, doGrids, doEntities, doPersistentOnly, doAutoPersistent, gridData, avoidSpawning, persistenceData, loadingWave)
     local grids_spawned = {}
+    local minecart_points = {}
     local ents_spawned = {}
 
     if grids and doGrids then
-        grids_spawned = StageAPI.LoadGridsFromDataList(grids, gridData, entities)
+        grids_spawned, minecart_points = StageAPI.LoadGridsFromDataList(grids, gridData, entities)
     end
 
     if entities and doEntities then
         ents_spawned = StageAPI.LoadEntitiesFromEntitySets(entities, doGrids, doPersistentOnly, doAutoPersistent, avoidSpawning, persistenceData, loadingWave)
+    end
+
+    for gridIndex, railVariant in pairs(minecart_points) do
+        local ent2load
+        local gridpos = shared.Room:GetGridPosition(gridIndex)
+        for _, ent in pairs(ents_spawned) do
+            if ent:ToNPC() and ent.Position:Distance(gridpos) < 50 then
+                ent2load = ent
+                break
+            end
+        end
+        local minecart = StageAPI.MakeMinecart(gridIndex, railVariant, ent2load)
     end
 
     StageAPI.CallGridPostInit()
