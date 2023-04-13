@@ -672,8 +672,6 @@ function StageAPI.LoadEntitiesFromEntitySets(entitysets, doGrids, doPersistentOn
                                 local roomDesc = shared.Level:GetRoomByIdx(shared.Level:GetCurrentRoomIndex(), StageAPI.GetDimension())
                                 roomDesc.Flags = roomDesc.Flags | RoomDescriptor.FLAG_PITCH_BLACK
                             end
-                        elseif entityInfo.Data.Type == EntityType.ENTITY_EFFECT and entityInfo.Data.Variant == EffectVariant.FISSURE_SPAWNER then --Fissure Spawner
-                            Isaac.GridSpawn(GridEntityType.GRID_PIT, 0, entityInfo.Position, true)
                         end
 
                         local currentRoom = StageAPI.GetCurrentRoom()
@@ -717,6 +715,10 @@ function StageAPI.LoadEntitiesFromEntitySets(entitysets, doGrids, doPersistentOn
                                     local pickup = ent:ToPickup()
                                     pickup.Price = entityPersistData.Price.Price
                                     pickup.AutoUpdatePrice = entityPersistData.Price.AutoUpdate
+                                end
+
+                                if entityData.Type == EntityType.ENTITY_EFFECT and entityData.Variant == EffectVariant.FISSURE_SPAWNER then 
+                                    Isaac.GridSpawn(GridEntityType.GRID_PIT, 0, entityInfo.Position, true)
                                 end
 
                                 if followRoomRules then
