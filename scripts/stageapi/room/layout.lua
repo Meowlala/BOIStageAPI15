@@ -166,7 +166,7 @@ function StageAPI.AddObjectToRoomLayout(layout, index, objtype, variant, subtype
         end
 
         layout.GridEntitiesByIndex[gridData.Index][#layout.GridEntitiesByIndex[gridData.Index] + 1] = gridData
-    elseif StageAPI.UnsupportedTypes[objtype] then
+    elseif StageAPI.UnsupportedTypes[objtype] and not StageAPI.UnsupportedTypeExceptions[objtype.." "..variant.." "..subtype] then
         StageAPI.LogErr("Error in " .. layout.Name .. "! Entities with type " .. tostring(objtype) .. " are unsupported in StageAPI layouts!")
     elseif objtype ~= 0 then
         local entData = {
@@ -189,6 +189,9 @@ function StageAPI.AddObjectToRoomLayout(layout, index, objtype, variant, subtype
 
         if entData.Type == 999 then
             entData.Type = 1000
+        elseif entData.Type == 3001 then
+            entData.Type = 1000
+            entData.Variant = EffectVariant.FISSURE_SPAWNER
         end
 
         if StageAPI.RemappedEntities[entData.Type] then

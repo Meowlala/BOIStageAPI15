@@ -146,8 +146,12 @@ StageAPI.ConsoleSpawnedGridTypes = {
 }
 
 StageAPI.UnsupportedTypes = {
-    [970] = true, -- room darkness, water flow, water disabler, lava disabler, quest door
+    [970] = true, -- water flow, water disabler, lava disabler, quest door
     [969] = true, -- events
+}
+
+StageAPI.UnsupportedTypeExceptions = {
+    ["970 0 0"] = true, -- room darkness
 }
 
 local EntityNames = {

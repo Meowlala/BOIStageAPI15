@@ -666,9 +666,17 @@ function StageAPI.LoadEntitiesFromEntitySets(entitysets, doGrids, doPersistentOn
                             end
                         end
 
+                        if entityInfo.Data.Type == 970 then --Vanilla metadata ents
+                            shouldSpawnEntity = false
+                            if entityInfo.Data.Variant == 0 and entityInfo.Data.SubType == 0 then
+                                local roomDesc = shared.Level:GetRoomByIdx(shared.Level:GetCurrentRoomIndex(), StageAPI.GetDimension())
+                                roomDesc.Flags = roomDesc.Flags | RoomDescriptor.FLAG_PITCH_BLACK
+                            end
+                        end
+
                         local currentRoom = StageAPI.GetCurrentRoom()
                         local followRoomRules = currentRoom and not currentRoom.IgnoreRoomRules and currentRoom.FirstLoad
-                        if followRoomRules and shared.Room:IsMirrorWorld() then -- only slot machines and npcs can spawn in the mirror world
+                        if followRoomRules and StageAPI.IsMirrorDimension() then -- only slot machines and npcs can spawn in the mirror world
                             if entityInfo.Data.Type < 10 and entityInfo.Data.Type ~= EntityType.ENTITY_SLOT then
                                 shouldSpawnEntity = false
                             end
@@ -707,6 +715,10 @@ function StageAPI.LoadEntitiesFromEntitySets(entitysets, doGrids, doPersistentOn
                                     local pickup = ent:ToPickup()
                                     pickup.Price = entityPersistData.Price.Price
                                     pickup.AutoUpdatePrice = entityPersistData.Price.AutoUpdate
+                                end
+
+                                if entityData.Type == EntityType.ENTITY_EFFECT and entityData.Variant == EffectVariant.FISSURE_SPAWNER then 
+                                    Isaac.GridSpawn(GridEntityType.GRID_PIT, 0, entityInfo.Position, true)
                                 end
 
                                 if followRoomRules then
@@ -807,8 +819,9 @@ StageAPI.ConsoleSpawningGrid = false
 ---@param gridInformation? table<integer, GridInformation> if set will be used instead of grids, and set its additional data
 ---@param entities table<integer, SpawnList.EntityInfo[]>
 ---@return GridEntity[] gridsSpawned
-function StageAPI.LoadGridsFromDataList(grids, gridInformation, entities)
+function StageAPI.LoadGridsFromDataList(grids, gridInformation, entities, railsOnly)
     local grids_spawned = {}
+    local minecart_points = {}
     StageAPI.GridSpawnRNG:SetSeed(shared.Room:GetSpawnSeed(), 0)
     local callbacks = StageAPI.GetCallbacks(Callbacks.PRE_SPAWN_GRID)
 
@@ -829,7 +842,12 @@ function StageAPI.LoadGridsFromDataList(grids, gridInformation, entities)
             end
         end
 
-        if shouldSpawn and shared.Room:IsPositionInRoom(shared.Room:GetGridPosition(index), 0) then
+        if railsOnly and not StageAPI.RailGridTypes[gridData.Type] then
+            shouldSpawn = false
+        end
+
+        local gridpos = shared.Room:GetGridPosition(index)
+        if shouldSpawn and shared.Room:IsPositionInRoom(gridpos, 0) then
             local existingGrid = shared.Room:GetGridEntity(index)
             if existingGrid then
                 shared.Room:RemoveGridEntity(index, 0, false)
@@ -845,10 +863,10 @@ function StageAPI.LoadGridsFromDataList(grids, gridInformation, entities)
                 StageAPI.ConsoleSpawningGrid = false
 
                 if StageAPI.RailGridTypes[gridData.Type] and StageAPI.MinecartRailVariants[gridData.Variant] then
-                    -- TODO: Rail Cart Handling (may require redoing minecart rendering?)
+                    minecart_points[index] = gridData.Variant
                 end
             else
-                grid = Isaac.GridSpawn(gridData.Type, gridData.Variant, shared.Room:GetGridPosition(index), true)
+                grid = Isaac.GridSpawn(gridData.Type, gridData.Variant, gridpos, true)
             end
 
             if grid then
@@ -936,7 +954,7 @@ function StageAPI.LoadGridsFromDataList(grids, gridInformation, entities)
         end
     end
 
-    return grids_spawned
+    return grids_spawned, minecart_points
 end
 
 ---@return table<integer, GridInformation>
@@ -975,14 +993,25 @@ end
 ---@return GridEntity[] gridsSpawned
 function StageAPI.LoadRoomLayout(grids, entities, doGrids, doEntities, doPersistentOnly, doAutoPersistent, gridData, avoidSpawning, persistenceData, loadingWave)
     local grids_spawned = {}
+    local minecart_points = {}
     local ents_spawned = {}
 
-    if grids and doGrids then
-        grids_spawned = StageAPI.LoadGridsFromDataList(grids, gridData, entities)
+    if grids then
+        grids_spawned, minecart_points = StageAPI.LoadGridsFromDataList(grids, gridData, entities, not doGrids)
     end
 
     if entities and doEntities then
         ents_spawned = StageAPI.LoadEntitiesFromEntitySets(entities, doGrids, doPersistentOnly, doAutoPersistent, avoidSpawning, persistenceData, loadingWave)
+    end
+
+    for gridIndex, railVariant in pairs(minecart_points) do
+        local gridpos = shared.Room:GetGridPosition(gridIndex)
+        for _, ent in pairs(ents_spawned) do
+            if ent:ToNPC() and ent.Position:Distance(gridpos) < 50 then
+                StageAPI.MakeMinecart(gridIndex, railVariant, ent)
+                break
+            end
+        end
     end
 
     StageAPI.CallGridPostInit()
