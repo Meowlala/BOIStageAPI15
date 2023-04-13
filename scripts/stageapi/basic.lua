@@ -137,13 +137,6 @@ StageAPI.MinecartRailVariants = {
     [33] = true
 }
 
-StageAPI.MinecartRailVectors = {
-    [16] = Vector(-5.2,0),
-    [17] = Vector(0,-5.2),
-    [32] = Vector(5.2,0),
-    [33] = Vector(0,5.2),
-}
-
 StageAPI.ConsoleSpawnedGridTypes = {
     [1009] = true, -- event rock
     [3009] = true, -- event pit

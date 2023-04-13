@@ -1007,7 +1007,7 @@ function StageAPI.LoadRoomLayout(grids, entities, doGrids, doEntities, doPersist
                 break
             end
         end
-        local minecart = StageAPI.MakeMinecart(gridIndex, railVariant, ent2load)
+        StageAPI.MakeMinecart(gridIndex, railVariant, ent2load)
     end
 
     StageAPI.CallGridPostInit()

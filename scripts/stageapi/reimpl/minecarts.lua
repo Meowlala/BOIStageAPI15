@@ -1,6 +1,24 @@
 local shared = require("scripts.stageapi.shared")
 local mod = require("scripts.stageapi.mod")
 
+StageAPI.MinecartRailVectors = {
+    [16] = Vector(-5.2,0),
+    [17] = Vector(0,-5.2),
+    [32] = Vector(5.2,0),
+    [33] = Vector(0,5.2),
+}
+
+StageAPI.MinecartAnimOffsets = {
+	["Move1"] = -5,
+	["Move2"] = -4,
+	["Move3"] = -3,
+	["Move4"] = -1,
+	["Move5"] = 1,
+	["Move6"] = -1,
+	["Move7"] = -3,
+	["Move8"] = -4,
+}
+
 function StageAPI.MakeMinecart(gridIndex, railVariant, entToLoad)
 	local vec = StageAPI.MinecartRailVectors[railVariant] or Vector(5.2,0)
 	local minecart = Isaac.Spawn(EntityType.ENTITY_MINECART, 1, 0, shared.Room:GetGridPosition(gridIndex), vec, nil):ToNPC()
@@ -42,33 +60,15 @@ mod:AddCallback(ModCallbacks.MC_POST_NPC_RENDER, function(_, minecart, offset)
 		
 		if minecart.Child then
 			local minecartSprite = minecart:GetSprite()
-			
-			local y
-			if minecartSprite:IsPlaying("Move1") or minecartSprite:IsFinished("Move1") then
-				y = -5
-			elseif  minecartSprite:IsPlaying("Move2") or minecartSprite:IsFinished("Move2") then
-				y = -4
-			elseif  minecartSprite:IsPlaying("Move3") or minecartSprite:IsFinished("Move3") then
-				y = -3
-			elseif  minecartSprite:IsPlaying("Move4") or minecartSprite:IsFinished("Move4") then
-				y = -1
-			elseif  minecartSprite:IsPlaying("Move5") or minecartSprite:IsFinished("Move5") then
-				y = 1
-			elseif  minecartSprite:IsPlaying("Move6") or minecartSprite:IsFinished("Move6") then
-				y = -1
-			elseif  minecartSprite:IsPlaying("Move7") or minecartSprite:IsFinished("Move7") then
-				y = -3
-			elseif  minecartSprite:IsPlaying("Move8") or minecartSprite:IsFinished("Move8") then
-				y = -4
-			else
-				return
+			local y = StageAPI.MinecartAnimOffsets[minecartSprite:GetAnimation()]
+		
+			if y then
+				if minecartSprite:GetFrame() >= 3 then
+					y = y + 1
+				end
+		
+				minecart.Child.SpriteOffset = Vector(0, y)
 			end
-			
-			if minecartSprite:GetFrame() >= 3 then
-				y = y + 1
-			end
-			
-			minecart.Child.SpriteOffset = Vector(0, y)
 		end
 	end
 end, EntityType.ENTITY_MINECART)
@@ -82,8 +82,6 @@ end)
 mod:AddCallback(ModCallbacks.MC_POST_NPC_RENDER, function(_, npc, offset)
 	if npc:GetData().StageAPIMinecart then
 		local minecart = npc:GetData().StageAPIMinecart
-
-		local minecartSprite = minecart:GetSprite()
-		minecartSprite:RenderLayer(1, Isaac.WorldToRenderPosition(minecart.Position + minecart.PositionOffset) + (minecart:GetData().StageAPIMinecartRenderOffset or Vector.Zero))
+		minecart:GetSprite():RenderLayer(1, Isaac.WorldToRenderPosition(minecart.Position + minecart.PositionOffset) + (minecart:GetData().StageAPIMinecartRenderOffset or Vector.Zero))
 	end
 end)
