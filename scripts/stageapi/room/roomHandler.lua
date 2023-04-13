@@ -819,7 +819,7 @@ StageAPI.ConsoleSpawningGrid = false
 ---@param gridInformation? table<integer, GridInformation> if set will be used instead of grids, and set its additional data
 ---@param entities table<integer, SpawnList.EntityInfo[]>
 ---@return GridEntity[] gridsSpawned
-function StageAPI.LoadGridsFromDataList(grids, gridInformation, entities)
+function StageAPI.LoadGridsFromDataList(grids, gridInformation, entities, railsOnly)
     local grids_spawned = {}
     local minecart_points = {}
     StageAPI.GridSpawnRNG:SetSeed(shared.Room:GetSpawnSeed(), 0)
@@ -840,6 +840,10 @@ function StageAPI.LoadGridsFromDataList(grids, gridInformation, entities)
                     gridData = ret
                 end
             end
+        end
+
+        if railsOnly and not StageAPI.RailGridTypes[gridData.Type] then
+            shouldSpawn = false
         end
 
         local gridpos = shared.Room:GetGridPosition(index)
@@ -992,8 +996,8 @@ function StageAPI.LoadRoomLayout(grids, entities, doGrids, doEntities, doPersist
     local minecart_points = {}
     local ents_spawned = {}
 
-    if grids and doGrids then
-        grids_spawned, minecart_points = StageAPI.LoadGridsFromDataList(grids, gridData, entities)
+    if grids then
+        grids_spawned, minecart_points = StageAPI.LoadGridsFromDataList(grids, gridData, entities, not doGrids)
     end
 
     if entities and doEntities then
@@ -1001,15 +1005,13 @@ function StageAPI.LoadRoomLayout(grids, entities, doGrids, doEntities, doPersist
     end
 
     for gridIndex, railVariant in pairs(minecart_points) do
-        local ent2load
         local gridpos = shared.Room:GetGridPosition(gridIndex)
         for _, ent in pairs(ents_spawned) do
             if ent:ToNPC() and ent.Position:Distance(gridpos) < 50 then
-                ent2load = ent
+                StageAPI.MakeMinecart(gridIndex, railVariant, ent)
                 break
             end
         end
-        StageAPI.MakeMinecart(gridIndex, railVariant, ent2load)
     end
 
     StageAPI.CallGridPostInit()
