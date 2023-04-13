@@ -106,19 +106,10 @@ end
 function StageAPI.GetChampionChance()
     local chance = 0.05 --Base chance is 5%
     local isVoid = (shared.Game:GetLevel():GetStage() == LevelStage.STAGE7)
-    local championBelt 
     if isVoid then --The Void increases base chance from 5% to 75%
         chance = 0.75
     end
-    for i = 0, shared.Game:GetNumPlayers() - 1 do
-        local player = Isaac.GetPlayer(i)
-        if player:HasCollectible(CollectibleType.COLLECTIBLE_CHAMPION_BELT) then
-            championBelt = true
-            break
-
-        end
-    end
-    if championBelt and not isVoid then
+    if StageAPI.AnyPlayerHasItem(CollectibleType.COLLECTIBLE_CHAMPION_BELT) and not isVoid then
         chance = chance + 0.15 --Champion Belt adds flat 15% chance, unless the current stage is The Void
     end
     for i = 0, shared.Game:GetNumPlayers() - 1 do 

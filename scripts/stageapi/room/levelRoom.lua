@@ -618,7 +618,7 @@ function StageAPI.LevelRoom:Load(isExtraRoom, noIncrementVisit, clearNPCsOnly)
     StageAPI.CalledRoomUpdate = true
     shared.Room:Update()
     StageAPI.CalledRoomUpdate = false
-    if not self.IsClear then
+    if not (self.IsClear or StageAPI.AnyPlayerHasItem(CollectibleType.COLLECTIBLE_MERCURIUS)) then
         StageAPI.CloseDoors()
     end
 
