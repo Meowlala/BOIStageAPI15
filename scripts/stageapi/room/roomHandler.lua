@@ -82,6 +82,14 @@ local function ShouldExcludeEntityFromClearing(entity)
         )
 end
 
+function StageAPI.ShouldAutoPersist(persistentData, type, variant, sub)
+    if type == EntityType.ENTITY_PICKUP and variant == PickupVariant.PICKUP_THROWABLEBOMB then
+        return false
+    else
+        return persistentData.AutoPersists
+    end
+end
+
 ---@param keepDecoration? boolean
 ---@param doGrids? boolean
 ---@param doEnts? boolean
@@ -100,7 +108,7 @@ function StageAPI.ClearRoomLayout(keepDecoration, doGrids, doEnts, doPersistentE
         for _, ent in ipairs(Isaac.GetRoomEntities()) do
             if not ShouldExcludeEntityFromClearing(ent) and (not doNPCsOnly or ent:ToNPC()) then
                 local persistentData = StageAPI.CheckPersistence(ent.Type, ent.Variant, ent.SubType)
-                if (doPersistentEnts or (ent:ToNPC() and (not persistentData or not persistentData.AutoPersists))) and not (ent:HasEntityFlags(EntityFlag.FLAG_CHARM) or ent:HasEntityFlags(EntityFlag.FLAG_FRIENDLY) or ent:HasEntityFlags(EntityFlag.FLAG_PERSISTENT)) then
+                if (doPersistentEnts or (ent:ToNPC() and (not persistentData or not StageAPI.ShouldAutoPersist(persistentData, ent.Type, ent.Variant, ent.SubType)))) and not (ent:HasEntityFlags(EntityFlag.FLAG_CHARM) or ent:HasEntityFlags(EntityFlag.FLAG_FRIENDLY) or ent:HasEntityFlags(EntityFlag.FLAG_PERSISTENT)) then
                     ent:Remove()
                 end
             end
@@ -134,6 +142,9 @@ function StageAPI.ClearRoomLayout(keepDecoration, doGrids, doEnts, doPersistentE
             end
         end
     end
+
+    local roomDesc = shared.Level:GetRoomByIdx(shared.Level:GetCurrentRoomIndex(), StageAPI.GetDimension())
+    roomDesc.Flags = roomDesc.Flags & ~RoomDescriptor.FLAG_PITCH_BLACK
 
     StageAPI.CalledRoomUpdate = true
     shared.Room:Update()
@@ -633,7 +644,7 @@ function StageAPI.LoadEntitiesFromEntitySets(entitysets, doGrids, doPersistentOn
                             shouldSpawnEntity = false
                         end
 
-                        if shouldSpawnEntity and persistData and persistData.AutoPersists and not doAutoPersistent then
+                        if shouldSpawnEntity and persistData and StageAPI.ShouldAutoPersist(persistData, entityInfo.Data.Type, entityInfo.Data.Variant, entityInfo.Data.SubType) and not doAutoPersistent then
                             shouldSpawnEntity = false
                         end
 
@@ -711,10 +722,15 @@ function StageAPI.LoadEntitiesFromEntitySets(entitysets, doGrids, doPersistentOn
                                     ent.HitPoints = entityPersistData.Health
                                 end
 
-                                if entityPersistData and entityPersistData.Price and ent.Type == EntityType.ENTITY_PICKUP then
-                                    local pickup = ent:ToPickup()
-                                    pickup.Price = entityPersistData.Price.Price
-                                    pickup.AutoUpdatePrice = entityPersistData.Price.AutoUpdate
+                                if entityPersistData and ent.Type == EntityType.ENTITY_PICKUP then
+                                    if entityPersistData.Price then
+                                        local pickup = ent:ToPickup()
+                                        pickup.Price = entityPersistData.Price.Price
+                                        pickup.AutoUpdatePrice = entityPersistData.Price.AutoUpdate
+                                    end
+                                    if entityPersistData.OptionsPickupIndex then
+                                        pickup.OptionsPickupIndex = entityPersistData.OptionsPickupIndex
+                                    end
                                 end
 
                                 if entityData.Type == EntityType.ENTITY_EFFECT and entityData.Variant == EffectVariant.FISSURE_SPAWNER then 
@@ -774,6 +790,7 @@ function StageAPI.LoadEntitiesFromEntitySets(entitysets, doGrids, doPersistentOn
 
                                 if entityInfo.Persistent then
                                     StageAPI.SetEntityPersistenceData(ent, entityInfo.PersistentIndex, persistData)
+                                    ent:ClearEntityFlags(EntityFlag.FLAG_APPEAR)
                                 end
 
                                 if not loadingWave and ent:CanShutDoors() then

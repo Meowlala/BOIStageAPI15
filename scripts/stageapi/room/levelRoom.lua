@@ -514,8 +514,13 @@ function StageAPI.LevelRoom:SavePersistentEntities()
                 entityPersistData.Position = {X = entity.Position.X, Y = entity.Position.Y}
             end
 
-            if persistData.UpdatePrice and entity.Type == EntityType.ENTITY_PICKUP then
-                entityPersistData.Price = {Price = entity:ToPickup().Price, AutoUpdate = entity:ToPickup().AutoUpdatePrice}
+            if entity.Type == EntityType.ENTITY_PICKUP then
+                if persistData.UpdatePrice then
+                    entityPersistData.Price = {Price = entity:ToPickup().Price, AutoUpdate = entity:ToPickup().AutoUpdatePrice}
+                end
+                if persistData.UpdateOptionsPickupIndex then
+                    entityPersistData.OptionsPickupIndex = entity:ToPickup().OptionsPickupIndex
+                end
             end
 
             if persistData.StoreCheck and persistData.StoreCheck(entity, data) then
@@ -564,8 +569,13 @@ function StageAPI.LevelRoom:SavePersistentEntities()
                         entityPersistData.Position = {X = entity.Position.X, Y = entity.Position.Y}
                     end
 
-                    if persistData.UpdatePrice and entity.Type == EntityType.ENTITY_PICKUP then
-                        entityPersistData.Price = {Price = entity:ToPickup().Price, AutoUpdate = entity:ToPickup().AutoUpdatePrice}
+                    if entity.Type == EntityType.ENTITY_PICKUP then
+                        if persistData.UpdatePrice then
+                            entityPersistData.Price = {Price = entity:ToPickup().Price, AutoUpdate = entity:ToPickup().AutoUpdatePrice}
+                        end
+                        if persistData.UpdateOptionsPickupIndex then
+                            entityPersistData.UpdateOptionsPickupIndex = entity:ToPickup().OptionsPickupIndex
+                        end
                     end
 
                     StageAPI.SetEntityPersistenceData(entity, index, persistData)
