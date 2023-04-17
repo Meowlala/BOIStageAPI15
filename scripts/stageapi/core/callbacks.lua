@@ -6,6 +6,20 @@ StageAPI.LogMinor("Loading Core Callbacks")
 
 local DIMENSION_DEATH_CERTIFICATE = 2
 
+function StageAPI.RemoveRoomClearReward()
+    if StageAPI.RecentRoomClearSpawnPosition then
+        for _, pickup in pairs(Isaac.FindByType(EntityType.ENTITY_PICKUP)) do
+            if pickup.FrameCount <= 0
+            and pickup.SpawnerEntity == nil 
+            and pickup.Position:Distance(StageAPI.RecentRoomClearSpawnPosition) <= 20 then
+                pickup.Visible = false
+                pickup:Remove()
+            end
+        end
+        StageAPI.RecentRoomClearSpawnPosition = nil
+    end
+end
+
 mod:AddCallback(ModCallbacks.MC_POST_UPDATE, function()
     local currentRoom = StageAPI.GetCurrentRoom()
     if currentRoom and currentRoom.Loaded then
@@ -13,11 +27,21 @@ mod:AddCallback(ModCallbacks.MC_POST_UPDATE, function()
         currentRoom.IsClear = shared.Room:IsClear()
         currentRoom.JustCleared = nil
         if not isClear and currentRoom.IsClear then
-            currentRoom.ClearCount = currentRoom.ClearCount + 1
-            StageAPI.CallCallbacks(Callbacks.POST_ROOM_CLEAR, false)
-            currentRoom.JustCleared = true
+            currentRoom:TryTriggerEvents("RoomClear")
+            if currentRoom.PreventRewards then
+                StageAPI.RemoveRoomClearReward()
+                currentRoom.PreventRewards = false
+            else
+                currentRoom.ClearCount = currentRoom.ClearCount + 1
+                StageAPI.CallCallbacks(Callbacks.POST_ROOM_CLEAR, false)
+                currentRoom.JustCleared = true
+            end
         end
     end
+end)
+
+mod:AddCallback(ModCallbacks.MC_PRE_SPAWN_CLEAN_AWARD, function(_, rng, spawnPos)
+    StageAPI.RecentRoomClearSpawnPosition = shared.Room:FindFreePickupSpawnPosition(spawnPos)
 end)
 
 StageAPI.RoomGrids = {}
@@ -249,6 +273,13 @@ mod:AddCallback(ModCallbacks.MC_POST_RENDER, function()
         if grid then
             if grid.Desc.Type == GridEntityType.GRID_PIT then
                 pits[#pits + 1] = {grid, i}
+            elseif grid.Desc.Type == GridEntityType.GRID_PRESSURE_PLATE then
+                if StageAPI.EventTriggerPlateVariants[grid.Desc.Variant] and grid:GetSprite():GetAnimation() == "Switched" then 
+                    local currentRoom = StageAPI.GetCurrentRoom()
+                    if currentRoom then
+                        currentRoom:TryTriggerEvents(grid.Desc.Variant - 10)
+                    end
+                end
             end
 
             StageAPI.CheckStageTrapdoor(grid, i)

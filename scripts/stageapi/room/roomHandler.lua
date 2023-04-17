@@ -589,9 +589,14 @@ end
 ---@param loadingWave? boolean
 ---@return Entity[] entsSpawned
 function StageAPI.LoadEntitiesFromEntitySets(entitysets, doGrids, doPersistentOnly, doAutoPersistent, avoidSpawning, persistenceData, loadingWave)
+    local ents_to_spawn = {}
     local ents_spawned = {}
     local listCallbacks = StageAPI.GetCallbacks(Callbacks.PRE_SPAWN_ENTITY_LIST)
     local entCallbacks = StageAPI.GetCallbacks(Callbacks.PRE_SPAWN_ENTITY)
+                            
+    local currentRoom = StageAPI.GetCurrentRoom()
+    local followRoomRules = currentRoom and not currentRoom.IgnoreRoomRules and currentRoom.FirstLoad
+
     if type(entitysets) ~= "table" then
         entitysets = {entitysets}
     end
@@ -677,7 +682,16 @@ function StageAPI.LoadEntitiesFromEntitySets(entitysets, doGrids, doPersistentOn
                             end
                         end
 
-                        if entityInfo.Data.Type == 970 then --Vanilla metadata ents
+                        if entityInfo.Data.Type == 969 then --Event triggers
+                            shouldSpawnEntity = false
+                            if currentRoom and doGrids then
+                                local groupID = entityInfo.Data.Variant
+                                if entityInfo.Data.Variant == 9 then 
+                                    groupID = "RoomClear"
+                                end
+                                currentRoom:AddEventTrigger(shared.Room:GetGridIndex(entityInfo.Position), groupID, entityInfo.Position)
+                            end
+                        elseif entityInfo.Data.Type == 970 then --Vanilla metadata ents
                             shouldSpawnEntity = false
                             if entityInfo.Data.Variant == 0 and entityInfo.Data.SubType == 0 then
                                 local roomDesc = shared.Level:GetRoomByIdx(shared.Level:GetCurrentRoomIndex(), StageAPI.GetDimension())
@@ -685,8 +699,6 @@ function StageAPI.LoadEntitiesFromEntitySets(entitysets, doGrids, doPersistentOn
                             end
                         end
 
-                        local currentRoom = StageAPI.GetCurrentRoom()
-                        local followRoomRules = currentRoom and not currentRoom.IgnoreRoomRules and currentRoom.FirstLoad
                         if followRoomRules and StageAPI.IsMirrorDimension() then -- only slot machines and npcs can spawn in the mirror world
                             if entityInfo.Data.Type < 10 and entityInfo.Data.Type ~= EntityType.ENTITY_SLOT then
                                 shouldSpawnEntity = false
@@ -694,117 +706,141 @@ function StageAPI.LoadEntitiesFromEntitySets(entitysets, doGrids, doPersistentOn
                         end
 
                         if shouldSpawnEntity then
-                            local entityData = entityInfo.Data
-                            if doGrids or (entityData.Type > 9 and entityData.Type ~= EntityType.ENTITY_FIREPLACE) then
-                                local ent = Isaac.Spawn(
-                                    entityData.Type or 20,
-                                    entityData.Variant or 0,
-                                    entityData.SubType or 0,
-                                    entityInfo.Position or Vector.Zero,
-                                    Vector.Zero,
-                                    nil
-                                )
-
-                                if not ent:IsBoss() and ent:ToNPC() then
-                                    if entityData.ChampionSeed then
-                                        ent:ToNPC():MakeChampion(entityData.ChampionSeed, -1, true)
-                                        ent.HitPoints = ent.MaxHitPoints
-                                    end
-                                end
-
-                                if entityData.Type == EntityType.ENTITY_PICKUP and entityData.Variant == PickupVariant.PICKUP_COLLECTIBLE and entityData.SubType ~= 0 then -- why can corrupted data change fixed items spawns??
-                                    if ent.SubType ~= entityData.SubType then
-                                        ent:ToPickup():Morph(ent.Type, ent.Variant, entityData.SubType, true, true, true)
-                                    end
-                                end
-
-                                if entityPersistData and entityPersistData.Health then
-                                    ent.HitPoints = entityPersistData.Health
-                                end
-
-                                if entityPersistData and ent.Type == EntityType.ENTITY_PICKUP then
-                                    if entityPersistData.Price then
-                                        local pickup = ent:ToPickup()
-                                        pickup.Price = entityPersistData.Price.Price
-                                        pickup.AutoUpdatePrice = entityPersistData.Price.AutoUpdate
-                                    end
-                                    if entityPersistData.OptionsPickupIndex then
-                                        pickup.OptionsPickupIndex = entityPersistData.OptionsPickupIndex
-                                    end
-                                end
-
-                                if entityData.Type == EntityType.ENTITY_EFFECT and entityData.Variant == EffectVariant.FISSURE_SPAWNER then 
-                                    Isaac.GridSpawn(GridEntityType.GRID_PIT, 0, entityInfo.Position, true)
-                                end
-
-                                if followRoomRules then
-                                    if entityData.Type == EntityType.ENTITY_PICKUP and entityData.Variant == PickupVariant.PICKUP_COLLECTIBLE then
-                                        if currentRoom.RoomType == RoomType.ROOM_TREASURE then
-                                            local hasBrokenGlasses = StageAPI.AnyPlayerHasTrinket(TrinketType.TRINKET_BROKEN_GLASSES)
-                                    
-                                            --[[
-                                            Base game treasure rooms have:
-                                            - Subtype 0: normal treasure rooms (includes rare double item treasure rooms)
-                                            - Subtype 1: double treasure rooms (used by more options / broken glasses)
-                                            - Subtype 2: treasure rooms with restock machine (used by pay to play)
-                                            - Subtype 3: double treasure rooms with restock machine (used by both)
-                                            ]]
-
-                                            if currentRoom.Layout.Variant == 1
-                                            or currentRoom.Layout.Variant == 3
-                                            or string.find(string.lower(currentRoom.Layout.Name), "choice") 
-                                            or string.find(string.lower(currentRoom.Layout.Name), "choose") 
-                                            then
-                                                ent:ToPickup().OptionsPickupIndex = 1
-                                            end
-
-                                            local isShopItem
-                                            for _, player in ipairs(shared.Players) do
-                                                if player:GetPlayerType() == PlayerType.PLAYER_KEEPER_B then
-                                                    isShopItem = true
-                                                    break
-                                                end
-                                            end
-
-                                            if isShopItem then
-                                                ent:ToPickup().Price = 15
-                                                ent:ToPickup().AutoUpdatePrice = true
-                                            end
-
-                                            -- Per vanilla behavior, always affects extra item
-                                            -- even with other items that add a choice item
-                                            if hasBrokenGlasses then
-                                                local collectibles = Isaac.FindByType(EntityType.ENTITY_PICKUP, PickupVariant.PICKUP_COLLECTIBLE)
-                                                if collectibles[2] then
-                                                    local sprite = collectibles[2]:GetSprite()
-                                                    sprite:ReplaceSpritesheet(1, "gfx/items/collectibles/questionmark.png")
-                                                    sprite:LoadGraphics()
-                                                end
-                                            end
-                                        end
-                                    end
-                                end
-
-                                ent:GetData().StageAPISpawnedPosition = entityInfo.Position or Vector.Zero
-                                ent:GetData().StageAPIEntityListIndex = index
-
-                                if entityInfo.Persistent then
-                                    StageAPI.SetEntityPersistenceData(ent, entityInfo.PersistentIndex, persistData)
-                                    ent:ClearEntityFlags(EntityFlag.FLAG_APPEAR)
-                                end
-
-                                if not loadingWave and ent:CanShutDoors() then
-                                    shared.Room:SetClear(false)
-                                end
-
-                                StageAPI.CallCallbacks(Callbacks.POST_SPAWN_ENTITY, false, ent, entityInfo, entityList, index, doGrids, doPersistentOnly, doAutoPersistent, avoidSpawning, persistenceData, shouldSpawnEntity)
-
-                                ents_spawned[#ents_spawned + 1] = ent
+                            if doGrids or (entityInfo.Data.Type > 9 and entityInfo.Data.Type ~= EntityType.ENTITY_FIREPLACE) then
+                                ents_to_spawn[#ents_to_spawn + 1] = entityInfo
                             end
                         end
                     end
                 end
             end
+        end
+    end
+
+    for _, entityInfo in pairs(ents_to_spawn) do
+        local entityData = entityInfo.Data
+        local addedToEventTrigger = false
+
+        if currentRoom then
+            for _, eventTrigger in pairs(currentRoom:GetEventTriggers()) do
+                if eventTrigger.Position:Distance(entityInfo.Position) < 50 then
+                    local entData = {
+                        Type = entityData.Type or 20,
+                        Variant = entityData.Variant or 0,
+                        SubType = entityData.SubType or 0,
+                        Position = entityInfo.Position or Vector.Zero,
+                    }
+                    table.insert(eventTrigger.Ents, entData)
+                    addedToEventTrigger = true
+                    break
+                end
+            end
+        end
+
+        if not addedToEventTrigger then
+            local ent = Isaac.Spawn(
+                entityData.Type or 20,
+                entityData.Variant or 0,
+                entityData.SubType or 0,
+                entityInfo.Position or Vector.Zero,
+                Vector.Zero,
+                nil
+            )
+
+            if not ent:IsBoss() and ent:ToNPC() then
+                if entityData.ChampionSeed then
+                    ent:ToNPC():MakeChampion(entityData.ChampionSeed, -1, true)
+                    ent.HitPoints = ent.MaxHitPoints
+                end
+            end
+
+            if entityData.Type == EntityType.ENTITY_PICKUP and entityData.Variant == PickupVariant.PICKUP_COLLECTIBLE and entityData.SubType ~= 0 then -- why can corrupted data change fixed items spawns??
+                if ent.SubType ~= entityData.SubType then
+                    ent:ToPickup():Morph(ent.Type, ent.Variant, entityData.SubType, true, true, true)
+                end
+            end
+
+            if entityPersistData and entityPersistData.Health then
+                ent.HitPoints = entityPersistData.Health
+            end
+
+            if entityPersistData and ent.Type == EntityType.ENTITY_PICKUP then
+                if entityPersistData.Price then
+                    local pickup = ent:ToPickup()
+                    pickup.Price = entityPersistData.Price.Price
+                    pickup.AutoUpdatePrice = entityPersistData.Price.AutoUpdate
+                end
+                if entityPersistData.OptionsPickupIndex then
+                    pickup.OptionsPickupIndex = entityPersistData.OptionsPickupIndex
+                end
+            end
+
+            if entityData.Type == EntityType.ENTITY_EFFECT and entityData.Variant == EffectVariant.FISSURE_SPAWNER then 
+                Isaac.GridSpawn(GridEntityType.GRID_PIT, 0, entityInfo.Position, true)
+            end
+
+            if followRoomRules then
+                if entityData.Type == EntityType.ENTITY_PICKUP and entityData.Variant == PickupVariant.PICKUP_COLLECTIBLE then
+                    if currentRoom.RoomType == RoomType.ROOM_TREASURE then
+                        local hasBrokenGlasses = StageAPI.AnyPlayerHasTrinket(TrinketType.TRINKET_BROKEN_GLASSES)
+                
+                        --[[
+                        Base game treasure rooms have:
+                        - Subtype 0: normal treasure rooms (includes rare double item treasure rooms)
+                        - Subtype 1: double treasure rooms (used by more options / broken glasses)
+                        - Subtype 2: treasure rooms with restock machine (used by pay to play)
+                        - Subtype 3: double treasure rooms with restock machine (used by both)
+                        ]]
+
+                        if currentRoom.Layout.Variant == 1
+                        or currentRoom.Layout.Variant == 3
+                        or string.find(string.lower(currentRoom.Layout.Name), "choice") 
+                        or string.find(string.lower(currentRoom.Layout.Name), "choose") 
+                        then
+                            ent:ToPickup().OptionsPickupIndex = 1
+                        end
+
+                        local isShopItem
+                        for _, player in ipairs(shared.Players) do
+                            if player:GetPlayerType() == PlayerType.PLAYER_KEEPER_B then
+                                isShopItem = true
+                                break
+                            end
+                        end
+
+                        if isShopItem then
+                            ent:ToPickup().Price = 15
+                            ent:ToPickup().AutoUpdatePrice = true
+                        end
+
+                        -- Per vanilla behavior, always affects extra item
+                        -- even with other items that add a choice item
+                        if hasBrokenGlasses then
+                            local collectibles = Isaac.FindByType(EntityType.ENTITY_PICKUP, PickupVariant.PICKUP_COLLECTIBLE)
+                            if collectibles[2] then
+                                local sprite = collectibles[2]:GetSprite()
+                                sprite:ReplaceSpritesheet(1, "gfx/items/collectibles/questionmark.png")
+                                sprite:LoadGraphics()
+                            end
+                        end
+                    end
+                end
+            end
+
+            ent:GetData().StageAPISpawnedPosition = entityInfo.Position or Vector.Zero
+            ent:GetData().StageAPIEntityListIndex = index
+
+            if entityInfo.Persistent then
+                StageAPI.SetEntityPersistenceData(ent, entityInfo.PersistentIndex, persistData)
+                ent:ClearEntityFlags(EntityFlag.FLAG_APPEAR)
+            end
+
+            if not loadingWave and ent:CanShutDoors() then
+                shared.Room:SetClear(false)
+            end
+
+            StageAPI.CallCallbacks(Callbacks.POST_SPAWN_ENTITY, false, ent, entityInfo, entityList, index, doGrids, doPersistentOnly, doAutoPersistent, avoidSpawning, persistenceData, shouldSpawnEntity)
+
+            ents_spawned[#ents_spawned + 1] = ent
         end
     end
 
@@ -959,6 +995,11 @@ function StageAPI.LoadGridsFromDataList(grids, gridInformation, entities, railsO
                     if grid.State == 1 then
                         sprite:Play("Broken", true)
                         grid.CollisionClass = GridCollisionClass.COLLISION_NONE
+                    end
+
+                elseif grid.Desc.Type == GridEntityType.GRID_TELEPORTER then
+                    if gridData.SubType == 1 then
+                        grid.State = 2
                     end
                 end
 

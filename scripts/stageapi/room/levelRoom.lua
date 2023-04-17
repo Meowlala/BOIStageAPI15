@@ -78,7 +78,9 @@ local levelRoomCopyFromArgs = {
     "RoomsListID",
     "ReplaceVSStreak",
     "Music",
-    "NoChampions"
+    "NoChampions",
+    "EventTriggers", 
+    "TriggeredEvents",  
 }
 
 ---@param layoutName string
@@ -125,6 +127,9 @@ end
 ---@field NoChampions boolean
 ---@field JustCleared boolean
 ---@field IsPersistentRoom boolean
+---@field EventTriggers table
+---@field TriggeredEvents table
+
 StageAPI.LevelRoom = StageAPI.Class("LevelRoom")
 StageAPI.NextUniqueRoomIdentifier = 0
 function StageAPI.LevelRoom:Init(args, ...)
@@ -150,6 +155,8 @@ function StageAPI.LevelRoom:Init(args, ...)
         self.AvoidSpawning = {}
         self.ExtraSpawn = {}
         self.PersistenceData = {}
+        self.EventTriggers = {}
+        self.TriggeredEvents = {}
         self.FirstLoad = true
 
         for _, v in ipairs(levelRoomCopyFromArgs) do
@@ -651,7 +658,7 @@ local saveDataCopyDirectly = {
     "IsClear","WasClearAtStart","RoomsListName","RoomsListID","LayoutName","SpawnSeed","AwardSeed","DecorationSeed",
     "FirstLoad","Shape","RoomType","TypeOverride","PersistentData","IsExtraRoom","LastPersistentIndex",
     "RequireRoomType", "IgnoreRoomRules", "VisitCount", "ClearCount", "LevelIndex","HasWaterPits","ChallengeDone",
-    "SurpriseMiniboss", "FromData", "Dimension", "NoChampions"
+    "SurpriseMiniboss", "FromData", "Dimension", "NoChampions", "EventTriggers", "TriggeredEvents",  
 }
 
 function StageAPI.LevelRoom:GetSaveData(isExtraRoom)
@@ -808,4 +815,100 @@ function StageAPI.LevelRoom:GetPlayingMusic()
     if musicID then
         return musicID, not shared.Room:IsClear()
     end
+end
+
+function StageAPI.LevelRoom:GetEventTriggers()
+    return self.EventTriggers
+end
+
+function StageAPI.LevelRoom:AddEventTrigger(index, groupID, position)
+    groupID = groupID or 0
+    position = position or shared.Room:GetGridPosition(index)
+    local eventTrigger = {
+        Position = position,
+        GroupID = groupID.."",
+        Ents = {},
+        Triggered = false,
+    }
+    self:GetEventTriggers()[index] = eventTrigger
+    return eventTrigger
+end
+
+function StageAPI.LevelRoom:GetTriggeredEvents()
+    return self.TriggeredEvents
+end
+
+function StageAPI.LevelRoom:WasEventTriggered(groupID)
+    return self:GetTriggeredEvents()[groupID]
+end
+
+function StageAPI.LevelRoom:SetEventTriggered(groupID, triggered)
+    self:GetTriggeredEvents()[groupID] = true
+end
+
+function StageAPI.LevelRoom:TryTriggerEvents(groupID)
+    local triggeredEvents = false
+    local shouldCloseDoors = false
+    if not self:WasEventTriggered(groupID) then
+        for _, eventTrigger in pairs(self:GetEventTriggers()) do
+            if eventTrigger.GroupID == groupID.."" then
+                local spawnedDoorCloser = self:ActivateEventTrigger(eventTrigger)
+                if spawnedDoorCloser then
+                    shouldCloseDoors = true
+                end
+                triggeredEvents = true
+            end
+        end
+        self:SetEventTriggered(groupID, true)
+
+        if shouldCloseDoors then
+            if shared.Room:IsClear() then
+                StageAPI.CloseDoors()
+                self.PreventRewards = true
+            end
+            shared.Sfx:Play(SoundEffect.SOUND_SUMMONSOUND)
+            shared.Room:SetClear(false)
+        end
+    end
+
+    return triggeredEvents, shouldCloseDoors
+end
+
+function StageAPI.LevelRoom:ActivateEventTrigger(eventTrigger)
+    local spawnedDoorCloser = false
+
+    for i = 90, 360, 90 do
+        local pos = eventTrigger.Position + Vector(40,0):Rotated(i)
+        local grid = shared.Room:GetGridEntityFromPos(pos)
+        if grid and not StageAPI.IsCustomGrid(index) then
+            if grid.Desc.Type == GridEntityType.GRID_ROCK and grid.Desc.VarData == 1 then --Event rocks
+                grid:Destroy()
+                Isaac.Spawn(EntityType.ENTITY_EFFECT, EffectVariant.POOF01, 0, grid.Position, Vector.Zero, nil)
+            elseif grid.Desc.Type == GridEntityType.GRID_PIT and grid.Desc.VarData == 1 then --Event pits
+                grid:ToPit():MakeBridge(nil)
+                Isaac.Spawn(EntityType.ENTITY_EFFECT, EffectVariant.POOF01, 0, grid.Position, Vector.Zero, nil)
+            elseif grid.Desc.Type == GridEntityType.GRID_PRESSURE_PLATE and StageAPI.EventTriggerPlateVariants[grid.Desc.Variant] then --Event plates
+                grid:GetSprite():Play("Switched", true)
+            elseif grid.Desc.Type == GridEntityType.GRID_TELEPORTER then --Teleporters
+                if grid.State == 0 then
+                    grid.State = 2
+                    grid:GetSprite():Play("TurnOff", true)
+                elseif grid.State == 2 then
+                    grid.State = 0
+                    grid:GetSprite():Play("TurnOn", true)
+                end
+            end
+        end
+    end
+
+    for _, entData in pairs(eventTrigger.Ents) do
+        local ent = Isaac.Spawn(entData.Type, entData.Variant, entData.SubType, entData.Position, Vector.Zero, nil)
+        if ent:CanShutDoors() then
+            spawnedDoorCloser = true
+        end
+    end
+
+    eventTrigger.Triggered = true
+
+    return spawnedDoorCloser
 end

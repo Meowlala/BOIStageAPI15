@@ -137,6 +137,13 @@ StageAPI.MinecartRailVariants = {
     [33] = true
 }
 
+StageAPI.EventTriggerPlateVariants = {
+    [10] = true,
+    [11] = true,
+    [12] = true,
+    [13] = true,
+}
+
 StageAPI.ConsoleSpawnedGridTypes = {
     [1009] = true, -- event rock
     [3009] = true, -- event pit
@@ -147,10 +154,14 @@ StageAPI.ConsoleSpawnedGridTypes = {
 
 StageAPI.UnsupportedTypes = {
     [970] = true, -- water flow, water disabler, lava disabler, quest door
-    [969] = true, -- events
 }
 
 StageAPI.UnsupportedTypeExceptions = {
+    ["969 0 0"] = true, -- event triggers
+    ["969 1 0"] = true, 
+    ["969 2 0"] = true, 
+    ["969 3 0"] = true, 
+    ["969 9 0"] = true, 
     ["970 0 0"] = true, -- room darkness
 }
 
