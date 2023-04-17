@@ -419,6 +419,7 @@ function StageAPI.RoomMetadata:Search(searchParams, narrowEntities)
         checkIndices[index] = true
     end
 
+
     local matchingEntities = {}
     if narrowEntities then
         for _, metadataEntity in ipairs(narrowEntities) do
@@ -816,6 +817,25 @@ function table_to_string(tbl)
     return "{" .. table.concat(result, ",") .. "}"
 end
 
+function GetAdjacentIndexes(index)
+    local gridW = shared.Room:GetGridWidth()
+    local gridH = shared.Room:GetGridHeight()
+    local indexes = {[1] = index-1, [2] = index+1, [3] = index-gridW, [4] = index+gridW}
+    if index <= gridW then --Check Up index
+        table.remove(indexes, 3)
+    end 
+    if index >= gridW * (gridH - 1) then --Check Down index
+        table.remove(indexes, 4)
+    end 
+    if index % gridW == 0 then --Check Left index
+        table.remove(indexes, 1)
+    end 
+    if index % gridW == gridW - 1 then --Check Right index
+        table.remove(indexes, 2)
+    end  
+    return indexes
+end
+
 
 ---@param entities table<integer, RoomLayout_EntityData[]>
 ---@param grids table<integer, RoomLayout_GridData[]>
@@ -842,6 +862,28 @@ function StageAPI.SeparateEntityMetadata(entities, grids, seed)
             if metadata then
                 local _, newPersistentIndex = roomMetadata:AddMetadataEntity(index, entity, persistentIndex)
                 persistentIndex = newPersistentIndex
+            elseif entity.Type == 969 then --Vanilla event triggers
+                local groupID = entity.Variant + 1
+                for _, adjindex in pairs(GetAdjacentIndexes(index)) do
+                    --Detonator
+                    local detonator, newPersistentIndex = roomMetadata:AddMetadataEntity(adjindex, "Detonator", persistentIndex) 
+                    detonator.BitValues.GroupID = groupID 
+                    detonator.VanillaTrigger = true
+                    persistentIndex = newPersistentIndex
+
+                    --Spawner
+                    local spawner, newPersistentIndex = roomMetadata:AddMetadataEntity(adjindex, "Spawner", persistentIndex)
+                    spawner.BitValues.GroupID = groupID 
+                    spawner.BitValues.SingleActivation = 1
+                    persistentIndex = newPersistentIndex
+                end
+
+                --RoomClearTrigger
+                if entity.Variant == 9 then 
+                    local roomClearTrigger, newPersistentIndex = roomMetadata:AddMetadataEntity(index, "RoomClearTrigger", persistentIndex) 
+                    roomClearTrigger.BitValues.GroupID = groupID 
+                    persistentIndex = newPersistentIndex
+                end
             else
                 outList[#outList + 1] = entity
             end
