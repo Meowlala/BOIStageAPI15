@@ -870,7 +870,11 @@ function StageAPI.LoadGridsFromDataList(grids, gridInformation, entities, railsO
         if shouldSpawn and shared.Room:IsPositionInRoom(gridpos, 0) then
             local existingGrid = shared.Room:GetGridEntity(index)
             if existingGrid then
-                shared.Room:RemoveGridEntity(index, 0, false)
+                if REPENTOGON then
+                    shared.Room:RemoveGridEntityImmediate(index, 0, false)
+                else
+                    shared.Room:RemoveGridEntity(index, 0, false)
+                end
             end
             shared.Room:SetGridPath(index, 0)
 
