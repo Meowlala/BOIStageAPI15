@@ -33,10 +33,6 @@ function StageAPI.TryRemoveRoomClearReward(suppressFuture)
 end
 
 mod:AddCallback(ModCallbacks.MC_POST_UPDATE, function()
-    if StageAPI.SuppressingRoomClearRewards then
-        StageAPI.TryRemoveRoomClearReward()
-    end
-
     local currentRoom = StageAPI.GetCurrentRoom()
     if currentRoom and currentRoom.Loaded then
         local isClear = currentRoom.IsClear
@@ -78,6 +74,10 @@ end)
 
 mod:AddCallback(ModCallbacks.MC_PRE_SPAWN_CLEAN_AWARD, function(_, rng, spawnPos)
     StageAPI.RecentRoomClearSpawnPosition = shared.Room:FindFreePickupSpawnPosition(spawnPos)
+    if StageAPI.SuppressingRoomClearRewards then
+        StageAPI.SuppressingRoomClearRewards = false
+        return true
+    end
 end)
 
 StageAPI.RoomGrids = {}
