@@ -730,7 +730,7 @@ function StageAPI.GotoCustomStage(stage, playTransition, noForgetSeed)
             realstage = stage.Stage
             realStageType = stage.StageType
         else
-            if stage.LevelgenStage then
+            if stage.LevelgenStage and not StageAPI.InTestMode then
                 realstage = stage.LevelgenStage.Stage
                 realStageType = stage.LevelgenStage.StageType
             else
@@ -787,12 +787,12 @@ function StageAPI.GotoCustomStage(stage, playTransition, noForgetSeed)
         if playTransition then
             StageAPI.DelayedNextStage = stage  --The transition does not happen immediately and it can be triggered by another callback
             StageAPI.NextStage = nil
-            local gotoStage = stage.LevelgenStage and (tostring(stage.LevelgenStage.Stage) .. StageAPI.StageTypeToString[stage.LevelgenStage.StageType])
+            local gotoStage = (stage.LevelgenStage and not StageAPI.InTestMode) and (tostring(stage.LevelgenStage.Stage) .. StageAPI.StageTypeToString[stage.LevelgenStage.StageType])
                 or (tostring(absolute) .. StageAPI.StageTypeToString[replace.OverrideStageType])
 
             StageAPI.PlayTransitionAnimation(stage, {GotoStage = gotoStage}) 
         else
-            if stage.LevelgenStage then
+            if stage.LevelgenStage and not StageAPI.InTestMode then
                 Isaac.ExecuteCommand("stage " .. tostring(stage.LevelgenStage.Stage) .. StageAPI.StageTypeToString[stage.LevelgenStage.StageType])
             else
                 Isaac.ExecuteCommand("stage " .. tostring(absolute) .. StageAPI.StageTypeToString[replace.OverrideStageType])
