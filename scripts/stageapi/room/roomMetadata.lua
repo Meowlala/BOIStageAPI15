@@ -817,7 +817,7 @@ function table_to_string(tbl)
     return "{" .. table.concat(result, ",") .. "}"
 end
 
-function GetAdjacentIndexes(index)
+local function GetAdjacentIndexes(index)
     local gridW = shared.Room:GetGridWidth()
     local gridH = shared.Room:GetGridHeight()
     local indexes = {[1] = index-1, [2] = index+1, [3] = index-gridW, [4] = index+gridW}
