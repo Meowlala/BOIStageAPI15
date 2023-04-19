@@ -1152,10 +1152,10 @@ function StageAPI.GetRooms()
     return StageAPI.LevelRooms
 end
 
-function StageAPI.CloseDoors()
+function StageAPI.CloseDoors(checkDoorStop)
     for i = 0, 7 do
         local door = shared.Room:GetDoor(i)
-        if door then
+        if door and not (checkDoorStop and i == shared.Level.EnterDoor and StageAPI.AnyPlayerHasTrinket(TrinketType.TRINKET_DOOR_STOP)) then
             door:Close()
         end
     end
