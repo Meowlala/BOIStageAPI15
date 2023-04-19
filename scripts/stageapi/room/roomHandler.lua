@@ -537,7 +537,7 @@ end
 ---@return integer lastPersistentIndex
 ---@return RoomMetadata roomMetadata
 function StageAPI.ObtainSpawnObjects(layout, seed, noChampions)
-    local entitiesByIndex, gridsByIndex, roomMetadata, lastPersistentIndex = StageAPI.SeparateEntityMetadata(layout.EntitiesByIndex, layout.GridEntitiesByIndex, seed)
+    local entitiesByIndex, gridsByIndex, roomMetadata, lastPersistentIndex = StageAPI.SeparateEntityMetadata(layout.EntitiesByIndex, layout.GridEntitiesByIndex, seed, layout.Shape)
     local spawnEntities, lastPersistentIndex = StageAPI.SelectSpawnEntities(entitiesByIndex, seed, roomMetadata, lastPersistentIndex, noChampions)
     local spawnGrids = StageAPI.SelectSpawnGrids(gridsByIndex, seed)
 

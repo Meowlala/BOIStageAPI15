@@ -345,7 +345,7 @@ mod:AddCallback(ModCallbacks.MC_POST_UPDATE, function()
             end
             
             local checking = shared.Room:GetGridEntity(index)
-            if checking and (shared.Room:GetGridCollision(index) ~= 0 or metadataEntity.VanillaTrigger) then
+            if checking and (shared.Room:GetGridCollision(index) ~= GridCollisionClass.COLLISION_NONE or metadataEntity.VanillaTrigger) then
                 local destroySelf = metadataEntity.Triggered
                 if not destroySelf then
                     local adjacent = {index - 1, index + 1, index - width, index + width}
@@ -362,15 +362,20 @@ mod:AddCallback(ModCallbacks.MC_POST_UPDATE, function()
 
                 if destroySelf then
                     if (StageAPI.RockTypes[checking.Desc.Type] and not metadataEntity.VanillaTrigger) or (checking.Desc.Type == GridEntityType.GRID_ROCK and checking.Desc.VarData == 1) then
-                        checking:Destroy()
-                        Isaac.Spawn(EntityType.ENTITY_EFFECT, EffectVariant.POOF01, 0, shared.Room:GetGridPosition(index), Vector.Zero, nil)
+                        if checking:Destroy() then
+                            Isaac.Spawn(EntityType.ENTITY_EFFECT, EffectVariant.POOF01, 0, shared.Room:GetGridPosition(index), Vector.Zero, nil)
+                        end
                     elseif checking.Desc.Type == GridEntityType.GRID_PIT and (checking.Desc.VarData == 1 or not metadataEntity.VanillaTrigger) then
+                        if shared.Room:GetGridCollision(index) ~= GridCollisionClass.COLLISION_NONE then
+                            Isaac.Spawn(EntityType.ENTITY_EFFECT, EffectVariant.POOF01, 0, shared.Room:GetGridPosition(index), Vector.Zero, nil)
+                        end
                         checking:ToPit():MakeBridge(checking)
-                        Isaac.Spawn(EntityType.ENTITY_EFFECT, EffectVariant.POOF01, 0, shared.Room:GetGridPosition(index), Vector.Zero, nil)
                     elseif checking.Desc.Type == GridEntityType.GRID_PRESSURE_PLATE then
                         if StageAPI.EventTriggerPlateVariants[checking.Desc.Variant] then
-                            shared.Sfx:Play(SoundEffect.SOUND_BUTTON_PRESS)
-                            checking:GetSprite():Play("Switched", true)
+                            if checking:GetSprite():GetAnimation() == "Off" then
+                                shared.Sfx:Play(SoundEffect.SOUND_BUTTON_PRESS)
+                                checking:GetSprite():Play("Switched", true)
+                            end
                         end
                     elseif checking.Desc.Type == GridEntityType.GRID_TELEPORTER then
                         if checking.State == 0 then

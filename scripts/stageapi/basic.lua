@@ -273,7 +273,7 @@ mod:AddCallback(ModCallbacks.MC_POST_UPDATE, function()
     end
 end)
 
-mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, function()
+mod:AddPriorityCallback(ModCallbacks.MC_POST_NEW_ROOM, CallbackPriority.IMPORTANT, function()
     shared.Level = shared.Game:GetLevel()
     shared.Room = shared.Game:GetRoom()
 end)

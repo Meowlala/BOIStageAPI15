@@ -817,9 +817,9 @@ function table_to_string(tbl)
     return "{" .. table.concat(result, ",") .. "}"
 end
 
-local function GetAdjacentIndexes(index)
-    local gridW = shared.Room:GetGridWidth()
-    local gridH = shared.Room:GetGridHeight()
+function StageAPI.GetAdjacentIndexes(index, gridW, gridH)
+    local gridW = gridW or shared.Room:GetGridWidth()
+    local gridH = gridH or shared.Room:GetGridHeight()
     local indexes = {[1] = index-1, [2] = index+1, [3] = index-gridW, [4] = index+gridW}
     if index <= gridW then --Check Up index
         table.remove(indexes, 3)
@@ -836,6 +836,19 @@ local function GetAdjacentIndexes(index)
     return indexes
 end
 
+function StageAPI.GetRoomDimensionsFromShape(roomShape)
+    local gridW = 15
+    local gridH = 9
+    
+    if roomShape >= 6 then
+        gridW = 28
+    end
+    if roomShape == 4 or roomShape == 5 or roomShape >= 8 then
+        gridH = 16
+    end
+    return gridW, gridH
+end
+
 
 ---@param entities table<integer, RoomLayout_EntityData[]>
 ---@param grids table<integer, RoomLayout_GridData[]>
@@ -844,7 +857,7 @@ end
 ---@return table<integer, RoomLayout_GridData[]> outGrids
 ---@return RoomMetadata metadata
 ---@return integer? persistentIndex
-function StageAPI.SeparateEntityMetadata(entities, grids, seed)
+function StageAPI.SeparateEntityMetadata(entities, grids, seed, roomShape)
     StageAPI.RoomLoadRNG:SetSeed(seed or shared.Room:GetSpawnSeed(), 1)
     local outEntities = {}
     local roomMetadata = StageAPI.RoomMetadata()
@@ -864,7 +877,7 @@ function StageAPI.SeparateEntityMetadata(entities, grids, seed)
                 persistentIndex = newPersistentIndex
             elseif entity.Type == 969 then --Vanilla event triggers
                 local groupID = entity.Variant + 1
-                for _, adjindex in pairs(GetAdjacentIndexes(index)) do
+                for _, adjindex in pairs(StageAPI.GetAdjacentIndexes(index, StageAPI.GetRoomDimensionsFromShape(roomShape))) do
                     --Detonator
                     local detonator, newPersistentIndex = roomMetadata:AddMetadataEntity(adjindex, "Detonator", persistentIndex) 
                     detonator.BitValues.GroupID = groupID 
