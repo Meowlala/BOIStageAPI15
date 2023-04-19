@@ -272,6 +272,7 @@ mod:AddCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, function(_, button)
         end
 
         if pressed then
+            shared.Sfx:Play(SoundEffect.SOUND_BUTTON_PRESS)
             data.ButtonGridData.Triggered = true
             sprite:Play("Switched", true)
 
@@ -305,11 +306,7 @@ mod:AddCallback(ModCallbacks.MC_POST_UPDATE, function()
     for _, metadataEntity in ipairs(metadataEntities) do
         local trigger
         local index = metadataEntity.Index
-        if metadataEntity.Name == "RoomClearTrigger" then
-            if currentRoom.JustCleared then
-                trigger = true
-            end
-        elseif metadataEntity.Name == "BridgeFailsafe" then
+        if metadataEntity.Name == "BridgeFailsafe" then
             if shared.Room:GetGridCollision(index) ~= 0 then
                 if d12Used then
                     local grid = shared.Room:GetGridEntity(index)
@@ -346,9 +343,9 @@ mod:AddCallback(ModCallbacks.MC_POST_UPDATE, function()
                     metadataEntity.RecentlyTriggered = nil
                 end
             end
-
-            if shared.Room:GetGridCollision(index) ~= 0 then
-                local checking = shared.Room:GetGridEntity(index)
+            
+            local checking = shared.Room:GetGridEntity(index)
+            if checking and (shared.Room:GetGridCollision(index) ~= 0 or metadataEntity.VanillaTrigger) then
                 local destroySelf = metadataEntity.Triggered
                 if not destroySelf then
                     local adjacent = {index - 1, index + 1, index - width, index + width}
@@ -364,12 +361,27 @@ mod:AddCallback(ModCallbacks.MC_POST_UPDATE, function()
                 end
 
                 if destroySelf then
-                    if StageAPI.RockTypes[checking.Desc.Type] then
+                    if (StageAPI.RockTypes[checking.Desc.Type] and not metadataEntity.VanillaTrigger) or (checking.Desc.Type == GridEntityType.GRID_ROCK and checking.Desc.VarData == 1) then
                         checking:Destroy()
-                    elseif checking.Desc.Type == GridEntityType.GRID_PIT then
+                        Isaac.Spawn(EntityType.ENTITY_EFFECT, EffectVariant.POOF01, 0, shared.Room:GetGridPosition(index), Vector.Zero, nil)
+                    elseif checking.Desc.Type == GridEntityType.GRID_PIT and (checking.Desc.VarData == 1 or not metadataEntity.VanillaTrigger) then
                         checking:ToPit():MakeBridge(checking)
+                        Isaac.Spawn(EntityType.ENTITY_EFFECT, EffectVariant.POOF01, 0, shared.Room:GetGridPosition(index), Vector.Zero, nil)
+                    elseif checking.Desc.Type == GridEntityType.GRID_PRESSURE_PLATE then
+                        if StageAPI.EventTriggerPlateVariants[checking.Desc.Variant] then
+                            shared.Sfx:Play(SoundEffect.SOUND_BUTTON_PRESS)
+                            checking:GetSprite():Play("Switched", true)
+                        end
+                    elseif checking.Desc.Type == GridEntityType.GRID_TELEPORTER then
+                        if checking.State == 0 then
+                            checking.State = 2
+                            checking:GetSprite():Play("TurnOff", true)
+                        elseif checking.State == 2 then
+                            checking.State = 0
+                            checking:GetSprite():Play("TurnOn", true)
+                        end
                     end
-                    Isaac.Spawn(EntityType.ENTITY_EFFECT, EffectVariant.POOF01, 0, shared.Room:GetGridPosition(index), Vector.Zero, nil)
+    
                     metadataEntity.RecentlyTriggered = 4
                 end
 
@@ -396,12 +408,28 @@ mod:AddCallback(ModCallbacks.MC_POST_UPDATE, function()
                             toSpawn = blockedEntities
                         else
                             toSpawn[#toSpawn + 1] = blockedEntities[StageAPI.Random(1, #blockedEntities)]
-
                         end
 
+                        local shouldCloseDoors = false
                         for _, spawn in ipairs(toSpawn) do
                             local ent = Isaac.Spawn(spawn.Type or 20, spawn.Variant or 0, spawn.SubType or 0, shared.Room:GetGridPosition(index), Vector.Zero, nil)
                             StageAPI.CallCallbacks(Callbacks.POST_SPAWN_ENTITY, false, ent, {Data = spawn}, {}, index)
+                            
+                            if ent:ToNPC() then
+                                shared.Sfx:Play(SoundEffect.SOUND_SUMMONSOUND)
+                            end
+                            if ent:CanShutDoors() then
+                                shouldCloseDoors = true
+                            end
+                        end
+
+                        if shouldCloseDoors then
+                            if shared.Room:IsClear() then
+                                StageAPI.CloseDoors()
+                                StageAPI.TryRemoveRoomClearReward(true)
+                            end
+                            shared.Room:SetClear(false)
+                            currentRoom.IsClear = false
                         end
 
                         local onlyOnce = metadataEntity.BitValues.SingleActivation == 1
