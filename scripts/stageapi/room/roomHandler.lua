@@ -1043,7 +1043,7 @@ function StageAPI.LoadRoomLayout(grids, entities, doGrids, doEntities, doPersist
     for gridIndex, railVariant in pairs(minecart_points) do
         local gridpos = shared.Room:GetGridPosition(gridIndex)
         for _, ent in pairs(ents_spawned) do
-            if ent:ToNPC() and ent.Position:Distance(gridpos) < 50 then
+            if ent:ToNPC() and ent.Position:Distance(gridpos) < 50 and not ent:GetData().StageAPIMinecart then
                 StageAPI.MakeMinecart(gridIndex, railVariant, ent)
                 break
             end
