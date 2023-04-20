@@ -465,7 +465,17 @@ function StageAPI.SelectSpawnEntities(entities, seed, roomMetadata, lastPersiste
             end
 
             if not overridden or (stillAddRandom and #entityList > 0) then
-                addEntities[#addEntities + 1] = entityList[StageAPI.Random(1, #entityList, StageAPI.RoomLoadRNG)]
+                local randomPool = {}
+                for i, entData in pairs(entityList) do
+                    if StageAPI.IsCustomGridSpawnerEntity(entData.Type, entData.Variant, entData.SubType) then
+                        addEntities[#addEntities + 1] = entData
+                    else
+                        randomPool[#randomPool + 1] = entData
+                    end
+                end
+                if #randomPool > 0 then
+                    addEntities[#addEntities + 1] = randomPool[StageAPI.Random(1, #randomPool, StageAPI.RoomLoadRNG)]
+                end
             end
 
             if #addEntities > 0 then
