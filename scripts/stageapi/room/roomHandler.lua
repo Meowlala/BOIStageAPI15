@@ -102,6 +102,9 @@ function StageAPI.ClearRoomLayout(keepDecoration, doGrids, doEnts, doPersistentE
                 local persistentData = StageAPI.CheckPersistence(ent.Type, ent.Variant, ent.SubType)
                 if (doPersistentEnts or (ent:ToNPC() and (not persistentData or not persistentData.AutoPersists))) and not (ent:HasEntityFlags(EntityFlag.FLAG_CHARM) or ent:HasEntityFlags(EntityFlag.FLAG_FRIENDLY) or ent:HasEntityFlags(EntityFlag.FLAG_PERSISTENT)) then
                     ent:Remove()
+					if ent.Type == EntityType.ENTITY_MOMS_HAND or ent.Type == EntityType.ENTITY_MOMS_DEAD_HAND then
+                        SFXManager():Stop(SoundEffect.SOUND_MOM_VOX_EVILLAUGH)
+                    end
                 end
             end
         end
