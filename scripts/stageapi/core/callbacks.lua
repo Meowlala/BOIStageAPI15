@@ -6,17 +6,77 @@ StageAPI.LogMinor("Loading Core Callbacks")
 
 local DIMENSION_DEATH_CERTIFICATE = 2
 
+function StageAPI.TryRemoveRoomClearReward(suppressFuture)
+    local removalAttempted = false
+    local removedPickup = false
+    if StageAPI.RecentRoomClearSpawnPosition then
+        for _, pickup in pairs(Isaac.FindByType(EntityType.ENTITY_PICKUP)) do
+            if pickup.FrameCount <= 1
+            and pickup.SpawnerEntity == nil 
+            and pickup.Position:Distance(StageAPI.RecentRoomClearSpawnPosition) <= 20 then
+                pickup.Visible = false
+                pickup:Remove()
+                removedPickup = true
+            end
+        end
+        removalAttempted = true
+        StageAPI.RecentRoomClearSpawnPosition = nil
+    end
+
+    if removalAttempted then
+        StageAPI.SuppressingRoomClearRewards = false
+    elseif suppressFuture then
+        StageAPI.SuppressingRoomClearRewards = true
+    end
+
+    return removalAttempted, removedPickup
+end
+
 mod:AddCallback(ModCallbacks.MC_POST_UPDATE, function()
     local currentRoom = StageAPI.GetCurrentRoom()
     if currentRoom and currentRoom.Loaded then
         local isClear = currentRoom.IsClear
         currentRoom.IsClear = shared.Room:IsClear()
         currentRoom.JustCleared = nil
-        if not isClear and currentRoom.IsClear then
-            currentRoom.ClearCount = currentRoom.ClearCount + 1
-            StageAPI.CallCallbacks(Callbacks.POST_ROOM_CLEAR, false)
-            currentRoom.JustCleared = true
+
+        if currentRoom.ReevaluateClear then
+            if isClear then
+                currentRoom:IncrementClear()
+            end
+            currentRoom.ReevaluateClear = false
+        elseif not isClear and currentRoom.IsClear then
+            local triggered = false
+            for _, metadataEntity in ipairs(currentRoom.Metadata:Search({Name = "RoomClearTrigger"})) do
+                if not metadataEntity.Triggered then
+                    local triggerable = currentRoom.Metadata:Search({
+                        Groups = currentRoom.Metadata:GroupsWithIndex(metadataEntity.Index),
+                        Index = metadataEntity.Index,
+                        IndicesOrGroups = true,
+                        Tag = "Triggerable"
+                    })
+
+                    for _, metaEnt in ipairs(triggerable) do
+                        metaEnt.Triggered = true
+                        triggered = true
+                    end
+                    metadataEntity.Triggered = true
+                end
+            end
+
+            if triggered then
+                currentRoom.ReevaluateClear = true
+            else
+                currentRoom:IncrementClear()
+            end
         end
+    end
+end)
+
+mod:AddCallback(ModCallbacks.MC_PRE_SPAWN_CLEAN_AWARD, function(_, rng, spawnPos)
+    StageAPI.RecentRoomClearSpawnPosition = shared.Room:FindFreePickupSpawnPosition(spawnPos)
+    if StageAPI.SuppressingRoomClearRewards then
+        StageAPI.SuppressingRoomClearRewards = false
+        return true
     end
 end)
 
@@ -249,6 +309,24 @@ mod:AddCallback(ModCallbacks.MC_POST_RENDER, function()
         if grid then
             if grid.Desc.Type == GridEntityType.GRID_PIT then
                 pits[#pits + 1] = {grid, i}
+            elseif grid.Desc.Type == GridEntityType.GRID_PRESSURE_PLATE then
+                if StageAPI.EventTriggerPlateVariants[grid.Desc.Variant] then
+                    local gridSprite = grid:GetSprite()
+                    if gridSprite:GetAnimation() == "Switched" and gridSprite:GetFrame() == 0 then 
+                        local currentRoom = StageAPI.GetCurrentRoom()
+                        if currentRoom then
+                            local groupID = grid.Desc.Variant - 9
+                            local triggerable = currentRoom.Metadata:Search({
+                                Group = groupID,
+                                Tag = "Triggerable"
+                            })
+            
+                            for _, metaEnt in ipairs(triggerable) do
+                                metaEnt.Triggered = true
+                            end
+                        end
+                    end
+                end
             end
 
             StageAPI.CheckStageTrapdoor(grid, i)
@@ -766,6 +844,7 @@ mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, function()
     StageAPI.EarlyNewRoomTriggered = false
     StageAPI.RecentlyChangedLevel = false
     StageAPI.RecentlyStartedGame = false
+    StageAPI.SuppressingRoomClearRewards = false
 
     if StageAPI.TransitioningToExtraRoom and StageAPI.IsRoomTopLeftShifted() and not StageAPI.DoubleTransitioning then
         StageAPI.DoubleTransitioning = true
@@ -792,7 +871,7 @@ mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, function()
 
     if StageAPI.NextStage and not StageAPI.DoubleTransitioning then
         StageAPI.CallCallbacksWithParams(Callbacks.EARLY_NEW_CUSTOM_STAGE, false, StageAPI.NextStage, StageAPI.NextStage)
-        if StageAPI.NextStage.LevelgenStage then
+        if StageAPI.NextStage.LevelgenStage and not StageAPI.InTestMode then
             StageAPI.DoubleTransitioning = true
             local replace = StageAPI.NextStage.Replaces
             shared.Level:SetStage(replace.OverrideStage, replace.OverrideStageType)
@@ -1261,7 +1340,7 @@ mod:AddCallback(ModCallbacks.MC_PRE_ROOM_ENTITY_SPAWN, function(_, t, v, s, inde
         else
             local currentListIndex = StageAPI.GetCurrentRoomID()
             local roomGrids = StageAPI.GetTableIndexedByDimension(StageAPI.RoomGrids, true)
-            if roomGrids[currentListIndex] and not roomGrids[currentListIndex][index] then
+            if (roomGrids[currentListIndex] and not roomGrids[currentListIndex][index]) or StageAPI.RailGridTypes[t] then
                 shouldReturn = true
             end
         end

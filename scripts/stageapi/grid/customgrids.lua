@@ -543,7 +543,7 @@ function StageAPI.GetNearestCustomGrid(position, name)
         end
     end
 
-    return customGrid
+    return nearest
 end
 
 function StageAPI.GetLiftedCustomGrids(ignoreMarked, includeRecent)

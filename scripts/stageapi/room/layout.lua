@@ -154,6 +154,7 @@ function StageAPI.AddObjectToRoomLayout(layout, index, objtype, variant, subtype
         local gridData = {
             Type = t,
             Variant = v,
+            SubType = subtype,
             GridX = gridX,
             GridY = gridY,
             Index = index

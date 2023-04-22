@@ -78,7 +78,7 @@ local levelRoomCopyFromArgs = {
     "RoomsListID",
     "ReplaceVSStreak",
     "Music",
-    "NoChampions"
+    "NoChampions",
 }
 
 ---@param layoutName string
@@ -125,6 +125,7 @@ end
 ---@field NoChampions boolean
 ---@field JustCleared boolean
 ---@field IsPersistentRoom boolean
+
 StageAPI.LevelRoom = StageAPI.Class("LevelRoom")
 StageAPI.NextUniqueRoomIdentifier = 0
 function StageAPI.LevelRoom:Init(args, ...)
@@ -514,8 +515,13 @@ function StageAPI.LevelRoom:SavePersistentEntities()
                 entityPersistData.Position = {X = entity.Position.X, Y = entity.Position.Y}
             end
 
-            if persistData.UpdatePrice and entity.Type == EntityType.ENTITY_PICKUP then
-                entityPersistData.Price = {Price = entity:ToPickup().Price, AutoUpdate = entity:ToPickup().AutoUpdatePrice}
+            if entity.Type == EntityType.ENTITY_PICKUP then
+                if persistData.UpdatePrice then
+                    entityPersistData.Price = {Price = entity:ToPickup().Price, AutoUpdate = entity:ToPickup().AutoUpdatePrice}
+                end
+                if persistData.UpdateOptionsPickupIndex then
+                    entityPersistData.OptionsPickupIndex = entity:ToPickup().OptionsPickupIndex
+                end
             end
 
             if persistData.StoreCheck and persistData.StoreCheck(entity, data) then
@@ -564,8 +570,13 @@ function StageAPI.LevelRoom:SavePersistentEntities()
                         entityPersistData.Position = {X = entity.Position.X, Y = entity.Position.Y}
                     end
 
-                    if persistData.UpdatePrice and entity.Type == EntityType.ENTITY_PICKUP then
-                        entityPersistData.Price = {Price = entity:ToPickup().Price, AutoUpdate = entity:ToPickup().AutoUpdatePrice}
+                    if entity.Type == EntityType.ENTITY_PICKUP then
+                        if persistData.UpdatePrice then
+                            entityPersistData.Price = {Price = entity:ToPickup().Price, AutoUpdate = entity:ToPickup().AutoUpdatePrice}
+                        end
+                        if persistData.UpdateOptionsPickupIndex then
+                            entityPersistData.UpdateOptionsPickupIndex = entity:ToPickup().OptionsPickupIndex
+                        end
                     end
 
                     StageAPI.SetEntityPersistenceData(entity, index, persistData)
@@ -618,8 +629,8 @@ function StageAPI.LevelRoom:Load(isExtraRoom, noIncrementVisit, clearNPCsOnly)
     StageAPI.CalledRoomUpdate = true
     shared.Room:Update()
     StageAPI.CalledRoomUpdate = false
-    if not self.IsClear then
-        StageAPI.CloseDoors()
+    if not (self.IsClear or StageAPI.AnyPlayerHasItem(CollectibleType.COLLECTIBLE_MERCURIUS)) then
+        StageAPI.CloseDoors(true)
     end
 
     self.Loaded = true
@@ -641,7 +652,7 @@ local saveDataCopyDirectly = {
     "IsClear","WasClearAtStart","RoomsListName","RoomsListID","LayoutName","SpawnSeed","AwardSeed","DecorationSeed",
     "FirstLoad","Shape","RoomType","TypeOverride","PersistentData","IsExtraRoom","LastPersistentIndex",
     "RequireRoomType", "IgnoreRoomRules", "VisitCount", "ClearCount", "LevelIndex","HasWaterPits","ChallengeDone",
-    "SurpriseMiniboss", "FromData", "Dimension", "NoChampions"
+    "SurpriseMiniboss", "FromData", "Dimension", "NoChampions",
 }
 
 function StageAPI.LevelRoom:GetSaveData(isExtraRoom)
@@ -798,4 +809,11 @@ function StageAPI.LevelRoom:GetPlayingMusic()
     if musicID then
         return musicID, not shared.Room:IsClear()
     end
+end
+
+function StageAPI.LevelRoom:IncrementClear()
+    self.ClearCount = self.ClearCount + 1
+    StageAPI.CallCallbacks(Callbacks.POST_ROOM_CLEAR, false)
+    self.JustCleared = true
+    StageAPI.RecentRoomClearSpawnPosition = nil
 end
