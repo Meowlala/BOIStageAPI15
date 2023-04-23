@@ -592,7 +592,7 @@ function StageAPI.GetCustomGridIndices(name)
     local grids = StageAPI.GetCustomGrids(nil, name)
     for _, customGrid in ipairs(grids) do
         if customGrid:IsOnGrid() and customGrid.GridIndex then
-            indeces[#indices + 1] = customGrid.GridIndex
+            indices[#indices + 1] = customGrid.GridIndex
         end
     end
 
