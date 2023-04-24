@@ -567,7 +567,16 @@ function StageAPI.CustomStage:SetPregenerationEnabled(setTo)
 end
 
 function StageAPI.CustomStage:HasMirrorDimension()
-    return ((self.LevelgenStage.Stage == LevelStage.STAGE1_2 or (self:IsStage() and shared.Level:GetCurses() & LevelCurse.CURSE_OF_LABYRINTH ~= 0)) and (self.LevelgenStage.StageType == StageType.STAGETYPE_REPENTANCE or self.LevelgenStage.StageType == StageType.STAGETYPE_REPENTANCE_B))
+    local vanillaStage, vanillaStageType
+    if self.LevelgenStage then
+        vanillaStage, vanillaStageType = self.LevelgenStage.Stage, self.LevelgenStage.StageType
+    elseif self.Replaces then
+        vanillaStage, vanillaStageType = self.Replaces.OverrideStage, self.Replaces.OverrideStageType
+    end
+    if vanillaStage and vanillaStageType then
+        return ((vanillaStage == LevelStage.STAGE1_2 or (self:IsStage() and shared.Level:GetCurses() & LevelCurse.CURSE_OF_LABYRINTH ~= 0)) 
+            and (vanillaStageType == StageType.STAGETYPE_REPENTANCE or vanillaStageType == StageType.STAGETYPE_REPENTANCE_B))
+    end
 end
 
 function StageAPI.IsMirrorDimension()
