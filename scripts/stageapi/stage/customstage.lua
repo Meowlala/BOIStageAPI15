@@ -610,7 +610,7 @@ function StageAPI.CustomStage:HasMirrorDimension()
     local vanillaStage, vanillaStageType
     if self.LevelgenStage then
         vanillaStage, vanillaStageType = self.LevelgenStage.Stage, self.LevelgenStage.StageType
-    else
+    elseif self.Replaces then
         vanillaStage, vanillaStageType = self.Replaces.OverrideStage, self.Replaces.OverrideStageType
     end
     return ((vanillaStage == LevelStage.STAGE1_2 or (self:IsStage() and shared.Level:GetCurses() & LevelCurse.CURSE_OF_LABYRINTH ~= 0)) 

@@ -468,7 +468,17 @@ function StageAPI.SelectSpawnEntities(entities, seed, roomMetadata, lastPersiste
             end
 
             if not overridden or (stillAddRandom and #entityList > 0) then
-                addEntities[#addEntities + 1] = entityList[StageAPI.Random(1, #entityList, StageAPI.RoomLoadRNG)]
+                local randomPool = {}
+                for i, entData in pairs(entityList) do
+                    if StageAPI.IsCustomGridSpawnerEntity(entData.Type, entData.Variant, entData.SubType) then
+                        addEntities[#addEntities + 1] = entData
+                    else
+                        randomPool[#randomPool + 1] = entData
+                    end
+                end
+                if #randomPool > 0 then
+                    addEntities[#addEntities + 1] = randomPool[StageAPI.Random(1, #randomPool, StageAPI.RoomLoadRNG)]
+                end
             end
 
             if #addEntities > 0 then
@@ -540,7 +550,7 @@ end
 ---@return integer lastPersistentIndex
 ---@return RoomMetadata roomMetadata
 function StageAPI.ObtainSpawnObjects(layout, seed, noChampions)
-    local entitiesByIndex, gridsByIndex, roomMetadata, lastPersistentIndex = StageAPI.SeparateEntityMetadata(layout.EntitiesByIndex, layout.GridEntitiesByIndex, seed)
+    local entitiesByIndex, gridsByIndex, roomMetadata, lastPersistentIndex = StageAPI.SeparateEntityMetadata(layout.EntitiesByIndex, layout.GridEntitiesByIndex, seed, layout.Shape)
     local spawnEntities, lastPersistentIndex = StageAPI.SelectSpawnEntities(entitiesByIndex, seed, roomMetadata, lastPersistentIndex, noChampions)
     local spawnGrids = StageAPI.SelectSpawnGrids(gridsByIndex, seed)
 
@@ -1046,7 +1056,7 @@ function StageAPI.LoadRoomLayout(grids, entities, doGrids, doEntities, doPersist
     for gridIndex, railVariant in pairs(minecart_points) do
         local gridpos = shared.Room:GetGridPosition(gridIndex)
         for _, ent in pairs(ents_spawned) do
-            if ent:ToNPC() and ent.Position:Distance(gridpos) < 50 then
+            if ent:ToNPC() and ent.Position:Distance(gridpos) < 50 and not ent:GetData().StageAPIMinecart then
                 StageAPI.MakeMinecart(gridIndex, railVariant, ent)
                 break
             end

@@ -532,20 +532,6 @@ function StageAPI.GetCustomGrids(index, name)
     return matches
 end
 
-function StageAPI.GetNearestCustomGrid(position, name)
-    local nearest
-    local dist = 99999
-    local grids = StageAPI.GetCustomGrids(nil, name)
-    for _, customGrid in ipairs(grids) do
-        if customGrid.Position:Distance(position) < dist then
-            nearest = customGrid
-            dist = customGrid.Position:Distance(position)
-        end
-    end
-
-    return nearest
-end
-
 function StageAPI.GetLiftedCustomGrids(ignoreMarked, includeRecent)
     local customGrids = StageAPI.GetCustomGrids()
     local lifted = {}
@@ -585,6 +571,32 @@ end
 
 function StageAPI.GetCustomGrid(index, name)
     return StageAPI.GetCustomGrids(index, name)[1]
+end
+
+function StageAPI.GetNearestCustomGrid(position, name)
+    local nearest
+    local dist = 99999
+    local grids = StageAPI.GetCustomGrids(nil, name)
+    for _, customGrid in ipairs(grids) do
+        if customGrid.Position:Distance(position) < dist then
+            nearest = customGrid
+            dist = customGrid.Position:Distance(position)
+        end
+    end
+
+    return nearest
+end
+
+function StageAPI.GetCustomGridIndices(name)
+    local indices = {}
+    local grids = StageAPI.GetCustomGrids(nil, name)
+    for _, customGrid in ipairs(grids) do
+        if customGrid:IsOnGrid() and customGrid.GridIndex then
+            indices[#indices + 1] = customGrid.GridIndex
+        end
+    end
+
+    return indices
 end
 
 mod:AddCallback(ModCallbacks.MC_POST_UPDATE, function()
