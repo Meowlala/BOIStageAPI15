@@ -125,6 +125,7 @@ end
 ---@field NoChampions boolean
 ---@field JustCleared boolean
 ---@field IsPersistentRoom boolean
+---@field Layout RoomLayout
 
 StageAPI.LevelRoom = StageAPI.Class("LevelRoom")
 StageAPI.NextUniqueRoomIdentifier = 0
@@ -180,6 +181,11 @@ function StageAPI.LevelRoom:Init(args, ...)
 
         self:GetLayout()
         self:PostGetLayout(self.SpawnSeed)
+
+        if self.Music == -1 then
+            self.Music = nil
+            StageAPI.LogWarn("LevelRoom '", self.Layout and self.Layout.Name, "' created with -1 music! at ", StageAPI.TryGetCallInfo(3))
+        end
     end
 
     StageAPI.CallCallbacks(Callbacks.POST_ROOM_INIT, false, self, not not args.FromSave, args.FromSave)
@@ -629,8 +635,8 @@ function StageAPI.LevelRoom:Load(isExtraRoom, noIncrementVisit, clearNPCsOnly)
     StageAPI.CalledRoomUpdate = true
     shared.Room:Update()
     StageAPI.CalledRoomUpdate = false
-    if not self.IsClear then
-        StageAPI.CloseDoors()
+    if not (self.IsClear or StageAPI.AnyPlayerHasItem(CollectibleType.COLLECTIBLE_MERCURIUS)) then
+        StageAPI.CloseDoors(true)
     end
 
     self.Loaded = true
@@ -803,7 +809,11 @@ function StageAPI.LevelRoom:GetPlayingMusic()
         self, musicID, roomType, self.LevelIndex, StageAPI.MusicRNG
     )
     if newMusicID then
-        musicID = newMusicID
+        if newMusicID == -1 then
+            StageAPI.LogWarn("LevelRoom '", self.Layout and self.Layout.Name, "': POST_SELECT_ROOM_MUSIC returned -1!")
+        else
+            musicID = newMusicID
+        end
     end
 
     if musicID then

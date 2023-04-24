@@ -110,6 +110,9 @@ function StageAPI.ClearRoomLayout(keepDecoration, doGrids, doEnts, doPersistentE
                 local persistentData = StageAPI.CheckPersistence(ent.Type, ent.Variant, ent.SubType)
                 if (doPersistentEnts or (ent:ToNPC() and (not persistentData or not StageAPI.ShouldAutoPersist(persistentData, ent.Type, ent.Variant, ent.SubType)))) and not (ent:HasEntityFlags(EntityFlag.FLAG_CHARM) or ent:HasEntityFlags(EntityFlag.FLAG_FRIENDLY) or ent:HasEntityFlags(EntityFlag.FLAG_PERSISTENT)) then
                     ent:Remove()
+					if ent.Type == EntityType.ENTITY_MOMS_HAND or ent.Type == EntityType.ENTITY_MOMS_DEAD_HAND then
+                        SFXManager():Stop(SoundEffect.SOUND_MOM_VOX_EVILLAUGH)
+                    end
                 end
             end
         end
@@ -1198,10 +1201,10 @@ function StageAPI.GetRooms()
     return StageAPI.LevelRooms
 end
 
-function StageAPI.CloseDoors()
+function StageAPI.CloseDoors(checkDoorStop)
     for i = 0, 7 do
         local door = shared.Room:GetDoor(i)
-        if door then
+        if door and not (checkDoorStop and i == shared.Level.EnterDoor and StageAPI.AnyPlayerHasTrinket(TrinketType.TRINKET_DOOR_STOP)) then
             door:Close()
         end
     end

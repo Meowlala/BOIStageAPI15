@@ -871,7 +871,7 @@ mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, function()
 
     if StageAPI.NextStage and not StageAPI.DoubleTransitioning then
         StageAPI.CallCallbacksWithParams(Callbacks.EARLY_NEW_CUSTOM_STAGE, false, StageAPI.NextStage, StageAPI.NextStage)
-        if StageAPI.NextStage.LevelgenStage then
+        if StageAPI.NextStage.LevelgenStage and not StageAPI.InTestMode then
             StageAPI.DoubleTransitioning = true
             local replace = StageAPI.NextStage.Replaces
             shared.Level:SetStage(replace.OverrideStage, replace.OverrideStageType)

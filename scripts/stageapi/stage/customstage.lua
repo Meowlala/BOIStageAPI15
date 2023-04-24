@@ -196,9 +196,18 @@ function StageAPI.CustomStage:SetGreedModeWaves(rooms, bossRooms, devilRooms)
     }
 end
 
+local function AssertValidMusic(music)
+    return music ~= -1
+end
+
 ---@param music Music
 ---@param rtype RoomType
 function StageAPI.CustomStage:SetMusic(music, rtype)
+    if not AssertValidMusic(music) then
+        StageAPI.LogWarn(self.Name, " CustomStage:SetMusic | invalid music value ", music, " at ", StageAPI.TryGetCallInfo(2))
+        return
+    end
+
     if not self.Music then
         self.Music = {}
     end
@@ -213,6 +222,11 @@ function StageAPI.CustomStage:SetMusic(music, rtype)
 end
 
 function StageAPI.CustomStage:SetStageMusic(music)
+    if not AssertValidMusic(music) then
+        StageAPI.LogWarn(self.Name, " CustomStage:SetStageMusic | invalid music value ", music, " at ", StageAPI.TryGetCallInfo(2))
+        return
+    end
+
     self:SetMusic(music, {
         RoomType.ROOM_DEFAULT,
         RoomType.ROOM_TREASURE,
@@ -228,11 +242,23 @@ function StageAPI.CustomStage:SetStageMusic(music)
 end
 
 function StageAPI.CustomStage:SetTransitionMusic(music)
+    if not AssertValidMusic(music) then
+        StageAPI.LogWarn(self.Name, " CustomStage:SetTransitionMusic | invalid music value ", music, " at ", StageAPI.TryGetCallInfo(2))
+        return
+    end
+
     self.TransitionMusic = music
     StageAPI.StopOverridingMusic(music)
 end
 
 function StageAPI.CustomStage:SetBossMusic(music, clearedMusic, intro, outro)
+    if not (AssertValidMusic(music) and AssertValidMusic(clearedMusic) and AssertValidMusic(intro) and AssertValidMusic(outro)) then
+        StageAPI.LogWarn(self.Name, " CustomStage:SetBossMusic | invalid music value between ", 
+            music, " ", clearedMusic, " ", intro, " ", outro
+            " at ", StageAPI.TryGetCallInfo(2))
+        return
+    end
+
     self.BossMusic = {
         Fight = music,
         Cleared = clearedMusic,
@@ -243,6 +269,13 @@ end
 
 -- By default, miniboss = sins
 function StageAPI.CustomStage:SetMinibossMusic(music, clearedMusic, intro, outro)
+    if not (AssertValidMusic(music) and AssertValidMusic(clearedMusic) and AssertValidMusic(intro) and AssertValidMusic(outro)) then
+        StageAPI.LogWarn(self.Name, " CustomStage:SetMinibossMusic | invalid music value between ", 
+            music, " ", clearedMusic, " ", intro, " ", outro
+            " at ", StageAPI.TryGetCallInfo(2))
+        return
+    end
+
     self.MinibossMusic = {
         Fight = music,
         Cleared = clearedMusic,
@@ -252,6 +285,13 @@ function StageAPI.CustomStage:SetMinibossMusic(music, clearedMusic, intro, outro
 end
 
 function StageAPI.CustomStage:SetChallengeMusic(music, clearedMusic, intro, outro)
+    if not (AssertValidMusic(music) and AssertValidMusic(clearedMusic) and AssertValidMusic(intro) and AssertValidMusic(outro)) then
+        StageAPI.LogWarn(self.Name, " CustomStage:SetChallengeMusic | invalid music value between ", 
+            music, " ", clearedMusic, " ", intro, " ", outro
+            " at ", StageAPI.TryGetCallInfo(2))
+        return
+    end
+
     self.ChallengeMusic = {
         Fight = music,
         Cleared = clearedMusic,
@@ -573,10 +613,8 @@ function StageAPI.CustomStage:HasMirrorDimension()
     elseif self.Replaces then
         vanillaStage, vanillaStageType = self.Replaces.OverrideStage, self.Replaces.OverrideStageType
     end
-    if vanillaStage and vanillaStageType then
-        return ((vanillaStage == LevelStage.STAGE1_2 or (self:IsStage() and shared.Level:GetCurses() & LevelCurse.CURSE_OF_LABYRINTH ~= 0)) 
-            and (vanillaStageType == StageType.STAGETYPE_REPENTANCE or vanillaStageType == StageType.STAGETYPE_REPENTANCE_B))
-    end
+    return ((vanillaStage == LevelStage.STAGE1_2 or (self:IsStage() and shared.Level:GetCurses() & LevelCurse.CURSE_OF_LABYRINTH ~= 0)) 
+        and (vanillaStageType == StageType.STAGETYPE_REPENTANCE or vanillaStageType == StageType.STAGETYPE_REPENTANCE_B))
 end
 
 function StageAPI.IsMirrorDimension()
@@ -650,7 +688,11 @@ function StageAPI.CustomStage:GetPlayingMusic()
 
             local newMusicID = StageAPI.CallCallbacks(Callbacks.POST_SELECT_BOSS_MUSIC, true, self, musicID, isCleared, StageAPI.MusicRNG)
             if newMusicID then
-                musicID = newMusicID
+                if AssertValidMusic(newMusicID) then
+                    musicID = newMusicID
+                else
+                    StageAPI.LogWarn(self.Name, " | POST_SELECT_BOSS_MUSIC returned invalid value ", newMusicID)
+                end
             end
 
             if musicID then
@@ -687,7 +729,11 @@ function StageAPI.CustomStage:GetPlayingMusic()
 
             local newMusicID = StageAPI.CallCallbacks(Callbacks.POST_SELECT_MINIBOSS_MUSIC, true, self, musicID, isCleared, StageAPI.MusicRNG)
             if newMusicID then
-                musicID = newMusicID
+                if AssertValidMusic(newMusicID) then
+                    musicID = newMusicID
+                else
+                    StageAPI.LogWarn(self.Name, " | POST_SELECT_MINIBOSS_MUSIC returned invalid value ", newMusicID)
+                end
             end
 
             if musicID then
@@ -702,7 +748,11 @@ function StageAPI.CustomStage:GetPlayingMusic()
             local musicID = music[roomType]
             local newMusicID = StageAPI.CallCallbacks(Callbacks.POST_SELECT_STAGE_MUSIC, true, self, musicID, roomType, StageAPI.MusicRNG)
             if newMusicID then
-                musicID = newMusicID
+                if AssertValidMusic(newMusicID) then
+                    musicID = newMusicID
+                else
+                    StageAPI.LogWarn(self.Name, " | POST_SELECT_STAGE_MUSIC returned invalid value ", newMusicID)
+                end
             end
 
             if musicID then
@@ -754,7 +804,11 @@ function StageAPI.CustomStage:GetPlayingMusic()
 
             local newMusicID = StageAPI.CallCallbacks(Callbacks.POST_SELECT_CHALLENGE_MUSIC, true, self, musicID, isCleared, StageAPI.MusicRNG)
             if newMusicID then
-                musicID = newMusicID
+                if AssertValidMusic(newMusicID) then
+                    musicID = newMusicID
+                else
+                    StageAPI.LogWarn(self.Name, " | POST_SELECT_CHALLENGE_MUSIC returned invalid value ", newMusicID)
+                end
             end
 
             if musicID then
