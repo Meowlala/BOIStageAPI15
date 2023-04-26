@@ -767,7 +767,7 @@ mod:AddCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, function(_, effect)
                     grids = currentStage.RoomGfx[rType].Grids
                 end
             end
-            if grids then
+            if grids and grids.Rocks then
                 sprite:ReplaceSpritesheet(0, grids.Rocks)
                 sprite:LoadGraphics()
             end
