@@ -751,3 +751,26 @@ function StageAPI.ChangeGrids(grids)
         end
     end
 end
+
+mod:AddCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, function(_, effect)
+    if effect.FrameCount == 1 and effect.SubType == 0 then
+        local sprite = effect:GetSprite()
+        if sprite:GetFilename() == "gfx/grid/grid_rock.anm2" then
+            local grids
+            local currentRoom = StageAPI.GetCurrentRoom()
+            if currentRoom and currentRoom.Data.RoomGfx then
+                grids = currentRoom.Data.RoomGfx.Grids
+            else
+                local currentStage = StageAPI.GetCurrentStage()
+                local rType = StageAPI.GetCurrentRoomType()
+                if currentStage and currentStage.RoomGfx and currentStage.RoomGfx[rType] and currentStage.RoomGfx[rType].Grids then
+                    grids = currentStage.RoomGfx[rType].Grids
+                end
+            end
+            if grids then
+                sprite:ReplaceSpritesheet(0, grids.Rocks)
+                sprite:LoadGraphics()
+            end
+        end
+    end
+end, EffectVariant.ROCK_PARTICLE)
