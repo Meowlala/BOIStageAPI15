@@ -855,7 +855,6 @@ StageAPI.ConsoleSpawningGrid = false
 function StageAPI.LoadGridsFromDataList(grids, gridInformation, entities, railsOnly)
     local grids_spawned = {}
     local minecart_points = {}
-    local fools_gold_replacements = {}
     StageAPI.GridSpawnRNG:SetSeed(shared.Room:GetSpawnSeed(), 0)
     local callbacks = StageAPI.GetCallbacks(Callbacks.PRE_SPAWN_GRID)
 
