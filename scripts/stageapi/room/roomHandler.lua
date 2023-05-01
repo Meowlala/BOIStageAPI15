@@ -1006,6 +1006,67 @@ function StageAPI.LoadGridsFromDataList(grids, gridInformation, entities, railsO
     return grids_spawned, minecart_points
 end
 
+StageAPI.AddCallback("StageAPI", "PRE_SPAWN_GRID", 0, function(gridEntry, gridInformation, entitySets, rng) --Handle rock replacements
+    if gridEntry.Type == GridEntityType.GRID_ROCK then
+        local currentRoom = StageAPI.GetCurrentRoom()
+        if not (gridEntry.SubType == 1 or currentRoom.Metadata:Has{Index = gridEntry.Index, Name = "PreventRandomization"}) then
+            local roll = StageAPI.Random(1, 100, rng)
+            local gridType
+            if shared.Room:GetTintedRockIdx() == gridEntry.Index then
+                if roll <= 5 then
+                    gridType = GridEntityType.GRID_ROCK_SS --Super Secret Rocks
+                else
+                    gridType = GridEntityType.GRID_ROCKT --Tinted Rocks
+                end
+            else
+                if roll <= 7 and roll > 3 then --Alt Rocks (Pots, Mushrooms, Skulls, etc.)
+                    gridType = GridEntityType.GRID_ROCK_ALT 
+            
+                elseif roll <= 3 and roll > 1 then  --Bomb Rocks 
+                    local gridPos = shared.Room:GetGridPosition(gridEntry.Index)
+                    local doorNearby
+                    for i = 0, DoorSlot.NUM_DOOR_SLOTS - 1 do --Don't spawn Bomb Rocks near doors
+                        if shared.Room:GetDoor(i) then
+                            local doorPos = room:GetDoorSlotPosition(i)
+                            local clampedPos = room:GetClampedPosition(doorPos, 20)
+                            if clampedPos.X == doorPos.X then 
+                                if math.abs(doorPos.X - gridPos.X) <= 40 and math.abs(doorPos.Y - gridPos.Y) <= 80 then
+                                    doorNearby = true
+                                    break
+                                end
+                            else 
+                                if math.abs(doorPos.Y - gridPos.Y) <= 40 and math.abs(doorPos.X - gridPos.X) <= 80 then
+                                    doorNearby = true
+                                    break
+                                end
+                            end
+                        end
+                    end
+
+                    if not doorNearby then
+                        gridType = GridEntityType.GRID_ROCK_BOMB
+                    end
+            
+                elseif roll <= 1 then --Fool's Gold Rocks 
+                    gridType = GridEntityType.GRID_ROCK_GOLD 
+                    StageAPI.FoolsGoldReplacements[gridEntry.Index] = StageAPI.Random(2, 5, rng)
+                end
+            end
+
+            if gridType then
+                return {
+                    Index = gridEntry.Index,
+                    Type = gridType,
+                    Variant = gridEntry.Variant,
+                    Subtype = gridEntry.SubType,
+                    GridX = gridEntry.GridX,
+                    GridY = gridEntry.GridY
+                }
+            end
+        end
+    end
+end)
+
 ---@return table<integer, GridInformation>
 function StageAPI.GetGridInformation()
     local gridInformation = {}
@@ -1046,7 +1107,29 @@ function StageAPI.LoadRoomLayout(grids, entities, doGrids, doEntities, doPersist
     local ents_spawned = {}
 
     if grids then
+        StageAPI.FoolsGoldReplacements = {}
         grids_spawned, minecart_points = StageAPI.LoadGridsFromDataList(grids, gridData, entities, not doGrids)
+    
+        for index, viensize in pairs(StageAPI.FoolsGoldReplacements) do --Fool's Gold vien spawning
+            local currentIndex = index
+            for i = 1, viensize - 1 do
+                local adjRocks = {}
+                for _, ajdIndex in pairs(StageAPI.GetAdjacentIndexes(currentIndex)) do
+                    local grid = shared.Room:GetGridEntity(ajdIndex)
+                    if grid and grid:GetType() == GridEntityType.GRID_ROCK then
+                        adjRocks[#adjRocks + 1] = grid
+                    end
+                end
+                if #adjRocks > 0 then
+                    local rockToConvert = adjRocks[StageAPI.Random(1, #adjRocks, StageAPI.GridSpawnRNG)]
+                    rockToConvert:SetType(GridEntityType.GRID_ROCK_GOLD)
+                    rockToConvert:Init(StageAPI.GridSpawnRNG:GetSeed())
+                    currentIndex = rockToConvert:GetGridIndex()
+                else
+                    break
+                end
+            end
+        end
     end
 
     if entities and doEntities then
