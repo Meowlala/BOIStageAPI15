@@ -739,8 +739,8 @@ function StageAPI.LoadEntitiesFromEntitySets(entitysets, doGrids, doPersistentOn
                                 end
                     
                                 if entityPersistData and ent.Type == EntityType.ENTITY_PICKUP then
+                                    local pickup = ent:ToPickup()
                                     if entityPersistData.Price then
-                                        local pickup = ent:ToPickup()
                                         pickup.Price = entityPersistData.Price.Price
                                         pickup.AutoUpdatePrice = entityPersistData.Price.AutoUpdate
                                     end
