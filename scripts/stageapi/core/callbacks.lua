@@ -467,13 +467,13 @@ mod:AddCallback(ModCallbacks.MC_POST_RENDER, function()
         and currentDimension ~= DIMENSION_DEATH_CERTIFICATE
     ) or musicRoom then
         local id = shared.Music:GetCurrentMusicID()
-        local musicID, shouldLayer, shouldQueue, disregardNonOverride
+        local musicID, shouldLayer, shouldQueue, disregardNonOverride, isMirrorMusic
         if musicRoom then
             musicID, shouldLayer = musicRoom:GetPlayingMusic()
         end
 
         if not musicID and StageAPI.CurrentStage then
-            musicID, shouldLayer, shouldQueue, disregardNonOverride = StageAPI.CurrentStage:GetPlayingMusic()
+            musicID, shouldLayer, shouldQueue, disregardNonOverride, isMirrorMusic = StageAPI.CurrentStage:GetPlayingMusic()
         end
 
         if musicID then
@@ -494,7 +494,11 @@ mod:AddCallback(ModCallbacks.MC_POST_RENDER, function()
 
             local canOverride = StageAPI.CanOverrideMusic(id)
             if id ~= musicID and (canOverride or disregardNonOverride) then
-                shared.Music:Play(musicID, 0)
+                if isMirrorMusic ~= StageAPI.IsPlayingMirrorMusic then
+                    shared.Music:Crossfade(musicID, 0.05)
+                else
+                    shared.Music:Play(musicID, 0)
+                end
             end
 
             shared.Music:UpdateVolume()
@@ -504,6 +508,8 @@ mod:AddCallback(ModCallbacks.MC_POST_RENDER, function()
             elseif not shouldLayer and shared.Music:IsLayerEnabled() then
                 shared.Music:DisableLayer()
             end
+
+            StageAPI.IsPlayingMirrorMusic = isMirrorMusic
         end
     end
 

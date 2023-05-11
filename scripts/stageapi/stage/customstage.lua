@@ -300,6 +300,15 @@ function StageAPI.CustomStage:SetChallengeMusic(music, clearedMusic, intro, outr
     }
 end
 
+function StageAPI.CustomStage:SetMirrorMusic(music)
+    if not AssertValidMusic(music) then
+        StageAPI.LogWarn(self.Name, " CustomStage:SetMirrorMusic | invalid music value ", music, " at ", StageAPI.TryGetCallInfo(2))
+        return
+    end
+
+    self.MirrorMusic = music
+end
+
 function StageAPI.CustomStage:SetRenderStartingRoomControls(doRender)
     self.RenderStartingRoomControls = doRender
 end
@@ -746,6 +755,13 @@ function StageAPI.CustomStage:GetPlayingMusic()
         local music = self.Music
         if music then
             local musicID = music[roomType]
+            local isMirrorMusic = false
+
+            if StageAPI.IsMirrorDimension() then
+                musicID = self.MirrorMusic
+                isMirrorMusic = true
+            end
+                
             local newMusicID = StageAPI.CallCallbacks(Callbacks.POST_SELECT_STAGE_MUSIC, true, self, musicID, roomType, StageAPI.MusicRNG)
             if newMusicID then
                 if AssertValidMusic(newMusicID) then
@@ -756,7 +772,7 @@ function StageAPI.CustomStage:GetPlayingMusic()
             end
 
             if musicID then
-                return musicID, not shared.Room:IsClear()
+                return musicID, not shared.Room:IsClear(), false, false, isMirrorMusic
             end
         end
     else -- challenge room active/done
