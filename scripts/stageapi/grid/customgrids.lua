@@ -794,13 +794,9 @@ mod:AddCallback(ModCallbacks.MC_PRE_ENTITY_SPAWN, function(_, id, variant, subty
     if gridConfig then
         local room = shared.Room
         local index = room:GetGridIndex(position)
-        StageAPI.Log(StageAPI.JustUsedD7)
-        StageAPI.Log(room:IsFirstVisit())
-        StageAPI.Log(room:GetFrameCount() > 0)
         if #StageAPI.GetCustomGrids(index, gridConfig.Name) == 0 and (room:IsFirstVisit() or (room:GetFrameCount() > 0 and not StageAPI.JustUsedD7) or (StageAPI.GetCurrentRoom() and StageAPI.GetCurrentRoom().FirstLoad)) then
             local grid = gridConfig:Spawn(index, true, false, {SpawnerEntity = {Type = id, Variant = variant, SubType = subtype}})
             grid.JustSpawned = true
-            StageAPI.Log("Spawned custom grid")
         end
 
         return {
