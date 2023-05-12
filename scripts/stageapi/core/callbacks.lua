@@ -132,12 +132,11 @@ end
 mod:AddCallback(ModCallbacks.MC_PRE_USE_ITEM, StageAPI.ReprocessRoomGrids, CollectibleType.COLLECTIBLE_D12)
 
 function StageAPI.UseD7()
+    StageAPI.JustUsedD7 = true
     local currentRoom = StageAPI.GetCurrentRoom()
     if currentRoom then
         if shared.Room:GetType() == RoomType.ROOM_BOSS then
             shared.Game:MoveToRandomRoom(false, shared.Room:GetSpawnSeed())
-        else
-            StageAPI.JustUsedD7 = true
         end
 
         for _, player in ipairs(shared.Players) do
