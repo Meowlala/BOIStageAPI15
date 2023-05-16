@@ -31,7 +31,69 @@ mod:AddCallback(ModCallbacks.MC_POST_GAME_STARTED, function()
         if not (DeadSeaScrollsMenu and DeadSeaScrollsMenu.AddChangelog) then
             REVEL.AddedStageAPIChangelogs = true
         end
-		
+
+                TryAddChangelog("v2.24", [[- Updated calculation for the chance of 
+enemies being Champions in 
+luarooms to be more accurate
+
+- Custom waves for Challenge Rooms 
+now factor layout difficulty during 
+wave selection in the same manner as 
+vanilla waves
+
+- Mercurius and Door Stop now work in
+custom stages
+
+- Rails, Minecarts, Fissure Spawners,
+Event Triggers, Teleporters, and 
+Darkness Enablers now fully work 
+in luarooms
+
+- Random rock replacements can now 
+appear in luarooms (Alt Rocks, Bomb 
+Rocks, Tinted Rocks, Fool's Gold)
+
+- Rock Particles in rooms with custom
+rock graphics now match those graphics
+if they are intended to
+
+- Replaced layouts with Mom's Hands in
+them now properly surpress the laughing
+sound effect
+
+- Fixed custom grid spawners from
+reappearing when the D7 is used
+
+- Custom grid spawners can now be placed 
+on top of NPCs without replacing them
+in luarooms
+
+- Custom boss pools can now be specified 
+as not having a Horseman boss
+
+- Custom grids using Pillars as a base 
+now properly detect when they are broken
+
+- Added POST_ROOM_LAYOUT_CHOOSE and
+POST_SET_LEVEL_ROOM callbacks
+
+- Red Rooms now properly use 
+pregeneration in custom stages 
+which have it enabled
+
+- Various fixes for HasMirrorDimension(),
+added IsMirrorDimension()
+
+- OptionsPickupIndex for pickups now
+properly persists in luarooms
+
+- Added support for custom stages 
+having unique mirror dimension music
+
+- Added safety checks for invalid 
+music IDs
+]])
+
 		TryAddChangelog("v2.23", [[- Overhauled StageAPI level transition
 screen to be more accurate to
 the base game
