@@ -783,6 +783,15 @@ function StageAPI.GotoCustomStage(stage, playTransition, noForgetSeed)
     else
         local replace = stage.Replaces
         local absolute = replace.OverrideStage
+        local actualDiff = absolute - shared.Level:GetStage()
+        local desiredDiff = stage.StageNumber - shared.Level:GetStage()
+        if StageAPI.GetCurrentStage() and StageAPI.GetCurrentStage().StageNumber then
+            desiredDiff = stage.StageNumber - StageAPI.GetCurrentStage().StageNumber
+        end
+        local difference = actualDiff - desiredDiff
+        if difference > 0 then
+            shared.Game:AddTreasureRoomsVisited(difference)
+        end
         StageAPI.NextStage = stage
         if playTransition then
             StageAPI.DelayedNextStage = stage  --The transition does not happen immediately and it can be triggered by another callback
