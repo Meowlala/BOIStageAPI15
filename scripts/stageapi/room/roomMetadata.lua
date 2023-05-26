@@ -612,6 +612,9 @@ StageAPI.MetadataEntities = {
         [31] = {
             Name = "Member Card Trapdoor Position"
         },
+        [32] = {
+            Name = "ChampionPreventer"
+        },
         [40] = {
             Name = "Room"
         },
