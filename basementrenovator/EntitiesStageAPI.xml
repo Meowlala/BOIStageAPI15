@@ -119,6 +119,7 @@
         	</entity>
         	<entity Metadata="1" ID="199" Image="stageapi/boss_identifier.png" Name="Boss Identifier" Subtype="0" Variant="30" />
         	<entity Metadata="1" ID="199" Image="stageapi/member_pos.png" Name="Member Card Trapdoor Position" Subtype="0" Variant="31" />
+			<entity Metadata="1" ID="199" Image="stageapi/champion_preventer.png" Name="Champion Preventer" Subtype="0" Variant="32" />
 
             <entity Metadata="1" ID="199" Image="stageapi/room.png" Name="Room" Subtype="0" Variant="40" >
                 <bitfield Key="Subtype">
