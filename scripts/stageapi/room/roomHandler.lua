@@ -722,7 +722,7 @@ function StageAPI.LoadEntitiesFromEntitySets(entitysets, doGrids, doPersistentOn
                                 )
                     
                                 if not ent:IsBoss() and ent:ToNPC() then
-                                    if entityData.ChampionSeed then
+                                    if entityData.ChampionSeed and not currentRoom.Metadata:Has{Index = index, Name = "ChampionPreventer"} then
                                         ent:ToNPC():MakeChampion(entityData.ChampionSeed, -1, true)
                                         ent.HitPoints = ent.MaxHitPoints
                                     end
