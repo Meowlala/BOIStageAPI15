@@ -131,24 +131,18 @@ end
 
 mod:AddCallback(ModCallbacks.MC_PRE_USE_ITEM, StageAPI.ReprocessRoomGrids, CollectibleType.COLLECTIBLE_D12)
 
-function StageAPI.UseD7()
+function StageAPI:UseD7(collectibleType, rng, player, useFlags, slot, varData)
     StageAPI.JustUsedD7 = true
     local currentRoom = StageAPI.GetCurrentRoom()
     if currentRoom then
         if shared.Room:GetType() == RoomType.ROOM_BOSS then
-            shared.Game:MoveToRandomRoom(false, shared.Room:GetSpawnSeed())
+            shared.Game:MoveToRandomRoom(false, shared.Room:GetSpawnSeed(), player)
         end
-
-        for _, player in ipairs(shared.Players) do
-            if player:HasCollectible(CollectibleType.COLLECTIBLE_D7) and Input.IsActionTriggered(ButtonAction.ACTION_ITEM, player.ControllerIndex) then
-                player:AnimateCollectible(CollectibleType.COLLECTIBLE_D7, "UseItem", "PlayerPickup")
-            end
-        end
+        player:AnimateCollectible(CollectibleType.COLLECTIBLE_D7, "UseItem", "PlayerPickup")
 
         return true
     end
 end
-
 mod:AddCallback(ModCallbacks.MC_PRE_USE_ITEM, StageAPI.UseD7, CollectibleType.COLLECTIBLE_D7)
 
 mod:AddCallback(ModCallbacks.MC_PRE_USE_ITEM, function()
