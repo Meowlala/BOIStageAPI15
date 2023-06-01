@@ -131,8 +131,10 @@ end
 
 mod:AddCallback(ModCallbacks.MC_PRE_USE_ITEM, StageAPI.ReprocessRoomGrids, CollectibleType.COLLECTIBLE_D12)
 
-function StageAPI:UseD7(collectibleType, rng, player, useFlags, slot, varData)
+function StageAPI.UseD7(player)
+    player = player or Isaac.GetPlayer()
     StageAPI.JustUsedD7 = true
+
     local currentRoom = StageAPI.GetCurrentRoom()
     if currentRoom then
         if shared.Room:GetType() == RoomType.ROOM_BOSS then
@@ -143,7 +145,10 @@ function StageAPI:UseD7(collectibleType, rng, player, useFlags, slot, varData)
         return true
     end
 end
-mod:AddCallback(ModCallbacks.MC_PRE_USE_ITEM, StageAPI.UseD7, CollectibleType.COLLECTIBLE_D7)
+
+mod:AddCallback(ModCallbacks.MC_PRE_USE_ITEM, function(_, collectibleType, rng, player, useFlags, slot, varData)
+    return StageAPI.UseD7(player)
+end, CollectibleType.COLLECTIBLE_D7)
 
 mod:AddCallback(ModCallbacks.MC_PRE_USE_ITEM, function()
     if StageAPI.InNewStage() then
