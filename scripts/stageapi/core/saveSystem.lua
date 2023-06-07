@@ -111,7 +111,7 @@ function StageAPI.GetSaveString()
         stageProgress[tostring(id)] = data
     end
 
-    return json.encode({
+    return json.encode(StageAPI.SaveTableMarshal{
         LevelInfo = levelSaveData,
         LevelMaps = levelMaps,
         Stage = stage,
@@ -129,7 +129,7 @@ function StageAPI.LoadSaveString(str)
     StageAPI.CallCallbacks(Callbacks.PRE_STAGEAPI_LOAD_SAVE, false)
     local retRoomGrids = {}
     local retCustomGrids = {}
-    local decoded = json.decode(str)
+    local decoded = StageAPI.SaveTableUnmarshal(json.decode(str))
 
     StageAPI.CurrentStage = nil
     if decoded.Stage then
@@ -197,6 +197,156 @@ function StageAPI.LoadSaveString(str)
     end
 
     StageAPI.CallCallbacks(Callbacks.POST_STAGEAPI_LOAD_SAVE, false)
+end
+
+---@type table<string, {Marshal: (fun(val: any): table), Unmarshal: (fun(val: table): any)}>
+local GameClassHandlers = {
+    Vector = {
+        Marshal = function(val)
+            return {
+                val.X,
+                val.Y,
+            }
+        end,
+        Unmarshal = function(val)
+            return Vector(val[1], val[2])
+        end,
+    },
+}
+
+local function MarshalValue(val, key)
+    if type(val) == "table" then
+        return StageAPI.SaveTableMarshal(val, key)
+    elseif type(val) == "userdata" then
+        local meta = getmetatable(val)
+        local classtype = meta and (meta.__type or meta.__name)
+        local handler = GameClassHandlers[classtype]
+        if handler then
+            local out = handler.Marshal(val)
+            out.__USERDATATYPE__ = classtype
+            return out
+        else
+            return val
+        end
+    else
+        return val
+    end
+end
+
+local function UnmarshalValue(val, key)
+    if type(val) == "table" then
+        if val.__USERDATATYPE__ then
+            local classtype = val.__USERDATATYPE__
+            local handler = GameClassHandlers[classtype]
+            if handler then
+                val.__USERDATATYPE__ = nil
+                return handler.Unmarshal(val)
+            else
+                StageAPI.LogErr("Couldn't unmarshal save data type: ", classtype)
+                return val
+            end
+        else
+            return StageAPI.SaveTableUnmarshal(val, key)
+        end
+    else
+        return val
+    end
+end
+
+--[[
+    Table to try this out:
+    test_tbl = {
+        Ints = {[1] = true, [5] = true, [235] = true},
+        Array = {[1] = true, [2] = false, [3] = false},
+        Vector = Vector(15, 2.5),
+        String = "ciao",
+    }
+    `l test_tbl = {Ints = {[1] = true, [5] = true, [235] = true},Array = {[1] = true, [2] = false, [3] = false},Vector = Vector(15, 2.5),String = "ciao"}`
+]]
+
+-- If should check for unneeded workarounds on save/load
+-- (for example string indices) as they are not needed and 
+-- worse for performance to do at runtime, and print a warning
+StageAPI.MARSHALING_CHECK_OLD_WORKAROUNDS = true
+
+---Convert some data for better json representation
+-- For instance, int tables to str-int tables, 
+-- and vectors into arrays.
+-- This avoids having to do that at runtime.
+---@param tbl table
+---@return table
+function StageAPI.SaveTableMarshal(tbl, name)
+    -- check if table has number keys
+    -- int tables with continuous values from 1 can be saved as arrays, others 
+    -- get saved as arrays in json but take up a lot of space
+    local isIntTable = true
+    local canSaveAsArray = true
+    
+    local didWarningIntWorkaround = false
+
+    for k, v in pairs(tbl) do
+        if type(k) ~= "number" then
+            isIntTable = false
+            if not StageAPI.MARSHALING_CHECK_OLD_WORKAROUNDS then
+                break
+            end
+
+            if StageAPI.MARSHALING_CHECK_OLD_WORKAROUNDS
+            and not didWarningIntWorkaround and type(k) == "string" and tonumber(k) then
+                didWarningIntWorkaround = true
+                StageAPI.LogWarn("Save: Detected string-index table in savedata at '", name or '?', "'! Not needed anymore and likely a minor performance hit")
+            end
+        elseif k > #tbl then
+            -- in tables, # returns the max continuous key from 1 (in array-like tables, that's normally the length)
+            -- if the key is greater than that, then it's a table with int keys instead of an array
+            canSaveAsArray = false
+            if not StageAPI.MARSHALING_CHECK_OLD_WORKAROUNDS then
+                break
+            end
+        end
+    end
+
+    if isIntTable and not canSaveAsArray then
+        local out = {___INT_TABLE___ = true}
+        for k, v in pairs(tbl) do
+            out[tostring(k)] = MarshalValue(v, k)
+        end
+        return out
+    end
+
+    local out = {}
+    for k, v in pairs(tbl) do
+        out[k] = MarshalValue(v, k)
+    end
+    return out
+end
+
+-- Reverse `StageAPI.SaveTableMarshal`
+---@param tbl table
+---@return table
+function StageAPI.SaveTableUnmarshal(tbl, name)
+    if tbl.___INT_TABLE___ then
+        tbl.___INT_TABLE___ = nil
+        local out = {}
+        for k, v in pairs(tbl) do
+            out[tonumber(k)] = UnmarshalValue(v, k)
+        end
+        return out
+    end
+
+    local didWarningIntWorkaround = false
+
+    local out = {}
+    for k, v in pairs(tbl) do
+        out[k] = UnmarshalValue(v, k)
+
+        if StageAPI.MARSHALING_CHECK_OLD_WORKAROUNDS
+        and not didWarningIntWorkaround and type(k) == "string" and tonumber(k) then
+            didWarningIntWorkaround = true
+            StageAPI.LogWarn("Load: Detected string-index table in savedata at '", name or '?', "'! Not needed anymore and likely a minor performance hit")
+        end
+    end
+    return out
 end
 
 
