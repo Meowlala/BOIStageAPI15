@@ -258,26 +258,17 @@ end
 if Isaac.GetPlayer(0) then
     shared.Room = shared.Game:GetRoom()
     shared.Level = shared.Game:GetLevel()
-    local numPlayers = shared.Game:GetNumPlayers()
-    if numPlayers > 0 then
-        for i = 1, numPlayers do
-            shared.Players[i] = Isaac.GetPlayer(i - 1)
-        end
-    end
 end
 
-mod:AddCallback(ModCallbacks.MC_POST_UPDATE, function()
-    shared.Players = {}
+function StageAPI.GetPlayers()
+    local players = {}
     for i = 1, shared.Game:GetNumPlayers() do
-        shared.Players[i] = Isaac.GetPlayer(i - 1)
+        players[i] = Isaac.GetPlayer(i - 1)
     end
-end)
+    return players
+end
 
 mod:AddPriorityCallback(ModCallbacks.MC_POST_NEW_ROOM, CallbackPriority.IMPORTANT, function()
     shared.Level = shared.Game:GetLevel()
     shared.Room = shared.Game:GetRoom()
-end)
-
-mod:AddCallback(ModCallbacks.MC_PRE_GAME_EXIT, function(_, shouldSave)
-    shared.Players = {}
 end)
