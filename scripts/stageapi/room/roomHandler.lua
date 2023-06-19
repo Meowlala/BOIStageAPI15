@@ -1047,9 +1047,10 @@ StageAPI.AddCallback("StageAPI", "PRE_SPAWN_GRID", 0, function(gridEntry, gridIn
                         gridType = GridEntityType.GRID_ROCK_BOMB
                     end
             
-                elseif roll <= 1 then --Fool's Gold Rocks 
+                elseif roll <= 1 and not StageAPI.SpawnedFoolsGoldVien then --Fool's Gold Rocks 
                     gridType = GridEntityType.GRID_ROCK_GOLD 
-                    StageAPI.FoolsGoldReplacements[gridEntry.Index] = StageAPI.Random(2, 5, rng)
+                    StageAPI.FoolsGoldReplacements[gridEntry.Index] = StageAPI.Random(2, 4, rng)
+                    StageAPI.SpawnedFoolsGoldVien = true
                 end
             end
 
@@ -1130,6 +1131,7 @@ function StageAPI.LoadRoomLayout(grids, entities, doGrids, doEntities, doPersist
                 end
             end
         end
+        StageAPI.SpawnedFoolsGoldVien = false
     end
 
     if entities and doEntities then
