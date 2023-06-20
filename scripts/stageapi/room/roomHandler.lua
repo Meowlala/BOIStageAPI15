@@ -1047,10 +1047,10 @@ StageAPI.AddCallback("StageAPI", "PRE_SPAWN_GRID", 0, function(gridEntry, gridIn
                         gridType = GridEntityType.GRID_ROCK_BOMB
                     end
             
-                elseif roll <= 1 and not StageAPI.SpawnedFoolsGoldVien then --Fool's Gold Rocks 
+                elseif roll <= 1 and not StageAPI.SpawnedFoolsGoldVein then --Fool's Gold Rocks 
                     gridType = GridEntityType.GRID_ROCK_GOLD 
                     StageAPI.FoolsGoldReplacements[gridEntry.Index] = StageAPI.Random(2, 4, rng)
-                    StageAPI.SpawnedFoolsGoldVien = true
+                    StageAPI.SpawnedFoolsGoldVein = true
                 end
             end
 
@@ -1111,9 +1111,9 @@ function StageAPI.LoadRoomLayout(grids, entities, doGrids, doEntities, doPersist
         StageAPI.FoolsGoldReplacements = {}
         grids_spawned, minecart_points = StageAPI.LoadGridsFromDataList(grids, gridData, entities, not doGrids)
     
-        for index, viensize in pairs(StageAPI.FoolsGoldReplacements) do --Fool's Gold vien spawning
+        for index, veinsize in pairs(StageAPI.FoolsGoldReplacements) do --Fool's Gold vein spawning
             local currentIndex = index
-            for i = 1, viensize - 1 do
+            for i = 1, veinsize - 1 do
                 local adjRocks = {}
                 for _, ajdIndex in pairs(StageAPI.GetAdjacentIndexes(currentIndex)) do
                     local grid = shared.Room:GetGridEntity(ajdIndex)
@@ -1131,7 +1131,7 @@ function StageAPI.LoadRoomLayout(grids, entities, doGrids, doEntities, doPersist
                 end
             end
         end
-        StageAPI.SpawnedFoolsGoldVien = false
+        StageAPI.SpawnedFoolsGoldVein = false
     end
 
     if entities and doEntities then
