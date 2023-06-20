@@ -11,16 +11,21 @@ sharedVars.ItemConfig = Isaac.GetItemConfig()
 sharedVars.Room = room
 ---@type Level
 sharedVars.Level = level
----@type EntityPlayer[]
-sharedVars.Players = {}
+if false then -- for vscode autocompletion, do not actually run as it gets metatable'd, see after
+    ---@type EntityPlayer[]
+    sharedVars.Players = {}
+end
 
---[[
-    Was:
-    local game / StageAPI.Game
-    local sfx
-    local room / StageAPI.Room
-    local level / StageAPI.Level
-    local players / StageAPI.Players
-]]
+setmetatable(sharedVars, {
+    __index = function(self, key)
+        if key == "Players" then
+            -- Do not actually keep players in memory to avoid crashes
+            -- and running it in a callback risked players being nil
+            -- for things that run before it in a run, or invalid for 
+            -- things that run before it in general
+            return StageAPI.GetPlayers()
+        end
+    end
+})
 
 return sharedVars
