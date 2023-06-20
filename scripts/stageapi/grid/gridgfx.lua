@@ -21,6 +21,8 @@ StageAPI.GridGfx = StageAPI.Class("GridGfx")
 ---@field PropCount integer
 ---@field Prefix string
 ---@field Suffix string
+---@field AltPrefix string
+---@field AltPropCount integer
 
 
 function StageAPI.GridGfx:Init()
@@ -89,13 +91,17 @@ end
 ---@param propCount? integer
 ---@param prefix? string
 ---@param suffix? string
-function StageAPI.GridGfx:SetDecorations(filename, anm2, propCount, prefix, suffix)
+---@param altPrefix? string
+---@param altPropCount? integer
+function StageAPI.GridGfx:SetDecorations(filename, anm2, propCount, prefix, suffix, altPrefix, altPropCount)
     self.Decorations = {
         Png = filename,
         Anm2 = anm2 or "gfx/grid/props_03_caves.anm2",
         PropCount = propCount or 42,
         Prefix = prefix or "Prop",
-        Suffix = suffix or ""
+        Suffix = suffix or "",
+        AltPrefix = altPrefix,
+        AltPropCount = altPropCount or 3,
     }
 end
 
@@ -191,16 +197,17 @@ function StageAPI.ChangeDecoration(decoration, decorations)
     ) or decorations
 
     local gsprite = grid:GetSprite()
+    local doAlt = (string.sub(gsprite:GetAnimation(), 1, 4) ~= "Prop" and decorations.AltPrefix)
     gsprite:Load(decorations.Anm2, false)
 
     gsprite:ReplaceSpritesheet(0, decorations.Png)
     gsprite:LoadGraphics()
-    local prop = StageAPI.Random(1, decorations.PropCount, StageAPI.GridGfxRNG)
+    local prop = StageAPI.Random(1, (doAlt and decorations.AltPropCount or decorations.PropCount), StageAPI.GridGfxRNG)
     if prop < 10 then
         prop = "0" .. tostring(prop)
     end
 
-    gsprite:Play(decorations.Prefix .. tostring(prop) .. decorations.Suffix, true)
+    gsprite:Play((doAlt and decorations.AltPrefix or decorations.Prefix) .. tostring(prop) .. decorations.Suffix, true)
 end
 
 ---@class DoorInfo
