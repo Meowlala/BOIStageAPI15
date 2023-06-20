@@ -359,6 +359,19 @@ function StageAPI.ChooseRoomLayout(roomList, seed, shape, rtype, requireRoomType
     end
 end
 
+StageAPI.StackIgnoringEnts = {}
+
+function StageAPI.RegisterStackIgnoringEnt(type, var, sub)
+    var = var or -1
+    sub = sub or -1
+    StageAPI.StackIgnoringEnts[type.." "..var.." "..sub] = true
+end
+
+function StageAPI.ShouldEntIgnoreStack(type, var, sub)
+    return StageAPI.StackIgnoringEnts[type.." -1 -1"] or StageAPI.StackIgnoringEnts[type.." "..var.." -1"] or StageAPI.StackIgnoringEnts[type.." "..var.." "..sub]
+end
+
+
 StageAPI.RoomLoadRNG = RNG()
 
 ---@class SpawnList.EntityInfo
@@ -470,7 +483,7 @@ function StageAPI.SelectSpawnEntities(entities, seed, roomMetadata, lastPersiste
             if not overridden or (stillAddRandom and #entityList > 0) then
                 local randomPool = {}
                 for i, entData in pairs(entityList) do
-                    if StageAPI.IsCustomGridSpawnerEntity(entData.Type, entData.Variant, entData.SubType) then
+                    if StageAPI.IsCustomGridSpawnerEntity(entData.Type, entData.Variant, entData.SubType) or StageAPI.ShouldEntIgnoreStack(entData.Type, entData.Variant, entData.SubType) then
                         addEntities[#addEntities + 1] = entData
                     else
                         randomPool[#randomPool + 1] = entData
