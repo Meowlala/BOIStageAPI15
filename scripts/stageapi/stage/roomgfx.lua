@@ -194,6 +194,10 @@ function StageAPI.ChangeStageShadow(prefix, count, opacity)
     prefix = prefix or "stageapi/floors/catacombs/overlays/"
     count = count or 5
     opacity = opacity or 1
+    
+    if type(count) == "number" then
+        count = {["1x1"] = count, ["1x2"] = count, ["2x1"] = count, ["2x2"] = count}
+    end
 
     local shadows = Isaac.FindByType(StageAPI.E.StageShadow.T, StageAPI.E.StageShadow.V, -1, false, false)
     for _, e in ipairs(shadows) do
@@ -211,7 +215,8 @@ function StageAPI.ChangeStageShadow(prefix, count, opacity)
 
     if anim then
         StageAPI.StageShadowRNG:SetSeed(shared.Room:GetDecorationSeed(), 0)
-        local usingShadow = StageAPI.Random(1, count, StageAPI.StageShadowRNG)
+        local shapecount = count[anim]
+        local usingShadow = StageAPI.Random(1, shapecount, StageAPI.StageShadowRNG)
         local sheet = prefix .. anim .. "_overlay_" .. tostring(usingShadow) .. ".png"
 
         local shadowEntity = Isaac.Spawn(StageAPI.E.StageShadow.T, StageAPI.E.StageShadow.V, 0, Vector.Zero, Vector.Zero, nil)
