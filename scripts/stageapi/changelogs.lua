@@ -59,6 +59,10 @@ be spawned
 now have specific animations
 specified for unique decorations
 (like Caves puddles)
+
+- Update ChangeStageShadow() to 
+allow for different amounts
+of overlays for each room shape
 ]])
 
                 TryAddChangelog("v2.24", [[- Updated calculation for the chance of 
