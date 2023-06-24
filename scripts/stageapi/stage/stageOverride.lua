@@ -27,7 +27,6 @@ end
 StageAPI.StageOverride = {}
 
 function StageAPI.AddOverrideStage(name, overrideStage, overrideStageType, replaceWith, isGreedMode)
-    replaceWith:SetStageNumber(overrideStage)
     StageAPI.StageOverride[name] = {
         OverrideStage = overrideStage,
         OverrideStageType = overrideStageType,
