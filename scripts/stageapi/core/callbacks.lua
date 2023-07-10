@@ -293,6 +293,21 @@ local FramesTabPressed = 0
 local StageNameTabStreak = nil
 local TAB_FRAMES_FOR_STREAK = 22
 
+function StageAPI.TriggerEventGroup(groupID)
+    local currentRoom = StageAPI.GetCurrentRoom()
+    if currentRoom then
+        local triggerable = currentRoom.Metadata:Search({
+            Group = groupID,
+            Tag = "Triggerable"
+        })
+
+        for _, metaEnt in ipairs(triggerable) do
+            metaEnt.Triggered = true
+        end
+        return triggerable
+    end
+end
+
 mod:AddCallback(ModCallbacks.MC_POST_RENDER, function()
     if shared.Game:GetFrameCount() <= 0 then
         return
@@ -312,18 +327,7 @@ mod:AddCallback(ModCallbacks.MC_POST_RENDER, function()
                 if StageAPI.EventTriggerPlateVariants[grid.Desc.Variant] then
                     local gridSprite = grid:GetSprite()
                     if gridSprite:GetAnimation() == "Switched" and gridSprite:GetFrame() == 0 then 
-                        local currentRoom = StageAPI.GetCurrentRoom()
-                        if currentRoom then
-                            local groupID = grid.Desc.Variant - 9
-                            local triggerable = currentRoom.Metadata:Search({
-                                Group = groupID,
-                                Tag = "Triggerable"
-                            })
-            
-                            for _, metaEnt in ipairs(triggerable) do
-                                metaEnt.Triggered = true
-                            end
-                        end
+                        StageAPI.TriggerEventGroup(grid.Desc.Variant - 9)
                     end
                 end
             end
