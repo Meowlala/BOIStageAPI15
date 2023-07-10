@@ -359,6 +359,19 @@ function StageAPI.ChooseRoomLayout(roomList, seed, shape, rtype, requireRoomType
     end
 end
 
+StageAPI.StackIgnoringEnts = {}
+
+function StageAPI.RegisterStackIgnoringEnt(type, var, sub)
+    var = var or -1
+    sub = sub or -1
+    StageAPI.StackIgnoringEnts[type.." "..var.." "..sub] = true
+end
+
+function StageAPI.ShouldEntIgnoreStack(type, var, sub)
+    return StageAPI.StackIgnoringEnts[type.." -1 -1"] or StageAPI.StackIgnoringEnts[type.." "..var.." -1"] or StageAPI.StackIgnoringEnts[type.." "..var.." "..sub]
+end
+
+
 StageAPI.RoomLoadRNG = RNG()
 
 ---@class SpawnList.EntityInfo
@@ -470,7 +483,7 @@ function StageAPI.SelectSpawnEntities(entities, seed, roomMetadata, lastPersiste
             if not overridden or (stillAddRandom and #entityList > 0) then
                 local randomPool = {}
                 for i, entData in pairs(entityList) do
-                    if StageAPI.IsCustomGridSpawnerEntity(entData.Type, entData.Variant, entData.SubType) then
+                    if StageAPI.IsCustomGridSpawnerEntity(entData.Type, entData.Variant, entData.SubType) or StageAPI.ShouldEntIgnoreStack(entData.Type, entData.Variant, entData.SubType) then
                         addEntities[#addEntities + 1] = entData
                     else
                         randomPool[#randomPool + 1] = entData
@@ -722,7 +735,7 @@ function StageAPI.LoadEntitiesFromEntitySets(entitysets, doGrids, doPersistentOn
                                 )
                     
                                 if not ent:IsBoss() and ent:ToNPC() then
-                                    if entityData.ChampionSeed then
+                                    if entityData.ChampionSeed and not currentRoom.Metadata:Has{Index = index, Name = "ChampionPreventer"} then
                                         ent:ToNPC():MakeChampion(entityData.ChampionSeed, -1, true)
                                         ent.HitPoints = ent.MaxHitPoints
                                     end
@@ -1047,9 +1060,10 @@ StageAPI.AddCallback("StageAPI", "PRE_SPAWN_GRID", 0, function(gridEntry, gridIn
                         gridType = GridEntityType.GRID_ROCK_BOMB
                     end
             
-                elseif roll <= 1 then --Fool's Gold Rocks 
+                elseif roll <= 1 and not StageAPI.SpawnedFoolsGoldVein then --Fool's Gold Rocks 
                     gridType = GridEntityType.GRID_ROCK_GOLD 
-                    StageAPI.FoolsGoldReplacements[gridEntry.Index] = StageAPI.Random(2, 5, rng)
+                    StageAPI.FoolsGoldReplacements[gridEntry.Index] = StageAPI.Random(2, 4, rng)
+                    StageAPI.SpawnedFoolsGoldVein = true
                 end
             end
 
@@ -1110,9 +1124,9 @@ function StageAPI.LoadRoomLayout(grids, entities, doGrids, doEntities, doPersist
         StageAPI.FoolsGoldReplacements = {}
         grids_spawned, minecart_points = StageAPI.LoadGridsFromDataList(grids, gridData, entities, not doGrids)
     
-        for index, viensize in pairs(StageAPI.FoolsGoldReplacements) do --Fool's Gold vien spawning
+        for index, veinsize in pairs(StageAPI.FoolsGoldReplacements) do --Fool's Gold vein spawning
             local currentIndex = index
-            for i = 1, viensize - 1 do
+            for i = 1, veinsize - 1 do
                 local adjRocks = {}
                 for _, ajdIndex in pairs(StageAPI.GetAdjacentIndexes(currentIndex)) do
                     local grid = shared.Room:GetGridEntity(ajdIndex)
@@ -1130,6 +1144,7 @@ function StageAPI.LoadRoomLayout(grids, entities, doGrids, doEntities, doPersist
                 end
             end
         end
+        StageAPI.SpawnedFoolsGoldVein = false
     end
 
     if entities and doEntities then
