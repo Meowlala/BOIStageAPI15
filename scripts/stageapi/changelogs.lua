@@ -32,6 +32,39 @@ mod:AddCallback(ModCallbacks.MC_POST_GAME_STARTED, function()
             REVEL.AddedStageAPIChangelogs = true
         end
 
+                TryAddChangelog("v2.26", [[- Added a Champion Preventer meta 
+entitiy to Basement Renovator
+which prevents an enemy it is
+placed on from randomly 
+becoming a champion
+
+- Limit and reduce the amount 
+of Fool's Gold rocks spawned
+in luarooms with alot of rocks
+
+- Fix D7 not working properly
+in custom boss rooms
+
+- Update savedata system to
+account for Genesis and 
+include marshaling
+
+- Add ability for entities
+to be flagged to not factor
+into the random selection
+of entity stacks and always
+be spawned
+
+- GridGfx:SetDecorations() can
+now have specific animations
+specified for unique decorations
+(like Caves puddles)
+
+- Update ChangeStageShadow() to 
+allow for different amounts
+of overlays for each room shape
+]])
+
                 TryAddChangelog("v2.24", [[- Updated calculation for the chance of 
 enemies being Champions in 
 luarooms to be more accurate
