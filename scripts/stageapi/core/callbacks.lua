@@ -793,7 +793,7 @@ function StageAPI.DetectBaseLayoutChanges(generateNewRooms)
         for _, changed2 in ipairs(changedRooms) do
             local previous2 = changed2.Previous
             local new2 = StageAPI.PreviousBaseLevelLayout[changed2.ListIndex]
-            if changed.ListIndex ~= changed2.ListIndex and previous.AwardSeed == new2.AwardSeed and new.AwardSeed == previous2.AwardSeed then
+            if changed.ListIndex ~= changed2.ListIndex and previous.SpawnSeed == new2.SpawnSeed and new.SpawnSeed == previous2.SpawnSeed then
                 swappedWith = changed2
                 break
             end
