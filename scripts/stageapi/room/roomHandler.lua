@@ -1123,28 +1123,30 @@ function StageAPI.LoadRoomLayout(grids, entities, doGrids, doEntities, doPersist
     if grids then
         StageAPI.FoolsGoldReplacements = {}
         grids_spawned, minecart_points = StageAPI.LoadGridsFromDataList(grids, gridData, entities, not doGrids)
-    
-        for index, veinsize in pairs(StageAPI.FoolsGoldReplacements) do --Fool's Gold vein spawning
-            local currentIndex = index
-            for i = 1, veinsize - 1 do
-                local adjRocks = {}
-                for _, ajdIndex in pairs(StageAPI.GetAdjacentIndexes(currentIndex)) do
-                    local grid = shared.Room:GetGridEntity(ajdIndex)
-                    if grid and grid:GetType() == GridEntityType.GRID_ROCK then
-                        adjRocks[#adjRocks + 1] = grid
+        
+        if shared.Room:IsFirstVisit() then
+            for index, veinsize in pairs(StageAPI.FoolsGoldReplacements) do --Fool's Gold vein spawning
+                local currentIndex = index
+                for i = 1, veinsize - 1 do
+                    local adjRocks = {}
+                    for _, adjIndex in pairs(StageAPI.GetAdjacentIndexes(currentIndex)) do
+                        local grid = shared.Room:GetGridEntity(adjIndex)
+                        if grid and grid:GetType() == GridEntityType.GRID_ROCK then
+                            adjRocks[#adjRocks + 1] = grid
+                        end
+                    end
+                    if #adjRocks > 0 then
+                        local rockToConvert = adjRocks[StageAPI.Random(1, #adjRocks, StageAPI.GridSpawnRNG)]
+                        rockToConvert:SetType(GridEntityType.GRID_ROCK_GOLD)
+                        rockToConvert:Init(StageAPI.GridSpawnRNG:GetSeed())
+                        currentIndex = rockToConvert:GetGridIndex()
+                    else
+                        break
                     end
                 end
-                if #adjRocks > 0 then
-                    local rockToConvert = adjRocks[StageAPI.Random(1, #adjRocks, StageAPI.GridSpawnRNG)]
-                    rockToConvert:SetType(GridEntityType.GRID_ROCK_GOLD)
-                    rockToConvert:Init(StageAPI.GridSpawnRNG:GetSeed())
-                    currentIndex = rockToConvert:GetGridIndex()
-                else
-                    break
-                end
             end
+            StageAPI.SpawnedFoolsGoldVein = false
         end
-        StageAPI.SpawnedFoolsGoldVein = false
     end
 
     if entities and doEntities then
