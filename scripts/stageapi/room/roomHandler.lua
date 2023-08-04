@@ -1040,8 +1040,8 @@ StageAPI.AddCallback("StageAPI", "PRE_SPAWN_GRID", 0, function(gridEntry, gridIn
                     local doorNearby
                     for i = 0, DoorSlot.NUM_DOOR_SLOTS - 1 do --Don't spawn Bomb Rocks near doors
                         if shared.Room:GetDoor(i) then
-                            local doorPos = room:GetDoorSlotPosition(i)
-                            local clampedPos = room:GetClampedPosition(doorPos, 20)
+                            local doorPos = shared.Room:GetDoorSlotPosition(i)
+                            local clampedPos = shared.Room:GetClampedPosition(doorPos, 20)
                             if clampedPos.X == doorPos.X then 
                                 if math.abs(doorPos.X - gridPos.X) <= 40 and math.abs(doorPos.Y - gridPos.Y) <= 80 then
                                     doorNearby = true
