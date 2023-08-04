@@ -153,7 +153,6 @@ function StageAPI.GetDeadEnds(roomdesc, ignoreSecretRooms)
 			end
 			if roomdesc.Data.Doors & (1 << i) > 0 and StageAPI.IsDeadEnd(roomidx+adjindex[i], RoomShape.ROOMSHAPE_1x1, ignoreSecretRooms) and level:GetRoomByIdx(roomidx+adjindex[i]).GridIndex == -1 and not oob then
 				table.insert(deadends, {Slot = i, GridIndex = roomidx+adjindex[i]})
-				print(i, roomidx+adjindex[i])
 			end
 		end
 	end
