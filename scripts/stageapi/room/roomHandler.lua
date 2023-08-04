@@ -1116,8 +1116,8 @@ function StageAPI.LoadRoomLayout(grids, entities, doGrids, doEntities, doPersist
                 local currentIndex = index
                 for i = 1, veinsize - 1 do
                     local adjRocks = {}
-                    for _, ajdIndex in pairs(StageAPI.GetAdjacentIndexes(currentIndex)) do
-                        local grid = shared.Room:GetGridEntity(ajdIndex)
+                    for _, adjIndex in pairs(StageAPI.GetAdjacentIndexes(currentIndex)) do
+                        local grid = shared.Room:GetGridEntity(adjIndex)
                         if grid and grid:GetType() == GridEntityType.GRID_ROCK then
                             adjRocks[#adjRocks + 1] = grid
                         end
