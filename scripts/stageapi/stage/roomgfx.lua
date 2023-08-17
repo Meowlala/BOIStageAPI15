@@ -1,4 +1,5 @@
 local shared = require("scripts.stageapi.shared")
+local Callbacks = require("scripts.stageapi.enums.Callbacks")
 
 StageAPI.LogMinor("Loading Backdrop & RoomGfx Handling")
 
@@ -44,6 +45,7 @@ function StageAPI.LoadBackdropSprite(sprite, backdrop, mode) -- modes are 1 (wal
     sprite = sprite or Sprite()
 
     local needsExtra
+    local usedData = {}
     local roomShape = shared.Room:GetRoomShape()
     local shapeName = StageAPI.ShapeToName[roomShape]
     if StageAPI.ShapeToWallAnm2Layers[shapeName .. "X"] then
@@ -82,6 +84,7 @@ function StageAPI.LoadBackdropSprite(sprite, backdrop, mode) -- modes are 1 (wal
             for num = 1, StageAPI.ShapeToWallAnm2Layers[shapeName] do
                 local wall_to_use = walls[StageAPI.Random(1, #walls, StageAPI.BackdropRNG)]
                 sprite:ReplaceSpritesheet(num, wall_to_use)
+                usedData[num] = wall_to_use
             end
         end
 
@@ -142,6 +145,10 @@ function StageAPI.LoadBackdropSprite(sprite, backdrop, mode) -- modes are 1 (wal
 
     sprite:Play(shapeName, true)
 
+    if mode ~= 2 then
+        StageAPI.CallCallbacks(Callbacks.POST_SELECT_BACKDROP_WALL, nil, sprite, backdrop, usedData)
+    end
+    
     return renderPos, needsExtra, sprite
 end
 
@@ -183,6 +190,8 @@ function StageAPI.ChangeBackdrop(backdrop, justWalls, storeBackdropEnts)
 
         if storeBackdropEnts then
             backdropEnts[#backdropEnts + 1] = backdropEntity
+        else
+            backdropEntity:Update()
         end
     end
 
