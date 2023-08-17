@@ -63,6 +63,7 @@ local Callbacks = {
     PRE_LEVELMAP_SPAWN_DOOR = "PRE_LEVELMAP_SPAWN_DOOR", -- (slot: DoorSlot, doorData, levelRoom: LevelRoom, targetLevelRoom: LevelRoom, roomData, levelMap: LevelMap)
     EARLY_NEW_ROOM = "EARLY_NEW_ROOM", -- ()
     EARLY_NEW_CUSTOM_STAGE = "EARLY_NEW_CUSTOM_STAGE", -- (stage: CustomStage)
+    POST_SELECT_BACKDROP_WALL = "POST_SELECT_BACKDROP_WALL", -- (sprite: Sprite, backdrop: Backdrop, layerNum: integer, wallSelected: integer, isCorner: boolean)
 }
 
 StageAPI.Enum.Callbacks = Callbacks

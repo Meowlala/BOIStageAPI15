@@ -2,12 +2,16 @@ local shared = require("scripts.stageapi.shared")
 
 StageAPI.LogMinor("Loading Stage Override Definitions")
 
-function StageAPI.BackdropHelper(backdrop, prefix, suffix)
+function StageAPI.BackdropHelper(backdrop, prefix, suffix, id)
     if #backdrop < 1 then
         backdrop = {backdrop}
     end
 
     for i, backdropVariant in ipairs(backdrop) do
+        if id then
+            backdrop[i].ID = id
+        end
+    
         for k, backdropFiles in pairs(backdropVariant) do
             for i2, file in ipairs(backdropFiles) do
                 if type(file) == "table" then
