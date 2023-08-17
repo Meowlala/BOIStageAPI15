@@ -146,9 +146,7 @@ function StageAPI.LoadBackdropSprite(sprite, backdrop, mode) -- modes are 1 (wal
     sprite:Play(shapeName, true)
 
     if mode ~= 2 then
-        for layer, chosenWall in pairs(usedData) do
-            StageAPI.CallCallbacks(Callbacks.POST_SELECT_BACKDROP_WALL, nil, sprite, backdrop, layer, chosenWall)
-        end
+        StageAPI.CallCallbacks(Callbacks.POST_SELECT_BACKDROP_WALL, nil, sprite, backdrop, usedData)
     end
     
     return renderPos, needsExtra, sprite
