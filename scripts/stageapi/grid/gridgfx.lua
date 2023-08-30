@@ -174,6 +174,11 @@ function StageAPI.ChangePit(pit, pitFile, bridgefilename, alt)
 
         if alt and shared.Room:HasWaterPits() then
             gsprite:ReplaceSpritesheet(0, alt.File)
+            gsprite:PlayOverlay("highlights", true)
+            local frame = StageAPI.Random(0, REPENTOGON and gsprite:GetAnimationData("highlights"):GetLength() or 164)
+            for i = 1, frame do
+                gsprite:Update()
+            end
         else
             gsprite:ReplaceSpritesheet(0, pitFile.File)
         end
