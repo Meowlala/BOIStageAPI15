@@ -13,13 +13,15 @@ function StageAPI.BackdropHelper(backdrop, prefix, suffix, id)
         end
     
         for k, backdropFiles in pairs(backdropVariant) do
-            for i2, file in ipairs(backdropFiles) do
-                if type(file) == "table" then
-                    for i3, file2 in ipairs(file) do
-                        backdrop[i][k][i2][i3] = prefix .. file2 .. suffix
+            if type(backdropFiles) == "table" then
+                for i2, file in ipairs(backdropFiles) do
+                    if type(file) == "table" then
+                        for i3, file2 in ipairs(file) do
+                            backdrop[i][k][i2][i3] = prefix .. file2 .. suffix
+                        end
+                    else
+                        backdrop[i][k][i2] = prefix .. file .. suffix
                     end
-                else
-                    backdrop[i][k][i2] = prefix .. file .. suffix
                 end
             end
         end
