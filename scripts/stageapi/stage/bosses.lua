@@ -417,7 +417,33 @@ mod:AddCallback(ModCallbacks.MC_POST_RENDER, function()
             local tab = StageAPI.UsePlayerExtraPortrait and 'Shake' or 'NoShake'
             StageAPI.InterpolateSprite(StageAPI.PlayerPortraitExtra,StageAPI.PlayingBossSprite:GetFrame(),ExtraPortraitAnimationTable[tab])
         end
+    elseif isPlaying or StageAPI.PlayingBossSprite then
+        StageAPI.PlayingBossSprite:Stop()
+        StageAPI.PlayingBossSprite = nil
+        StageAPI.PlayingBossSpriteBg:Stop()
+        StageAPI.PlayingBossSpriteBg = nil
+        StageAPI.PlayingBossSpriteDirt:Stop()
+        StageAPI.PlayingBossSpriteDirt = nil
+    end
 
+    if not isPlaying then
+        StageAPI.UnskippableBossAnim = nil
+        StageAPI.BossOffset = nil
+    end
+
+    menuConfirmTriggered = nil
+    for _, player in ipairs(shared.Players) do
+        if Input.IsActionTriggered(ButtonAction.ACTION_MENUCONFIRM, player.ControllerIndex) then
+            menuConfirmTriggered = true
+            break
+        end
+    end
+end)
+
+StageAPI.AddCallback("StageAPI", Callbacks.POST_HUD_RENDER, CallbackPriority.DEFAULT, function(isPauseMenuOpen, pauseMenuDarkPct)
+    local isPlaying = StageAPI.PlayingBossSprite and StageAPI.PlayingBossSprite:IsPlaying()
+
+    if isPlaying then
         local centerPos = StageAPI.GetScreenCenterPosition()
         --local layerRenderOrder = {0,1,2,3,14,9,13,4,5,6,7,8,10}       --ab+ classy vs screen's compability layer order
         local layerRenderOrder = {0,1,2,3,9,14,13,4,5,12,11,6,7,8,10}
@@ -447,26 +473,6 @@ mod:AddCallback(ModCallbacks.MC_POST_RENDER, function()
             else
                 StageAPI.PlayingBossSprite:RenderLayer(layer, pos)
             end
-        end
-    elseif isPlaying or StageAPI.PlayingBossSprite then
-        StageAPI.PlayingBossSprite:Stop()
-        StageAPI.PlayingBossSprite = nil
-        StageAPI.PlayingBossSpriteBg:Stop()
-        StageAPI.PlayingBossSpriteBg = nil
-        StageAPI.PlayingBossSpriteDirt:Stop()
-        StageAPI.PlayingBossSpriteDirt = nil
-    end
-
-    if not isPlaying then
-        StageAPI.UnskippableBossAnim = nil
-        StageAPI.BossOffset = nil
-    end
-
-    menuConfirmTriggered = nil
-    for _, player in ipairs(shared.Players) do
-        if Input.IsActionTriggered(ButtonAction.ACTION_MENUCONFIRM, player.ControllerIndex) then
-            menuConfirmTriggered = true
-            break
         end
     end
 end)
