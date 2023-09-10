@@ -592,6 +592,14 @@ function StageAPI.CustomStageGenerateRoom(currentStage, roomDescriptor, isStarti
             RequireRoomType = currentStage.RequireRoomTypeBoss
         }, roomArgs))
 
+        if roomDescriptor then
+            if StageAPI.ReplaceBossSubtypes[roomDescriptor.Data.Subtype] then
+                local overwritableRoomDesc = shared.Level:GetRoomByIdx(roomDescriptor.SafeGridIndex, dimension)
+                local replaceData = StageAPI.GetGotoDataForTypeShape(RoomType.ROOM_BOSS, roomDescriptor.Data.Shape)
+                overwritableRoomDesc.Data = replaceData
+            end
+        end
+
         return newRoom, boss
     end
 end

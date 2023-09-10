@@ -606,7 +606,7 @@ function StageAPI.GenerateBossRoom(bossID, checkEncountered, bosses, hasHorseman
 end
 
 -- Certain boss subtypes should be replaced with monstro to avoid bugs
-local replaceBossSubtypes = {
+StageAPI.ReplaceBossSubtypes = {
     [23] = true, -- the fallen, spawns devil items
     [81] = true, -- heretic, pentagram effect
     [82] = true, -- hornfel, doors
@@ -646,8 +646,8 @@ function StageAPI.GenerateBaseRoom(roomDesc)
                 }, {
                     RoomDescriptor = roomDesc
                 })
-
-                if replaceBossSubtypes[roomDesc.Data.Subtype] then
+                
+                if StageAPI.ReplaceBossSubtypes[roomDesc.Data.Subtype] then
                     local overwritableRoomDesc = shared.Level:GetRoomByIdx(roomDesc.SafeGridIndex, dimension)
                     local replaceData = StageAPI.GetGotoDataForTypeShape(RoomType.ROOM_BOSS, roomDesc.Data.Shape)
                     overwritableRoomDesc.Data = replaceData
