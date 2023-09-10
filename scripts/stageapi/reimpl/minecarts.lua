@@ -21,18 +21,23 @@ StageAPI.MinecartAnimOffsets = {
 
 function StageAPI.MakeMinecart(gridIndex, railVariant, entToLoad)
 	local vec = StageAPI.MinecartRailVectors[railVariant] or Vector(5.2,0)
-	local minecart = Isaac.Spawn(EntityType.ENTITY_MINECART, 1, 0, shared.Room:GetGridPosition(gridIndex), vec, nil):ToNPC()
-	minecart:ClearEntityFlags(EntityFlag.FLAG_APPEAR)
-	minecart.EntityCollisionClass = EntityCollisionClass.ENTCOLL_NONE
-	minecart.GridCollisionClass = EntityGridCollisionClass.GRIDCOLL_NONE
-	minecart.I1 = 1
-	minecart.I2 = gridIndex
-	minecart.V1 = vec
-	minecart.V2 = Vector(1,0)
-	minecart.TargetPosition = vec:Normalized()
-	minecart:GetData().IsStageAPIMinecart = true
-	if entToLoad then
-		StageAPI.LoadEntIntoMinecart(entToLoad, minecart)
+	if REPENTOGON and entToLoad then
+		entToLoad:GiveMinecart(shared.Room:GetGridPosition(gridIndex), vec)
+		return entToLoad:GetMinecart()
+	else
+		local minecart = Isaac.Spawn(EntityType.ENTITY_MINECART, 1, 0, shared.Room:GetGridPosition(gridIndex), vec, nil):ToNPC()
+		minecart:ClearEntityFlags(EntityFlag.FLAG_APPEAR)
+		minecart.EntityCollisionClass = EntityCollisionClass.ENTCOLL_NONE
+		minecart.GridCollisionClass = EntityGridCollisionClass.GRIDCOLL_NONE
+		minecart.I1 = 1
+		minecart.I2 = gridIndex
+		minecart.V1 = vec
+		minecart.V2 = Vector(1,0)
+		minecart.TargetPosition = vec:Normalized()
+		minecart:GetData().IsStageAPIMinecart = true
+		if entToLoad then
+			StageAPI.LoadEntIntoMinecart(entToLoad, minecart)
+		end
 	end
 	return minecart
 end
