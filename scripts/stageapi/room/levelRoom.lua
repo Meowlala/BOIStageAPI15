@@ -126,7 +126,6 @@ end
 ---@field JustCleared boolean
 ---@field IsPersistentRoom boolean
 ---@field Layout RoomLayout
-
 StageAPI.LevelRoom = StageAPI.Class("LevelRoom")
 StageAPI.NextUniqueRoomIdentifier = 0
 function StageAPI.LevelRoom:Init(args, ...)
