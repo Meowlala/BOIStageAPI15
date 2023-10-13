@@ -667,6 +667,22 @@ function StageAPI.CustomStage:GenerateLevel()
     end
 end
 
+function StageAPI.IsGreedBoss()
+    if shared.Game:IsGreedMode() then
+
+        local buffer = 0
+        if shared.Game.Difficulty == 3 then
+            buffer = 1
+        end
+
+        if shared.Level.GreedModeWave >= 8 + buffer then
+            return true
+        end
+    end
+
+    return false
+end
+
 ---@return Music? musicId
 ---@return boolean? shouldLayer
 ---@return Music? shouldQueue
@@ -675,7 +691,7 @@ function StageAPI.CustomStage:GetPlayingMusic()
     local roomType = shared.Room:GetType()
     local id = shared.Music:GetCurrentMusicID()
     local roomDesc = shared.Level:GetCurrentRoomDesc()
-    if roomType == RoomType.ROOM_BOSS then
+    if roomType == RoomType.ROOM_BOSS or StageAPI.IsGreedBoss() then
         if self.BossMusic then
             local music = self.BossMusic
             local musicID, queue, disregardNonOverride
