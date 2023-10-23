@@ -579,7 +579,7 @@ function StageAPI.GenerateBossRoom(bossID, checkEncountered, bosses, hasHorseman
 
     local bossID = args.BossID
     if not bossID then
-        bossID = StageAPI.SelectBoss(args.Bosses)
+        bossID = StageAPI.SelectBoss(args.Bosses, nil, roomArgs.RoomDescriptor, false)
     elseif args.CheckEncountered then
         if StageAPI.GetBossEncountered(bossID) then
             StageAPI.LogErr("Trying to generate boss room for encountered boss: " .. tostring(bossID))
