@@ -32,37 +32,42 @@ mod:AddCallback(ModCallbacks.MC_POST_GAME_STARTED, function()
             REVEL.AddedStageAPIChangelogs = true
         end
 
-TryAddChangelog("v2.27", [[- Added a Champion Preventer meta 
-        entitiy to Basement Renovator
-        which prevents an enemy it is
-        placed on from randomly 
-        becoming a champion
+TryAddChangelog("v2.27", [[- Overriden stages have their
+        StageNumber set
         
-        - Limit and reduce the amount 
-        of Fool's Gold rocks spawned
-        in luarooms with alot of rocks
+        - StageAPI event triggers now use
+        their own function: TriggerEventGroup()
         
-        - Fix D7 not working properly
-        in custom boss rooms
+        - Fix Fool's Gold rocks spawning
+        again in luarooms if
+        they were reentered
         
-        - Update savedata system to
-        account for Genesis and 
-        include marshaling
+        - Fixed a bug with Curse of 
+        the Maze room swapping 
+        detection 
         
-        - Add ability for entities
-        to be flagged to not factor
-        into the random selection
-        of entity stacks and always
-        be spawned
+        - Add a POST_SELECT_BACKDROP_WALL
+        callback for when custom backdrops
+        are applied, which stores data
+        for each backdrop "chunk"
         
-        - GridGfx:SetDecorations() can
-        now have specific animations
-        specified for unique decorations
-        (like Caves puddles)
+        - Add ability to register 
+        and check for string IDs 
+        for custom backdrops
         
-        - Update ChangeStageShadow() to 
-        allow for different amounts
-        of overlays for each room shape
+        - Custom pits with water ripples
+        on their spritesheet will display
+        them if applicable 
+
+        - Fix boss music not playing 
+        in custom stages in greed mode
+
+        - Custom boss versus screen
+        now renders above the HUD
+
+        - Fixes for how custom
+        stages load their boss
+        rooms
         ]])
 
                 TryAddChangelog("v2.26", [[- Added a Champion Preventer meta 
