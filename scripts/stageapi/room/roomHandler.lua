@@ -840,6 +840,13 @@ function StageAPI.LoadEntitiesFromEntitySets(entitysets, doGrids, doPersistentOn
     return ents_spawned
 end
 
+StageAPI.AddCallback("StageAPI", Callbacks.PRE_SPAWN_ENTITY, 1, function(entityInfo, entityList, index)
+    --Random Dragonflies (Subtype 100) require re-implementation
+    if entityInfo.Data.Type == EntityType.ENTITY_BOOMFLY and entityInfo.Data.Variant == 3 and entityInfo.Data.SubType == 100 then
+        return {entityInfo.Data.Type, entityInfo.Data.Variant, StageAPI.Random(0,1)}
+    end
+end)
+
 function StageAPI.CallGridPostInit()
     for i = 0, shared.Room:GetGridSize() do
         local grid = shared.Room:GetGridEntity(i)
