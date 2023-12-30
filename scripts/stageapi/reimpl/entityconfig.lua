@@ -27,6 +27,10 @@ function StageAPI.GetEntityConfig(id, var, sub)
         return nil
     elseif id then
         var, sub = var or 0, sub or 0
+    
+        if StageAPI.IsMetadataEntity(id, var) or StageAPI.IsCustomGridSpawnerEntity(id, var, sub) then
+            return nil
+        end
 
         local mostSpecific
         local specificVariant = false

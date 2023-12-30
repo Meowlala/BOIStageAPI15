@@ -164,7 +164,7 @@ function StageAPI.CustomStage:WillOverrideRoom(roomDesc)
     local isStartingRoom = roomDesc.SafeGridIndex == shared.Level:GetStartingRoomIndex()
     local dimension = StageAPI.GetDimension(roomDesc)
 
-    if dimension == DIMENSION_DEATH_CERTIFICATE then
+    if dimension == DIMENSION_DEATH_CERTIFICATE or (self:HasMineshaftDimension() and dimension == 1) then
         return false
     elseif rtype == RoomType.ROOM_BOSS and self.Bosses then
         return true
@@ -638,6 +638,22 @@ function StageAPI.IsMirrorDimension()
     return shared.Room:IsMirrorWorld() or (StageAPI.GetCurrentStage() and StageAPI.GetCurrentStage():HasMirrorDimension() and StageAPI.GetDimension() == 1)
 end
 
+function StageAPI.CustomStage:HasMineshaftDimension()
+    local vanillaStage, vanillaStageType
+    if self.LevelgenStage then
+        vanillaStage, vanillaStageType = self.LevelgenStage.Stage, self.LevelgenStage.StageType
+    elseif self.Replaces then
+        vanillaStage, vanillaStageType = self.Replaces.OverrideStage, self.Replaces.OverrideStageType
+    end
+    return ((vanillaStage == LevelStage.STAGE2_2 or (self:IsStage() and shared.Level:GetCurses() & LevelCurse.CURSE_OF_LABYRINTH ~= 0)) 
+        and (vanillaStageType == StageType.STAGETYPE_REPENTANCE or vanillaStageType == StageType.STAGETYPE_REPENTANCE_B))
+end
+
+function StageAPI.IsMineshaftDimension()
+    return shared.Room:HasCurseMist() or (StageAPI.GetCurrentStage() and StageAPI.GetCurrentStage():HasMineshaftDimension() and StageAPI.GetDimension() == 1)
+end
+
+
 function StageAPI.CustomStage:GenerateLevel()
     StageAPI.Log("Generating custom level: "..self.Name)
     if not self.PregenerationEnabled then
@@ -649,13 +665,14 @@ function StageAPI.CustomStage:GenerateLevel()
     local hasMirror = self:HasMirrorDimension()
     for i = 0, roomsList.Size - 1 do
         local roomDesc = roomsList:Get(i)
-        if roomDesc and not (hasMirror and StageAPI.GetDimension(roomDesc) == 1) then
+        if roomDesc and StageAPI.GetDimension(roomDesc) == 0 then
             local isStartingRoom = startingRoomIndex == roomDesc.SafeGridIndex
             local newRoom = self:GenerateRoom(roomDesc, isStartingRoom, true)
             if newRoom then
                 local listIndex = roomDesc.ListIndex
                 StageAPI.SetLevelRoom(newRoom, listIndex, 0)
 
+                StageAPI.LogMinor(StageAPI.GetDimension(roomDesc))
                 if hasMirror and roomDesc.SafeGridIndex > -1 and StageAPI.GetDimension(roomDesc) == 0 then
                     local mirroredRoom = newRoom:Copy(roomDesc)
 					local mirroredDesc = shared.Level:GetRoomByIdx(roomDesc.SafeGridIndex, 1)

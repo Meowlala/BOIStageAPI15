@@ -1138,7 +1138,7 @@ mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, function()
 
         justGenerated = currentRoom.FirstLoad
         currentRoom:Load(true)
-    elseif StageAPI.InNewStage() then
+    elseif StageAPI.InNewStage() and StageAPI.GetDimension() == 0 then
         if not currentRoom and StageAPI.CurrentStage.GenerateRoom then
             local newRoom, newBoss = StageAPI.CurrentStage:GenerateRoom(shared.Level:GetCurrentRoomDesc(), inStartingRoom, false)
             if newRoom then
