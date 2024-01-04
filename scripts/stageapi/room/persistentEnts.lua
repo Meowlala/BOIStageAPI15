@@ -40,7 +40,9 @@ StageAPI.AddEntityPersistenceData({Type = EntityType.ENTITY_BRIMSTONE_HEAD, Remo
 StageAPI.AddEntityPersistenceData({Type = EntityType.ENTITY_QUAKE_GRIMACE, RemoveOnDeath = true, RemoveOnRemove = true,})
 StageAPI.AddEntityPersistenceData({Type = EntityType.ENTITY_BOMB_GRIMACE, RemoveOnDeath = true, RemoveOnRemove = true,})
 StageAPI.AddEntityPersistenceData({Type = EntityType.ENTITY_BALL_AND_CHAIN, RemoveOnDeath = true, RemoveOnRemove = true,})
-
+StageAPI.AddEntityPersistenceData({Type = EntityType.ENTITY_MINECART, Variant = 10, RemoveOnDeath = true, RemoveOnRemove = true, --Quest Minecart
+    StoreCheck = function(entity) return entity:ToNPC().State == 4 end,
+})
 StageAPI.AddEntityPersistenceData({Type = EntityType.ENTITY_POKY, Variant = 1, RemoveOnDeath = true, RemoveOnRemove = true,
     StoreCheck = function(entity) return entity:ToNPC().State == 16 end,
 })
