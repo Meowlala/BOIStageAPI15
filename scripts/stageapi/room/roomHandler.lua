@@ -486,11 +486,11 @@ function StageAPI.SelectSpawnEntities(entities, seed, roomMetadata, lastPersiste
                     if StageAPI.IsCustomGridSpawnerEntity(entData.Type, entData.Variant, entData.SubType) or StageAPI.ShouldEntIgnoreStack(entData.Type, entData.Variant, entData.SubType) then
                         addEntities[#addEntities + 1] = entData
                     else
-                        randomPool[#randomPool + 1] = entData
+                        randomPool[#randomPool + 1] = {entData, entData.Weight}
                     end
                 end
                 if #randomPool > 0 then
-                    addEntities[#addEntities + 1] = randomPool[StageAPI.Random(1, #randomPool, StageAPI.RoomLoadRNG)]
+                    addEntities[#addEntities + 1] = StageAPI.WeightedRNG(randomPool, StageAPI.RoomLoadRNG)
                 end
             end
 
@@ -540,7 +540,11 @@ function StageAPI.SelectSpawnGrids(gridsByIndex, seed)
 
             if not noSpawnGrid then
                 if not spawnGrid then
-                    spawnGrid = grids[StageAPI.Random(1, #grids, StageAPI.RoomLoadRNG)]
+                    local gridPool = {}
+                    for _, grid in pairs(grids) do
+                        table.insert(gridPool, {grid, grid.Weight})
+                    end
+                    spawnGrid = StageAPI.WeightedRNG(gridPool, StageAPI.RoomLoadRNG)
                 end
 
                 if spawnGrid then

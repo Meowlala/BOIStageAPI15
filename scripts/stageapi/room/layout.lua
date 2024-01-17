@@ -118,6 +118,7 @@ StageAPI.RoomShapeToWidthHeight = {
 ---@field GridX integer
 ---@field GridY integer
 ---@field Index integer
+---@field Weight float
 
 ---@class RoomLayout_EntityData
 ---@field Type integer
@@ -126,6 +127,7 @@ StageAPI.RoomShapeToWidthHeight = {
 ---@field GridX integer
 ---@field GridY integer
 ---@field Index integer
+---@field Weight float
 
 ---@param layout RoomLayout
 ---@param index integer
@@ -134,7 +136,9 @@ StageAPI.RoomShapeToWidthHeight = {
 ---@param subtype integer
 ---@param gridX integer
 ---@param gridY integer
-function StageAPI.AddObjectToRoomLayout(layout, index, objtype, variant, subtype, gridX, gridY)
+function StageAPI.AddObjectToRoomLayout(layout, index, objtype, variant, subtype, gridX, gridY, weight)
+    weight = weight or 1
+
     if gridX and gridY and not index then
         index = StageAPI.VectorToGrid(gridX, gridY, layout.Width)
     end
@@ -157,7 +161,8 @@ function StageAPI.AddObjectToRoomLayout(layout, index, objtype, variant, subtype
             SubType = subtype,
             GridX = gridX,
             GridY = gridY,
-            Index = index
+            Index = index,
+            Weight = weight,
         }
 
         layout.GridEntities[#layout.GridEntities + 1] = gridData
@@ -176,7 +181,8 @@ function StageAPI.AddObjectToRoomLayout(layout, index, objtype, variant, subtype
             SubType = subtype,
             GridX = gridX,
             GridY = gridY,
-            Index = index
+            Index = index,
+            Weight = weight,
         }
 
         if entData.Type == 1400 or entData.Type == 1410 then
@@ -265,7 +271,7 @@ function StageAPI.SimplifyRoomLayout(layout)
         if not object.ISDOOR then
             local index = StageAPI.VectorToGrid(object.GRIDX, object.GRIDY, outLayout.Width)
             for _, entityData in ipairs(object) do
-                StageAPI.AddObjectToRoomLayout(outLayout, index, entityData.TYPE, entityData.VARIANT, entityData.SUBTYPE, object.GRIDX, object.GRIDY)
+                StageAPI.AddObjectToRoomLayout(outLayout, index, entityData.TYPE, entityData.VARIANT, entityData.SUBTYPE, object.GRIDX, object.GRIDY, entityData.WEIGHT)
             end
         else
             outLayout.Doors[#outLayout.Doors + 1] = {
@@ -377,7 +383,7 @@ function StageAPI.GenerateRoomLayoutFromData(data) -- converts RoomDescriptor.Da
     end
 
     StageAPI.ForAllSpawnEntries(data, function(entry, spawn)
-        StageAPI.AddObjectToRoomLayout(layout, nil, entry.Type, entry.Variant, entry.Subtype, spawn.X, spawn.Y)
+        StageAPI.AddObjectToRoomLayout(layout, nil, entry.Type, entry.Variant, entry.Subtype, spawn.X, spawn.Y, entry.Weight)
     end)
 
     return layout
