@@ -1031,7 +1031,7 @@ function StageAPI.LoadGridsFromDataList(grids, gridInformation, entities, railsO
 end
 
 StageAPI.AddCallback("StageAPI", "PRE_SPAWN_GRID", 0, function(gridEntry, gridInformation, entitySets, rng) --Handle rock replacements
-    if gridEntry.Type == GridEntityType.GRID_ROCK then
+    if gridEntry.Index and gridEntry.Type == GridEntityType.GRID_ROCK then
         local currentRoom = StageAPI.GetCurrentRoom()
         if not (gridEntry.SubType == 1 or currentRoom.Metadata:Has{Index = gridEntry.Index, Name = "PreventRandomization"}) then
             local roll = StageAPI.Random(1, 100, rng)
