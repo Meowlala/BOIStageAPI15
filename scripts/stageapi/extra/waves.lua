@@ -69,9 +69,9 @@ mod:AddCallback(ModCallbacks.MC_POST_NPC_INIT, function(_, npc)
         and not npc.SpawnerEntity -- only room spawns
         then
             local preventCounting
-            for _, entity in ipairs(Isaac.FindInRadius(Vector.Zero, 9999, EntityPartition.ENEMY)) do
+            for _, entity in ipairs(Isaac.GetRoomEntities()) do
                 if entity:ToNPC() and entity:CanShutDoors()
-                and not (entity:HasEntityFlags(EntityFlag.FLAG_FRIENDLY) or entity:HasEntityFlags(EntityFlag.FLAG_PERSISTENT) or entity:HasEntityFlags(EntityFlag.FLAG_NO_TARGET))
+                and not (entity:HasEntityFlags(EntityFlag.FLAG_FRIENDLY) or entity:HasEntityFlags(EntityFlag.FLAG_PERSISTENT))
                 and entity.FrameCount ~= npc.FrameCount then
                     preventCounting = true
                     break

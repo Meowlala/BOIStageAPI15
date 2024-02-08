@@ -32,7 +32,26 @@ mod:AddCallback(ModCallbacks.MC_POST_GAME_STARTED, function()
             REVEL.AddedStageAPIChangelogs = true
         end
 
-TryAddChangelog("v2.27", [[- Overriden stages have their
+                TryAddChangelog("v2.28", [[- Fix entity stacks in luarooms
+        not using weights
+
+        - Fix random Dragonflies (Subtype 100) not working in luarooms
+
+        - Fix the debug log getting flooded with inaccurate warnings about
+        entity config
+
+        - Tweaks to better support custom stages with a mineshaft puzzle 
+        dimension
+
+        - Fix OptionsPickupIndex of pickups sometimes not persisting in 
+        luarooms
+
+        - Fix detection for wave changing in custom challenge rooms
+        ignoring certain valid enemies
+        ]])
+
+
+                TryAddChangelog("v2.27", [[- Overriden stages have their
         StageNumber set
         
         - StageAPI event triggers now use

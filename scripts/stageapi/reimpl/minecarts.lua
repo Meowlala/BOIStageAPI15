@@ -52,6 +52,18 @@ function StageAPI.LoadEntIntoMinecart(ent, minecart)
     ent:GetData().StageAPIMinecart = minecart
 end
 
+function StageAPI.IsInMinecart(ent)
+	if REPENTOGON then
+		return ent:GetMinecart()
+	else
+		for _, minecart in ipairs(Isaac.FindByType(EntityType.ENTITY_MINECART)) do
+            if minecart.Child and minecart.Child.InitSeed == ent.InitSeed then
+                return minecart
+            end
+        end
+	end
+end
+
 mod:AddCallback(ModCallbacks.MC_NPC_UPDATE, function(_, minecart)
 	if minecart:GetData().IsStageAPIMinecart and minecart.Child then
 		minecart.Child:AddEntityFlags(EntityFlag.FLAG_NO_KNOCKBACK | EntityFlag.FLAG_NO_PHYSICS_KNOCKBACK)

@@ -516,7 +516,7 @@ function StageAPI.LevelRoom:SavePersistentEntities()
                 end
             end
 
-            if persistData.UpdatePosition then
+            if persistData.UpdatePosition and not StageAPI.IsInMinecart(entity) then
                 entityPersistData.Position = {X = entity.Position.X, Y = entity.Position.Y}
             end
 
@@ -571,7 +571,7 @@ function StageAPI.LevelRoom:SavePersistentEntities()
                         entityPersistData.Health = entity.HitPoints
                     end
 
-                    if persistData.UpdatePosition then
+                    if persistData.UpdatePosition and not StageAPI.IsInMinecart(entity) then
                         entityPersistData.Position = {X = entity.Position.X, Y = entity.Position.Y}
                     end
 
@@ -580,7 +580,7 @@ function StageAPI.LevelRoom:SavePersistentEntities()
                             entityPersistData.Price = {Price = entity:ToPickup().Price, AutoUpdate = entity:ToPickup().AutoUpdatePrice}
                         end
                         if persistData.UpdateOptionsPickupIndex then
-                            entityPersistData.UpdateOptionsPickupIndex = entity:ToPickup().OptionsPickupIndex
+                            entityPersistData.OptionsPickupIndex = entity:ToPickup().OptionsPickupIndex
                         end
                     end
 
