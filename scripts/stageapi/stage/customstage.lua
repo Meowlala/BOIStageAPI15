@@ -251,7 +251,7 @@ function StageAPI.CustomStage:SetTransitionMusic(music)
     StageAPI.StopOverridingMusic(music)
 end
 
-function StageAPI.CustomStage:SetBossMusic(music, clearedMusic, intro, outro)
+function StageAPI.CustomStage:SetBossMusic(music, clearedMusic, intro, outro, twistedMusic)
     if not (AssertValidMusic(music) and AssertValidMusic(clearedMusic) and AssertValidMusic(intro) and AssertValidMusic(outro)) then
         StageAPI.LogWarn(self.Name, " CustomStage:SetBossMusic | invalid music value between ", 
             music, " ", clearedMusic, " ", intro, " ", outro
@@ -259,11 +259,13 @@ function StageAPI.CustomStage:SetBossMusic(music, clearedMusic, intro, outro)
         return
     end
 
+    twistedMusic = twistedMusic or Music.MUSIC_BOSS_OVER_TWISTED
     self.BossMusic = {
         Fight = music,
         Cleared = clearedMusic,
         Intro = intro,
-        Outro = outro
+        Outro = outro,
+        Twisted = twistedMusic,
     }
 end
 
@@ -725,7 +727,13 @@ function StageAPI.CustomStage:GetPlayingMusic()
                 disregardNonOverride = true
             else
                 if isCleared then
-                    musicID = music.Cleared
+                    if shared.Game:GetStateFlag(GameStateFlag.STATE_MAUSOLEUM_HEART_KILLED) 
+                    and self.LevelgenStage and self.LevelgenStage.Stage == LevelStage.STAGE3_2 
+                    and (self.LevelgenStage.StageType == StageType.STAGETYPE_REPENTANCE or self.LevelgenStage.StageType == StageType.STAGETYPE_REPENTANCE_B) then
+                        musicID = music.Twisted
+                    else
+                        musicID = music.Cleared
+                    end
                 else
                     musicID = music.Fight
                 end
