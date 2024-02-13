@@ -48,6 +48,8 @@ mod:AddCallback(ModCallbacks.MC_POST_GAME_STARTED, function()
 
         - Fix detection for wave changing in custom challenge rooms
         ignoring certain valid enemies
+
+        - Fix Teleporter triggers not working in test mode
         ]])
 
 

@@ -378,12 +378,14 @@ mod:AddCallback(ModCallbacks.MC_POST_UPDATE, function()
                             end
                         end
                     elseif checking.Desc.Type == GridEntityType.GRID_TELEPORTER then
-                        if checking.State == 0 then
-                            checking.State = 2
-                            checking:GetSprite():Play("TurnOff", true)
-                        elseif checking.State == 2 then
-                            checking.State = 0
-                            checking:GetSprite():Play("TurnOn", true)
+                        if not StageAPI.InTestMode then
+                            if checking.State == 0 then
+                                checking.State = 2
+                                checking:GetSprite():Play("TurnOff", true)
+                            elseif checking.State == 2 then
+                                checking.State = 0
+                                checking:GetSprite():Play("TurnOn", true)
+                            end
                         end
                     end
     
