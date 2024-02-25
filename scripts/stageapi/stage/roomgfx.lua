@@ -199,7 +199,7 @@ function StageAPI.ChangeBackdrop(backdrop, justWalls, storeBackdropEnts)
 end
 
 StageAPI.StageShadowRNG = RNG()
-function StageAPI.ChangeStageShadow(prefix, count, opacity)
+function StageAPI.ChangeStageShadow(prefix, count, opacity, useBlendMode)
     prefix = prefix or "stageapi/floors/catacombs/overlays/"
     count = count or 5
     opacity = opacity or 1
@@ -237,6 +237,13 @@ function StageAPI.ChangeStageShadow(prefix, count, opacity)
         shadowEntity:GetSprite():ReplaceSpritesheet(0, sheet)
         shadowEntity:GetSprite():LoadGraphics()
         shadowEntity:GetSprite():SetFrame(anim, 0)
+        if useBlendMode and REPENTOGON then
+            local blendMode = shadowEntity:GetSprite():GetLayer(0):GetBlendMode()
+            blendMode.Flag1 = 4
+            blendMode.Flag2 = 7
+            blendMode.Flag3 = 4
+            blendMode.Flag4 = 7
+        end
         shadowEntity:AddEntityFlags(EntityFlag.FLAG_DONT_OVERWRITE)
     end
 end

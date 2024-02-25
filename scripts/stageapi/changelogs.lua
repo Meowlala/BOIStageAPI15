@@ -50,6 +50,15 @@ mod:AddCallback(ModCallbacks.MC_POST_GAME_STARTED, function()
         ignoring certain valid enemies
 
         - Fix Teleporter triggers not working in test mode
+
+        - Add support for twisted boss clear music for custom stages
+        which replace Mausoleum II or Gehenna II 
+
+        - Add support for stage overlays which use the same method of
+        blending as vanilla overlays with REPENTOGON
+
+        - Add registration and autocomplete for StageAPI console commands
+        with REPENTOGON
         ]])
 
 
