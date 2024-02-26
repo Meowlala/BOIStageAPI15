@@ -257,12 +257,15 @@ local GameClassHandlers = {
     Vector = {
         Marshal = function(val)
             return {
-                val.X,
-                val.Y,
+                -- cannot save space by using arrays
+                -- as they will be saved as dicts anyways
+                -- due to the type marker being added
+                X = val.X,
+                Y = val.Y,
             }
         end,
         Unmarshal = function(val)
-            return Vector(val[1], val[2])
+            return Vector(val.X, val.Y)
         end,
     },
 }
@@ -293,7 +296,12 @@ local function UnmarshalValue(val, key)
             local handler = GameClassHandlers[classtype]
             if handler then
                 val.__USERDATATYPE__ = nil
-                return handler.Unmarshal(val)
+                local success, ret = pcall(handler.Unmarshal, val)
+                if success then
+                    return ret
+                else
+                    error("Couldn't unmarshal JSON value " .. table_tostring(val) .. ": " .. tostring(ret))
+                end
             else
                 StageAPI.LogErr("Couldn't unmarshal save data type: ", classtype)
                 return val
