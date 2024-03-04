@@ -820,12 +820,14 @@ function StageAPI.LoadEntitiesFromEntitySets(entitysets, doGrids, doPersistentOn
                     
                                 ent:GetData().StageAPISpawnedPosition = entityInfo.Position or Vector.Zero
                                 ent:GetData().StageAPIEntityListIndex = index
-                    
+     
                                 if entityInfo.Persistent then
                                     StageAPI.SetEntityPersistenceData(ent, entityInfo.PersistentIndex, persistData)
-                                    ent:ClearEntityFlags(EntityFlag.FLAG_APPEAR)
+                                    if not ent:ToNPC() then --NPCs handle Appear flags in their own AI, so don't interfere with it
+                                        ent:ClearEntityFlags(EntityFlag.FLAG_APPEAR)
+                                    end
                                 end
-                    
+          
                                 if not loadingWave and ent:CanShutDoors() then
                                     shared.Room:SetClear(false)
                                 end
