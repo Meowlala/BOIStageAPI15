@@ -39,6 +39,7 @@ local Callbacks = {
     PRE_CHANGE_PIT_GFX = "PRE_CHANGE_PIT_GFX", -- [CustomStage] (grid: GridEntity, index: integer, usingPitFile: GridGfx.PitFile?, usingBridgeFilename: string?, usingAlt: GridGfx.PitFile?): GridGfx.PitFile?, string?, GridGfx.PitFile?
     PRE_CHANGE_MISC_GRID_GFX = "PRE_CHANGE_MISC_GRID_GFX", -- [CustomStage] (grid: GridEntity, index: integer, usingFilename: string): string?
     PRE_STAGEAPI_NEW_ROOM = "PRE_STAGEAPI_NEW_ROOM", -- ()
+    -- Pre and post new_room_generation allow returning a room, or a table containing CurrentRoom, JustGenerated, Boss
     PRE_STAGEAPI_NEW_ROOM_GENERATION = "PRE_STAGEAPI_NEW_ROOM_GENERATION", -- (currentRoom, justGenerated, currentListIndex, currentDimension)
     POST_STAGEAPI_NEW_ROOM_GENERATION = "POST_STAGEAPI_NEW_ROOM_GENERATION", -- (currentRoom, justGenerated, currentListIndex, boss, currentDimension)
     POST_STAGEAPI_NEW_ROOM = "POST_STAGEAPI_NEW_ROOM", -- (justGenerated)
