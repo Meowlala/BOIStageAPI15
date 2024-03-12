@@ -422,7 +422,7 @@ mod:AddCallback(ModCallbacks.MC_POST_UPDATE, function()
                             local ent = Isaac.Spawn(spawn.Type or 20, spawn.Variant or 0, spawn.SubType or 0, shared.Room:GetGridPosition(index), Vector.Zero, nil)
                             StageAPI.CallCallbacks(Callbacks.POST_SPAWN_ENTITY, false, ent, {Data = spawn}, {}, index)
                             
-                            if ent:ToNPC() then
+                            if ent:ToNPC() and shared.Room:GetFrameCount() > 1 then
                                 shared.Sfx:Play(SoundEffect.SOUND_SUMMONSOUND)
                             end
                             if ent:CanShutDoors() then
