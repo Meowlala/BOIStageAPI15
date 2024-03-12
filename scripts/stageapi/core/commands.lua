@@ -226,10 +226,6 @@ local Commands = {
             local paramTable = {}
             for word in params:gmatch("%S+") do paramTable[#paramTable + 1] = word end
 
-            if REVEL.WasChanged("crooml", params) then
-                REVEL.DebugLog("Params: '" .. params .. "'", "ParamTable", paramTable)
-            end
-
             if #paramTable == 0 or (#paramTable == 1 and string.find(params, " ") == nil) then
                 return map(keys(StageAPI.RoomsLists), function(s) return string.gsub(s, " ", "_") end)
             elseif #paramTable >= 1 then
