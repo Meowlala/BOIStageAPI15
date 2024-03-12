@@ -843,6 +843,9 @@ mod:AddCallback(ModCallbacks.MC_USE_ITEM, function()
     StageAPI.DetectBaseLayoutChanges(true)
 end, CollectibleType.COLLECTIBLE_BOOK_OF_REVELATIONS)
 
+-- non mutable
+local BLANK = setmetatable({}, {__newindex = function (t, k, v) end})
+
 StageAPI.PreviousNewRoomStage = -1
 StageAPI.PreviousNewRoomStageType = -1
 StageAPI.EarlyNewRoomTriggered = false
@@ -1120,11 +1123,16 @@ mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, function()
     StageAPI.DetectBaseLayoutChanges(false)
 
     local currentListIndex = StageAPI.GetCurrentRoomID()
+    ---@type LevelRoom, boolean?, any
     local currentRoom, justGenerated, boss = StageAPI.GetCurrentRoom(), nil, nil
 
-    local retCurrentRoom, retJustGenerated, retBoss = StageAPI.CallCallbacks(Callbacks.PRE_STAGEAPI_NEW_ROOM_GENERATION, true, currentRoom, justGenerated, currentListIndex, currentDimension)
+    local rets = StageAPI.CallCallbacks(Callbacks.PRE_STAGEAPI_NEW_ROOM_GENERATION, true, currentRoom, justGenerated, currentListIndex, currentDimension)
+    if rets and rets.RoomType then -- returned only room
+        rets = {CurrentRoom = rets}
+    end
+    rets = rets or BLANK
     local prevRoom = currentRoom
-    currentRoom, justGenerated, boss = retCurrentRoom or currentRoom, retJustGenerated or justGenerated, retBoss or boss
+    currentRoom, justGenerated, boss = rets.CurrentRoom or currentRoom, rets.JustGenerated or justGenerated, rets.Boss or boss
     if prevRoom ~= currentRoom then
         StageAPI.SetCurrentRoom(currentRoom)
     end
@@ -1154,9 +1162,13 @@ mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, function()
         end
     end
 
-    retCurrentRoom, retJustGenerated, retBoss = StageAPI.CallCallbacks(Callbacks.POST_STAGEAPI_NEW_ROOM_GENERATION, true, currentRoom, justGenerated, currentListIndex, boss, currentDimension)
+    local rets = StageAPI.CallCallbacks(Callbacks.POST_STAGEAPI_NEW_ROOM_GENERATION, true, currentRoom, justGenerated, currentListIndex, boss, currentDimension)
+    if rets and rets.RoomType then -- returned only room
+        rets = {CurrentRoom = rets}
+    end
+    rets = rets or BLANK
     prevRoom = currentRoom
-    currentRoom, justGenerated, boss = retCurrentRoom or currentRoom, retJustGenerated or justGenerated, retBoss or boss
+    currentRoom, justGenerated, boss = rets.CurrentRoom or currentRoom, rets.JustGenerated or justGenerated, rets.Boss or boss
     if prevRoom ~= currentRoom then
         StageAPI.SetCurrentRoom(currentRoom)
     end
