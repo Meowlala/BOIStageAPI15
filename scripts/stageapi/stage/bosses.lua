@@ -558,7 +558,9 @@ function StageAPI.SelectBoss(bosses, rng, roomDesc, ignoreNoOptions)
         bossID = nil
     end
 
-    if not bossID then
+    if bossID and type(bossID) == "boolean" then
+        return nil, true
+    elseif not bossID then
         roomDesc = roomDesc or shared.Level:GetCurrentRoomDesc()
         local roomSubtype = roomDesc.Data.Subtype
         local isHorsemanRoom = StageAPI.IsIn(horsemanRoomSubtypes, roomSubtype)

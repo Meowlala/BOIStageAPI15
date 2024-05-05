@@ -579,7 +579,7 @@ function StageAPI.GenerateBossRoom(bossID, checkEncountered, bosses, hasHorseman
 
     local bossID = args.BossID
     if not bossID then
-        bossID = StageAPI.SelectBoss(args.Bosses, nil, roomArgs.RoomDescriptor, false)
+        bossID, dontOverrideBoss = StageAPI.SelectBoss(args.Bosses, nil, roomArgs.RoomDescriptor, false)
     elseif args.CheckEncountered then
         if StageAPI.GetBossEncountered(bossID) then
             StageAPI.LogErr("Trying to generate boss room for encountered boss: " .. tostring(bossID))
@@ -588,10 +588,13 @@ function StageAPI.GenerateBossRoom(bossID, checkEncountered, bosses, hasHorseman
     end
 
     local boss = StageAPI.GetBossData(bossID)
-    if not boss then
+    if dontOverrideBoss then
+        return
+    elseif not boss then
         StageAPI.LogErr("Trying to set boss with invalid ID: " .. tostring(bossID))
         return
     end
+    
 
     StageAPI.SetBossEncountered(boss.Name)
     if boss.NameTwo then
