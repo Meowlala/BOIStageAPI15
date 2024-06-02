@@ -29,14 +29,22 @@ end
 
 function StageAPI.LogErr(...)
     local str = StageAPI.LogConcat('[StageAPI:ERROR] ', ...)
-    Isaac.ConsoleOutput(str .. '\n')
+    if REPENTOGON then
+        Console.PrintError(str)
+    else
+        Isaac.ConsoleOutput(str .. '\n')
+    end
     Isaac.DebugString(str)
 end
 
 function StageAPI.LogWarn(...)
     local str = StageAPI.LogConcat('[StageAPI:WARNING] ', ...)
     if StageAPI.DebugMinorLog then
-        Isaac.ConsoleOutput(str .. "\n")
+        if REPENTOGON then
+            Console.PrintWarning(str)
+        else
+            Isaac.ConsoleOutput(str .. "\n")
+        end
     end
     Isaac.DebugString(str)
 end
