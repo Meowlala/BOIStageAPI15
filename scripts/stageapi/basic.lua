@@ -8,9 +8,11 @@ Isaac.DebugString("[StageAPI] Loading Core Definitions")
 StageAPI.DebugMinorLog = false
 
 function StageAPI.LogConcat(prefix, ...)
+    -- len allows this to work with nil values in the vararg
+    local args, len = {...}, select("#", ...)
     local str = prefix
-    local args = {...}
-    for i, arg in ipairs(args) do
+    for i=1, len do
+        local arg = args[i]
         str = str .. tostring(arg)
 
         if i ~= #args and type(arg) ~= "string" then
