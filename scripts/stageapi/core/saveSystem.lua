@@ -330,6 +330,8 @@ end
 -- worse for performance to do at runtime, and print a warning
 StageAPI.MARSHALING_CHECK_OLD_WORKAROUNDS = true
 
+local WarnedForFields = {}
+
 ---Convert some data for better json representation
 -- For instance, int tables to str-int tables, 
 -- and vectors into arrays.
@@ -361,7 +363,10 @@ function StageAPI.SaveTableMarshal(tbl, name)
                 if StageAPI.MARSHALING_CHECK_OLD_WORKAROUNDS
                 and not didWarningIntWorkaround and type(k) == "string" and tonumber(k) then
                     didWarningIntWorkaround = true
-                    StageAPI.LogWarn("Save: Detected string-index table in savedata at '", name or '?', "'! Not needed anymore and likely a minor performance hit")
+                    if name and not WarnedForFields[name] then
+                        StageAPI.LogWarn("Save: Detected string-index table in savedata at '", name or '?', "'! Not needed anymore and likely a minor performance hit")
+                        WarnedForFields[name] = true
+                    end
                 end
             elseif k > #tbl then
                 -- in tables, # returns the max continuous key from 1 (in array-like tables, that's normally the length)
@@ -409,7 +414,9 @@ function StageAPI.SaveTableUnmarshal(tbl, name)
         out[k] = UnmarshalValue(v, k)
 
         if StageAPI.MARSHALING_CHECK_OLD_WORKAROUNDS
-        and not didWarningIntWorkaround and type(k) == "string" and tonumber(k) then
+        and not didWarningIntWorkaround and type(k) == "string" and tonumber(k)
+        and name and not WarnedForFields[name] then
+            WarnedForFields[name] = true
             didWarningIntWorkaround = true
             StageAPI.LogWarn("Load: Detected string-index table in savedata at '", name or '?', "'! Not needed anymore and likely a minor performance hit")
         end

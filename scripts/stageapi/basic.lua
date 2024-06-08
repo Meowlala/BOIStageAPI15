@@ -8,9 +8,11 @@ Isaac.DebugString("[StageAPI] Loading Core Definitions")
 StageAPI.DebugMinorLog = false
 
 function StageAPI.LogConcat(prefix, ...)
+    -- len allows this to work with nil values in the vararg
+    local args, len = {...}, select("#", ...)
     local str = prefix
-    local args = {...}
-    for i, arg in ipairs(args) do
+    for i=1, len do
+        local arg = args[i]
         str = str .. tostring(arg)
 
         if i ~= #args and type(arg) ~= "string" then
@@ -29,14 +31,22 @@ end
 
 function StageAPI.LogErr(...)
     local str = StageAPI.LogConcat('[StageAPI:ERROR] ', ...)
-    Isaac.ConsoleOutput(str .. '\n')
+    if REPENTOGON then
+        Console.PrintError(str)
+    else
+        Isaac.ConsoleOutput(str .. '\n')
+    end
     Isaac.DebugString(str)
 end
 
 function StageAPI.LogWarn(...)
     local str = StageAPI.LogConcat('[StageAPI:WARNING] ', ...)
     if StageAPI.DebugMinorLog then
-        Isaac.ConsoleOutput(str .. "\n")
+        if REPENTOGON then
+            Console.PrintWarning(str)
+        else
+            Isaac.ConsoleOutput(str .. "\n")
+        end
     end
     Isaac.DebugString(str)
 end

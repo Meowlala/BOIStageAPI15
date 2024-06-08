@@ -65,7 +65,7 @@ local AdjacentAdjustments = {
     {X = 1, Y = 1}
 }
 
-function StageAPI.GetPitFramesFromIndices(indices, width, height, hasExtraFrames)
+function StageAPI.GetPitFramesFromIndices(indices, width, height, hasExtraFrames, noStringify)
     local frames = {}
     for index, _ in pairs(indices) do
         local x, y = StageAPI.GridToVector(index, width)
@@ -84,7 +84,8 @@ function StageAPI.GetPitFramesFromIndices(indices, width, height, hasExtraFrames
             end
         end
         adjIndices[#adjIndices + 1] = hasExtraFrames
-        frames[tostring(index)] = StageAPI.GetPitFrame(table.unpack(adjIndices))
+        local key = noStringify and index or tostring(index)
+        frames[key] = StageAPI.GetPitFrame(table.unpack(adjIndices))
     end
 
     return frames
