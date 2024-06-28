@@ -803,7 +803,7 @@ end
 
 function StageAPI.SpawnCustomTrapdoor(position, goesTo, anm2, size, alreadyEntering)
     anm2 = anm2 or "gfx/grid/door_11_trapdoor.anm2"
-    size = size or 24
+    size = size or 16
     local trapdoor = Isaac.Spawn(StageAPI.E.Trapdoor.T, StageAPI.E.Trapdoor.V, StageAPI.E.Trapdoor.S, position, Vector.Zero, nil)
     trapdoor.SortingLayer = 0
     trapdoor.Size = size
