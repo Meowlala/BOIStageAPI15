@@ -199,7 +199,7 @@ function StageAPI.GetValidRoomsForLayout(args)
     local roomDesc = args.RoomDescriptor or shared.Level:GetCurrentRoomDesc()
     local shape = -1
     if not args.IgnoreShape then
-        shape = args.Shape or roomDesc.Data.Shape
+        shape = args.Shape or (roomDesc.Data and roomDesc.Data.Shape or shape)
     end
 
     local callbacks = StageAPI.GetCallbacks(Callbacks.POST_CHECK_VALID_ROOM)
@@ -212,7 +212,7 @@ function StageAPI.GetValidRoomsForLayout(args)
     end
 
     local requireRoomType = args.RequireRoomType
-    local rtype = args.RoomType or roomDesc.Data.Type
+    local rtype = args.RoomType or (roomDesc.Data and roomDesc.Data.Type or RoomType.ROOM_DEFAULT)
 
     local ignoreDoors = args.IgnoreDoors
     local doors = args.Doors or StageAPI.GetDoorsForRoomFromData(roomDesc.Data)
@@ -1342,7 +1342,7 @@ end
 function StageAPI.GetDoorsForRoomFromData(data)
     local doors = {}
     for i = 0, 7 do
-        doors[i] = data.Doors & StageAPI.DoorsBitwise[i] ~= 0
+        doors[i] = (data and data.Doors or 0) & StageAPI.DoorsBitwise[i] ~= 0
     end
 
     return doors

@@ -263,7 +263,7 @@ function StageAPI.CheckStageTrapdoor(grid, index)
     local entering = false
     for _, player in ipairs(shared.Players) do
         local dist = player.Position:DistanceSquared(grid.Position)
-        local size = player.Size + 32
+        local size = player.Size + 20
         if dist < size * size then
             entering = true
             break
@@ -280,7 +280,7 @@ function StageAPI.CheckStageTrapdoor(grid, index)
     end
 
     if nextStage and not currStage.OverridingTrapdoors then
-        StageAPI.SpawnCustomTrapdoor(shared.Room:GetGridPosition(index), nextStage, grid:GetSprite():GetFilename(), 32, true)
+        StageAPI.SpawnCustomTrapdoor(shared.Room:GetGridPosition(index), nextStage, grid:GetSprite():GetFilename(), 20, true)
         shared.Room:RemoveGridEntity(index, 0, false)
     end
 end

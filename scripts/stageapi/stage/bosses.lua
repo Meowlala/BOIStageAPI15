@@ -562,10 +562,7 @@ function StageAPI.SelectBoss(bosses, rng, roomDesc, ignoreNoOptions)
         return nil, true
     elseif not bossID then
         roomDesc = roomDesc or shared.Level:GetCurrentRoomDesc()
-        local roomSubtype = 0
-        if roomDesc and roomDesc.Data then
-            roomSubtype = roomDesc.Data.Subtype
-        end
+        local roomSubtype = roomDesc.Data and roomDesc.Data.Subtype or 0
         local isHorsemanRoom = StageAPI.IsIn(horsemanRoomSubtypes, roomSubtype)
 
         local floatWeights
@@ -659,7 +656,7 @@ function StageAPI.SelectBoss(bosses, rng, roomDesc, ignoreNoOptions)
 
         if not rng then
             rng = StageAPI.BossSelectRNG
-            rng:SetSeed(roomDesc and roomDesc.SpawnSeed or rng:Next(), 35)
+            rng:SetSeed(roomDesc.SpawnSeed + 1, 35)
         end
 
         if #forcedBosses > 0 then
