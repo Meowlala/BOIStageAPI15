@@ -32,73 +32,116 @@ mod:AddCallback(ModCallbacks.MC_POST_GAME_STARTED, function()
             REVEL.AddedStageAPIChangelogs = true
         end
 
-                TryAddChangelog("v2.28", [[- Fix entity stacks in luarooms
-        not using weights
+                TryAddChangelog("v2.29", [[- Add registration and autocomplete 
+for StageAPI console commands
+with REPENTOGON
 
-        - Fix random Dragonflies (Subtype 100) not working in luarooms
+- Fix Needles and Pasties 
+becoming champions in
+luarooms
 
-        - Fix the debug log getting flooded with inaccurate warnings about
-        entity config
+- Fix StageAPI custom
+trapdoors having 
+oversized hitboxes
+        
+- Fix entity stacks in luarooms
+not using weights
 
-        - Tweaks to better support custom stages with a mineshaft puzzle 
-        dimension
+- Fix random Dragonflies (Subtype 100) 
+not working in luarooms
 
-        - Fix OptionsPickupIndex of pickups sometimes not persisting in 
-        luarooms
+- Fix Basement Renovator test 
+hooks not working when used 
+from the GitHub version of StageAPI
 
-        - Fix detection for wave changing in custom challenge rooms
-        ignoring certain valid enemies
+- Make the "Spawner" meta entity
+not play a spawn sound if the
+room was just entered
 
-        - Fix Teleporter triggers not working in test mode
+- Fix Teleporter triggers not 
+working in test mode
 
-        - Add support for twisted boss clear music for custom stages
-        which replace Mausoleum II or Gehenna II 
+- Tweaks to better support 
+custom stages with a mineshaft 
+puzzle dimension
 
-        - Add support for stage overlays which use the same method of
-        blending as vanilla overlays with REPENTOGON
+- Add support for twisted boss clear 
+music for custom stages which replace 
+Mausoleum II or Gehenna II 
 
-        - Add registration and autocomplete for StageAPI console commands
-        with REPENTOGON
-        ]])
+- Add support for stage overlays which 
+use the same method of blending as 
+vanilla overlays with REPENTOGON
+
+- Make StageAPI persistent 
+NPCs not automatically clear 
+the "appearing" flag
+
+- Fix detection for wave 
+changing in custom challenge 
+rooms ignoring certain valid enemies
+
+- Fix return values
+from PRE/POST_NEW_ROOM_GENERATION
+callbacks 
+
+- Add ability to return true
+in PRE_BOSS_SELECT to not
+override the boss room
+
+- Fix issues with Vectors in 
+StageAPI's save data
+
+- Fix OptionsPickupIndex of 
+pickups sometimes not 
+persisting in luarooms
+
+- Fix the debug log getting 
+flooded with inaccurate 
+warnings about entity config
+
+- Error/warnings logs use
+REPENTOGON if enabled
+]])
 
 
                 TryAddChangelog("v2.27", [[- Overriden stages have their
-        StageNumber set
-        
-        - StageAPI event triggers now use
-        their own function: TriggerEventGroup()
-        
-        - Fix Fool's Gold rocks spawning
-        again in luarooms if
-        they were reentered
-        
-        - Fixed a bug with Curse of 
-        the Maze room swapping 
-        detection 
-        
-        - Add a POST_SELECT_BACKDROP_WALL
-        callback for when custom backdrops
-        are applied, which stores data
-        for each backdrop "chunk"
-        
-        - Add ability to register 
-        and check for string IDs 
-        for custom backdrops
-        
-        - Custom pits with water ripples
-        on their spritesheet will display
-        them if applicable 
+StageNumber set
 
-        - Fix boss music not playing 
-        in custom stages in greed mode
+- StageAPI event triggers now use
+their own function: TriggerEventGroup()
 
-        - Custom boss versus screen
-        now renders above the HUD
+- Fix Fool's Gold rocks spawning
+again in luarooms if
+they were reentered
 
-        - Fixes for how custom
-        stages load their boss
-        rooms
-        ]])
+- Fixed a bug with Curse of 
+the Maze room swapping 
+detection 
+
+- Add a POST_SELECT_BACKDROP_WALL
+callback for when custom backdrops
+are applied, which stores data
+for each backdrop "chunk"
+
+- Add ability to register 
+and check for string IDs 
+for custom backdrops
+
+- Custom pits with water ripples
+on their spritesheet will display
+them if applicable 
+
+- Fix boss music not playing 
+in custom stages in greed mode
+
+- Custom boss versus screen
+now renders above the HUD
+
+- Fixes for how custom
+stages load their boss
+rooms
+]])
 
                 TryAddChangelog("v2.26", [[- Added a Champion Preventer meta 
 entitiy to Basement Renovator
