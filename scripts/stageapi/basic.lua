@@ -102,6 +102,7 @@ StageAPI.PoopVariant = {
 }
 
 StageAPI.CorrectedGridTypes = {
+    [0]=GridEntityType.GRID_DECORATION,
     [1000]=GridEntityType.GRID_ROCK,
     [1001]=GridEntityType.GRID_ROCK_BOMB,
     [1002]=GridEntityType.GRID_ROCK_ALT,
