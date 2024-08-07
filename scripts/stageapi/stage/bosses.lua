@@ -276,6 +276,15 @@ function StageAPI.TryGetPlayerGraphicsInfo(player)
 
     if StageAPI.PlayerBossInfo[playerType] then
         return StageAPI.PlayerBossInfo[playerType]
+    elseif REPENTOGON and playerType then
+        local playerConfig = EntityConfig.GetPlayer(playerType)
+        if playerConfig then
+            return {
+                Portrait      = playerConfig:GetPortraitPath(),
+                ExtraPortrait = playerConfig:GetExtraPortraitPath(),
+                Name          = playerConfig:GetNameImagePath(),
+            }
+        end
     else
         -- worth a shot, most common naming convention
         local playerName

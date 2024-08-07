@@ -142,13 +142,24 @@ function StageAPI.AddEnemyToChampionBlacklist(type, var, sub)
 end
 
 function StageAPI.CanBeChampion(id, var, sub)
-    local config = StageAPI.GetEntityConfig(id, var, sub)
-    if config then
-        return config.Champion
+    if REPENTOGON then
+        local config = EntityConfig.GetEntity(id, var, sub)
+        if config then
+            return config:CanBeChampion()
+        else
+            return not (StageAPI.CantBeChampions[id] 
+            or StageAPI.CantBeChampions[id.." "..var] 
+            or StageAPI.CantBeChampions[id.." "..var.." "..sub])
+        end
     else
-        return not (StageAPI.CantBeChampions[id] 
-        or StageAPI.CantBeChampions[id.." "..var] 
-        or StageAPI.CantBeChampions[id.." "..var.." "..sub])
+        local config = StageAPI.GetEntityConfig(id, var, sub)
+        if config then
+            return config.Champion
+        else
+            return not (StageAPI.CantBeChampions[id] 
+            or StageAPI.CantBeChampions[id.." "..var] 
+            or StageAPI.CantBeChampions[id.." "..var.." "..sub])
+        end
     end
 end
 
@@ -156,7 +167,7 @@ function StageAPI.CalculateStageHP(stageHP, stage)
     if not stage then
         local currentStage = StageAPI.GetCurrentStage()
         if currentStage and (currentStage.StageNumber or currentStage.StageHPNumber) then
-            stage = currentStage.StageNumber or currentStage.StageHPNumber
+            stage = currentStage.StageHPNumber or currentStage.StageNumber
         else
             stage = shared.Level:GetStage()
         end
@@ -170,10 +181,22 @@ function StageAPI.CalculateStageHP(stageHP, stage)
 end
 
 function StageAPI.RecalculateEntityStageHP(entity, config)
-    config = config or StageAPI.GetEntityConfig(entity.Type, entity.Variant, entity.SubType)
-    if config and config.StageHP then
-        local base = StageAPI.CalculateStageHP(config.StageHP, shared.Level:GetStage())
-        local new = StageAPI.CalculateStageHP(config.StageHP)
+    local stageHP 
+    if REPENTOGON then
+        config = config or EntityConfig.GetEntity(entity.Type, entity.Variant, entity.SubType)
+    else
+        config = config or StageAPI.GetEntityConfig(entity.Type, entity.Variant, entity.SubType)
+    end
+    if config then
+        if REPENTOGON then
+            stageHP = config:GetStageHP()
+        else
+            stageHP = config.StageHP
+        end
+    end
+    if stageHP then
+        local base = StageAPI.CalculateStageHP(stageHP, shared.Level:GetStage())
+        local new = StageAPI.CalculateStageHP(stageHP)
 
         if base ~= new then
             entity.HitPoints = entity.HitPoints + (new - base)
