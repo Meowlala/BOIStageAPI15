@@ -700,87 +700,109 @@ function StageAPI.ChangeDoors(doors)
     end
 end
 
+function StageAPI.GetCurrentRoomGfx()
+    local currentRoom = StageAPI.GetCurrentRoom()
+    if currentRoom and currentRoom.Data.RoomGfx then
+        return currentRoom.Data.RoomGfx
+    else
+        local currentStage = StageAPI.GetCurrentStage()
+        local rType = StageAPI.GetCurrentRoomType()
+        if currentStage and currentStage.RoomGfx and currentStage.RoomGfx[rType] and currentStage.RoomGfx[rType] then
+            return currentStage.RoomGfx[rType]
+        end
+    end
+end
+
+function StageAPI.IsSinglePitFrameChange(oldFrame, newFrame)
+    return (oldFrame ~= newFrame and ((oldFrame == 0 and newFrame == 16) or (oldFrame == 16 and newFrame == 0)))
+end
+
 ---@param grids GridGfx
 function StageAPI.ChangeGrids(grids)
-    StageAPI.GridGfxRNG:SetSeed(shared.Room:GetDecorationSeed(), 0)
-
-    local doneDoors
-    if grids.Doors or grids.DoorSpawns or grids.DoorSprites then
-        StageAPI.ChangeDoors(grids)
-        doneDoors = true
+    if grids == nil then
+        local roomGfx = StageAPI.GetCurrentRoomGfx()
+        if roomGfx then
+            grids = roomGfx.Grids
+        end
     end
 
-    if grids.PitFiles then
-        grids.Pits = grids.PitFiles[StageAPI.Random(1, #grids.PitFiles, StageAPI.GridGfxRNG)]
-    end
-    if grids.AltPitFiles then
-        grids.AltPits = grids.AltPitFiles[StageAPI.Random(1, #grids.AltPitFiles, StageAPI.GridGfxRNG)]
-    end
+    if grids then
+        StageAPI.GridGfxRNG:SetSeed(shared.Room:GetDecorationSeed(), 0)
 
-    local pitsToUse = shared.Room:HasWaterPits() and grids.AltPits or grids.Pits
-    local hasExtraPitFrames = pitsToUse and pitsToUse.HasExtraFrames
-
-    local gridCount = 0
-    local pits = {}
-    for i = 0, shared.Room:GetGridSize() do
-        local customGrids = StageAPI.GetCustomGrids(i)
-        local customGridBlocking = false
-        for _, cgrid in ipairs(customGrids) do
-            if not cgrid.GridConfig.NoOverrideGridSprite then
-                customGridBlocking = true
-            end
+        local doneDoors
+        if grids.Doors or grids.DoorSpawns or grids.DoorSprites then
+            StageAPI.ChangeDoors(grids)
+            doneDoors = true
         end
 
-        if not customGridBlocking then
-            local grid = shared.Room:GetGridEntity(i)
-            if grid then
-                if hasExtraPitFrames and grid.Desc.Type == GridEntityType.GRID_PIT then
-                    pits[i] = grid
-                elseif grid.Desc.Type ~= GridEntityType.GRID_DOOR or not doneDoors then
-                    StageAPI.ChangeSingleGrid(grid, grids, i)
+        if grids.PitFiles then
+            grids.Pits = grids.PitFiles[StageAPI.Random(1, #grids.PitFiles, StageAPI.GridGfxRNG)]
+        end
+        if grids.AltPitFiles then
+            grids.AltPits = grids.AltPitFiles[StageAPI.Random(1, #grids.AltPitFiles, StageAPI.GridGfxRNG)]
+        end
+
+        local pitsToUse = shared.Room:HasWaterPits() and grids.AltPits or grids.Pits
+        local hasExtraPitFrames = pitsToUse and pitsToUse.HasExtraFrames
+
+        local gridCount = 0
+        local pits = {}
+        for i = 0, shared.Room:GetGridSize() do
+            local customGrids = StageAPI.GetCustomGrids(i)
+            local customGridBlocking = false
+            for _, cgrid in ipairs(customGrids) do
+                if not cgrid.GridConfig.NoOverrideGridSprite then
+                    customGridBlocking = true
+                end
+            end
+
+            if not customGridBlocking then
+                local grid = shared.Room:GetGridEntity(i)
+                if grid then
+                    if hasExtraPitFrames and grid.Desc.Type == GridEntityType.GRID_PIT then
+                        pits[i] = grid
+                    elseif grid.Desc.Type ~= GridEntityType.GRID_DOOR or not doneDoors then
+                        StageAPI.ChangeSingleGrid(grid, grids, i)
+                    end
                 end
             end
         end
-    end
 
-    StageAPI.CallGridPostInit()
+        StageAPI.CallGridPostInit()
 
-    if hasExtraPitFrames and next(pits) then
-        local width = shared.Room:GetGridWidth()
-        for index, pit in pairs(pits) do
-            StageAPI.ChangePit({Grid = pit, Index = index}, grids.Pits, grids.Bridges, grids.AltPits)
-            local sprite = pit:GetSprite()
+        if hasExtraPitFrames and next(pits) then
+            local width = shared.Room:GetGridWidth()
+            for index, pit in pairs(pits) do
+                StageAPI.ChangePit({Grid = pit, Index = index}, grids.Pits, grids.Bridges, grids.AltPits)
+                local sprite = pit:GetSprite()
 
-            local adj = {index - 1, index + 1, index - width, index + width, index - width - 1, index + width - 1, index - width + 1, index + width + 1}
-            local adjPits = {}
-            for _, ind in ipairs(adj) do
-                local grid = shared.Room:GetGridEntity(ind)
-                adjPits[#adjPits + 1] = not not (grid and grid.Desc.Type == GridEntityType.GRID_PIT)
+                local adj = {index - 1, index + 1, index - width, index + width, index - width - 1, index + width - 1, index - width + 1, index + width + 1}
+                local adjPits = {}
+                for _, ind in ipairs(adj) do
+                    local grid = shared.Room:GetGridEntity(ind)
+                    adjPits[#adjPits + 1] = not not (grid and grid.Desc.Type == GridEntityType.GRID_PIT)
+                end
+
+                adjPits[#adjPits + 1] = true
+                local oldFrame = sprite:GetFrame()
+                local newFrame = StageAPI.GetPitFrame(table.unpack(adjPits))
+                if not StageAPI.IsSinglePitFrameChange(oldFrame, newFrame) then
+                    sprite:SetFrame("pit", newFrame)
+                end
             end
-
-            adjPits[#adjPits + 1] = true
-            sprite:SetFrame("pit", StageAPI.GetPitFrame(table.unpack(adjPits)))
         end
+        return true
     end
+    return false
 end
 
 mod:AddCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, function(_, effect)
     if effect.FrameCount == 1 and effect.SubType == 0 then
         local sprite = effect:GetSprite()
         if sprite:GetFilename() == "gfx/grid/grid_rock.anm2" then
-            local grids
-            local currentRoom = StageAPI.GetCurrentRoom()
-            if currentRoom and currentRoom.Data.RoomGfx then
-                grids = currentRoom.Data.RoomGfx.Grids
-            else
-                local currentStage = StageAPI.GetCurrentStage()
-                local rType = StageAPI.GetCurrentRoomType()
-                if currentStage and currentStage.RoomGfx and currentStage.RoomGfx[rType] and currentStage.RoomGfx[rType].Grids then
-                    grids = currentStage.RoomGfx[rType].Grids
-                end
-            end
-            if grids and grids.Rocks then
-                sprite:ReplaceSpritesheet(0, grids.Rocks)
+            local roomGfx = StageAPI.GetCurrentRoomGfx()
+            if roomGfx.Grids and roomGfx.Grids.Rocks then
+                sprite:ReplaceSpritesheet(0, roomGfx.Grids.Rocks)
                 sprite:LoadGraphics()
             end
         end

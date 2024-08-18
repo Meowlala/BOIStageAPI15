@@ -857,7 +857,13 @@ function StageAPI.CallGridPostInit()
     for i = 0, shared.Room:GetGridSize() do
         local grid = shared.Room:GetGridEntity(i)
         if grid then
+            local oldFrame = grid:GetSprite():GetFrame()
             grid:PostInit()
+            if shared.Room:GetFrameCount() > 0 and grid:GetType() == GridEntityType.GRID_PIT then
+                if StageAPI.IsSinglePitFrameChange(oldFrame, grid:GetSprite():GetFrame()) then
+                    grid:GetSprite():SetFrame("pit", oldFrame)
+                end
+            end
 
             if StageAPI.RockTypes[grid.Desc.Type] then
                 grid:ToRock():UpdateAnimFrame()
