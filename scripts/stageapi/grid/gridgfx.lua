@@ -718,13 +718,15 @@ function StageAPI.IsSinglePitFrameChange(oldFrame, newFrame)
 end
 
 ---@param grids GridGfx
-function StageAPI.ChangeGrids(grids)
+---@param callPostInit boolean
+function StageAPI.ChangeGrids(grids, callPostInit)
     if grids == nil then
         local roomGfx = StageAPI.GetCurrentRoomGfx()
         if roomGfx then
             grids = roomGfx.Grids
         end
     end
+    if callPostInit == nil then callPostInit = true end
 
     if grids then
         StageAPI.GridGfxRNG:SetSeed(shared.Room:GetDecorationSeed(), 0)
@@ -768,7 +770,9 @@ function StageAPI.ChangeGrids(grids)
             end
         end
 
-        StageAPI.CallGridPostInit()
+        if callPostInit then
+            StageAPI.CallGridPostInit()
+        end
 
         if hasExtraPitFrames and next(pits) then
             local width = shared.Room:GetGridWidth()
