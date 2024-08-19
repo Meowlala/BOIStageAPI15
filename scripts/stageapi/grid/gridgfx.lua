@@ -805,7 +805,7 @@ mod:AddCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, function(_, effect)
         local sprite = effect:GetSprite()
         if sprite:GetFilename() == "gfx/grid/grid_rock.anm2" then
             local roomGfx = StageAPI.GetCurrentRoomGfx()
-            if roomGfx.Grids and roomGfx.Grids.Rocks then
+            if roomGfx and roomGfx.Grids and roomGfx.Grids.Rocks then
                 sprite:ReplaceSpritesheet(0, roomGfx.Grids.Rocks)
                 sprite:LoadGraphics()
             end
