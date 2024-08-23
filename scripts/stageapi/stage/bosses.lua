@@ -613,6 +613,13 @@ function StageAPI.SelectBoss(bosses, rng, roomDesc, ignoreNoOptions)
                 end
             end
 
+            if not invalid and potentialBoss.ConditionFunc then
+                invalid = not potentialBoss.ConditionFunc()
+            end
+            if not invalid and poolEntry.ConditionFunc then
+                invalid = not poolEntry.ConditionFunc()
+            end
+
             if not invalid then
                 if isHorsemanRoom then
                     if poolEntry.AlwaysReplaceHorsemen or potentialBoss.AlwaysReplaceHorsemen then
