@@ -553,6 +553,28 @@ function StageAPI.SetCurrentBossRoomInPlace(bossID, room)
     StageAPI.CallCallbacks(Callbacks.POST_BOSS_ROOM_INIT, false, room, boss, bossID)
 end
 
+---@class GenerateBossRoom.Args
+---@field BossID string
+---@field CheckEncountered boolean?
+---@field Bosses (StageAPI.BossesInfo | StageAPI.BossInfo[])?
+---@field NoPlayBossAnim boolean?
+---@field UnskippableBossAnim boolean?
+
+---@param bossID string
+---@param checkEncountered? boolean
+---@param bosses? StageAPI.BossesInfo | StageAPI.BossInfo[]
+---@param hasHorseman? boolean
+---@param requireRoomTypeBoss? boolean
+---@param noPlayBossAnim? boolean
+---@param unskippableBossAnim? boolean
+---@param isExtraRoom? boolean
+---@param shape? RoomShape
+---@param ignoreDoors? boolean
+---@param doors? table<integer, boolean>
+---@param roomType? RoomType
+---@return LevelRoom?
+---@return BossData?
+---@overload fun(args: GenerateBossRoom.Args, roomArgs: LevelRoomArgs): LevelRoom?, BossData?
 function StageAPI.GenerateBossRoom(bossID, checkEncountered, bosses, hasHorseman, requireRoomTypeBoss, noPlayBossAnim, unskippableBossAnim, isExtraRoom, shape, ignoreDoors, doors, roomType)
     local args = bossID
     local roomArgs = checkEncountered
