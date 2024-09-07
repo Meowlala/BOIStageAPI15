@@ -332,13 +332,15 @@ function StageAPI.CustomStage:SetTrueCoopSpots(twoPlayersSpot, fourPlayersSpot, 
     self.CoopSpot4P = fourPlayersSpot
 end
 
-function StageAPI.CustomStage:SetBosses(bosses, noHorsemen)
+function StageAPI.CustomStage:SetBosses(bosses, noHorsemen, doEarlySelect, dontEarlyReplaceBosses)
     if bosses.Pool then
         self.Bosses = bosses
     else
         self.Bosses = {
             Pool = bosses,
-            NoHorsemen = noHorsemen
+            NoHorsemen = noHorsemen,
+            DoEarlySelect = doEarlySelect,
+            DontEarlyReplaceBosses = dontEarlyReplaceBosses,
         }
     end
 end
@@ -585,14 +587,28 @@ function StageAPI.CustomStageGenerateRoom(currentStage, roomDescriptor, isStarti
     end
 
     if currentStage.Bosses and rtype == RoomType.ROOM_BOSS then
-        local newRoom, boss = StageAPI.GenerateBossRoom({
-            Bosses = currentStage.Bosses,
-            CheckEncountered = true,
-            NoPlayBossAnim = fromLevelGenerator
-        }, StageAPI.Merged({
-            RoomDescriptor = roomDescriptor,
-            RequireRoomType = currentStage.RequireRoomTypeBoss
-        }, roomArgs))
+        local newRoom, boss
+
+        if currentStage.Bosses.DoEarlySelect and StageAPI.EarlySelectedBoss then
+            StageAPI.LogMinor("EarlySelectedBoss is: "..StageAPI.EarlySelectedBoss)
+            newRoom, boss = StageAPI.GenerateBossRoom({
+                BossID = StageAPI.EarlySelectedBoss,
+                NoPlayBossAnim = fromLevelGenerator,
+            }, StageAPI.Merged({
+                RoomDescriptor = roomDescriptor,
+                RequireRoomType = currentStage.RequireRoomTypeBoss
+            }, roomArgs))
+            StageAPI.EarlySelectedBoss = nil
+        else
+            newRoom, boss = StageAPI.GenerateBossRoom({
+                Bosses = currentStage.Bosses,
+                CheckEncountered = true,
+                NoPlayBossAnim = fromLevelGenerator
+            }, StageAPI.Merged({
+                RoomDescriptor = roomDescriptor,
+                RequireRoomType = currentStage.RequireRoomTypeBoss
+            }, roomArgs))
+        end
 
         if roomDescriptor then
             if StageAPI.ReplaceBossSubtypes[roomDescriptor.Data.Subtype] then

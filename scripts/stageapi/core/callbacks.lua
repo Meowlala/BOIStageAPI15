@@ -1476,6 +1476,36 @@ StageAPI.AddCallback("StageAPI", Callbacks.POST_ROOM_LOAD, 1, function(currentRo
     end
 end)
 
+if REPENTOGON then
+    mod:AddCallback(ModCallbacks.MC_PRE_BOSS_SELECT, function(_, bossID, bossPool, levelStage, stageType)
+        local nextStage = StageAPI.NextStage
+        if nextStage and nextStage.Bosses and nextStage.Bosses.DoEarlySelect then
+            local doEarlySelect = true
+            if nextStage.Bosses.DontEarlyReplaceBosses then
+                for _, bossType in pairs(nextStage.Bosses.DontEarlyReplaceBosses) do
+                    if bossType == bossID then
+                        doEarlySelect = false
+                        break
+                    end
+                end
+            end
+
+            if doEarlySelect then
+                local boss = StageAPI.SelectBoss(nextStage.Bosses)
+                if boss then
+                    StageAPI.EarlySelectedBoss = boss
+                    local bossData = StageAPI.GetBossData(boss)
+                    if bossData.LayoutBoss then
+                        return bossData.LayoutBoss
+                    else
+                        return BossType.MONSTRO
+                    end
+                end
+            end
+        end
+    end)
+end
+
 --#region MemberCard
 
 local SECRET_SHOP_LADDER_VARIANT = 2
