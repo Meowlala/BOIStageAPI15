@@ -611,10 +611,12 @@ end
 -- Certain boss subtypes should be replaced with monstro to avoid bugs
 StageAPI.ReplaceBossSubtypes = {
     [23] = true, -- the fallen, spawns devil items
+    [80] = true, -- tuff twins, red bombs
     [81] = true, -- heretic, pentagram effect
     [82] = true, -- hornfel, doors
     [83] = true, -- great gideon, health bar
     [91] = true, -- min-min, mist
+    [96] = true, -- the shell, red bombs
 }
 
 function StageAPI.GenerateBaseRoom(roomDesc)
