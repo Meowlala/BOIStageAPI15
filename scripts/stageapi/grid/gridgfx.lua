@@ -709,7 +709,7 @@ function StageAPI.GetCurrentRoomGfx()
     else
         local currentStage = StageAPI.GetCurrentStage()
         local rType = StageAPI.GetCurrentRoomType()
-        if currentStage and currentStage.RoomGfx and currentStage.RoomGfx[rType] and currentStage.RoomGfx[rType] then
+        if currentStage and currentStage.RoomGfx and currentStage.RoomGfx[rType] then
             return currentStage.RoomGfx[rType]
         end
     end
