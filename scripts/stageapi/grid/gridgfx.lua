@@ -804,7 +804,7 @@ function StageAPI.ChangeGrids(grids, callPostInit)
 end
 
 function StageAPI.UpdateGrids()
-    StageAPI.ChangeGrids(nil, false)
+    return StageAPI.ChangeGrids(nil, false)
 end
 
 StageAPI.MatchBackdropRockParticleSubtypes = {
