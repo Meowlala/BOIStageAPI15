@@ -166,10 +166,12 @@ function StageAPI.ChangePit(pit, pitFile, bridgefilename, alt)
             break
         end
     end
-
+    
     if pitFile then
         if gsprite:GetFilename() ~= "stageapi/pit.anm2" then
+            local anim, frame = gsprite:GetAnimation(), gsprite:GetFrame() 
             gsprite:Load("stageapi/pit.anm2", true)
+            gsprite:SetFrame(anim, frame)
         end
 
         if alt and shared.Room:HasWaterPits() then
@@ -795,13 +797,22 @@ function StageAPI.ChangeGrids(grids, callPostInit)
                 end
             end
         end
+        StageAPI.CallCallbacks(Callbacks.POST_CHANGE_GRID_GFX, true, grids, callPostInit)
         return true
     end
     return false
 end
 
+function StageAPI.UpdateGrids()
+    StageAPI.ChangeGrids(nil, false)
+end
+
+StageAPI.MatchBackdropRockParticleSubtypes = {
+    [0] = true, --Default, matches room gfx
+    [131072] = true, --Acts as a flag to make the rock particle fade when landing, matches room gfx
+}
 mod:AddCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, function(_, effect)
-    if effect.FrameCount == 1 and effect.SubType == 0 then
+    if effect.FrameCount == 1 and StageAPI.MatchBackdropRockParticleSubtypes[effect.SubType] then
         local sprite = effect:GetSprite()
         if sprite:GetFilename() == "gfx/grid/grid_rock.anm2" then
             local roomGfx = StageAPI.GetCurrentRoomGfx()
@@ -812,3 +823,21 @@ mod:AddCallback(ModCallbacks.MC_POST_EFFECT_UPDATE, function(_, effect)
         end
     end
 end, EffectVariant.ROCK_PARTICLE)
+
+mod:AddCallback(ModCallbacks.MC_POST_ENTITY_REMOVE, function(_, bomb)
+	if bomb.Variant == BombVariant.BOMB_GIGA or bomb.Variant == BombVariant.BOMB_ROCKET_GIGA then 
+		StageAPI.UpdateGrids()
+	end
+end, EntityType.ENTITY_BOMB)
+
+mod:AddCallback(ModCallbacks.MC_NPC_UPDATE, function(_, npc)
+	if npc.Variant == 3 and npc.State == 9 and npc:GetSprite():IsEventTriggered("Shoot") then
+		StageAPI.UpdateGrids()
+	end
+end, EntityType.ENTITY_PIN)
+
+mod:AddCallback(ModCallbacks.MC_NPC_UPDATE, function(_, npc)
+	if npc.Variant == 0 and npc.State == 12 and npc:GetSprite():GetFrame() == 33 and npc:GetSprite():GetAnimation() == "SuperBlast" then
+		StageAPI.UpdateGrids()
+	end
+end, EntityType.ENTITY_SINGE)
