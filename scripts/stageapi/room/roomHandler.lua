@@ -1184,6 +1184,13 @@ function StageAPI.LoadRoomLayout(grids, entities, doGrids, doEntities, doPersist
 
     StageAPI.CallGridPostInit()
 
+    if shared.Room:IsClear() then
+        for _, spikeball in pairs(Isaac.FindByType(EntityType.ENTITY_SPIKEBALL)) do
+            spikeball:Update()
+            spikeball:ToNPC().I2 = 0
+        end
+    end
+
     return ents_spawned, grids_spawned
 end
 

@@ -41,7 +41,7 @@ StageAPI.AddEntityPersistenceData({Type = EntityType.ENTITY_QUAKE_GRIMACE, Remov
 StageAPI.AddEntityPersistenceData({Type = EntityType.ENTITY_BOMB_GRIMACE, RemoveOnDeath = true, RemoveOnRemove = true,})
 StageAPI.AddEntityPersistenceData({Type = EntityType.ENTITY_BALL_AND_CHAIN, RemoveOnDeath = true, RemoveOnRemove = true,})
 StageAPI.AddEntityPersistenceData({Type = EntityType.ENTITY_MINECART, Variant = 10, RemoveOnDeath = true, RemoveOnRemove = true, --Quest Minecart
-    StoreCheck = function(entity) return npc:GetData().QuestMinecartRiddenByPlayer end,
+    --StoreCheck = function(entity) return entity:GetData().QuestMinecartRiddenByPlayer end,
 })
 StageAPI.AddEntityPersistenceData({Type = EntityType.ENTITY_POKY, Variant = 1, RemoveOnDeath = true, RemoveOnRemove = true,
     StoreCheck = function(entity) return entity:ToNPC().State == 16 end,
@@ -51,6 +51,9 @@ StageAPI.AddEntityPersistenceData({Type = EntityType.ENTITY_WALL_HUGGER, RemoveO
 })
 StageAPI.AddEntityPersistenceData({Type = EntityType.ENTITY_GRUDGE, RemoveOnDeath = true, RemoveOnRemove = true,
     StoreCheck = function(entity) return entity:ToNPC().State == 16 end,
+})
+StageAPI.AddEntityPersistenceData({Type = EntityType.ENTITY_SPIKEBALL, RemoveOnDeath = true, RemoveOnRemove = true,
+    StoreCheck = function(entity) return entity:ToNPC().I2 ~= 0 end,
 })
 
 for i = 0, 4 do
@@ -66,11 +69,11 @@ for i = 0, 4 do
     })
 end
 
-StageAPI:AddCallback(ModCallbacks.MC_POST_NPC_RENDER, function(_, npc)
+--[[StageAPI:AddCallback(ModCallbacks.MC_POST_NPC_RENDER, function(_, npc)
 	if npc.Variant == 10 and npc.FrameCount > 0 and npc.State ~= 16 then
 		npc:GetData().QuestMinecartRiddenByPlayer = true
 	end
-end, EntityType.ENTITY_MINECART)
+end, EntityType.ENTITY_MINECART)]]
 
 ---@alias StageAPI.PersistenceCheck fun(entData: RoomLayout_EntityData): EntityPersistenceData?
 
