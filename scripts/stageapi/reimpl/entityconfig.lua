@@ -113,19 +113,17 @@ end
 
 function StageAPI.GetChampionChance()
     local chance = 0.05 --Base chance is 5%
-    local isVoid = (shared.Game:GetLevel():GetStage() == LevelStage.STAGE7)
-    if isVoid then --The Void increases base chance from 5% to 75%
+    if shared.Game:GetSeeds():HasSeedEffect(SeedEffect.SEED_ALL_CHAMPIONS) then
+        chance = 1.1
+    elseif shared.Game:GetLevel():GetStage() == LevelStage.STAGE7 then --The Void sets base chance to 75%
         chance = 0.75
+    elseif StageAPI.AnyPlayerHasItem(CollectibleType.COLLECTIBLE_CHAMPION_BELT) then --Champion Belt sets base chance to 20%
+        chance = 0.2
     end
-    if StageAPI.AnyPlayerHasItem(CollectibleType.COLLECTIBLE_CHAMPION_BELT) and not isVoid then
-        chance = chance + 0.15 --Champion Belt adds flat 15% chance, unless the current stage is The Void
-    end
-    for i = 0, shared.Game:GetNumPlayers() - 1 do 
-        local player = Isaac.GetPlayer(i)
-        for i = 1, player:GetTrinketMultiplier(TrinketType.TRINKET_PURPLE_HEART) do 
-            chance = chance * 2 --Purple Heart doubles the chance for each copy of it
-        end
-    end
+    local purpleHearts = PlayerManager.GetTotalTrinketMultiplier(TrinketType.TRINKET_PURPLE_HEART)
+    if purpleHearts > 0 then
+        chance = chance * purpleHearts * 2 --Purple Heart is a x2 mult per copy
+    end 
     return chance
 end
 
