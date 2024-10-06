@@ -32,6 +32,46 @@ mod:AddCallback(ModCallbacks.MC_POST_GAME_STARTED, function()
             REVEL.AddedStageAPIChangelogs = true
         end
 
+                TryAddChangelog("v2.30", [[- REPENTOGON is now used 
+to detect Stage HP and
+Champion capability of 
+enemies in luarooms
+
+- REPENTOGON is now used
+to detect custom player 
+graphics info
+
+- StageAPI.ChangeGrids() 
+supports no arguments, 
+which will visually
+sync grids to current
+room graphics
+
+- Vanilla sources of pit
+spawning will now use
+StageAPI custom 
+room graphics
+           
+- Add support for custom
+conditions for if a 
+boss should be selected
+
+- Add support for
+custom bosses to be
+selected early, allowing
+them to use vanilla 
+boss room shapes
+
+- Spikeball enemies now
+work properly in luarooms
+
+- Update champion chance
+calculation in luarooms
+to be more vanilla-accurate
+
+- Fix issues with Decorations
+in Crawlspaces]])
+
                 TryAddChangelog("v2.29", [[- Add registration and autocomplete 
 for StageAPI console commands
 with REPENTOGON
