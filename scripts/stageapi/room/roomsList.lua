@@ -90,7 +90,8 @@ function StageAPI.CreateSingleEntityLayout(t, v, s, name, rtype, shape)
             SubType = s or 0,
             GridX = centerX,
             GridY = centerY,
-            Index = centerIndex
+            Index = centerIndex,
+            Weight = 1,
         }
     }
     return layout
