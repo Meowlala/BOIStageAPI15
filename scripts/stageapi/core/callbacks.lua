@@ -252,11 +252,19 @@ StageAPI.AddCallback("StageAPI", Callbacks.POST_SELECT_BOSS_MUSIC, 0, function(s
 end)
 
 StageAPI.NonOverrideTrapdoors = {
-    ["gfx/grid/trapdoor_corpse_big.anm2"] = true
+    ["gfx/grid/trapdoor_corpse_big.anm2"] = true,
+    ["gfx/grid/voidtrapdoor.anm2"] = true,
 }
 
+local function IsBlueWombEntranceRoom()
+    local roomDescData = shared.Level:GetCurrentRoomDesc() and shared.Level:GetCurrentRoomDesc().Data
+    if roomDescData and roomDescData.StageID == 13 and roomDescData.Type == RoomType.ROOM_DEFAULT and roomDescData.Subtype == 1 then
+        return true
+    end
+end
+
 function StageAPI.CheckStageTrapdoor(grid, index)
-    if not (grid.Desc.Type == GridEntityType.GRID_TRAPDOOR and grid.State == 1) or StageAPI.NonOverrideTrapdoors[grid:GetSprite():GetFilename()] then
+    if not (grid.Desc.Type == GridEntityType.GRID_TRAPDOOR and grid.State == 1 and grid:GetVariant() ~= 1) or StageAPI.NonOverrideTrapdoors[grid:GetSprite():GetFilename()] then
         return
     end
 
@@ -273,10 +281,20 @@ function StageAPI.CheckStageTrapdoor(grid, index)
     if not entering then return end
 
     local currStage = StageAPI.CurrentStage or {}
-    local isSecretExit = shared.Room:GetType() == RoomType.ROOM_SECRET_EXIT
-    local nextStage = StageAPI.CallCallbacks(Callbacks.PRE_SELECT_NEXT_STAGE, true, StageAPI.CurrentStage, isSecretExit)
-    if not isSecretExit then
-        nextStage = nextStage or currStage.NextStage
+    
+    local isBlueWomb = IsBlueWombEntranceRoom()
+    local nextStage
+    if isBlueWomb and currStage.StageHPNumber == LevelStage.STAGE4_2 then
+        nextStage = {
+            NormalStage = true,
+            Stage = LevelStage.STAGE4_3,
+        }
+    else
+        local isSecretExit = shared.Room:GetType() == RoomType.ROOM_SECRET_EXIT
+        nextStage = StageAPI.CallCallbacks(Callbacks.PRE_SELECT_NEXT_STAGE, true, StageAPI.CurrentStage, isSecretExit)
+        if not isSecretExit then
+            nextStage = nextStage or currStage.NextStage
+        end
     end
 
     if nextStage and not currStage.OverridingTrapdoors then
@@ -1284,6 +1302,7 @@ mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, function()
         usingGfx = currentRoom.Data.RoomGfx
     elseif StageAPI.CurrentStage and StageAPI.CurrentStage.RoomGfx 
     and currentDimension ~= DIMENSION_DEATH_CERTIFICATE
+    and not IsBlueWombEntranceRoom()
     then
         local rtype = StageAPI.GetCurrentRoomType()
 
