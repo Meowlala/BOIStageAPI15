@@ -361,7 +361,7 @@ local Commands = {
     boss = {
         Execute = function (params)
             local player = Isaac.GetPlayer()
-            player:UseCard(5, UseFlag.USE_NOANIM)
+            player:UseCard(5, UseFlag.USE_NOANIM | UseFlag.USE_NOANNOUNCER)
         end,
         Desc = "Teleport to boss room",
     },
