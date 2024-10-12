@@ -492,14 +492,15 @@ function StageAPI.ExtraRoomTransition(levelMapRoomID, direction, transitionType,
     end
 
     local targetLevelRoom
-    local setDataForShape, setVisitCount, setClear, setClearCount, setDecoSeed, setSpawnSeed, setAwardSeed, setWater, setChallengeDone
+    local roomData
+    local setDataForShape, setVisitCount, setClear, setClearCount, setDecoSeed, setSpawnSeed, setAwardSeed, setWater, setChallengeDone, setFlags
     if levelMapID then
         StageAPI.TransitioningToExtraRoom = true
         StageAPI.CurrentLevelMapID = levelMapID
         StageAPI.CurrentLevelMapRoomID = levelMapRoomID
 
         local levelMap = StageAPI.GetCurrentLevelMap()
-        local roomData = levelMap:GetRoomData(levelMapRoomID)
+        roomData = levelMap:GetRoomData(levelMapRoomID)
         targetLevelRoom = levelMap:GetRoom(levelMapRoomID)
 
         local curStage, currentStageType = shared.Level:GetStage(), shared.Level:GetStageType()
@@ -521,6 +522,7 @@ function StageAPI.ExtraRoomTransition(levelMapRoomID, direction, transitionType,
         setAwardSeed = setAwardSeed or targetLevelRoom.AwardSeed
         setVisitCount = setVisitCount or targetLevelRoom.VisitCount or 0
         setClearCount = setClearCount or targetLevelRoom.ClearCount or 0
+        setFlags = setFlags or roomData.RoomFlags
 
         if setWater == nil then
             setWater = false or targetLevelRoom.HasWaterPits
@@ -598,6 +600,10 @@ function StageAPI.ExtraRoomTransition(levelMapRoomID, direction, transitionType,
 
     if setAwardSeed then
         targetRoomDesc.AwardSeed = setAwardSeed
+    end
+
+    if setFlags then
+        targetRoomDesc.Flags = setFlags
     end
 
     shared.Level.LeaveDoor = leaveDoor
