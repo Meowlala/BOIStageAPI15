@@ -164,7 +164,9 @@ function StageAPI.CustomStage:WillOverrideRoom(roomDesc)
     local isStartingRoom = roomDesc.SafeGridIndex == shared.Level:GetStartingRoomIndex()
     local dimension = StageAPI.GetDimension(roomDesc)
 
-    if dimension == DIMENSION_DEATH_CERTIFICATE or (self:HasMineshaftDimension() and dimension == 1) then
+    if StageAPI.IsBlueWombEntranceRoom(roomDesc) then
+        return false
+    elseif dimension == DIMENSION_DEATH_CERTIFICATE or (self:HasMineshaftDimension() and dimension == 1) then
         return false
     elseif rtype == RoomType.ROOM_BOSS and self.Bosses then
         return true
@@ -690,7 +692,6 @@ function StageAPI.CustomStage:GenerateLevel()
                 local listIndex = roomDesc.ListIndex
                 StageAPI.SetLevelRoom(newRoom, listIndex, 0)
 
-                StageAPI.LogMinor(StageAPI.GetDimension(roomDesc))
                 if hasMirror and roomDesc.SafeGridIndex > -1 and StageAPI.GetDimension(roomDesc) == 0 then
                     local mirroredRoom = newRoom:Copy(roomDesc)
 					local mirroredDesc = shared.Level:GetRoomByIdx(roomDesc.SafeGridIndex, 1)

@@ -256,13 +256,6 @@ StageAPI.NonOverrideTrapdoors = {
     ["gfx/grid/voidtrapdoor.anm2"] = true,
 }
 
-local function IsBlueWombEntranceRoom()
-    local roomDescData = shared.Level:GetCurrentRoomDesc() and shared.Level:GetCurrentRoomDesc().Data
-    if roomDescData and roomDescData.StageID == 13 and roomDescData.Type == RoomType.ROOM_DEFAULT and roomDescData.Subtype == 1 then
-        return true
-    end
-end
-
 function StageAPI.CheckStageTrapdoor(grid, index)
     if not (grid.Desc.Type == GridEntityType.GRID_TRAPDOOR and grid.State == 1 and grid:GetVariant() ~= 1) or StageAPI.NonOverrideTrapdoors[grid:GetSprite():GetFilename()] then
         return
@@ -282,7 +275,7 @@ function StageAPI.CheckStageTrapdoor(grid, index)
 
     local currStage = StageAPI.CurrentStage or {}
     
-    local isBlueWomb = IsBlueWombEntranceRoom()
+    local isBlueWomb = StageAPI.IsBlueWombEntranceRoom()
     local nextStage
     if isBlueWomb and currStage.StageHPNumber == LevelStage.STAGE4_2 then
         nextStage = {
@@ -1167,7 +1160,7 @@ mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, function()
 
         justGenerated = currentRoom.FirstLoad
         currentRoom:Load(true)
-    elseif StageAPI.InNewStage() and StageAPI.GetDimension() == 0 then
+    elseif StageAPI.InNewStage() and StageAPI.GetDimension() == 0 and not StageAPI.IsBlueWombEntranceRoom() then
         if not currentRoom and StageAPI.CurrentStage.GenerateRoom then
             local newRoom, newBoss = StageAPI.CurrentStage:GenerateRoom(shared.Level:GetCurrentRoomDesc(), inStartingRoom, false)
             if newRoom then
@@ -1302,7 +1295,7 @@ mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, function()
         usingGfx = currentRoom.Data.RoomGfx
     elseif StageAPI.CurrentStage and StageAPI.CurrentStage.RoomGfx 
     and currentDimension ~= DIMENSION_DEATH_CERTIFICATE
-    and not IsBlueWombEntranceRoom()
+    and not StageAPI.IsBlueWombEntranceRoom()
     then
         local rtype = StageAPI.GetCurrentRoomType()
 

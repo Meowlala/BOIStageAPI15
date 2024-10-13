@@ -229,3 +229,10 @@ function StageAPI.InterpolateSprite(sprite,frame,animTabl)
         end
     end
 end
+
+function StageAPI.IsBlueWombEntranceRoom(roomDesc)
+    roomDesc = roomDesc or shared.Level:GetCurrentRoomDesc()
+    if roomDesc and roomDesc.Data and roomDesc.Data.StageID == 13 and roomDesc.Data.Type == RoomType.ROOM_DEFAULT and roomDesc.Data.Subtype == 1 then
+        return true
+    end
+end

@@ -389,6 +389,15 @@ function StageAPI.DoesDoorMatch(door, doorSpawn, current, target, isBossAmbush, 
         end
     end
 
+    if StageAPI.IsBlueWombEntranceRoom() then
+        valid = false
+    elseif targetIndex then
+        local roomDesc = shared.Level:GetRoomByIdx(targetIndex)
+        if roomDesc and StageAPI.IsBlueWombEntranceRoom(roomDesc) then
+            valid = false
+        end
+    end
+
     if doorSpawn.RequireTarget then
         local has = false
         for _, roomType in ipairs(doorSpawn.RequireTarget) do
