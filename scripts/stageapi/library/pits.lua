@@ -72,7 +72,7 @@ function StageAPI.GetPitFramesFromIndices(indices, width, height, hasExtraFrames
         local adjIndices = {}
         for _, adjust in ipairs(AdjacentAdjustments) do
             local nX, nY = x + adjust.X, y + adjust.Y
-            if (nX >= 0 and nX <= width) and (nY >= 0 and nY <= height) then
+            if (nX >= -1 and nX <= width) and (nY >= -1 and nY <= height) then
                 local backToGrid = StageAPI.VectorToGrid(nX, nY, width)
                 if indices[backToGrid] then
                     adjIndices[#adjIndices + 1] = true
