@@ -1202,7 +1202,7 @@ mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, function()
             local vanishingTwins = Isaac.FindByType(EntityType.ENTITY_FAMILIAR, FamiliarVariant.VANISHING_TWIN, -1, false, false)
             for _, twin in ipairs(vanishingTwins) do
                 twin = twin:ToFamiliar()
-                if twin.Coins > 0 then
+                if twin.Coins > 0 and not boss.NoVanishingTwin then
                     if boss.VanishingTwinEntity then
                         twin.Coins = boss.VanishingTwinEntity.Type
                         twin.Keys = boss.VanishingTwinEntity.Variant

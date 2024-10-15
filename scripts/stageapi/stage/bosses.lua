@@ -531,7 +531,7 @@ function StageAPI.PlayBossAnimation(boss, unskippable)
         PlayerSpot = pSpot,
         Unskippable = unskippable,
         BossOffset = boss.Offset,
-        BackgroundColor = bgColor,
+        BackgroundColor = boss.BackgroundColor or bgColor,
         DirtColor = dirtColor,
         NoShake = gfxData.NoShake
     })
