@@ -486,7 +486,7 @@ function StageAPI.SelectSpawnEntities(entities, seed, roomMetadata, lastPersiste
                     if StageAPI.IsCustomGridSpawnerEntity(entData.Type, entData.Variant, entData.SubType) or StageAPI.ShouldEntIgnoreStack(entData.Type, entData.Variant, entData.SubType) then
                         addEntities[#addEntities + 1] = entData
                     else
-                        randomPool[#randomPool + 1] = {entData, entData.Weight}
+                        randomPool[#randomPool + 1] = {entData, entData.Weight or 1}
                     end
                 end
                 if #randomPool > 0 then
