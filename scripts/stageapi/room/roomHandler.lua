@@ -1045,7 +1045,7 @@ StageAPI.AddCallback("StageAPI", "PRE_SPAWN_GRID", 0, function(gridEntry, gridIn
             local roll = StageAPI.Random(1, 100, rng)
             local gridType
             if shared.Room:GetTintedRockIdx() == gridEntry.Index then
-                if roll <= 5 then
+                if roll <= 5 and StageAPI.TryCheckAchievement(323) then
                     gridType = GridEntityType.GRID_ROCK_SS --Super Secret Rocks
                 else
                     gridType = GridEntityType.GRID_ROCKT --Tinted Rocks
@@ -1079,7 +1079,7 @@ StageAPI.AddCallback("StageAPI", "PRE_SPAWN_GRID", 0, function(gridEntry, gridIn
                         gridType = GridEntityType.GRID_ROCK_BOMB
                     end
             
-                elseif roll <= 1 and not StageAPI.SpawnedFoolsGoldVein then --Fool's Gold Rocks 
+                elseif roll <= 1 and StageAPI.TryCheckAchievement(612) and not StageAPI.SpawnedFoolsGoldVein then --Fool's Gold Rocks 
                     gridType = GridEntityType.GRID_ROCK_GOLD 
                     StageAPI.FoolsGoldReplacements[gridEntry.Index] = StageAPI.Random(2, 4, rng)
                     StageAPI.SpawnedFoolsGoldVein = true

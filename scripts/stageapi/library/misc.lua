@@ -236,3 +236,11 @@ function StageAPI.IsBlueWombEntranceRoom(roomDesc)
         return true
     end
 end
+
+function StageAPI.TryCheckAchievement(id)
+    if REPENTOGON then
+        return Isaac.GetPersistentGameData():Unlocked(id)
+    else
+        return true
+    end
+end
