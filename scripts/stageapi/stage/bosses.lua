@@ -69,8 +69,29 @@ local ExtraPortraitAnimationTable = {
     }
 }
 
+---@class StageAPI.FloorInfo
+---@field Prefix string
+---@field VsBgColor string
+---@field VsDirtColor string
+---@field Backdrop string
+---@field RoomGfx string
+---@field Bosses StageAPI.BossesInfo
+
+---@class StageAPI.BossInfo
+---@field BossID string
+---@field Weight number?
+---@field Horseman boolean?
+---@field OnlyReplaceHorsemen boolean?
+
+---@class StageAPI.BossesInfo
+---@field Pool StageAPI.BossInfo[]
+
 -- if doGreed is false, will not add to greed at all, if true, will only add to greed. nil for both.
 -- if stagetype is true, will set floorinfo for all stagetypes
+---@param info StageAPI.FloorInfo
+---@param stage LevelStage
+---@param stagetype StageType
+---@param doGreed? boolean
 function StageAPI.SetFloorInfo(info, stage, stagetype, doGreed)
     if stagetype == true then
         for _, stype in ipairs(StageAPI.StageTypes) do
