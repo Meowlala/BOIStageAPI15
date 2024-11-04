@@ -50,7 +50,6 @@ if REPENTOGON then
             end
             -- It's okay for this number to be a magic number because it's completely hardcoded and cannot be changed
             local offsetPosition = Vector(33.5, 103)
-            continueSprite:GetLayer(1):SetRotation(continueSprite:GetLayer(1):GetRotation() + 1)
             local textSize = Vector.One
             if continueSprite and MenuManager.GetActiveMenu() == MainMenuType.GAME
             and (not (continueSprite:GetAnimation() == "Dissapear" -- my code works FINE it was just SPELT WRONG
