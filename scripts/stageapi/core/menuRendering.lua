@@ -10,7 +10,7 @@ noneSprite:Play("Idle", true)
 
 local continueDefaultColor = KColor(56 / 255, 44 / 255, 46 / 255, 1, 0, 0, 0)
 local storedStageName = {}
-local pivotDistance = 26 -- Obtained from subtracting Text Position Y from Pivot Y on sprite (no way to procedurally do that)
+local pivotDistance = Vector.Zero
 local verticalSeparation = 1.25
 
 if REPENTOGON then
@@ -42,9 +42,16 @@ if REPENTOGON then
             checkForStage = false
         elseif #storedStageName >= 1 then
             local menuPosition = Isaac.WorldToMenuPosition(MainMenuType.GAME, Vector.Zero)
-            local offsetPosition = Vector(33.5, 129 - pivotDistance) -- I'll be honest, this one was just trial and error
-            local textSize = Vector.One
             local continueSprite = MainMenu.GetContinueWidgetSprite()
+            -- Update pivot position if obtainable (only once before any animation is set)
+            if pivotDistance:LengthSquared() <= 0 and continueSprite:GetNullFrame("Stage") then
+                pivotDistance = continueSprite:GetNullFrame("Stage"):GetPos()
+                print('new pivot set to', pivotDistance)
+            end
+            -- It's okay for this number to be a magic number because it's completely hardcoded and cannot be changed
+            local offsetPosition = Vector(33.5, 103)
+            continueSprite:GetLayer(1):SetRotation(continueSprite:GetLayer(1):GetRotation() + 1)
+            local textSize = Vector.One
             if continueSprite and MenuManager.GetActiveMenu() == MainMenuType.GAME
             and (not (continueSprite:GetAnimation() == "Dissapear" -- my code works FINE it was just SPELT WRONG
             and continueSprite:GetFrame() >= (continueSprite:GetCurrentAnimationData():GetLength() - 1))) then
@@ -63,7 +70,7 @@ if REPENTOGON then
                 for i = 0, #storedStageName do
                     local halfLineWidth = continueFont:GetStringWidth((i == 0) and stageName or storedStageName[i]) / 2
                     local textCenterPosition = (menuPosition + offsetPosition) 
-                        - (Vector(halfLineWidth, -pivotDistance) * textSize)
+                        - ((Vector(halfLineWidth, 0) - pivotDistance) * textSize)
                     if i == 0 then
                         -- Draw Quad obstructing previous text
                         noneSprite.Scale = Vector(halfLineWidth * 2, halfLineHeight * 2) * textSize
