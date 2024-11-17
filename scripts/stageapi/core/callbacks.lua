@@ -392,7 +392,11 @@ mod:AddCallback(ModCallbacks.MC_POST_RENDER, function()
 
             local currentRoom = StageAPI.GetCurrentRoom()
             if gridsOverride then
-                grids = gridsOverride
+                if type(gridsOverride) == "boolean" then
+                    grids = nil
+                else
+                    grids = gridsOverride
+                end
             elseif currentRoom and currentRoom.Data.RoomGfx then
                 grids = currentRoom.Data.RoomGfx.Grids
             elseif StageAPI.CurrentStage.RoomGfx and StageAPI.CurrentStage.RoomGfx[rtype] and StageAPI.CurrentStage.RoomGfx[rtype].Grids then
@@ -536,7 +540,12 @@ mod:AddCallback(ModCallbacks.MC_POST_RENDER, function()
         for _, callback in ipairs(callbacks) do
             local success, ret = StageAPI.TryCallback(callback, currentRoom, usingGfx, true, currentDimension)
             if success and ret ~= nil then
-                usingGfx = ret
+                if type(ret) == "boolean" then
+                    usingGfx = nil
+                    break
+                else
+                    usingGfx = ret
+                end
             end
         end
 
@@ -1336,7 +1345,12 @@ mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, function()
     for _, callback in ipairs(callbacks) do
         local success, ret = StageAPI.TryCallback(callback, currentRoom, usingGfx, false, currentDimension)
         if success and ret ~= nil then
-            usingGfx = ret
+            if type(ret) == "boolean" then
+                usingGfx = nil
+                break
+            else
+                usingGfx = ret
+            end
         end
     end
 
