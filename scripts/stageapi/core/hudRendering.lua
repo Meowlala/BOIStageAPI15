@@ -24,5 +24,11 @@ StageAPI.AddCallback("StageAPI", Callbacks.POST_HUD_RENDER, 0, function(isPauseM
 end)
 ]]
 
-
-mod:AddCallback(ModCallbacks.MC_GET_SHADER_PARAMS, hudRendering_GetShaderParams)
+if not REPENTOGON then
+    mod:AddCallback(ModCallbacks.MC_GET_SHADER_PARAMS, hudRendering_GetShaderParams)
+else
+    -- Technically doesn't matter since shader is already being run and is just simple passthrough, but I figured it'd be neat
+    mod:AddCallback(ModCallbacks.MC_POST_HUD_RENDER, function(_) 
+        hudRendering_GetShaderParams(_, SHADER_NAME)
+    end)
+end
