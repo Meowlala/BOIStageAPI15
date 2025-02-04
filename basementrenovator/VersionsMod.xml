@@ -8,4 +8,7 @@
     <version Name="Repentance">
         <version Name="StageAPI"/>
     </version>
+    <version Name="Repentance+">
+        <version Name="StageAPI"/>
+    </version>
 </data>
