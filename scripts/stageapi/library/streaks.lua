@@ -227,13 +227,12 @@ end
 
 function StageAPI.RenderTextStreakHud(isPauseMenuOpen, pauseMenuDarkPct)
     -- Do not render with pause menu open, as it would render above the menu
-    if isPauseMenuOpen then
+    if not REPENTOGON and isPauseMenuOpen then
         return
     end
-
     RenderStreaksInTable(HudStreaks)
 end
 
 mod:AddCallback(ModCallbacks.MC_POST_UPDATE, StageAPI.UpdateTextStreak)
-mod:AddCallback(ModCallbacks.MC_POST_RENDER, StageAPI.RenderTextStreak)
+mod:AddCallback((REPENTOGON and ModCallbacks.MC_POST_HUD_RENDER) or ModCallbacks.MC_POST_RENDER, StageAPI.RenderTextStreak)
 StageAPI.AddCallback("StageAPI", Callbacks.POST_HUD_RENDER, 0, StageAPI.RenderTextStreakHud)
