@@ -1445,8 +1445,10 @@ StageAPI.AddCallback("StageAPI", Callbacks.EARLY_NEW_ROOM, -1, function()
         end
     end
 
-    for _, customGrid in ipairs(StageAPI.GetCustomGrids()) do
-        customGrid:Unload()
+    if not StageAPI.JustUsedD7 then
+        for _, customGrid in ipairs(StageAPI.GetCustomGrids()) do
+            customGrid:Unload()
+        end
     end
 
     if StageAPI.InTestMode then
