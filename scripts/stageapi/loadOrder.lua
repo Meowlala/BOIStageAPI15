@@ -19,6 +19,7 @@ return {
     "scripts.stageapi.core.modLoading",
     "scripts.stageapi.core.commands",
     "scripts.stageapi.core.saveSystem",
+    "scripts.stageapi.core.menuRendering",
     "scripts.stageapi.grid.roomEditorFeatures",
     "scripts.stageapi.extra.waves",
     "scripts.stageapi.stage.customFloorGen",
