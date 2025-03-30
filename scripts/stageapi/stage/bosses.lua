@@ -588,7 +588,7 @@ function StageAPI.SelectBoss(bosses, rng, roomDesc, ignoreNoOptions)
         bossID = nil
     end
 
-    if bossID and type(bossID) == "boolean" then
+    if Isaac.GetChallenge() == Challenge.CHALLENGE_APRILS_FOOL or (bossID and type(bossID) == "boolean") then
         return nil, true
     elseif not bossID then
         roomDesc = roomDesc or shared.Level:GetCurrentRoomDesc()
