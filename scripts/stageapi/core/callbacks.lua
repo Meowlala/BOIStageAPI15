@@ -1159,7 +1159,7 @@ mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, function()
         if StageAPI.CurrentStage and StageAPI.CurrentStage.GetPlayingMusic then
             local musicID = StageAPI.CurrentStage:GetPlayingMusic()
             if musicID then
-                shared.Music:Queue(musicID)
+                shared.Music:Crossfade(musicID)
             end
         end
     end
