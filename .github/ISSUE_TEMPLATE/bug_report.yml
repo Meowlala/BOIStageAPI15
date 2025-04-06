@@ -9,7 +9,8 @@ body:
     attributes:
       label: REPENTOGON
       description: Were you using REPENTOGON when you experienced this bug?
-      required: false
+      options:
+        - label: Yes, I was using REPENTOGON
   - type: dropdown
     id: dropdown-1
     attributes:
@@ -24,22 +25,17 @@ body:
     id: textarea-2
     attributes:
       label: Description
-      description: Please provide a detailed description of the behavior, in contrast
-        to how it is meant to behave.
+      description: Please provide a detailed description of the behavior, in contrast to how it is meant to behave. Be as descriptive as possible, do not simply say "it doesn't work." Ask yourself what about it doesn't work.
       required: true
-      value: Be as descriptive as possible, do not simply say "it doesn't work." Ask
-        yourself what about it doesn't work.
   - type: textarea
     id: textarea-3
     attributes:
       label: Mod List
-      description: If applicable, please provide a list of relevant mods. Please try
-        to reduce this list as much as possible before submitting a report by
-        disabling mods and ensuring the problem is absolutely StageAPI's fault.
+      description: If applicable, please provide a list of relevant mods. Please try to reduce this list as much as possible before submitting a report by disabling mods and ensuring the problem is absolutely StageAPI's fault.
   - type: checkboxes
     id: checkboxes-4
     attributes:
       label: Confirmation of Assistance (If applicable)
-      description: By checking this option, you agree to provide some assistance with
-        the relevant issue. This helps us figure out whether an issue is a high
-        priority, or is being handled.
+      description: By checking this option, you agree to provide some assistance with the relevant issue. This helps us figure out whether an issue is a high priority, or is being handled.
+      options:
+        - label: I agree to assist with the issue if needed
