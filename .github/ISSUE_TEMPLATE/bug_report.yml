@@ -16,7 +16,6 @@ body:
     attributes:
       label: Version
       description: What version of the game were you running?
-      required: true
       options:
         - Repentance
         - Repentance+
@@ -26,7 +25,6 @@ body:
     attributes:
       label: Description
       description: Please provide a detailed description of the behavior, in contrast to how it is meant to behave. Be as descriptive as possible, do not simply say "it doesn't work." Ask yourself what about it doesn't work.
-      required: true
   - type: textarea
     id: textarea-3
     attributes:
