@@ -1,6 +1,8 @@
 *.it
 *.dat
 
+tempchangelog.txt
+
 resources/stageapi/luarooms/*.stb
 
 basementrenovator/roomTest.xml

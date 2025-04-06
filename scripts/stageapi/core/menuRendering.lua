@@ -1,21 +1,27 @@
-local mod = require("scripts.stageapi.mod")
+local mod = include("scripts.stageapi.mod")
 local json = require("json")
 
 local continueFont = Font()
 continueFont:Load("font/teammeatfont12.fnt")
 
-local noneSprite = Sprite()
-noneSprite:Load("stageapi/continue_overlay.anm2", true)
-noneSprite:Play("Idle", true)
-
-local continueDefaultColor = KColor(56 / 255, 44 / 255, 46 / 255, 1, 0, 0, 0)
-local storedStageName = {}
-local pivotDistance = Vector.Zero
-local verticalSeparation = 1.25
+-- TODO: sync this anm2 with them continueSprite anm2 just in case someone's changed it
+local loadedContinueSprite = Sprite()
+loadedContinueSprite:Load("gfx/ui/main menu/continueprogress_widget.anm2")
+loadedContinueSprite:LoadGraphics()
+loadedContinueSprite:Play("Character")
 
 if REPENTOGON then
-    local checkForStage = true
-    local customStage = nil
+    -- It's okay for this number to be a magic number because it's completely hardcoded
+    local PAGE_OFFSET_POSITION = Vector(33, 109)
+
+    -- Also hardcoded, no need to bother changing it since there's no way to access a sprite's text
+    local CONTINUE_DEFAULT_COLOR = KColor(56 / 255, 44 / 255, 46 / 255, 1)
+
+    -- Arbitrary magic numbers
+    local PAGE_MASK_PADDING = 2
+    local VERTICAL_SEPARATION = 1.25
+
+    local storedStageName, customStage, checkForStage = {}, nil, true
     local function onMenuRender()
         if checkForStage then
             -- attempt to obtain custom stage
@@ -40,56 +46,65 @@ if REPENTOGON then
                 end
             end
             checkForStage = false
-        elseif #storedStageName >= 1 then
-            local menuPosition = Isaac.WorldToMenuPosition(MainMenuType.GAME, Vector.Zero)
+        end
+        if ((MenuManager.GetActiveMenu() == MainMenuType.GAME) and (#storedStageName >= 1)) then
             local continueSprite = MainMenu.GetContinueWidgetSprite()
-            -- Update pivot position if obtainable (only once before any animation is set)
-            if pivotDistance:LengthSquared() <= 0 and continueSprite:GetNullFrame("Stage") then
-                pivotDistance = continueSprite:GetNullFrame("Stage"):GetPos()
-                print('new pivot set to', pivotDistance)
-            end
-            -- It's okay for this number to be a magic number because it's completely hardcoded and cannot be changed
-            local offsetPosition = Vector(33.5, 103)
-            local textSize = Vector.One
-            if continueSprite and MenuManager.GetActiveMenu() == MainMenuType.GAME
-            and (not (continueSprite:GetAnimation() == "Dissapear" -- my code works FINE it was just SPELT WRONG
+            local stageTextPosition = loadedContinueSprite:GetNullFrame("Stage"):GetPos()
+            -- This is not a typo, it is called that in the files for some reason
+            if continueSprite and (not (continueSprite:GetAnimation() == "Dissapear"
             and continueSprite:GetFrame() >= (continueSprite:GetCurrentAnimationData():GetLength() - 1))) then
-                local nullFrame = continueSprite:GetNullFrame("Guide")
-                if nullFrame then
-                    offsetPosition = offsetPosition + nullFrame:GetPos()
-                    textSize = nullFrame:GetScale() 
-                end
+                local spriteMenuPosition = Isaac.WorldToMenuPosition(MainMenuType.GAME, PAGE_OFFSET_POSITION)
 
+                local nullFrame = continueSprite:GetNullFrame("Guide")
+                local textSize = Vector.One
+                local offsetPosition = spriteMenuPosition
+                if nullFrame then
+                    textSize = nullFrame:GetScale()
+                    offsetPosition = offsetPosition + nullFrame:GetPos()
+                end
+                
                 local stageName = "Flooded Caves XL" --[[
                     I'm a little lazy right now, and haven't found a way to procedurally get the
                     replaced floor's original name, so I've settled on just making the longest possible
                     string based on vanilla floor names. Should work fine for now
+
+                    P.S. this is technically not true, Flooded Caves XL wraps around, but it's the size of the
+                    widget so it works well enough for now until someone takes issue with it.
                 --]]
+                loadedContinueSprite.Scale = textSize
+                local textLength = continueFont:GetStringWidth(stageName)
+
+                -- Attempt to mask the widget with itself
+                local animationFrame = loadedContinueSprite:GetCurrentAnimationData():GetLayer(1):GetFrame(1)
+                if animationFrame then
+                    local pivotPosition = animationFrame:GetPivot()
+                    local leftMargin = pivotPosition.X - (textLength / 2)
+                    local rightMargin = animationFrame:GetWidth() - (pivotPosition.X + (textLength / 2))
+                    loadedContinueSprite:RenderLayer(1, offsetPosition, 
+                        Vector(leftMargin - PAGE_MASK_PADDING, (pivotPosition.Y + stageTextPosition.Y) - PAGE_MASK_PADDING), 
+                        Vector(rightMargin - PAGE_MASK_PADDING, pivotPosition.Y - (pivotPosition.Y - stageTextPosition.Y) + PAGE_MASK_PADDING)
+                    )
+                end
                 local halfLineHeight = continueFont:GetLineHeight() / 2
                 for i = 0, #storedStageName do
-                    local halfLineWidth = continueFont:GetStringWidth((i == 0) and stageName or storedStageName[i]) / 2
-                    local textCenterPosition = (menuPosition + offsetPosition) 
-                        - ((Vector(halfLineWidth, 0) - pivotDistance) * textSize)
-                    if i == 0 then
-                        -- Draw Quad obstructing previous text
-                        noneSprite.Scale = Vector(halfLineWidth * 2, halfLineHeight * 2) * textSize
-                        noneSprite:Render(textCenterPosition + Vector(0, 2))
-                    else
-                        continueFont:DrawStringScaled(storedStageName[i], 
-                            textCenterPosition.X, textCenterPosition.Y + ((halfLineHeight * verticalSeparation) * (i - 1) * textSize.Y), 
-                            textSize.X, textSize.Y, 
-                            continueDefaultColor, 
-                            0, true
-                        )
-                    end
+                    local stringSection = (storedStageName[i] or "")
+                    continueFont:DrawStringScaledUTF8(stringSection, 
+                        offsetPosition.X - (continueFont:GetStringWidth(stringSection) / 2) * textSize.X, 
+                        offsetPosition.Y + (((stageTextPosition.Y - 4) + (halfLineHeight * VERTICAL_SEPARATION) * (i - 1)) * textSize.Y), 
+                        textSize.X, textSize.Y, 
+                        CONTINUE_DEFAULT_COLOR, 
+                        0, true
+                    )
                 end
             end
         end
     end
+    mod:AddCallback(ModCallbacks.MC_MAIN_MENU_RENDER, onMenuRender)
+
+    -- Ensure and check stage types after runs are exited
     mod:AddCallback(ModCallbacks.MC_PRE_GAME_EXIT, function(_, shouldSave)
         checkForStage = true
         customStage = nil
         storedStageName = {}
     end)
-    mod:AddCallback(ModCallbacks.MC_MAIN_MENU_RENDER, onMenuRender)
 end
