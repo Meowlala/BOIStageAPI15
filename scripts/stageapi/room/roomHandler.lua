@@ -21,6 +21,7 @@ local excludeTypesFromClearing = {
         },
         [EffectVariant.BLOOD_SPLAT] = true,
         [EffectVariant.WISP] = true,
+        [EffectVariant.DOOR_OUTLINE] = true,
     },
 }
 

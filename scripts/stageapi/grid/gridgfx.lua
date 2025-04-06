@@ -221,6 +221,7 @@ end
 ---@field RequireCurrent RoomType[]
 ---@field RequireTarget RoomType[]
 ---@field RequireEither RoomType[]
+---@field RequireVarData integer
 ---@field NotCurrent RoomType[]
 ---@field NotTarget RoomType[]
 ---@field NotEither RoomType[]
@@ -290,6 +291,7 @@ function StageAPI.GridGfx:AddDoors(filename, doorInfo)
         RequireCurrent = doorInfo.RequireCurrent,
         RequireTarget = doorInfo.RequireTarget,
         RequireEither = doorInfo.RequireEither,
+        RequireVarData = doorInfo.RequireVarData,
         NotCurrent = doorInfo.NotCurrent,
         NotTarget = doorInfo.NotTarget,
         NotEither = doorInfo.NotEither,
@@ -530,8 +532,6 @@ function StageAPI.ChangeDoor(door, doors, payToPlay)
             end
 
             gsprite:LoadGraphics()
-
-            break
         end
     end
 end

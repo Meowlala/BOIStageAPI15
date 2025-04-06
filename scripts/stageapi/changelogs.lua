@@ -32,6 +32,57 @@ mod:AddCallback(ModCallbacks.MC_POST_GAME_STARTED, function()
             REVEL.AddedStageAPIChangelogs = true
         end
 
+                TryAddChangelog("v2.31", [[- Added support for
+applying room flags to
+StageAPI extra rooms
+
+- Added BackgroundColor
+and NoVanishingTwin argument
+support when defining
+a boss
+
+- Added support for
+pit tiling system to
+be able to tile in
+places over the top
+and left walls
+
+- Added ability to block
+graphics from being loaded
+in RoomGfx related callbacks
+
+- Added StageAPI entities
+to Basement Renovator for
+Repentance+
+
+- REPENTOGON is now used
+to check for achievements
+before replacing Fool's Gold
+or Super Secret rocks
+
+- Disabled the announcer
+sounds when using the 
+"boss" command
+
+- Fixed Red Room door
+outlines being deleted
+in luarooms
+
+- Fixed GetChampionChance()
+requiring REPENTOGON
+
+- Fixed Void and Blue Womb
+entrances going to the
+wrong floor in
+StageAPI stages
+
+- Fixed issues with
+Blue Womb entrance in
+custom stages
+
+- Fixed custom grids unloading
+when using the D7]])
+
                 TryAddChangelog("v2.30", [[- REPENTOGON is now used 
 to detect Stage HP and
 Champion capability of 
