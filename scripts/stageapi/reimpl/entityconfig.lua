@@ -120,7 +120,10 @@ function StageAPI.GetChampionChance()
     elseif StageAPI.AnyPlayerHasItem(CollectibleType.COLLECTIBLE_CHAMPION_BELT) then --Champion Belt sets base chance to 20%
         chance = 0.2
     end
-    local purpleHearts = PlayerManager.GetTotalTrinketMultiplier(TrinketType.TRINKET_PURPLE_HEART)
+    local purpleHearts = 0
+    for _, player in pairs(StageAPI.GetPlayers()) do
+        purpleHearts = purpleHearts + player:GetTrinketMultiplier(TrinketType.TRINKET_PURPLE_HEART)
+    end
     if purpleHearts > 0 then
         chance = chance * purpleHearts * 2 --Purple Heart is a x2 mult per copy
     end 
