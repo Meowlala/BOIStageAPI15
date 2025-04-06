@@ -1,4 +1,4 @@
-local mod = include("scripts.stageapi.mod")
+local mod = require("scripts.stageapi.mod")
 local json = require("json")
 
 local continueFont = Font()
