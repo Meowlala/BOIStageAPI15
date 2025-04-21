@@ -7,6 +7,7 @@ local Callbacks = require("scripts.stageapi.enums.Callbacks")
 StageAPI.LogMinor("Loading Save System")
 
 StageAPI.SaveDataLoaded = false
+StageAPI.RoomsToLoad = {}
 
 function StageAPI.TryLoadModData(continued)
     if Isaac.HasModData(mod) and continued then
@@ -220,8 +221,11 @@ function StageAPI.LoadSaveString(str)
             retCustomGrids[dimension][lindex] = roomSaveData.CustomGrids
 
             if roomSaveData.Room then
-                local customRoom = StageAPI.LevelRoom{FromSave = roomSaveData.Room}
-                StageAPI.SetLevelRoom(customRoom, lindex, dimension)
+                StageAPI.RoomsToLoad[#StageAPI.RoomsToLoad+1] = {
+                    RoomSaveData = roomSaveData,
+                    Dimension = dimension,
+                    LIndex = lindex,
+                }
             end
         end
     end
@@ -456,6 +460,14 @@ mod:AddCallback(ModCallbacks.MC_POST_RENDER, function()
     WasPaused = shared.Game:IsPaused()
 end)
 mod:AddCallback(ModCallbacks.MC_POST_NEW_LEVEL, function()
+
+    for i = #StageAPI.RoomsToLoad, 1, -1 do
+        local room = StageAPI.RoomsToLoad[i]
+        local customRoom = StageAPI.LevelRoom{FromSave = room.RoomSaveData.Room}
+        StageAPI.SetLevelRoom(customRoom, room.LIndex, room.Dimension)
+        StageAPI.RoomsToLoad[i] = nil
+    end
+
     StageAPI.SaveModData()
 end)
 mod:AddCallback(ModCallbacks.MC_PRE_GAME_EXIT, function(_, menuExit)
