@@ -172,7 +172,7 @@ function StageAPI.CustomStage:WillOverrideRoom(roomDesc)
         return true
     elseif isStartingRoom and self.StartingRooms then
         return true
-    elseif self.Rooms[rtype] then
+    elseif self.Rooms and self.Rooms[rtype] then
         local rooms = self.Rooms[rtype]
         local subtype = roomDesc.Data.Subtype
         if rooms.Default or (rooms.Subtypes and rooms.Subtypes[subtype]) then
