@@ -239,7 +239,8 @@ function StageAPI.CustomStage:SetStageMusic(music)
         RoomType.ROOM_SACRIFICE,
         RoomType.ROOM_DICE,
         RoomType.ROOM_CHEST,
-        RoomType.ROOM_DUNGEON
+        RoomType.ROOM_DUNGEON,
+        RoomType.ROOM_BLUE,
     })
 end
 
