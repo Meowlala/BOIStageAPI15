@@ -230,16 +230,24 @@ function StageAPI.CustomStage:SetStageMusic(music)
     end
 
     self:SetMusic(music, {
+        RoomType.ROOM_NULL,
         RoomType.ROOM_DEFAULT,
+        RoomType.ROOM_ERROR,
         RoomType.ROOM_TREASURE,
         RoomType.ROOM_CURSE,
         RoomType.ROOM_CHALLENGE,
-        RoomType.ROOM_BARREN,
-        RoomType.ROOM_ISAACS,
         RoomType.ROOM_SACRIFICE,
-        RoomType.ROOM_DICE,
+        RoomType.ROOM_DUNGEON,
+        RoomType.ROOM_BOSSRUSH,
+        RoomType.ROOM_ISAACS,
+        RoomType.ROOM_BARREN,
         RoomType.ROOM_CHEST,
-        RoomType.ROOM_DUNGEON
+        RoomType.ROOM_DICE,
+        RoomType.ROOM_BLACK_MARKET,
+        RoomType.ROOM_GREED_EXIT,
+        RoomType.ROOM_TELEPORTER,
+        RoomType.ROOM_TELEPORTER_EXIT,
+        RoomType.ROOM_BLUE,
     })
 end
 
@@ -303,6 +311,23 @@ function StageAPI.CustomStage:SetChallengeMusic(music, clearedMusic, intro, outr
         Outro = outro
     }
 end
+
+function StageAPI.CustomStage:SetBossRushMusic(music, clearedMusic, intro, outro)
+    if not (AssertValidMusic(music) and AssertValidMusic(clearedMusic) and AssertValidMusic(intro) and AssertValidMusic(outro)) then
+        StageAPI.LogWarn(self.Name, " CustomStage:SetBossRushMusic | invalid music value between ", 
+            music, " ", clearedMusic, " ", intro, " ", outro
+            " at ", StageAPI.TryGetCallInfo(2))
+        return
+    end
+
+    self.BossRushMusic = {
+        Fight = music,
+        Cleared = clearedMusic,
+        Intro = intro,
+        Outro = outro
+    }
+end
+
 
 function StageAPI.CustomStage:SetMirrorMusic(music)
     if not AssertValidMusic(music) then
@@ -704,18 +729,9 @@ function StageAPI.CustomStage:GenerateLevel()
 end
 
 function StageAPI.IsGreedBoss()
-    if shared.Game:IsGreedMode() then
-
-        local buffer = 0
-        if shared.Game.Difficulty == 3 then
-            buffer = 1
-        end
-
-        if shared.Level.GreedModeWave >= 8 + buffer then
-            return true
-        end
+    if shared.Game:IsGreedMode() and shared.Game:GetGreedBossWaveNum() <= (shared.Level.GreedModeWave + 1) then
+        return true
     end
-
     return false
 end
 
@@ -727,7 +743,7 @@ function StageAPI.CustomStage:GetPlayingMusic()
     local roomType = shared.Room:GetType()
     local id = shared.Music:GetCurrentMusicID()
     local roomDesc = shared.Level:GetCurrentRoomDesc()
-    if roomType == RoomType.ROOM_BOSS or StageAPI.IsGreedBoss() then
+    if roomType == RoomType.ROOM_BOSS or (StageAPI.IsGreedBoss() and roomType == RoomType.ROOM_DEFAULT and shared.Room:GetFrameCount() > 0) then
         if self.BossMusic then
             local music = self.BossMusic
             local musicID, queue, disregardNonOverride
@@ -815,8 +831,7 @@ function StageAPI.CustomStage:GetPlayingMusic()
                 return musicID, not shared.Room:IsClear(), queue, disregardNonOverride
             end
         end
-    elseif roomType ~= RoomType.ROOM_CHALLENGE 
-    or not (shared.Room:IsAmbushActive() or shared.Room:IsAmbushDone())
+    elseif not (shared.Room:IsAmbushActive() or shared.Room:IsAmbushDone())
     then
         local music = self.Music
         if music then
@@ -842,7 +857,7 @@ function StageAPI.CustomStage:GetPlayingMusic()
             end
         end
     else -- challenge room active/done
-        if self.ChallengeMusic then
+        if roomType == RoomType.ROOM_CHALLENGE and self.ChallengeMusic then
             local music = self.ChallengeMusic
             local musicID, queue, disregardNonOverride
             local isCleared = shared.Room:IsAmbushDone()
@@ -890,6 +905,60 @@ function StageAPI.CustomStage:GetPlayingMusic()
                     musicID = newMusicID
                 else
                     StageAPI.LogWarn(self.Name, " | POST_SELECT_CHALLENGE_MUSIC returned invalid value ", newMusicID)
+                end
+            end
+
+            if musicID then
+                return musicID, not shared.Room:IsClear(), queue, disregardNonOverride
+            end
+        elseif roomType == RoomType.ROOM_BOSSRUSH and self.BossRushMusic then
+            local music = self.ChallengeMusic
+            local musicID, queue, disregardNonOverride
+            local isCleared = shared.Room:IsAmbushDone()
+
+            if (
+                music.Outro and (
+                    id == Music.MUSIC_JINGLE_BOSS_RUSH_OUTRO 
+                    or id == music.Outro 
+                    or (type(music.Outro) == "table" and StageAPI.IsIn(music.Outro, id))
+                )
+            )
+            or (
+                music.Intro and (
+                    id == Music.MUSIC_JINGLE_CHALLENGE_ENTRY 
+                    or id == music.Intro 
+                    or (type(music.Intro) == "table" and StageAPI.IsIn(music.Intro, id))
+                )
+            ) 
+            then
+                if id == Music.MUSIC_JINGLE_CHALLENGE_ENTRY 
+                or id == music.Intro 
+                or (type(music.Intro) == "table" and StageAPI.IsIn(music.Intro, id)) then
+                    musicID, queue = music.Intro, music.Fight
+                else
+                    musicID, queue = music.Outro, music.Cleared
+                end
+
+                disregardNonOverride = true
+            else
+                if isCleared then
+                    musicID = music.Cleared
+                else
+                    musicID = music.Fight
+                end
+            end
+
+            if type(musicID) == "table" then
+                StageAPI.MusicRNG:SetSeed(shared.Room:GetDecorationSeed(), 0)
+                musicID = musicID[StageAPI.Random(1, #musicID, StageAPI.MusicRNG)]
+            end
+
+            local newMusicID = StageAPI.CallCallbacks(Callbacks.POST_SELECT_BOSSRUSH_MUSIC, true, self, musicID, isCleared, StageAPI.MusicRNG)
+            if newMusicID then
+                if AssertValidMusic(newMusicID) then
+                    musicID = newMusicID
+                else
+                    StageAPI.LogWarn(self.Name, " | POST_SELECT_BOSSRUSH_MUSIC returned invalid value ", newMusicID)
                 end
             end
 
