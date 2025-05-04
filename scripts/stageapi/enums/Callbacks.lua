@@ -49,6 +49,7 @@ local Callbacks = {
     POST_SELECT_BOSS_MUSIC = "POST_SELECT_BOSS_MUSIC", -- (currentstage, musicID, isCleared, musicRNG)
     POST_SELECT_MINIBOSS_MUSIC = "POST_SELECT_MINIBOSS_MUSIC", -- (currentstage, musicID, isCleared, musicRNG)
     POST_SELECT_CHALLENGE_MUSIC = "POST_SELECT_CHALLENGE_MUSIC", -- (currentstage, musicID, isCleared, musicRNG)
+    POST_SELECT_BOSSRUSH_MUSIC = "POST_SELECT_BOSSRUSH_MUSIC", -- (currentstage, musicID, isCleared, musicRNG)
     POST_SELECT_STAGE_MUSIC = "POST_SELECT_STAGE_MUSIC", -- (currentstage, musicID, roomType, musicRNG)
     POST_SELECT_ROOM_MUSIC = "POST_SELECT_ROOM_MUSIC", -- (currentRoom, musicID, baseRoomType, roomId, musicRNG)
     POST_ROOM_CLEAR = "POST_ROOM_CLEAR", -- ()
