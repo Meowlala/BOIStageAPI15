@@ -276,8 +276,11 @@ function StageAPI.CheckStageTrapdoor(grid, index)
     local currStage = StageAPI.CurrentStage or {}
     
     local isBlueWomb = StageAPI.IsBlueWombEntranceRoom()
+    local enteringBlueWomb = false 
     local nextStage
+
     if isBlueWomb and currStage.StageHPNumber == LevelStage.STAGE4_2 then
+        enteringBlueWomb = true 
         nextStage = {
             NormalStage = true,
             Stage = LevelStage.STAGE4_3,
@@ -290,7 +293,7 @@ function StageAPI.CheckStageTrapdoor(grid, index)
         end
     end
 
-    if nextStage and not currStage.OverridingTrapdoors then
+    if not enteringBlueWomb and nextStage and not currStage.OverridingTrapdoors then
         StageAPI.SpawnCustomTrapdoor(shared.Room:GetGridPosition(index), nextStage, grid:GetSprite():GetFilename(), 20, true)
         shared.Room:RemoveGridEntity(index, 0, false)
     end
