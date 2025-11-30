@@ -123,7 +123,7 @@ mod:AddCallback(ModCallbacks.MC_PRE_USE_ITEM, function()
 end)
 
 StageAPI.PreviousGridCount = nil
-StageAPI.PreviousDoors = nil
+StageAPI.PreviousDoors = {}
 
 function StageAPI.ReprocessRoomGrids()
     StageAPI.PreviousGridCount = nil
@@ -363,11 +363,12 @@ mod:AddCallback(ModCallbacks.MC_POST_RENDER, function()
     -- Door count gets changed by ie devil doors spawning
     for i = 0, DoorSlot.NUM_DOOR_SLOTS - 1 do
         local hasDoor = not not shared.Room:GetDoor(i)
-        if not StageAPI.PreviousDoors or hasDoor ~= StageAPI.PreviousDoors[i] then
+        if StageAPI.PreviousDoors[i] == nil or hasDoor ~= StageAPI.PreviousDoors[i] then
             updatedDoors = true
             if hasDoor then
                 newDoors[#newDoors+1] = i
             end
+            StageAPI.PreviousDoors[i] = hasDoor
         end
     end
 
