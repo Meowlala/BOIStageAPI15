@@ -32,6 +32,28 @@ mod:AddCallback(ModCallbacks.MC_POST_GAME_STARTED, function()
             REVEL.AddedStageAPIChangelogs = true
         end
 
+                 TryAddChangelog("v2.32", [[- Fix custom stages reskinning
+door sprites more often than
+intended
+
+- Fixes for stage music
+in certain room types and
+Greed Mode
+
+- Room loading is deferred
+to prevent erronous console
+messages
+
+- Main Menu continue run
+widget shows custom stages
+
+- Prevent boss rooms from
+being overriden during
+the April Fool's challenge
+
+- Allow adding VarData 
+for DoorGfx]])
+
                 TryAddChangelog("v2.31", [[- Added support for
 applying room flags to
 StageAPI extra rooms
