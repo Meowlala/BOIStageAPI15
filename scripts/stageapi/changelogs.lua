@@ -32,7 +32,7 @@ mod:AddCallback(ModCallbacks.MC_POST_GAME_STARTED, function()
             REVEL.AddedStageAPIChangelogs = true
         end
 
-                 TryAddChangelog("v2.32", [[- Fix custom stages reskinning
+                 TryAddChangelog("v2.33", [[- Fix custom stages reskinning
 door sprites more often than
 intended
 
