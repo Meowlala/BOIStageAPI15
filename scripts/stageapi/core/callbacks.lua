@@ -127,6 +127,7 @@ StageAPI.PreviousDoors = {}
 
 function StageAPI.ReprocessRoomGrids()
     StageAPI.PreviousGridCount = nil
+    StageAPI.PreviousDoors = {}
 end
 
 mod:AddCallback(ModCallbacks.MC_PRE_USE_ITEM, StageAPI.ReprocessRoomGrids, CollectibleType.COLLECTIBLE_D12)
