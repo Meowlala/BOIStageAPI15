@@ -459,8 +459,8 @@ mod:AddCallback(ModCallbacks.MC_POST_RENDER, function()
     end
     WasPaused = shared.Game:IsPaused()
 end)
-mod:AddCallback(ModCallbacks.MC_POST_NEW_LEVEL, function()
 
+local function NewLevelLoad()
     for i = #StageAPI.RoomsToLoad, 1, -1 do
         local room = StageAPI.RoomsToLoad[i]
         local customRoom = StageAPI.LevelRoom{FromSave = room.RoomSaveData.Room}
@@ -469,6 +469,14 @@ mod:AddCallback(ModCallbacks.MC_POST_NEW_LEVEL, function()
     end
 
     StageAPI.SaveModData()
+end
+
+mod:AddCallback(ModCallbacks.MC_POST_NEW_LEVEL, NewLevelLoad)
+mod:AddCallback(ModCallbacks.MC_POST_GAME_STARTED, function (_, isContinued)
+    -- Needs to trigger also when loading a level
+    if isContinued then
+        NewLevelLoad()
+    end
 end)
 mod:AddCallback(ModCallbacks.MC_PRE_GAME_EXIT, function(_, menuExit)
     if StageAPI.SaveDataLoaded then
