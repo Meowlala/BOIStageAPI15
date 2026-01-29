@@ -12,6 +12,7 @@ local subModules = {
     "misc",
     "pauseDetection",
 	"deadendDetection",
+    "lockedEntity",
 }
 
 for _, subModule in ipairs(subModules) do
