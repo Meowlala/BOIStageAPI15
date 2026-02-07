@@ -521,9 +521,9 @@ mod:AddCallback(ModCallbacks.MC_POST_RENDER, function()
                 else
                     shared.Music:Play(musicID, 0)
                 end
-
-                shared.Music:UpdateVolume()
             end
+
+            shared.Music:UpdateVolume()
 
             if shouldLayer and not shared.Music:IsLayerEnabled() then
                 shared.Music:EnableLayer()
