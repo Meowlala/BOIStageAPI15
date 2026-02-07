@@ -405,7 +405,7 @@ function StageAPI.AddEntityToSpawnList(tbl, entData, persistentIndex, index, noC
     entData.Variant = entData.Variant or 0
     entData.SubType = entData.SubType or 0
     entData.Index = entData.Index or index or 0
-    
+
     if not noChampions and entData.Type > 9 and entData.Type < 1000 then
         if StageAPI.CanBeChampion(entData.Type, entData.Variant, entData.SubType) then
             if StageAPI.RoomLoadRNG:RandomFloat() <= StageAPI.GetChampionChance() then
@@ -623,7 +623,7 @@ function StageAPI.LoadEntitiesFromEntitySets(entitysets, doGrids, doPersistentOn
     local ents_spawned = {}
     local listCallbacks = StageAPI.GetCallbacks(Callbacks.PRE_SPAWN_ENTITY_LIST)
     local entCallbacks = StageAPI.GetCallbacks(Callbacks.PRE_SPAWN_ENTITY)
-                            
+
     local currentRoom = StageAPI.GetCurrentRoom()
     local followRoomRules = currentRoom and not currentRoom.IgnoreRoomRules and currentRoom.FirstLoad
 
@@ -738,24 +738,24 @@ function StageAPI.LoadEntitiesFromEntitySets(entitysets, doGrids, doPersistentOn
                                     Vector.Zero,
                                     nil
                                 )
-                    
+
                                 if not ent:IsBoss() and ent:ToNPC() then
                                     if entityData.ChampionSeed and not currentRoom.Metadata:Has{Index = index, Name = "ChampionPreventer"} then
                                         ent:ToNPC():MakeChampion(entityData.ChampionSeed, -1, true)
                                         ent.HitPoints = ent.MaxHitPoints
                                     end
                                 end
-                    
+
                                 if entityData.Type == EntityType.ENTITY_PICKUP and entityData.Variant == PickupVariant.PICKUP_COLLECTIBLE and entityData.SubType ~= 0 then -- why can corrupted data change fixed items spawns??
                                     if ent.SubType ~= entityData.SubType then
                                         ent:ToPickup():Morph(ent.Type, ent.Variant, entityData.SubType, true, true, true)
                                     end
                                 end
-                    
+
                                 if entityPersistData and entityPersistData.Health then
                                     ent.HitPoints = entityPersistData.Health
                                 end
-                    
+
                                 if entityPersistData and ent.Type == EntityType.ENTITY_PICKUP then
                                     local pickup = ent:ToPickup()
                                     if entityPersistData.Price then
@@ -766,16 +766,16 @@ function StageAPI.LoadEntitiesFromEntitySets(entitysets, doGrids, doPersistentOn
                                         pickup.OptionsPickupIndex = entityPersistData.OptionsPickupIndex
                                     end
                                 end
-                    
-                                if entityData.Type == EntityType.ENTITY_EFFECT and entityData.Variant == EffectVariant.FISSURE_SPAWNER then 
+
+                                if entityData.Type == EntityType.ENTITY_EFFECT and entityData.Variant == EffectVariant.FISSURE_SPAWNER then
                                     Isaac.GridSpawn(GridEntityType.GRID_PIT, 0, entityInfo.Position, true)
                                 end
-                    
+
                                 if followRoomRules then
                                     if entityData.Type == EntityType.ENTITY_PICKUP and entityData.Variant == PickupVariant.PICKUP_COLLECTIBLE then
                                         if currentRoom.RoomType == RoomType.ROOM_TREASURE then
                                             local hasBrokenGlasses = StageAPI.AnyPlayerHasTrinket(TrinketType.TRINKET_BROKEN_GLASSES)
-                                    
+
                                             --[[
                                             Base game treasure rooms have:
                                             - Subtype 0: normal treasure rooms (includes rare double item treasure rooms)
@@ -783,15 +783,15 @@ function StageAPI.LoadEntitiesFromEntitySets(entitysets, doGrids, doPersistentOn
                                             - Subtype 2: treasure rooms with restock machine (used by pay to play)
                                             - Subtype 3: double treasure rooms with restock machine (used by both)
                                             ]]
-                    
+
                                             if currentRoom.Layout.Variant == 1
                                             or currentRoom.Layout.Variant == 3
-                                            or string.find(string.lower(currentRoom.Layout.Name), "choice") 
-                                            or string.find(string.lower(currentRoom.Layout.Name), "choose") 
+                                            or string.find(string.lower(currentRoom.Layout.Name), "choice")
+                                            or string.find(string.lower(currentRoom.Layout.Name), "choose")
                                             then
                                                 ent:ToPickup().OptionsPickupIndex = 1
                                             end
-                    
+
                                             local isShopItem
                                             for _, player in ipairs(shared.Players) do
                                                 if player:GetPlayerType() == PlayerType.PLAYER_KEEPER_B then
@@ -799,12 +799,12 @@ function StageAPI.LoadEntitiesFromEntitySets(entitysets, doGrids, doPersistentOn
                                                     break
                                                 end
                                             end
-                    
+
                                             if isShopItem then
                                                 ent:ToPickup().Price = 15
                                                 ent:ToPickup().AutoUpdatePrice = true
                                             end
-                    
+
                                             -- Per vanilla behavior, always affects extra item
                                             -- even with other items that add a choice item
                                             if hasBrokenGlasses then
@@ -818,23 +818,23 @@ function StageAPI.LoadEntitiesFromEntitySets(entitysets, doGrids, doPersistentOn
                                         end
                                     end
                                 end
-                    
+
                                 ent:GetData().StageAPISpawnedPosition = entityInfo.Position or Vector.Zero
                                 ent:GetData().StageAPIEntityListIndex = index
-     
+
                                 if entityInfo.Persistent then
                                     StageAPI.SetEntityPersistenceData(ent, entityInfo.PersistentIndex, persistData)
                                     if not ent:ToNPC() then --NPCs handle Appear flags in their own AI, so don't interfere with it
                                         ent:ClearEntityFlags(EntityFlag.FLAG_APPEAR)
                                     end
                                 end
-          
+
                                 if not loadingWave and ent:CanShutDoors() then
                                     shared.Room:SetClear(false)
                                 end
-                    
+
                                 StageAPI.CallCallbacks(Callbacks.POST_SPAWN_ENTITY, false, ent, entityInfo, entityList, index, doGrids, doPersistentOnly, doAutoPersistent, avoidSpawning, persistenceData, shouldSpawnEntity)
-                    
+
                                 ents_spawned[#ents_spawned + 1] = ent
                             end
                         end
@@ -851,6 +851,12 @@ StageAPI.AddCallback("StageAPI", Callbacks.PRE_SPAWN_ENTITY, 1, function(entityI
     --Random Dragonflies (Subtype 100) require re-implementation
     if entityInfo.Data.Type == EntityType.ENTITY_BOOMFLY and entityInfo.Data.Variant == 3 and entityInfo.Data.SubType == 100 then
         return {entityInfo.Data.Type, entityInfo.Data.Variant, StageAPI.Random(0,1)}
+    end
+
+    -- Respect vanilla unlocks for pickups and slots if REPENTOGON exists
+    local replacement = StageAPI.GetLockedEntityReplacement(entityInfo.Data.Type, entityInfo.Data.Variant, entityInfo.Data.SubType)
+    if replacement then
+        return replacement
     end
 end)
 
@@ -1053,21 +1059,21 @@ StageAPI.AddCallback("StageAPI", "PRE_SPAWN_GRID", 0, function(gridEntry, gridIn
                 end
             else
                 if roll <= 7 and roll > 3 then --Alt Rocks (Pots, Mushrooms, Skulls, etc.)
-                    gridType = GridEntityType.GRID_ROCK_ALT 
-            
-                elseif roll <= 3 and roll > 1 then  --Bomb Rocks 
+                    gridType = GridEntityType.GRID_ROCK_ALT
+
+                elseif roll <= 3 and roll > 1 then  --Bomb Rocks
                     local gridPos = shared.Room:GetGridPosition(gridEntry.Index)
                     local doorNearby
                     for i = 0, DoorSlot.NUM_DOOR_SLOTS - 1 do --Don't spawn Bomb Rocks near doors
                         if shared.Room:GetDoor(i) then
                             local doorPos = shared.Room:GetDoorSlotPosition(i)
                             local clampedPos = shared.Room:GetClampedPosition(doorPos, 20)
-                            if clampedPos.X == doorPos.X then 
+                            if clampedPos.X == doorPos.X then
                                 if math.abs(doorPos.X - gridPos.X) <= 40 and math.abs(doorPos.Y - gridPos.Y) <= 80 then
                                     doorNearby = true
                                     break
                                 end
-                            else 
+                            else
                                 if math.abs(doorPos.Y - gridPos.Y) <= 40 and math.abs(doorPos.X - gridPos.X) <= 80 then
                                     doorNearby = true
                                     break
@@ -1079,9 +1085,9 @@ StageAPI.AddCallback("StageAPI", "PRE_SPAWN_GRID", 0, function(gridEntry, gridIn
                     if not doorNearby then
                         gridType = GridEntityType.GRID_ROCK_BOMB
                     end
-            
-                elseif roll <= 1 and StageAPI.TryCheckAchievement(612) and not StageAPI.SpawnedFoolsGoldVein then --Fool's Gold Rocks 
-                    gridType = GridEntityType.GRID_ROCK_GOLD 
+
+                elseif roll <= 1 and StageAPI.TryCheckAchievement(612) and not StageAPI.SpawnedFoolsGoldVein then --Fool's Gold Rocks
+                    gridType = GridEntityType.GRID_ROCK_GOLD
                     StageAPI.FoolsGoldReplacements[gridEntry.Index] = StageAPI.Random(2, 4, rng)
                     StageAPI.SpawnedFoolsGoldVein = true
                 end
@@ -1143,7 +1149,7 @@ function StageAPI.LoadRoomLayout(grids, entities, doGrids, doEntities, doPersist
     if grids then
         StageAPI.FoolsGoldReplacements = {}
         grids_spawned, minecart_points = StageAPI.LoadGridsFromDataList(grids, gridData, entities, not doGrids)
-        
+
         if shared.Room:IsFirstVisit() then
             for index, veinsize in pairs(StageAPI.FoolsGoldReplacements) do --Fool's Gold vein spawning
                 local currentIndex = index
@@ -1371,7 +1377,7 @@ function StageAPI.IsDoorSlotAllowed(slot)
             if door.Slot == slot and door.Exists then
                 return true
             end
-        end        
+        end
         return false
     else
         return shared.Room:IsDoorSlotAllowed(slot)
