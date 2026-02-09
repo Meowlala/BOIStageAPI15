@@ -152,6 +152,7 @@ function StageAPI.LevelRoom:Init(args, ...)
         self.ExtraSpawn = {}
         self.PersistenceData = {}
         self.FirstLoad = true
+        self.WasClearLastTime = nil
 
         for _, v in ipairs(levelRoomCopyFromArgs) do
             if args[v] ~= nil then
@@ -166,7 +167,8 @@ function StageAPI.LevelRoom:Init(args, ...)
         self.AwardSeed = self.AwardSeed or (roomDesc and roomDesc.AwardSeed) or Random()
         self.SurpriseMiniboss = self.SurpriseMiniboss or (roomDesc and roomDesc.SurpriseMiniboss) or false
         self.Doors = self.Doors or (roomDesc and StageAPI.GetDoorsForRoomFromData(roomDesc.Data)) or StageAPI.Copy(StageAPI.AllDoorsOpen)
-        self.VisitCount = self.VisitCount or (roomDesc and roomDesc.VisitedCount) or 0
+        self.VisitCount = self.VisitCount or (roomDesc and (roomDesc.VisitedCount - 1)) or 0 
+        -- Visit Count is set to 1 at beginning and then added to anyways, subtracting 1 to synchronize it with Vanilla room VisitedCount
         self.ClearCount = self.ClearCount or (roomDesc and roomDesc.ClearCount) or 0
 
         self.Dimension = self.Dimension or StageAPI.GetDimension(roomDesc)
@@ -618,6 +620,19 @@ function StageAPI.LevelRoom:Load(isExtraRoom, noIncrementVisit, clearNPCsOnly)
         self.VisitCount = self.VisitCount + 1
     end
 
+    local roomDesc = shared.Level:GetCurrentRoomDesc()
+    -- Glowing Hourglass / Rewind was used
+    if roomDesc.VisitedCount < self.VisitCount then
+        print('room thinks glowing hourglass was used', "respawn entities?:", self.WasClearLastTime)
+        self.FirstLoad = roomDesc.VisitedCount <= 1 -- Ensure room is generated if it hasn't been visited prior (fixes issues with room now spawning)
+        local forceUnclear = (not self.WasClearLastTime) or false
+        if forceUnclear then
+            self.WasClearAtStart = self.WasClearLastTime
+            self.IsClear = self.WasClearLastTime
+        end
+        self.VisitCount = roomDesc.VisitedCount -- Re-synchronize visitation count
+    end
+
     local wasFirstLoad = self.FirstLoad
     StageAPI.ClearRoomLayout(false, self.FirstLoad or isExtraRoom, true, self.FirstLoad or isExtraRoom, self.GridTakenIndices, nil, nil, not self.FirstLoad, clearNPCsOnly)
     if self.FirstLoad then
@@ -630,6 +645,7 @@ function StageAPI.LevelRoom:Load(isExtraRoom, noIncrementVisit, clearNPCsOnly)
         StageAPI.LoadRoomLayout(self.SpawnGrids, {self.SpawnEntities, self.ExtraSpawn}, isExtraRoom, true, self.IsClear, isExtraRoom, self.GridInformation, self.AvoidSpawning, self.PersistenceData)
         self.IsClear = shared.Room:IsClear()
     end
+    self.WasClearLastTime = self.IsClear
 
     StageAPI.CalledRoomUpdate = true
     shared.Room:Update()
@@ -654,7 +670,7 @@ function StageAPI.LevelRoom:Save()
 end
 
 local saveDataCopyDirectly = {
-    "IsClear","WasClearAtStart","RoomsListName","RoomsListID","LayoutName","SpawnSeed","AwardSeed","DecorationSeed",
+    "IsClear","WasClearAtStart","WasClearLastTime","RoomsListName","RoomsListID","LayoutName","SpawnSeed","AwardSeed","DecorationSeed",
     "FirstLoad","Shape","RoomType","TypeOverride","PersistentData","IsExtraRoom","LastPersistentIndex",
     "RequireRoomType", "IgnoreRoomRules", "VisitCount", "ClearCount", "LevelIndex","HasWaterPits","ChallengeDone",
     "SurpriseMiniboss", "FromData", "Dimension", "NoChampions",
