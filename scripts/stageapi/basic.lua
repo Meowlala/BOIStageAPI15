@@ -279,7 +279,16 @@ function StageAPI.GetPlayers()
     return players
 end
 
-mod:AddPriorityCallback(ModCallbacks.MC_POST_NEW_ROOM, CallbackPriority.IMPORTANT, function()
-    shared.Level = shared.Game:GetLevel()
-    shared.Room = shared.Game:GetRoom()
-end)
+if REPENTOGON then 
+    mod:AddPriorityCallback(ModCallbacks.MC_PRE_NEW_ROOM, CallbackPriority.IMPORTANT, function(_, room, roomDesc)
+        shared.Room = room
+    end)
+    mod:AddPriorityCallback(ModCallbacks.MC_POST_NEW_ROOM, CallbackPriority.IMPORTANT, function()
+        shared.Level = shared.Game:GetLevel()
+    end)
+else
+    mod:AddPriorityCallback(ModCallbacks.MC_POST_NEW_ROOM, CallbackPriority.IMPORTANT, function()
+        shared.Level = shared.Game:GetLevel()
+        shared.Room = shared.Game:GetRoom()
+    end)
+end

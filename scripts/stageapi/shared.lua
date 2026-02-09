@@ -8,9 +8,9 @@ sharedVars.Music = MusicManager()
 sharedVars.ItemConfig = Isaac.GetItemConfig()
  -- for autocomplete, set by basic.lua
 ---@type Room
-sharedVars.Room = room
+sharedVars.Room = nil
 ---@type Level
-sharedVars.Level = level
+sharedVars.Level = nil
 if false then -- for vscode autocompletion, do not actually run as it gets metatable'd, see after
     ---@type EntityPlayer[]
     sharedVars.Players = {}
