@@ -234,10 +234,6 @@ function StageAPI.LoadSaveString(str)
     for _, levelMapSaveData in ipairs(decoded.LevelMaps) do
         StageAPI.LevelMapsToLoad[#StageAPI.LevelMapsToLoad+1] = levelMapSaveData
     end
-    --StageAPI.LevelMaps = {}
-    --for _, levelMapSaveData in ipairs(decoded.LevelMaps) do
-    --    StageAPI.LevelMap({SaveData = levelMapSaveData})
-    --end
 
     StageAPI.CurrentLevelMapID = decoded.CurrentLevelMapID
     StageAPI.DefaultLevelMapID = decoded.DefaultLevelMapID
