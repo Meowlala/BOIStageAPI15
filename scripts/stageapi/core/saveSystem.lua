@@ -230,10 +230,14 @@ function StageAPI.LoadSaveString(str)
         end
     end
 
-    StageAPI.LevelMaps = {}
+    StageAPI.LevelMapsToLoad = {}
     for _, levelMapSaveData in ipairs(decoded.LevelMaps) do
-        StageAPI.LevelMap({SaveData = levelMapSaveData})
+        StageAPI.LevelMapsToLoad[#StageAPI.LevelMapsToLoad+1] = levelMapSaveData
     end
+    --StageAPI.LevelMaps = {}
+    --for _, levelMapSaveData in ipairs(decoded.LevelMaps) do
+    --    StageAPI.LevelMap({SaveData = levelMapSaveData})
+    --end
 
     StageAPI.CurrentLevelMapID = decoded.CurrentLevelMapID
     StageAPI.DefaultLevelMapID = decoded.DefaultLevelMapID
@@ -468,10 +472,15 @@ local function NewLevelLoad()
         StageAPI.RoomsToLoad[i] = nil
     end
 
+    for i = #StageAPI.LevelMapsToLoad, 1, -1 do
+        StageAPI.LevelMap({SaveData = StageAPI.LevelMapsToLoad[i]})
+        StageAPI.LevelMapsToLoad[i] = nil
+    end
+
     StageAPI.SaveModData()
 end
 
-mod:AddCallback(ModCallbacks.MC_POST_NEW_LEVEL, NewLevelLoad)
+mod:AddPriorityCallback(ModCallbacks.MC_POST_NEW_ROOM, CallbackPriority.IMPORTANT, NewLevelLoad)
 mod:AddCallback(ModCallbacks.MC_POST_GAME_STARTED, function (_, isContinued)
     -- Needs to trigger also when loading a level
     if isContinued then
