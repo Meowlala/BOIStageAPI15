@@ -8,6 +8,7 @@ StageAPI.LogMinor("Loading Save System")
 
 StageAPI.SaveDataLoaded = false
 StageAPI.RoomsToLoad = {}
+StageAPI.LevelMapsToLoad = {}
 
 function StageAPI.TryLoadModData(continued)
     if Isaac.HasModData(mod) and continued then
