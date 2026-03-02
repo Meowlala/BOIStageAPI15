@@ -423,6 +423,12 @@ local LockedEntities = {
     },
 
     [EntityType.ENTITY_SLOT] = {
+        -- Hell Game
+        [15] = {
+            Replacement = {EntityType.ENTITY_SLOT, 5, 0}, -- Devil Beggar
+            Achievement = 608, -- Hell Game
+        },
+
         -- Crane Game
         [16] = {
             Replacement = {EntityType.ENTITY_SLOT, 1, 0}, -- Slot Machine
@@ -433,6 +439,12 @@ local LockedEntities = {
         [17] = {
             Replacement = {EntityType.ENTITY_PICKUP, PickupVariant.PICKUP_HEART, HeartSubType.HEART_SOUL}, -- Yes this is accurate
             Achievement = 616, -- Confessional
+        },
+
+        -- Rotten Beggar
+        [18] = {
+            Replacement = {EntityType.ENTITY_SLOT, 7, 0}, -- Key Master
+            Achievement = 614, -- Rotten Beggar
         },
     },
 
