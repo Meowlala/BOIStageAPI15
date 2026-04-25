@@ -1206,8 +1206,10 @@ function StageAPI.GetCurrentRoomID()
     local levelMap = StageAPI.GetCurrentLevelMap()
     if levelMap and StageAPI.CurrentLevelMapRoomID then
         return levelMap:GetRoomData(StageAPI.CurrentLevelMapRoomID).RoomID
-    else
+    elseif shared.Level then
         return StageAPI.GetCurrentListIndex()
+    else -- level not init (early-triggering repentogon callbacks)
+        error("StageAPI: tried accessing room ID before level init", 2)
     end
 end
 
@@ -1318,6 +1320,10 @@ function StageAPI.SetCurrentRoom(room)
 end
 
 function StageAPI.GetCurrentRoom()
+    -- level not init (early repentogon callbacks)
+    if not shared.Level then
+        return nil
+    end
     return StageAPI.GetLevelRoom(StageAPI.GetCurrentRoomID())
 end
 
