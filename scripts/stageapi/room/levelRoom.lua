@@ -126,6 +126,7 @@ end
 ---@field JustCleared boolean
 ---@field IsPersistentRoom boolean
 ---@field Layout RoomLayout
+---@field BossDropFrame integer #The room frame the boss dropped its item on, or -1 if not dropped yet. Only set in Repentance+
 StageAPI.LevelRoom = StageAPI.Class("LevelRoom")
 StageAPI.NextUniqueRoomIdentifier = 0
 function StageAPI.LevelRoom:Init(args, ...)
@@ -168,6 +169,7 @@ function StageAPI.LevelRoom:Init(args, ...)
         self.Doors = self.Doors or (roomDesc and StageAPI.GetDoorsForRoomFromData(roomDesc.Data)) or StageAPI.Copy(StageAPI.AllDoorsOpen)
         self.VisitCount = self.VisitCount or (roomDesc and roomDesc.VisitedCount) or 0
         self.ClearCount = self.ClearCount or (roomDesc and roomDesc.ClearCount) or 0
+        self.BossDropFrame = -1
 
         self.Dimension = self.Dimension or StageAPI.GetDimension(roomDesc)
 
@@ -657,7 +659,7 @@ local saveDataCopyDirectly = {
     "IsClear","WasClearAtStart","RoomsListName","RoomsListID","LayoutName","SpawnSeed","AwardSeed","DecorationSeed",
     "FirstLoad","Shape","RoomType","TypeOverride","PersistentData","IsExtraRoom","LastPersistentIndex",
     "RequireRoomType", "IgnoreRoomRules", "VisitCount", "ClearCount", "LevelIndex","HasWaterPits","ChallengeDone",
-    "SurpriseMiniboss", "FromData", "Dimension", "NoChampions",
+    "SurpriseMiniboss", "FromData", "Dimension", "NoChampions", "BossDropFrame",
 }
 
 function StageAPI.LevelRoom:GetSaveData(isExtraRoom)
