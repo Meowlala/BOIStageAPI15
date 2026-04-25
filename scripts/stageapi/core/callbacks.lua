@@ -1656,7 +1656,7 @@ mod:AddCallback(ModCallbacks.MC_POST_PICKUP_UPDATE, function (_, pickup)
                 rng:SetSeed(currentRoom.AwardSeed, 35)
 
                 -- Check if stageapi should spawn a drop
-                local DROP_CHANCE = 1
+                local DROP_CHANCE = 0.01
                 if rng:RandomFloat() < DROP_CHANCE then
                     local dropToSpawn = bossData.ThemedItem or bossData.ThemedTrinket
                     local isTrinket = not bossData.ThemedItem
