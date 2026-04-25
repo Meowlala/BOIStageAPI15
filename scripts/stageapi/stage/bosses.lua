@@ -517,6 +517,8 @@ end)
 ---@field Rooms RoomsList
 ---@field Shapes RoomShape[]
 ---@field BaseGameBoss boolean
+---@field ThemedItem number? Themed item drop (Repentance+ feature). Leave nil for no drop
+---@field ThemedTrinket number? Themed trinket drop (Repentance+ feature). Leave nil for no drop, ThemedItem takes priority.
 
 ---@type table<string, BossData>
 StageAPI.Bosses = {}

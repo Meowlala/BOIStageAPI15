@@ -1561,6 +1561,204 @@ if REPENTOGON then
     end)
 end
 
+--#region Themed boss drops
+if REPENTANCE_PLUS then
+
+local function getBossDropPosition(idx, amount)
+    local room = shared.Game:GetRoom()
+
+    local NORMAL_IDX = 97
+
+    local startPos
+    if amount == 3 then
+        if idx == 1 then
+            startPos = room:GetGridPosition(95)
+        elseif idx == 2 then
+            startPos = room:GetGridPosition(NORMAL_IDX)
+        else
+            startPos = room:GetGridPosition(99)
+        end
+    elseif amount == 2 then
+        if idx == 1 then
+            startPos = room:GetGridPosition(96)
+        else
+            startPos = room:GetGridPosition(98)
+        end
+    else
+        startPos = room:GetGridPosition(NORMAL_IDX)
+    end
+
+    return room:FindFreeTilePosition(startPos, 0)
+end
+
+local BOSS_ITEM_OPTIONS_IDX = 3
+local repositionBossItems, bossItemsToPosition = false, 0
+local customThemedDropToSpawn = {}
+local skipRemainingDrops = false
+
+-- Handle themed boss drops
+---@param pickup EntityPickup
+mod:AddCallback(ModCallbacks.MC_POST_PICKUP_UPDATE, function (_, pickup)
+    -- Don't let this trigger on room enter, game continue, more than once, or for non trinkets/collectibles
+    local room = shared.Game:GetRoom()
+    local frame = room:GetFrameCount()
+    local currentRoom = StageAPI.GetCurrentRoom()
+    if (
+        pickup.FrameCount ~= 1
+        or room:GetFrameCount() == 0
+        or (currentRoom and currentRoom.BossDropFrame > frame)
+    ) then
+        return
+    end
+
+    -- If we're currently in a StageAPI boss room
+    if currentRoom and currentRoom.RoomType == RoomType.ROOM_BOSS and room:IsClear() then
+        local data = pickup:GetData()
+        if data.StageAPIDontCheckThemedDrop then
+            return
+        end
+
+        -- Check to see if a stageapi themed drop should spawn
+        local persistentData = currentRoom.PersistentData
+        local bossId = persistentData.BossID
+
+
+        if not skipRemainingDrops and (pickup.OptionsPickupIndex == BOSS_ITEM_OPTIONS_IDX or pickup.Variant == PickupVariant.PICKUP_TRINKET) then
+            -- Check our room's subtype and get what the ORIGINAL themed drop will be (IF IT EXISTS)
+            local level = shared.Game:GetLevel()
+            local roomSub = level:GetCurrentRoomDesc().Data.Subtype
+            if StageAPI.IsThemedBossDrop(pickup.Variant, pickup.SubType, roomSub) then
+                -- Remove the poof
+                for _, poof in ipairs(Isaac.FindByType(EntityType.ENTITY_EFFECT, EffectVariant.POOF01, 0)) do
+                    if poof.Position:Distance(pickup.Position) < 20 then
+                        poof:Remove()
+                    end
+                end
+
+                -- Kill the item.
+                pickup:Remove()
+
+                -- Don't let other items get removed on the incredibly low chance there are two of the same item
+                skipRemainingDrops = true
+
+                -- Queue all drops to be positioned on the next frame
+                repositionBossItems = true
+            end
+
+        end
+
+        -- Only run this check once
+        if bossId and currentRoom.BossDropFrame == -1 then
+            local bossData = StageAPI.GetBossData(bossId)
+            if bossData.ThemedItem or bossData.ThemedTrinket then
+                -- Roll to see if we should spawn it
+                local rng = RNG()
+                rng:SetSeed(currentRoom.AwardSeed, 35)
+
+                -- Check if stageapi should spawn a drop
+                local DROP_CHANCE = 1
+                if rng:RandomFloat() < DROP_CHANCE then
+                    local dropToSpawn = bossData.ThemedItem or bossData.ThemedTrinket
+                    local isTrinket = not bossData.ThemedItem
+                    customThemedDropToSpawn = {dropToSpawn, isTrinket}
+
+                    -- Mark all new pickups as an options pickup
+                    for _, ent in ipairs(Isaac.FindByType(EntityType.ENTITY_PICKUP, PickupVariant.PICKUP_COLLECTIBLE)) do
+                        if ent.FrameCount == 1 then
+                            ent:ToPickup().OptionsPickupIndex = BOSS_ITEM_OPTIONS_IDX
+                        end
+                    end
+
+                    -- Queue all drops to be positioned on the next frame
+                    repositionBossItems = true
+                end
+            end
+
+            -- We have our boss drop
+            -- Set the boss drop frame and handle the item pedestal
+            currentRoom.BossDropFrame = frame
+        end
+
+    end
+end)
+
+mod:AddCallback(ModCallbacks.MC_POST_UPDATE, function ()
+    -- Reset this (happens after pickup updates are all done)
+    skipRemainingDrops = false
+
+    -- Spawn custom boss drops
+    local toPosition = bossItemsToPosition
+    local themedTrinket
+    if #customThemedDropToSpawn > 0 then
+        local dropToSpawn, isTrinket = table.unpack(customThemedDropToSpawn)
+        if isTrinket then
+            themedTrinket = Isaac.Spawn(EntityType.ENTITY_PICKUP, PickupVariant.PICKUP_TRINKET, dropToSpawn, Vector.Zero, Vector.Zero, nil)
+        else
+            local item = Isaac.Spawn(EntityType.ENTITY_PICKUP, PickupVariant.PICKUP_COLLECTIBLE, dropToSpawn, Vector.Zero, Vector.Zero, nil):ToPickup()
+            item.OptionsPickupIndex = BOSS_ITEM_OPTIONS_IDX
+
+            -- Mark it to not trigger the effect
+            item:GetData().StageAPIDontCheckThemedDrop = true
+        end
+
+        customThemedDropToSpawn = {}
+    end
+
+
+    -- Reposition the items in the room
+    if repositionBossItems then
+        local collectibles = Isaac.FindByType(EntityType.ENTITY_PICKUP, PickupVariant.PICKUP_COLLECTIBLE)
+
+        if themedTrinket then
+            toPosition = toPosition + 1
+        end
+
+        -- Get the total amount to position
+        for _, ent in ipairs(collectibles) do
+            local pickup = ent:ToPickup()
+            if pickup and pickup.OptionsPickupIndex == BOSS_ITEM_OPTIONS_IDX then
+                toPosition = toPosition + 1
+
+                -- Remove any poofs
+                for _, poof in ipairs(Isaac.FindByType(EntityType.ENTITY_EFFECT, EffectVariant.POOF01, 0)) do
+                    if poof.Position:Distance(pickup.Position) < 20 then
+                        poof:Remove()
+                    end
+                end
+            end
+        end
+
+        -- Position using total
+        local index = 0
+        for _, ent in ipairs(collectibles) do
+            local pickup = ent:ToPickup()
+            if pickup and pickup.OptionsPickupIndex == BOSS_ITEM_OPTIONS_IDX then
+                index = index + 1
+
+                local newPosition = getBossDropPosition(index, toPosition)
+                ent.TargetPosition = newPosition
+
+                -- Spawn new poofs
+                Isaac.Spawn(EntityType.ENTITY_EFFECT, EffectVariant.POOF01, 0, newPosition, Vector.Zero, pickup)
+            end
+        end
+
+        -- Also move trinket if necessary
+        if themedTrinket then
+            local newPosition = getBossDropPosition(toPosition, toPosition)
+            themedTrinket.Position = newPosition
+
+            -- Spawn new poofs
+            Isaac.Spawn(EntityType.ENTITY_EFFECT, EffectVariant.POOF01, 0, newPosition, Vector.Zero, themedTrinket)
+        end
+
+        repositionBossItems = false
+        bossItemsToPosition = 0
+    end
+end)
+
+end
+
 --#region MemberCard
 
 local SECRET_SHOP_LADDER_VARIANT = 2
