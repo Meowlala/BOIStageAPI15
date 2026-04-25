@@ -24,11 +24,7 @@ StageAPI.AddCallback("StageAPI", Callbacks.POST_HUD_RENDER, 0, function(isPauseM
 end)
 ]]
 
-if not REPENTOGON then
-    mod:AddCallback(ModCallbacks.MC_GET_SHADER_PARAMS, hudRendering_GetShaderParams)
-else
-    -- Technically doesn't matter since shader is already being run and is just simple passthrough, but I figured it'd be neat
-    mod:AddCallback(ModCallbacks.MC_POST_HUD_RENDER, function(_) 
-        hudRendering_GetShaderParams(_, SHADER_NAME)
-    end)
-end
+-- At some point this was changed to use REPENTOGON's "POST_HUD_RENDER" if detected.
+-- Do not do that! That runs before this callback, and runs behind certain UI elements such as the game over screen.
+-- Certain mods relied on the inherent lateness of this method, so it must remain.
+mod:AddCallback(ModCallbacks.MC_GET_SHADER_PARAMS, hudRendering_GetShaderParams)
