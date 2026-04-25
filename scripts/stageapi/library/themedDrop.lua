@@ -107,7 +107,27 @@ local ThemedDrops = {
 	-- Cadavra
 }
 
--- Check if the given pickup is a themed drop for the current room
+local WormTrinkets = {
+    TrinketType.TRINKET_PULSE_WORM,
+    TrinketType.TRINKET_RING_WORM,
+    TrinketType.TRINKET_TAPE_WORM,
+    TrinketType.TRINKET_WHIP_WORM,
+    TrinketType.TRINKET_WIGGLE_WORM,
+    TrinketType.TRINKET_FLAT_WORM,
+    TrinketType.TRINKET_HOOK_WORM,
+    TrinketType.TRINKET_LAZY_WORM,
+    TrinketType.TRINKET_OUROBOROS_WORM,
+    TrinketType.TRINKET_BRAIN_WORM,
+    TrinketType.TRINKET_RAINBOW_WORM,
+}
+
+-- Register worm trinkets for 1% themed drops
+-- Does NOT make it spawn from non-stageapi themed boss drops
+function StageAPI.RegisterWormTrinket(trinketId)
+    table.insert(WormTrinkets, trinketId)
+end
+
+-- Check if the given pickup is a VANILLA themed drop for the given vanilla boss
 function StageAPI.IsThemedBossDrop(variant, subType, roomSubType)
 	local entry = ThemedDrops[roomSubType]
 
@@ -116,6 +136,16 @@ function StageAPI.IsThemedBossDrop(variant, subType, roomSubType)
 
 		if (variant == PickupVariant.PICKUP_COLLECTIBLE and not isTrinket)
 		or (variant == PickupVariant.PICKUP_TRINKET 	   and 	   isTrinket) then
+            if isTrinket and entry[1] == -1 then
+                for _, worm in ipairs(WormTrinkets) do
+                    if subType == worm then
+                        return true
+                    end
+                end
+
+                return false
+            end
+
 			return subType == entry[1]
 		end
 	end
