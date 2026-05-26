@@ -44,7 +44,12 @@ mod:AddCallback(ModCallbacks.MC_PRE_ENTITY_SPAWN, function(_, id, variant, subty
     local customGrid = StageAPI.GetCustomGrid(grindex)
     local shouldOverride
 
-    if customGrid and customGrid.DestroyedFrame and shared.Game:GetFrameCount() > customGrid.DestroyedFrame then
+    if (
+        customGrid
+        and customGrid.PersistentData
+        and customGrid.PersistentData.DestroyedFrame
+        and shared.Game:GetFrameCount() > customGrid.PersistentData.DestroyedFrame
+    ) then
         return
     end
 
