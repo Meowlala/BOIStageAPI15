@@ -299,6 +299,7 @@ function StageAPI.CustomGridEntity:Update()
 
         if not self.PersistentData.Destroyed then
             self.PersistentData.Destroyed = true
+            self.DestroyedFrame = shared.Game:GetFrameCount()
             StageAPI.TemporaryIgnoreSpawnOverride = true
             self:CallCallbacks(Callbacks.POST_CUSTOM_GRID_DESTROY)
             StageAPI.TemporaryIgnoreSpawnOverride = false
@@ -365,6 +366,7 @@ function StageAPI.CustomGridEntity:Update()
                             return
                         elseif self.GridEntity.State == StageAPI.DefaultBrokenGridStateByType[self.GridConfig.BaseType] and not self.PersistentData.Destroyed then
                             self.PersistentData.Destroyed = true
+                            self.DestroyedFrame = shared.Game:GetFrameCount()
                             StageAPI.TemporaryIgnoreSpawnOverride = true
                             self:CallCallbacks(Callbacks.POST_CUSTOM_GRID_DESTROY)
                             StageAPI.TemporaryIgnoreSpawnOverride = false
@@ -402,6 +404,7 @@ function StageAPI.CustomGridEntity:UpdateProjectile(projectile)
     self:CallCallbacks(Callbacks.POST_CUSTOM_GRID_PROJECTILE_UPDATE, projectile)
     if self.Projectile:IsDead() and not self.PersistentData.Destroyed then
         self.PersistentData.Destroyed = true
+        self.DestroyedFrame = shared.Game:GetFrameCount()
         self:CallCallbacks(Callbacks.POST_CUSTOM_GRID_DESTROY, projectile)
     end
 

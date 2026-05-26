@@ -44,6 +44,10 @@ mod:AddCallback(ModCallbacks.MC_PRE_ENTITY_SPAWN, function(_, id, variant, subty
     local customGrid = StageAPI.GetCustomGrid(grindex)
     local shouldOverride
 
+    if customGrid and customGrid.DestroyedFrame and shared.Game:GetFrameCount() > customGrid.DestroyedFrame then
+        return
+    end
+
     if customGrid and customGrid.GridConfig.OverrideGridSpawns and customGrid.GridEntity and not customGrid.CheckedForOverride then
         local breakstate = customGrid.GridConfig.OverrideGridSpawnsState or StageAPI.DefaultBrokenGridStateByType[customGrid.GridConfig.BaseType]
         if customGrid.GridEntity.State == breakstate then
