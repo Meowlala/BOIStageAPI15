@@ -106,6 +106,25 @@ function StageAPI.PreloadGotoRooms(roomTypes, roomShapes)
         end
 
         for _, roomShape in ipairs(roomShapes) do
+            if REPENTOGON and RoomConfig then
+                local stbType = roomType == RoomType.ROOM_DEFAULT and StbType.BASEMENT or StbType.SPECIAL_ROOMS
+                local shapeData = StageAPI.RoomShapeToGotoData[roomShape]
+
+                local ID = math.tointeger(shapeData.ID)
+                if ID then
+                    local room = RoomConfig.GetRoomByStageTypeAndVariant(stbType, roomType, ID, 0)
+                    if room then
+                        shapes[roomShape] = true
+                        shapeData.Data[roomType] = room
+                    end
+                end
+
+                local lockedID = math.tointeger(shapeData.Locked)
+                if lockedID then
+                    shapeData.LockedData[roomType] = RoomConfig.GetRoomByStageTypeAndVariant(stbType, roomType, ID, 0) or {}
+                end
+            end
+
             if not shapes[roomShape] then
                 shapes[roomShape] = false
             end
