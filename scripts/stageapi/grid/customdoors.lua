@@ -254,7 +254,7 @@ function StageAPI.GetCustomDoorAtSlot(slot, doorDataName)
 
     for _, door in ipairs(doors) do
         if door.PersistentData.Slot == slot
-        (not doorDataName or door.PersistentData.DoorDataName == doorDataName) 
+        and (not doorDataName or door.PersistentData.DoorDataName == doorDataName) 
         then
             return door
         end
