@@ -664,7 +664,7 @@ local saveDataCopyDirectly = {
     "IsClear","WasClearAtStart","RoomsListName","RoomsListID","LayoutName","SpawnSeed","AwardSeed","DecorationSeed",
     "FirstLoad","Shape","RoomType","TypeOverride","PersistentData","IsExtraRoom","LastPersistentIndex",
     "RequireRoomType", "IgnoreRoomRules", "VisitCount", "ClearCount", "LevelIndex","HasWaterPits","ChallengeDone",
-    "SurpriseMiniboss", "FromData", "Dimension", "NoChampions", "BossDropFrame",
+    "SurpriseMiniboss", "FromData", "Dimension", "NoChampions", "BossDropFrame", "IgnoreShape", "IgnoreDoors",
 }
 
 function StageAPI.LevelRoom:GetSaveData(isExtraRoom)
