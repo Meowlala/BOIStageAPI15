@@ -425,7 +425,11 @@ function StageAPI.LevelRoom:PostGetLayout(seed)
         end
 
         self.Layout = StageAPI.CreateEmptyRoomLayout(self.Shape)
-        StageAPI.LogErr("No layout!")
+        StageAPI.LogErr("No layout! ("
+            .. "Dimension: " .. (self.Dimension or "nil") .. ", "
+            .. "LevelIndex: " .. (self.LevelIndex or "nil") .. ", "
+            .. "RoomsListName: " .. (self.RoomsListName or "nil") .. ", "
+            .. "RoomsListID: " .. (self.RoomsListID or "nil") .. ")")
     end
 
     StageAPI.LogMinor("Initialized room " .. tostring(self.Layout.Name) .. "." .. tostring(self.Layout.Variant) .. " from file " .. tostring(self.Layout.RoomFilename)
