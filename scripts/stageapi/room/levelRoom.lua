@@ -386,7 +386,8 @@ function StageAPI.LevelRoom:GetLayout()
             else
                 local requireSubtype, forceRequiredSubtype = GetRequiredLevelRoomSubtype(self)
                 local minDifficulty, maxDifficulty = GetDifficultyRange(self)
-                self.Layout = StageAPI.ChooseRoomLayout{
+
+                self.Layout, self.RoomsListID = StageAPI.ChooseRoomLayout{
                     RoomList = roomsList,
                     Seed = self.SpawnSeed,
                     IgnoreShape = self.IgnoreShape,
