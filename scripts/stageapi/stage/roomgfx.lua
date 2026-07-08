@@ -154,8 +154,12 @@ end
 
 function StageAPI.ChangeBackdrop(backdrop, justWalls, storeBackdropEnts)
     if type(backdrop) == "number" then
-        shared.Game:ShowHallucination(0, backdrop)
-        shared.Sfx:Stop(SoundEffect.SOUND_DEATH_CARD)
+        if REPENTOGON then
+            shared.Room:SetBackdropType(backdrop, 1)
+        else
+            shared.Game:ShowHallucination(0, backdrop)
+            shared.Sfx:Stop(SoundEffect.SOUND_DEATH_CARD)
+        end
 
         return
     end
