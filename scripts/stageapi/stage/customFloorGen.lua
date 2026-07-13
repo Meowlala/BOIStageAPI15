@@ -119,7 +119,9 @@ function StageAPI.LevelMap:AddRoom(levelRoom, roomData, noUpdateDoors)
         levelRoom = StageAPI.GetLevelRoom(roomData.RoomID, self.Dimension)
     end
 
-    roomData.Shape = levelRoom.Shape
+    if not roomData.Shape then
+        roomData.Shape = levelRoom and levelRoom.Shape or RoomShape.ROOMSHAPE_1x1
+    end
 
     if roomData.X and roomData.Y then
         roomData.MapSegments = StageAPI.GetRoomMapSegments(roomData.X, roomData.Y, roomData.Shape)

@@ -386,7 +386,8 @@ function StageAPI.LevelRoom:GetLayout()
             else
                 local requireSubtype, forceRequiredSubtype = GetRequiredLevelRoomSubtype(self)
                 local minDifficulty, maxDifficulty = GetDifficultyRange(self)
-                self.Layout = StageAPI.ChooseRoomLayout{
+
+                self.Layout, self.RoomsListID = StageAPI.ChooseRoomLayout{
                     RoomList = roomsList,
                     Seed = self.SpawnSeed,
                     IgnoreShape = self.IgnoreShape,
@@ -425,7 +426,11 @@ function StageAPI.LevelRoom:PostGetLayout(seed)
         end
 
         self.Layout = StageAPI.CreateEmptyRoomLayout(self.Shape)
-        StageAPI.LogErr("No layout!")
+        StageAPI.LogErr("No layout! ("
+            .. "Dimension: " .. (self.Dimension or "nil") .. ", "
+            .. "LevelIndex: " .. (self.LevelIndex or "nil") .. ", "
+            .. "RoomsListName: " .. (self.RoomsListName or "nil") .. ", "
+            .. "RoomsListID: " .. (self.RoomsListID or "nil") .. ")")
     end
 
     StageAPI.LogMinor("Initialized room " .. tostring(self.Layout.Name) .. "." .. tostring(self.Layout.Variant) .. " from file " .. tostring(self.Layout.RoomFilename)
@@ -659,7 +664,7 @@ local saveDataCopyDirectly = {
     "IsClear","WasClearAtStart","RoomsListName","RoomsListID","LayoutName","SpawnSeed","AwardSeed","DecorationSeed",
     "FirstLoad","Shape","RoomType","TypeOverride","PersistentData","IsExtraRoom","LastPersistentIndex",
     "RequireRoomType", "IgnoreRoomRules", "VisitCount", "ClearCount", "LevelIndex","HasWaterPits","ChallengeDone",
-    "SurpriseMiniboss", "FromData", "Dimension", "NoChampions", "BossDropFrame",
+    "SurpriseMiniboss", "FromData", "Dimension", "NoChampions", "BossDropFrame", "IgnoreShape", "IgnoreDoors",
 }
 
 function StageAPI.LevelRoom:GetSaveData(isExtraRoom)

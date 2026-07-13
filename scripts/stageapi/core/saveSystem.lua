@@ -221,11 +221,17 @@ function StageAPI.LoadSaveString(str)
             retCustomGrids[dimension][lindex] = roomSaveData.CustomGrids
 
             if roomSaveData.Room then
-                StageAPI.RoomsToLoad[#StageAPI.RoomsToLoad+1] = {
-                    RoomSaveData = roomSaveData,
-                    Dimension = dimension,
-                    LIndex = lindex,
-                }
+                -- Defer loading rooms that require vanilla RoomDescriptor Data, as it is not available yet.
+                if roomSaveData.Room.FromData then
+                    StageAPI.RoomsToLoad[#StageAPI.RoomsToLoad+1] = {
+                        RoomSaveData = roomSaveData,
+                        Dimension = dimension,
+                        LIndex = lindex,
+                    }
+                else
+                    local customRoom = StageAPI.LevelRoom{FromSave = roomSaveData.Room}
+                    StageAPI.SetLevelRoom(customRoom, lindex, dimension)
+                end
             end
         end
     end

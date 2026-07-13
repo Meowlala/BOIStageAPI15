@@ -198,17 +198,18 @@ end
 function StageAPI.GetValidRoomsForLayout(args)
     local roomList = args.RoomList
     local roomDesc = args.RoomDescriptor or shared.Level:GetCurrentRoomDesc()
-    local shape = -1
+    local requestedShape = -1
     if not args.IgnoreShape then
-        shape = args.Shape or (roomDesc.Data and roomDesc.Data.Shape or shape)
+        requestedShape = args.Shape or (roomDesc.Data and roomDesc.Data.Shape or shape)
     end
+
+    local allowedRoomShapes = (requestedShape == -1) and roomList.Shapes or {requestedShape}
 
     local callbacks = StageAPI.GetCallbacks(Callbacks.POST_CHECK_VALID_ROOM)
     local validRooms = {}
     local validRoomWeights = 0
 
-    local possibleRooms = roomList:GetRooms(shape)
-    if not possibleRooms then
+    if requestedShape ~= -1 and not roomList:GetRooms(requestedShape) then
         return {}, nil, "No rooms for shape!"
     end
 
@@ -226,62 +227,62 @@ function StageAPI.GetValidRoomsForLayout(args)
     local mindiff = args.MinDifficulty
     local maxdiff = args.MaxDifficulty
 
-    for listID, layout in ipairs(possibleRooms) do
-        shape = layout.Shape
+    for _, shape in ipairs(allowedRoomShapes) do
+        for listID, layout in ipairs(roomList:GetRooms(shape) or {}) do
+            local isValid = true
 
-        local isValid = true
-
-        local numNonExistingDoors = 0
-        if requireRoomType and layout.Type ~= rtype then
-            isValid = false
-        elseif not ignoreDoors then
-            isValid, numNonExistingDoors = StageAPI.DoLayoutDoorsMatch(layout, doors)
-        end
-
-        if isValid and requireSubtype then
-            isValid = layout.SubType == requireSubtype
-        elseif isValid and mindiff and maxdiff then
-            isValid = (layout.Difficulty >= mindiff and layout.Difficulty <= maxdiff)
-        end
-
-        if isValid and disallowIDs then
-            for _, id in ipairs(disallowIDs) do
-                if layout.StageAPIID == id then
-                    isValid = false
-                    break
-                end
+            local numNonExistingDoors = 0
+            if requireRoomType and layout.Type ~= rtype then
+                isValid = false
+            elseif not ignoreDoors then
+                isValid, numNonExistingDoors = StageAPI.DoLayoutDoorsMatch(layout, doors)
             end
-        end
 
-        local weight = layout.Weight
-        if isValid then
-            for _, callback in ipairs(callbacks) do
-                local success, ret = StageAPI.TryCallback(callback,
-                        layout, roomList, seed, shape, rtype, requireRoomType)
-                if success then
-                    if ret == false then
+            if isValid and requireSubtype then
+                isValid = layout.SubType == requireSubtype
+            elseif isValid and mindiff and maxdiff then
+                isValid = (layout.Difficulty >= mindiff and layout.Difficulty <= maxdiff)
+            end
+
+            if isValid and disallowIDs then
+                for _, id in ipairs(disallowIDs) do
+                    if layout.StageAPIID == id then
                         isValid = false
                         break
-                    elseif type(ret) == "number" then
-                        weight = ret
                     end
                 end
             end
-        end
 
-        if isValid then
-            if StageAPI.CurrentlyInitializing and not StageAPI.CurrentlyInitializing.IsExtraRoom and rtype == RoomType.ROOM_DEFAULT then
-                local originalWeight = weight
-                weight = weight * 2 ^ numNonExistingDoors
-                if shape == RoomShape.ROOMSHAPE_1x1 and numNonExistingDoors > 0 then
-                    weight = weight + math.min(originalWeight * 4, 4)
+            local weight = layout.Weight
+            if isValid then
+                for _, callback in ipairs(callbacks) do
+                    local success, ret = StageAPI.TryCallback(callback,
+                            layout, roomList, seed, shape, rtype, requireRoomType)
+                    if success then
+                        if ret == false then
+                            isValid = false
+                            break
+                        elseif type(ret) == "number" then
+                            weight = ret
+                        end
+                    end
                 end
             end
-        end
 
-        if isValid then
-            validRooms[#validRooms + 1] = {{Layout = layout, ListID = listID}, weight}
-            validRoomWeights = validRoomWeights + weight
+            if isValid then
+                if StageAPI.CurrentlyInitializing and not StageAPI.CurrentlyInitializing.IsExtraRoom and rtype == RoomType.ROOM_DEFAULT then
+                    local originalWeight = weight
+                    weight = weight * 2 ^ numNonExistingDoors
+                    if shape == RoomShape.ROOMSHAPE_1x1 and numNonExistingDoors > 0 then
+                        weight = weight + math.min(originalWeight * 4, 4)
+                    end
+                end
+            end
+
+            if isValid then
+                validRooms[#validRooms + 1] = {{Layout = layout, ListID = listID}, weight}
+                validRoomWeights = validRoomWeights + weight
+            end
         end
     end
 
