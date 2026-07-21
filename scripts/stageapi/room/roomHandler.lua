@@ -100,7 +100,7 @@ end
 ---@param skipIndexedGrids? boolean
 ---@param doNPCsOnly? boolean
 function StageAPI.ClearRoomLayout(keepDecoration, doGrids, doEnts, doPersistentEnts, onlyRemoveTheseDecorations, doWalls, doDoors, skipIndexedGrids, doNPCsOnly)
-    if StageAPI.InOrTransitioningToExtraRoom() and shared.Room:GetType() ~= RoomType.ROOM_DUNGEON then
+    if StageAPI.InOrTransitioningToExtraRoom() then
         StageAPI.FixWalls()
     end
 
@@ -886,6 +886,17 @@ function StageAPI.LoadGridsFromDataList(grids, gridInformation, entities, railsO
 
     local iterList = gridInformation or grids
 
+    local insideRoomBoundary
+    if shared.Room:GetType() ~= RoomType.ROOM_DUNGEON then
+        insideRoomBoundary = function(gridpos)
+            return shared.Room:IsPositionInRoom(gridpos, 0)
+        end
+    else
+        insideRoomBoundary = function(gridpos)
+            return shared.Room:IsPositionInRoom(gridpos, -35)
+        end
+    end
+
     for index, gridData in pairs(iterList) do
         local shouldSpawn = true
         for _, callback in ipairs(callbacks) do
@@ -906,7 +917,7 @@ function StageAPI.LoadGridsFromDataList(grids, gridInformation, entities, railsO
         end
 
         local gridpos = shared.Room:GetGridPosition(index)
-        if shouldSpawn and shared.Room:IsPositionInRoom(gridpos, 0) then
+        if shouldSpawn and insideRoomBoundary(gridpos) then
             local existingGrid = shared.Room:GetGridEntity(index)
             if existingGrid then
                 if REPENTOGON then
@@ -1097,9 +1108,21 @@ end)
 ---@return table<integer, GridInformation>
 function StageAPI.GetGridInformation()
     local gridInformation = {}
+
+    local checkGrid
+    if shared.Room:GetType() ~= RoomType.ROOM_DUNGEON then
+        checkGrid = function(grid)
+            return grid and grid.Desc.Type ~= GridEntityType.GRID_DOOR and (grid.Desc.Type ~= GridEntityType.GRID_WALL or shared.Room:IsPositionInRoom(grid.Position, 0))
+        end
+    else
+        checkGrid = function(grid)
+            return grid and grid.Desc.Type ~= GridEntityType.GRID_DOOR
+        end
+    end
+
     for i = 0, shared.Room:GetGridSize() do
         local grid = shared.Room:GetGridEntity(i)
-        if grid and grid.Desc.Type ~= GridEntityType.GRID_DOOR and (grid.Desc.Type ~= GridEntityType.GRID_WALL or shared.Room:IsPositionInRoom(grid.Position, 0)) then
+        if checkGrid(grid) then
             gridInformation[i] = {
                 State = grid.State,
                 VarData = grid.VarData,
