@@ -968,6 +968,13 @@ mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, function()
 
     local setDefaultLevelMap
     if not StageAPI.TransitioningToExtraRoom then
+        if shared.Level:GetCurrentRoomIndex() == GridRooms.ROOM_DEBUG_IDX and shared.Room:IsFirstVisit() then
+            -- When a new room is loaded into the debug (goto) slot, clear any pre-existing custom grid data.
+            local lindex = StageAPI.GetCurrentRoomID()
+            local customGrids = StageAPI.GetTableIndexedByDimension(StageAPI.CustomGrids, true)
+            customGrids[lindex] = {}
+        end
+
         local reversedIntoExtraRoom
         if StageAPI.PreviousExtraRoomData
         and StageAPI.PreviousExtraRoomData.RoomIndex == shared.Level:GetCurrentRoomIndex() then
