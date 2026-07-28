@@ -625,6 +625,25 @@ function StageAPI.ExtraRoomTransition(levelMapRoomID, direction, transitionType,
         targetRoomDesc.Flags = setFlags
     end
 
+    if REPENTOGON then
+        -- Preemptively wipe out all of the vanilla save state data for the room.
+        targetRoomDesc:GetDecoSaveState():Clear()
+        targetRoomDesc:GetEntitiesSaveState():Clear()
+        -- Grid Entity save state is a fixed size, so we have to iterate over it.
+        -- Clearing the grid data in particular is important, since it prevents
+        -- issues such as the room bounds being recalculated using the wrong walls.
+        local gridSaveState = targetRoomDesc:GetGridEntitiesSaveState()
+        for i=0, #gridSaveState-1 do
+            local gridDesc = gridSaveState:Get(i)
+            gridDesc.Initialized = false
+            gridDesc.SpawnCount = 0
+            gridDesc.State = 0
+            gridDesc.Type = 0
+            gridDesc.Variant = 0
+            gridDesc.VarData = 0
+        end
+    end
+
     shared.Level.LeaveDoor = leaveDoor
     shared.Level.EnterDoor = enterDoor
 
