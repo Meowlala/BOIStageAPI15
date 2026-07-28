@@ -435,6 +435,13 @@ end
 StageAPI.IsOddRenderFrame = nil
 local menuConfirmTriggered
 mod:AddCallback(ModCallbacks.MC_POST_RENDER, function()
+    if REPENTOGON and StageAPI.RepentogonBossIntroBoss then
+        if not RoomTransition.IsRenderingBossIntro() then
+            StageAPI.RepentogonBossIntroBoss = nil
+        end
+        return
+    end
+
     StageAPI.IsOddRenderFrame = not StageAPI.IsOddRenderFrame
     local isPlaying = StageAPI.PlayingBossSprite and StageAPI.PlayingBossSprite:IsPlaying()
 
@@ -473,7 +480,7 @@ end)
 StageAPI.AddCallback("StageAPI", Callbacks.POST_HUD_RENDER, CallbackPriority.DEFAULT, function(isPauseMenuOpen, pauseMenuDarkPct)
     local isPlaying = StageAPI.PlayingBossSprite and StageAPI.PlayingBossSprite:IsPlaying()
 
-    if isPlaying then
+    if isPlaying and not StageAPI.RepentogonBossIntroBoss then
         local centerPos = StageAPI.GetScreenCenterPosition()
         --local layerRenderOrder = {0,1,2,3,14,9,13,4,5,6,7,8,10}       --ab+ classy vs screen's compability layer order
         local layerRenderOrder = {0,1,2,3,9,14,13,4,5,12,11,6,7,8,10}
@@ -519,6 +526,7 @@ end)
 ---@field BaseGameBoss boolean
 ---@field ThemedItem number? Themed item drop (Repentance+ feature). Leave nil for no drop
 ---@field ThemedTrinket number? Themed trinket drop (Repentance+ feature). Leave nil for no drop, ThemedItem takes priority.
+---@field UseRepentogonBossIntro boolean If true and REPENTOGON is enabled, uses a "real" boss intro cutscene instead of the reimplementation.
 
 ---@type table<string, BossData>
 StageAPI.Bosses = {}
@@ -541,6 +549,12 @@ function StageAPI.GetBossData(id)
 end
 
 function StageAPI.PlayBossAnimation(boss, unskippable)
+    if REPENTOGON and boss.UseRepentogonBossIntro then
+        StageAPI.RepentogonBossIntroBoss = boss
+        RoomTransition.StartBossIntro(BossType.MONSTRO)
+        return
+    end
+
     local bSpot, pSpot, bgColor, dirtColor = StageAPI.GetStageSpot()
     local gfxData = StageAPI.TryGetPlayerGraphicsInfo(shared.Players[1])
     StageAPI.PlayBossAnimationManual({
@@ -549,7 +563,7 @@ function StageAPI.PlayBossAnimation(boss, unskippable)
         BossName = boss.BossName or boss.Bossname,
         BossSpot = boss.Spot or bSpot,
         PlayerPortrait = gfxData.BossPortrait or gfxData.Portrait,
-	PlayerExtraPortrait = gfxData.ExtraPortrait,
+        PlayerExtraPortrait = gfxData.ExtraPortrait,
         PlayerName = gfxData.Name,
         PlayerSpot = pSpot,
         Unskippable = unskippable,
@@ -558,6 +572,68 @@ function StageAPI.PlayBossAnimation(boss, unskippable)
         DirtColor = dirtColor,
         NoShake = gfxData.NoShake
     })
+end
+
+if REPENTOGON then
+	mod:AddPriorityCallback(ModCallbacks.MC_POST_BOSS_INTRO_SHOW, CallbackPriority.IMPORTANT, function(_, bossid1, bossid2)
+		local boss = StageAPI.RepentogonBossIntroBoss
+		if boss then
+			local sprite = RoomTransition.GetVersusScreenSprite()
+
+			local originalAnim = sprite:GetAnimation()
+			local desiredAnim = (boss.PortraitTwo ~= nil) and "DoubleTrouble" or "Scene"
+			if originalAnim == "SceneCoop" or originalAnim == "DoubleTroubleCoop" then
+				desiredAnim = desiredAnim .. "Coop"
+			end
+			sprite:Play(desiredAnim, true)
+
+			local bSpot, pSpot, bgColor, dirtColor = StageAPI.GetStageSpot()
+
+			if boss.Portrait then
+				sprite:ReplaceSpritesheet(4, boss.Portrait)
+			end
+			if boss.PortraitTwo then
+				sprite:ReplaceSpritesheet(9, boss.PortraitTwo)
+			end
+			local bossname = boss.BossName or boss.Bossname
+			if bossname then
+				sprite:ReplaceSpritesheet(7, bossname)
+			end
+			local bossSpot = boss.Spot or bSpot
+			if bossSpot then
+				sprite:ReplaceSpritesheet(2, bossSpot)
+			end
+			if pSpot then
+				sprite:ReplaceSpritesheet(3, pSpot)
+				sprite:ReplaceSpritesheet(15, pSpot)
+				sprite:ReplaceSpritesheet(16, pSpot)
+				sprite:ReplaceSpritesheet(17, pSpot)
+			end
+			local bossPortraitLayer = sprite:GetLayer(4)
+			if bossPortraitLayer then
+				bossPortraitLayer:SetPos(boss.Offset or Vector.Zero)
+			end
+			local bossBgColor = boss.BackgroundColor or bgColor
+			if bossBgColor then
+				local bgLayer = sprite:GetLayer(0)
+				if bgLayer then
+					bgLayer:SetColor(bossBgColor)
+				end
+			end
+			if dirtColor then
+				local dirtLayer1 = sprite:GetLayer(13)
+				if dirtLayer1 then
+					dirtLayer1:SetColor(dirtColor)
+				end
+				local dirtLayer2 = sprite:GetLayer(14)
+				if dirtLayer2 then
+					dirtLayer2:SetColor(dirtColor)
+				end
+			end
+
+			sprite:LoadGraphics()
+		end
+	end)
 end
 
 local horsemanRoomSubtypes = {
