@@ -1469,8 +1469,16 @@ StageAPI.AddCallback("StageAPI", Callbacks.EARLY_NEW_ROOM, -1, function()
         StageAPI.LevelRooms = {}
     end
 
-    if not StageAPI.ShouldOverrideRoom() then
-        local roomDesc = shared.Level:GetCurrentRoomDesc()
+    if not StageAPI.TransitioningToExtraRoom and shared.Level:GetCurrentRoomIndex() == GridRooms.ROOM_DEBUG_IDX and shared.Room:IsFirstVisit() then
+        -- When a new room is loaded into the debug (goto) slot, delete any pre-existing LevelRoom
+        StageAPI.SetCurrentRoom(nil)
+    end
+
+    local roomDesc = shared.Level:GetCurrentRoomDesc()
+    if roomDesc.OverrideData then
+        -- Avoid overriding Greed rooms and such
+        StageAPI.SetCurrentRoom(nil)
+    elseif not StageAPI.ShouldOverrideRoom() then
         StageAPI.GenerateBaseRoom(roomDesc)
     end
 end)
