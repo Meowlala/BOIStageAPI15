@@ -44,20 +44,17 @@ mod:AddCallback(ModCallbacks.MC_POST_ENTITY_KILL, function(_, npc)
 
     local data = npc:GetData()
 
-    if not data.StageAPIEntityListIndex or data.StageAPISpawnedTaintedKeeperCoins then
+    if not data.StageAPIEntityListIndex or data.StageAPIHandledTaintedKeeperCoins then
         -- Only need to handle "room" entities spawned by StageAPI
         return
     end
 
-    data.StageAPISpawnedTaintedKeeperCoins = true
+    data.StageAPIHandledTaintedKeeperCoins = true
 
     local numCoins = StageAPI.GetNumTaintedKeeperCoinsToSpawn(npc)
-
-    if REPENTOGON and shared.Level:GetCurrentRoomDesc():GetTaintedKeeperCoinSpawns() < 10 then
-        numCoins = numCoins - 1 -- The game will spawn one coin
-    end
     local coinTimeout = npc:IsBoss() and 90 or 60
-    local rng = npc:GetDropRNG()
+    local rng = RNG()
+    rng:SetSeed(npc.InitSeed, 35)
 
     for i = 1, numCoins do
         local speed = (rng:RandomFloat() * 3.0) + 2.0
@@ -69,4 +66,24 @@ mod:AddCallback(ModCallbacks.MC_POST_ENTITY_KILL, function(_, npc)
             coin.Timeout = coinTimeout
         end
     end
+
+    data.StageAPIBlockSingleTaintedKeeperCoin = true
 end)
+
+mod:AddCallback(ModCallbacks.MC_POST_PICKUP_INIT, function(_, pickup)
+    local spawner = pickup.SpawnerEntity
+    if spawner and spawner:IsDead() and spawner:Exists() and spawner:ToNPC() then
+        local data = spawner:GetData()
+        if data.StageAPIBlockSingleTaintedKeeperCoin then
+            data.StageAPIBlockSingleTaintedKeeperCoin = nil
+            if REPENTOGON then
+                local roomDesc = shared.Level:GetCurrentRoomDesc()
+                local coinSpawns = roomDesc:GetTaintedKeeperCoinSpawns()
+                if coinSpawns > 0 then
+                    roomDesc:SetTaintedKeeperCoinSpawns(coinSpawns - 1)
+                end
+            end
+            pickup:Remove()
+        end
+    end
+end, PickupVariant.PICKUP_COIN)
