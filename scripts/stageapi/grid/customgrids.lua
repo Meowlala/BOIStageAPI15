@@ -28,6 +28,7 @@ StageAPI.CustomGridTypes = {}
 ---@field PoopGibAnm2 string
 ---@field PoopGibSheet string
 ---@field RemoveOnAnm2Change boolean
+---@field NoD12 boolean
 
 ---@param name string
 ---@param baseType? GridEntityType
@@ -810,3 +811,29 @@ mod:AddCallback(ModCallbacks.MC_PRE_ENTITY_SPAWN, function(_, id, variant, subty
         }
     end
 end)
+
+-- Make blacklisted custom grids not get rerolled by D12
+local tempCollisions = {}
+
+mod:AddPriorityCallback(ModCallbacks.MC_PRE_USE_ITEM, math.huge, function()
+    local roomGrids = StageAPI.GetCustomGrids()
+
+    for i, grid in pairs(roomGrids) do
+        if grid.GridConfig.NoD12 then
+            grid = grid.GridEntity
+
+            table.insert(tempCollisions, {
+                GridEntity = grid,
+                CollisionClass = grid.CollisionClass
+            })
+            grid.CollisionClass = GridCollisionClass.COLLISION_NONE
+        end
+    end
+end, CollectibleType.COLLECTIBLE_D12)
+
+mod:AddCallback(ModCallbacks.MC_USE_ITEM, function()
+    for i, grid in pairs(tempCollisions) do
+        grid.GridEntity.CollisionClass = grid.CollisionClass
+    end
+    tempCollisions = {}
+end, CollectibleType.COLLECTIBLE_D12)
