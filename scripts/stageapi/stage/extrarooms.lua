@@ -625,7 +625,7 @@ function StageAPI.ExtraRoomTransition(levelMapRoomID, direction, transitionType,
         targetRoomDesc.Flags = setFlags
     end
 
-    if REPENTOGON then
+    if REPENTOGON and StageAPI.TransitioningToExtraRoom then
         -- Preemptively wipe out all of the vanilla save state data for the room.
         targetRoomDesc:GetDecoSaveState():Clear()
         targetRoomDesc:GetEntitiesSaveState():Clear()
