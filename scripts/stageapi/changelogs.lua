@@ -32,7 +32,71 @@ mod:AddCallback(ModCallbacks.MC_POST_GAME_STARTED, function()
             REVEL.AddedStageAPIChangelogs = true
         end
 
-                 TryAddChangelog("v2.33", [[- Fix custom stages reskinning
+        TryAddChangelog("v2.34", [[- Various fixes relating to
+save data
+
+- Luarooms entities respect 
+vanilla achievements better
+
+- Tainted Keeper has
+proper coin drops in
+luarooms
+
+- Revert render order of 
+StageAPI's POST_HUD_RENDER
+to legacy behavior
+
+- Custom bosses support
+unique themed boss 
+item drops
+
+- Custom grids can be
+blacklisted from being
+rerolled by the D12
+
+- Fix broken custom
+grids removing dropped
+pickups when they shouldn't
+
+- Luarooms no longer
+produce errors relating
+to stacks of zero-weight
+entities
+
+- Improve luaroom
+support for crawlspaces
+
+- Fix issues relating
+to custom grids when
+using the "goto" command
+
+- Fix issues with luaroom
+data persisting when 
+surprise boss ambushes occur
+(Greed and Krampus)
+
+- With REPENTOGON,
+bypass using "goto"
+command to load room data 
+
+- With REPENTOGON, 
+prevent brief audible
+sound when changing to
+a vanilla backdrop
+
+- With REPENTOGON,
+wipe existing room
+data more thoroughly
+when loading a
+replacement luaroom
+
+- With REPENTOGON,
+custom bosses can
+optionally use the
+vanilla versus screen
+]])
+
+                TryAddChangelog("v2.33", [[- Fix custom stages reskinning
 door sprites more often than
 intended
 
