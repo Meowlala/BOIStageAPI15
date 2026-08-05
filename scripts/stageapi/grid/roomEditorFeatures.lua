@@ -353,7 +353,7 @@ mod:AddCallback(ModCallbacks.MC_POST_UPDATE, function()
                     for _, detonator in ipairs(adjDetonators) do
                         if not detonator.RecentlyTriggered and shared.Room:GetGridCollision(detonator.Index) == 0 then
                             local grid = shared.Room:GetGridEntity(detonator.Index)
-                            if grid then
+                            if grid and grid:GetType() ~= GridEntityType.GRID_DECORATION then
                                 destroySelf = true
                             end
                         end
