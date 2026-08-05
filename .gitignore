@@ -2,7 +2,6 @@
 *.dat
 
 tempchangelog.txt
-thumb.png
 
 resources/stageapi/luarooms/*.stb
 
