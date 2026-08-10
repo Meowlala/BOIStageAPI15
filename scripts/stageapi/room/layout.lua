@@ -143,9 +143,10 @@ function StageAPI.AddObjectToRoomLayout(layout, index, objtype, variant, subtype
         index = StageAPI.VectorToGrid(gridX, gridY, layout.Width)
     end
 
-    if StageAPI.CorrectedGridTypes[objtype] or StageAPI.ConsoleSpawnedGridTypes[objtype] then
+    local customGridConfig = StageAPI.IsCustomGridSpawnerEntity(objtype, variant, subtype)
+    if StageAPI.CorrectedGridTypes[objtype] or StageAPI.ConsoleSpawnedGridTypes[objtype] or customGridConfig then
         local t, v
-        if StageAPI.ConsoleSpawnedGridTypes[objtype] then
+        if StageAPI.ConsoleSpawnedGridTypes[objtype] or customGridConfig then
             t, v = objtype, variant
         else
             t, v = StageAPI.CorrectedGridTypes[objtype], variant

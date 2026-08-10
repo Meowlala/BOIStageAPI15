@@ -485,7 +485,7 @@ function StageAPI.SelectSpawnEntities(entities, seed, roomMetadata, lastPersiste
             if not overridden or (stillAddRandom and #entityList > 0) then
                 local randomPool = {}
                 for i, entData in pairs(entityList) do
-                    if StageAPI.IsCustomGridSpawnerEntity(entData.Type, entData.Variant, entData.SubType) or StageAPI.ShouldEntIgnoreStack(entData.Type, entData.Variant, entData.SubType) then
+                    if StageAPI.ShouldEntIgnoreStack(entData.Type, entData.Variant, entData.SubType) then
                         addEntities[#addEntities + 1] = entData
                     else
                         -- Fix BR issue where single, non-stacked entities were saved with weight 0
@@ -962,7 +962,12 @@ function StageAPI.LoadGridsFromDataList(grids, gridInformation, entities, railsO
             shared.Room:SetGridPath(index, 0)
 
             local grid
-            if StageAPI.ConsoleSpawnedGridTypes[gridData.Type] then
+            local gridConfig = StageAPI.IsCustomGridSpawnerEntity(gridData.Type, gridData.Variant, gridData.SubType)
+            if gridConfig then
+                local customGrid = gridConfig:Spawn(index, true, false, {SpawnerEntity = {Type = gridData.Type, Variant = gridData.Variant, SubType = gridData.SubType}})
+                customGrid.JustSpawned = true
+                grid = customGrid.GridEntity
+            elseif StageAPI.ConsoleSpawnedGridTypes[gridData.Type] then
                 local spawnType = gridData.Type
                 if gridData.Type == 6001 then
                     spawnType = 6000
