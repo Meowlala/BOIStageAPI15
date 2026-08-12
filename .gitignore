@@ -6,6 +6,7 @@ tempchangelog.txt
 resources/stageapi/luarooms/*.stb
 
 basementrenovator/roomTest.xml
+basementrenovator/roomTest.lua
 
 basementrenovator/Executables
 basementrenovator/*.bat

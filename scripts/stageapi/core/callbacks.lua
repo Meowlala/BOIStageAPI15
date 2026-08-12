@@ -555,9 +555,10 @@ mod:AddCallback(ModCallbacks.MC_POST_RENDER, function()
         end
 
         if usingGfx then
-            StageAPI.ChangeRoomGfx(usingGfx)
+            local backdrop = StageAPI.ChangeRoomGfx(usingGfx)
             if currentRoom then
                 currentRoom.Data.RoomGfx = usingGfx
+                currentRoom.Data.RoomGfx.CurrentBackdrop = backdrop
             end
         end
 
@@ -1367,9 +1368,10 @@ mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, function()
     end
 
     if usingGfx then
-        StageAPI.ChangeRoomGfx(usingGfx)
+        local backdrop = StageAPI.ChangeRoomGfx(usingGfx)
         if currentRoom then
             currentRoom.Data.RoomGfx = usingGfx
+            currentRoom.Data.RoomGfx.CurrentBackdrop = backdrop
         end
     end
 

@@ -202,6 +202,13 @@ function StageAPI.ChangeBackdrop(backdrop, justWalls, storeBackdropEnts)
     return backdropEnts
 end
 
+function StageAPI.GetCurrentBackdropID()
+    local room = StageAPI.GetCurrentRoom()
+    if room and room.Data and room.Data.RoomGfx and room.Data.RoomGfx.CurrentBackdrop then
+        return room.Data.RoomGfx.CurrentBackdrop.ID
+    end
+end
+
 StageAPI.StageShadowRNG = RNG()
 function StageAPI.ChangeStageShadow(prefix, count, opacity, useBlendMode)
     prefix = prefix or "stageapi/floors/catacombs/overlays/"
@@ -255,18 +262,20 @@ end
 ---@param roomgfx RoomGfx
 function StageAPI.ChangeRoomGfx(roomgfx)
     StageAPI.BackdropRNG:SetSeed(shared.Room:GetDecorationSeed(), 0)
+    local backdrop
     if roomgfx.Backdrops then
+        backdrop = roomgfx.Backdrops
         if type(roomgfx.Backdrops) ~= "number" and #roomgfx.Backdrops > 0 then
-            local backdrop = StageAPI.Random(1, #roomgfx.Backdrops, StageAPI.BackdropRNG)
-            StageAPI.ChangeBackdrop(roomgfx.Backdrops[backdrop])
-        else
-            StageAPI.ChangeBackdrop(roomgfx.Backdrops)
+            backdrop = roomgfx.Backdrops[StageAPI.Random(1, #roomgfx.Backdrops, StageAPI.BackdropRNG)]
         end
+        StageAPI.ChangeBackdrop(backdrop)
     end
 
     if roomgfx.Grids then
         StageAPI.ChangeGrids(roomgfx.Grids)
     end
+
+    return backdrop
 end
 
 ---@param backdrops BackdropType | BackdropType[]
