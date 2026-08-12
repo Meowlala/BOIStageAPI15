@@ -174,6 +174,8 @@ StageAPI.UnsupportedTypeExceptions = {
     ["969 3 0"] = true, 
     ["969 9 0"] = true, 
     ["970 0 0"] = true, -- room darkness
+    ["970 1 10"] = true, -- water disabler
+    ["970 1 11"] = true, -- water enabler
 }
 
 local EntityNames = {

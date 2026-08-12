@@ -66,7 +66,8 @@ local Callbacks = {
     EARLY_NEW_ROOM = "EARLY_NEW_ROOM", -- ()
     EARLY_NEW_CUSTOM_STAGE = "EARLY_NEW_CUSTOM_STAGE", -- (stage: CustomStage)
     POST_SELECT_BACKDROP_WALL = "POST_SELECT_BACKDROP_WALL", -- (sprite: Sprite, backdrop: Backdrop, usedData: table)
-    POST_CHANGE_GRID_GFX = "POST_CHANGE_GRID_GFX" -- (gridGfx : GridGfx, calledPostInit : boolean)
+    POST_CHANGE_GRID_GFX = "POST_CHANGE_GRID_GFX", -- (gridGfx : GridGfx, calledPostInit : boolean)
+    POST_GENERATE_LEVEL = "POST_GENERATE_LEVEL", -- ()
 }
 
 StageAPI.Enum.Callbacks = Callbacks

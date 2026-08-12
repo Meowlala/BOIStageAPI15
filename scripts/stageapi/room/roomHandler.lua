@@ -737,6 +737,14 @@ function StageAPI.LoadEntitiesFromEntitySets(entitysets, doGrids, doPersistentOn
                             if entityInfo.Data.Variant == 0 and entityInfo.Data.SubType == 0 then
                                 local roomDesc = shared.Level:GetRoomByIdx(shared.Level:GetCurrentRoomIndex(), StageAPI.GetDimension())
                                 roomDesc.Flags = roomDesc.Flags | RoomDescriptor.FLAG_PITCH_BLACK
+                            elseif entityInfo.Data.Variant == 1 and entityInfo.Data.SubType == 10 then
+                                local roomDesc = shared.Level:GetRoomByIdx(shared.Level:GetCurrentRoomIndex(), StageAPI.GetDimension())
+                                roomDesc.Flags = roomDesc.Flags & ~RoomDescriptor.FLAG_FLOODED
+                                shared.Room:SetWaterAmount(0)
+                            elseif entityInfo.Data.Variant == 1 and entityInfo.Data.SubType == 11 then
+                                local roomDesc = shared.Level:GetRoomByIdx(shared.Level:GetCurrentRoomIndex(), StageAPI.GetDimension())
+                                roomDesc.Flags = roomDesc.Flags | RoomDescriptor.FLAG_FLOODED
+                                shared.Room:SetWaterAmount(1)
                             end
                         end
 

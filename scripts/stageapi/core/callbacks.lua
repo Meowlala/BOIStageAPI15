@@ -1165,9 +1165,10 @@ mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, function()
             -- shared.Game:GetHUD():ShowItemText(StageAPI.CurrentStage:GetDisplayName(), shared.Level:GetCurseName(), shared.Level:GetCurses() > 0)
 
             StageAPI.CurrentStage:GenerateLevel()
+            StageAPI.CallCallbacks(Callbacks.POST_GENERATE_LEVEL)
         else
             StageAPI.GenerateBaseLevel()
-        end
+        end   
 
         if StageAPI.CurrentStage and StageAPI.CurrentStage.GetPlayingMusic then
             local musicID = StageAPI.CurrentStage:GetPlayingMusic()
