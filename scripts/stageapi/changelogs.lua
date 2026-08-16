@@ -32,6 +32,22 @@ mod:AddCallback(ModCallbacks.MC_POST_GAME_STARTED, function()
             REVEL.AddedStageAPIChangelogs = true
         end
 
+        TryAddChangelog("v2.39", [[- Fix custom grids
+not stacking with other
+grid entities in luarooms
+
+- Add function to get
+string ID of current
+StageAPI backdrop
+
+- Add POST_GENERATE_LEVEL
+callback
+
+- Add support for water
+Enablers/Disablers in
+luarooms
+]])
+
         TryAddChangelog("v2.34", [[- Various fixes relating to
 save data
 
