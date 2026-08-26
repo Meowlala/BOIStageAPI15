@@ -493,7 +493,7 @@ function StageAPI.LevelRoom:SavePersistentEntities()
 
         local data = entity:GetData()
         local persistentIndex, persistData = StageAPI.GetEntityPersistenceData(entity)
-        if persistentIndex then
+        if persistentIndex and not entity:HasEntityFlags(EntityFlag.FLAG_PERSISTENT) then
             local changedSpawn
             local entityPersistData = self:GetPersistenceData(persistentIndex, true)
             if persistData.UpdateType then
@@ -550,7 +550,7 @@ function StageAPI.LevelRoom:SavePersistentEntities()
             end
         else
             local persistData = StageAPI.CheckPersistence(entity.Type, entity.Variant, entity.SubType)
-            if persistData then
+            if persistData and not entity:HasEntityFlags(EntityFlag.FLAG_PERSISTENT) then
                 if not persistData.StoreCheck or not persistData.StoreCheck(entity, data) then
                     local index = self:GetNextPersistentIndex()
                     local grindex = shared.Room:GetGridIndex(entity.Position)

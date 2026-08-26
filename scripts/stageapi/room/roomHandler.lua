@@ -71,7 +71,10 @@ function StageAPI.FixWalls()
 end
 
 local function ShouldExcludeEntityFromClearing(entity)
-    return excludeTypesFromClearing[entity.Type] == true
+    if entity:HasEntityFlags(EntityFlag.FLAG_PERSISTENT) then
+        return true
+    else
+        return excludeTypesFromClearing[entity.Type] == true
         or (
             type(excludeTypesFromClearing[entity.Type]) == "table"
             and excludeTypesFromClearing[entity.Type][entity.Variant] == true
@@ -79,8 +82,9 @@ local function ShouldExcludeEntityFromClearing(entity)
         or (
             type(excludeTypesFromClearing[entity.Type]) == "table"
             and type(excludeTypesFromClearing[entity.Type][entity.Variant]) == "table"
-            and excludeTypesFromClearing[entity.Type][entity.Variant][entity.SubType]
+            and excludeTypesFromClearing[entity.Type][entity.Variant][entity.SubType] == true
         )
+    end
 end
 
 function StageAPI.ShouldAutoPersist(persistentData, type, variant, sub)
