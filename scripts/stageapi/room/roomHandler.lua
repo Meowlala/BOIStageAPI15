@@ -489,7 +489,7 @@ function StageAPI.SelectSpawnEntities(entities, seed, roomMetadata, lastPersiste
             if not overridden or (stillAddRandom and #entityList > 0) then
                 local randomPool = {}
                 for i, entData in pairs(entityList) do
-                    if StageAPI.ShouldEntIgnoreStack(entData.Type, entData.Variant, entData.SubType) then
+                    if StageAPI.IsCustomGridSpawnerEntity(entData.Type, entData.Variant, entData.SubType) or StageAPI.ShouldEntIgnoreStack(entData.Type, entData.Variant, entData.SubType) then
                         addEntities[#addEntities + 1] = entData
                     else
                         -- Fix BR issue where single, non-stacked entities were saved with weight 0
@@ -593,6 +593,7 @@ end
 ---@return RoomMetadata roomMetadata
 function StageAPI.ObtainSpawnObjects(layout, seed, noChampions)
     local entitiesByIndex, gridsByIndex, roomMetadata, lastPersistentIndex = StageAPI.SeparateEntityMetadata(layout.EntitiesByIndex, layout.GridEntitiesByIndex, seed, layout.Shape)
+    entitiesByIndex, gridsByIndex = StageAPI.SeparateCustomGridSpawners(layout.EntitiesByIndex, layout.GridEntitiesByIndex)
     local spawnEntities, lastPersistentIndex = StageAPI.SelectSpawnEntities(entitiesByIndex, seed, roomMetadata, lastPersistentIndex, noChampions)
     local spawnGrids = StageAPI.SelectSpawnGrids(gridsByIndex, seed)
 

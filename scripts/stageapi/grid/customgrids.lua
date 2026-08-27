@@ -615,6 +615,32 @@ mod:AddCallback(ModCallbacks.MC_POST_UPDATE, function()
     end
 end)
 
+function StageAPI.SeparateCustomGridSpawners(entities, grids)
+    local outGrids = {}
+    for index, gridList in pairs(grids) do
+        outGrids[index] = gridList
+    end
+
+    local outEntities = {}
+    for index, entityList in pairs(entities) do
+        local outList = {}
+        for _, entity in ipairs(entityList) do
+            if StageAPI.IsCustomGridSpawnerEntity(entity.Type, entity.Variant, entity.SubType) then
+                if not outGrids[index] then
+                    outGrids[index] = {}
+                end
+                local gridList = outGrids[index]
+                gridList[#gridList + 1] = entity
+            else
+                outList[#outList + 1] = entity
+            end
+        end
+        outEntities[index] = outList
+    end
+
+    return outEntities, outGrids
+end
+
 -- Poop Gib Handling
 StageAPI.IgnorePoopGibsSpawned = false
 local function customGridPoopGibs(_, eff)
