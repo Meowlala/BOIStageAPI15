@@ -32,6 +32,15 @@ mod:AddCallback(ModCallbacks.MC_POST_GAME_STARTED, function()
             REVEL.AddedStageAPIChangelogs = true
         end
 
+        TryAddChangelog("v2.40", [[- Fix issue with
+custom grids spawn-blocking
+normal entities in luarooms
+
+- Luaroom entity persistence
+accounts for entities
+with the persistent flag
+]])
+
         TryAddChangelog("v2.39", [[- Fix custom grids
 not stacking with other
 grid entities in luarooms
