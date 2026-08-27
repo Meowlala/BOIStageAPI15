@@ -593,9 +593,9 @@ end
 ---@return RoomMetadata roomMetadata
 function StageAPI.ObtainSpawnObjects(layout, seed, noChampions)
     local entitiesByIndex, gridsByIndex, roomMetadata, lastPersistentIndex = StageAPI.SeparateEntityMetadata(layout.EntitiesByIndex, layout.GridEntitiesByIndex, seed, layout.Shape)
-    entitiesByIndex, gridsByIndex = StageAPI.SeparateCustomGridSpawners(layout.EntitiesByIndex, layout.GridEntitiesByIndex)
-    local spawnEntities, lastPersistentIndex = StageAPI.SelectSpawnEntities(entitiesByIndex, seed, roomMetadata, lastPersistentIndex, noChampions)
-    local spawnGrids = StageAPI.SelectSpawnGrids(gridsByIndex, seed)
+    local entitiesByIndex2, gridsByIndex2 = StageAPI.SeparateCustomGridSpawners(entitiesByIndex, gridsByIndex)
+    local spawnEntities, lastPersistentIndex = StageAPI.SelectSpawnEntities(entitiesByIndex2, seed, roomMetadata, lastPersistentIndex, noChampions)
+    local spawnGrids = StageAPI.SelectSpawnGrids(gridsByIndex2, seed)
 
     local gridTakenIndices = {}
     local entityTakenIndices = {}
