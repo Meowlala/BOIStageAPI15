@@ -191,7 +191,8 @@ local EntityNames = {
     DeleteMeNPC = "StageAPIDeleteMeNPC",
     DeleteMeProjectile = "StageAPIDeleteMeProjectile",
     DeleteMePickup = "StageAPIDeleteMePickup",
-    RandomRune = "StageAPIRandomRune"
+    RandomRune = "StageAPIRandomRune",
+    SpawnPentagram = "StageAPISpawnPentagram"
 }
 
 StageAPI.E = {}
