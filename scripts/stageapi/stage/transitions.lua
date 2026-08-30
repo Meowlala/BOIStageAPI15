@@ -750,11 +750,27 @@ function StageAPI.GotoCustomStage(stage, playTransition, noForgetSeed)
         local stageType = stage.StageType
         if not stageType then
             StageAPI.StageRNG:SetSeed(StageAPI.Seeds:GetStageSeed(stage.Stage), 0)
-
-            if stage.AltPath then
-                stageType = StageAPI.AltPathStageTypes[StageAPI.Random(1, #StageAPI.AltPathStageTypes, StageAPI.StageRNG)]
+            
+            local stagePool = stage.AltPath and StageAPI.AltPathStageTypes or StageAPI.BaseStageTypes
+            if REPENTOGON then
+                local unlockedStages = {}
+                for _, stageTypeToCheck in ipairs(stagePool) do
+                    local floorInfo = StageAPI.GetBaseFloorInfo(stage.Stage, stageTypeToCheck)
+                    local isUnlocked = true
+                    if floorInfo.Achievement then
+                        isUnlocked = Isaac.GetPersistentGameData():Unlocked(floorInfo.Achievement)
+                    end
+                    if isUnlocked then
+                        table.insert(unlockedStages, stageTypeToCheck)
+                    end
+                end
+                if #unlockedStages > 0 then
+                    stageType = unlockedStages[StageAPI.Random(1, #unlockedStages, StageAPI.StageRNG)]
+                else --This shouldn't happen but better to be safe
+                    stageType = stagePool[StageAPI.Random(1, #stagePool, StageAPI.StageRNG)]
+                end
             else
-                stageType = StageAPI.BaseStageTypes[StageAPI.Random(1, #StageAPI.BaseStageTypes, StageAPI.StageRNG)]
+                stageType = stagePool[StageAPI.Random(1, #stagePool, StageAPI.StageRNG)]
             end
         end
 

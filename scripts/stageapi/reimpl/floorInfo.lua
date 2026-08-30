@@ -46,7 +46,8 @@ StageAPI.SetFloorInfo({
         {BossID = "Baby Plum"},
         {BossID = "Famine", Horseman = true, OnlyReplaceHorsemen = true},
         {BossID = "Headless Horseman", Horseman = true, OnlyReplaceHorsemen = true},
-    }
+    },
+    Achievement = 86,
 }, settingStage, StageType.STAGETYPE_WOTL)
 
 StageAPI.SetFloorInfo({
@@ -70,7 +71,8 @@ StageAPI.SetFloorInfo({
         {BossID = "Baby Plum"},
         {BossID = "Famine", Horseman = true, OnlyReplaceHorsemen = true},
         {BossID = "Headless Horseman", Horseman = true, OnlyReplaceHorsemen = true},
-    }
+    },
+    Achievement = 342,
 }, settingStage, StageType.STAGETYPE_AFTERBIRTH)
 
 StageAPI.SetFloorInfo({
@@ -102,7 +104,8 @@ StageAPI.SetFloorInfo({
         {BossID = "Clog"},
         {BossID = "Colostomia"},
         {BossID = "Turdlet"}
-    }
+    },
+    Achievement = 412,
 }, settingStage, StageType.STAGETYPE_REPENTANCE_B)
 
 local drossTwo = StageAPI.GetBaseFloorInfo(settingStage + 1, StageType.STAGETYPE_REPENTANCE_B, false)
@@ -155,7 +158,8 @@ StageAPI.SetFloorInfo({
         {BossID = "Bumbino"},
         {BossID = "Pestilence", Horseman = true, OnlyReplaceHorsemen = true},
         {BossID = "Headless Horseman", Horseman = true, OnlyReplaceHorsemen = true},
-    }
+    },
+    Achievement = 87,
 }, settingStage, StageType.STAGETYPE_WOTL)
 
 StageAPI.SetFloorInfo({
@@ -181,7 +185,8 @@ StageAPI.SetFloorInfo({
         {BossID = "Bumbino"},
         {BossID = "Pestilence", Horseman = true, OnlyReplaceHorsemen = true},
         {BossID = "Headless Horseman", Horseman = true, OnlyReplaceHorsemen = true},
-    }
+    },
+    Achievement = 343,
 }, settingStage, StageType.STAGETYPE_AFTERBIRTH)
 
 StageAPI.SetFloorInfo({
@@ -210,7 +215,8 @@ StageAPI.SetFloorInfo({
         {BossID = "Singe"},
         {BossID = "Great Gideon"},
         {BossID = "Clutch"},
-    }
+    },
+    Achievement = 413,
 }, settingStage, StageType.STAGETYPE_REPENTANCE_B)
 
 settingStage = LevelStage.STAGE3_1
@@ -250,7 +256,8 @@ StageAPI.SetFloorInfo({
         {BossID = "The Pile"},
         {BossID = "War", Horseman = true, OnlyReplaceHorsemen = true},
         {BossID = "Headless Horseman", Horseman = true, OnlyReplaceHorsemen = true},
-    }
+    },
+    Achievement = 88,
 }, settingStage, StageType.STAGETYPE_WOTL)
 
 StageAPI.SetFloorInfo({
@@ -270,7 +277,8 @@ StageAPI.SetFloorInfo({
         {BossID = "Reap Creep"},
         {BossID = "War", Horseman = true, OnlyReplaceHorsemen = true},
         {BossID = "Headless Horseman", Horseman = true, OnlyReplaceHorsemen = true},
-    }
+    },
+    Achievement = 344,
 }, settingStage, StageType.STAGETYPE_AFTERBIRTH)
 
 StageAPI.SetFloorInfo({
@@ -294,7 +302,8 @@ StageAPI.SetFloorInfo({
     Bosses = poolWrap{
         {BossID = "The Visage"},
         {BossID = "Horny Boys"},
-    }
+    },
+    Achievement = 414,
 }, settingStage, StageType.STAGETYPE_REPENTANCE_B)
 
 for stageType = StageType.STAGETYPE_ORIGINAL, StageType.STAGETYPE_REPENTANCE_B do
@@ -361,7 +370,8 @@ StageAPI.SetFloorInfo({
         {BossID = "Death", Horseman = true, OnlyReplaceHorsemen = true},
         {BossID = "Conquest", Horseman = true, OnlyReplaceHorsemen = true},
         {BossID = "Headless Horseman", Horseman = true, OnlyReplaceHorsemen = true},
-    }
+    },
+    Achievement = 345,
 }, settingStage, StageType.STAGETYPE_AFTERBIRTH)
 
 for stageType = StageType.STAGETYPE_ORIGINAL, StageType.STAGETYPE_AFTERBIRTH do
