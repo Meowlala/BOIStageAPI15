@@ -1327,11 +1327,11 @@ mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, function()
     if not StageAPI.InNewStage() and stageType ~= StageType.STAGETYPE_REPENTANCE and stageType ~= StageType.STAGETYPE_REPENTANCE_B then
         local stage = shared.Level:GetStage()
         if stage == LevelStage.STAGE2_1 or stage == LevelStage.STAGE2_2 then
-            StageAPI.ChangeStageShadow("stageapi/floors/catacombs/overlays/", 5)
+            StageAPI.ChangeStageShadow("stageapi/floors/catacombs/overlays/", 5, 0.25, true)
         elseif stage == LevelStage.STAGE3_1 or stage == LevelStage.STAGE3_2 then
-            StageAPI.ChangeStageShadow("stageapi/floors/necropolis/overlays/", 5)
+            StageAPI.ChangeStageShadow("stageapi/floors/necropolis/overlays/", 5, 0.25, true)
         elseif stage == LevelStage.STAGE4_1 or stage == LevelStage.STAGE4_2 then
-            StageAPI.ChangeStageShadow("stageapi/floors/utero/overlays/", 5)
+            StageAPI.ChangeStageShadow("stageapi/floors/utero/overlays/", 5, 0.25, true)
         end
     end
 
