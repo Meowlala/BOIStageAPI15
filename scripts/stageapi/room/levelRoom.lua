@@ -230,7 +230,7 @@ StageAPI.ListIndexToGridRoomIndex = {
     [522] = GridRooms.ROOM_BLUE_ROOM_IDX,
     [523] = GridRooms.ROOM_EXTRA_BOSS_IDX,
     [524] = GridRooms.ROOM_ANGEL_SHOP_IDX,
-    [GridRooms.ROOM_GENESIS_IDX] = GridRooms.ROOM_DEVIL_IDX, -- wtf genesis??
+    [GridRooms.ROOM_GENESIS_IDX] = GridRooms.ROOM_GENESIS_IDX, -- wtf genesis??
 }
 
 

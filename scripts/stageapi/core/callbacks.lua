@@ -1211,6 +1211,7 @@ mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, function()
 
     StageAPI.NextStage = nil
     StageAPI.DetectBaseLayoutChanges(false)
+    StageAPI.GenesisSafetyCheck()
 
     local currentListIndex = StageAPI.GetCurrentRoomID()
     ---@type LevelRoom, boolean?, any
@@ -1947,3 +1948,50 @@ StageAPI.AddCallback("StageAPI", Callbacks.POST_ROOM_LOAD, 1, function(currentRo
 end)
 
 --#endregion
+
+function StageAPI.IsFinalFloor() --Is this a floor which should avoid sending the player to the "next" floor?
+    local stage = shared.Level:GetStage()
+    if shared.Game:IsGreedMode() then
+        return stage >= LevelStage.STAGE7_GREED
+    else
+        if stage >= LevelStage.STAGE6 then
+            return true
+        else
+            stageType = shared.Level:GetStageType()
+            if stage == LevelStage.STAGE4_2 and (stageType == StageType.STAGETYPE_REPENTANCE or stageType == StageType.STAGETYPE_REPENTANCE_B) then
+                return true
+            end
+        end
+    end
+end
+
+function StageAPI.GenesisSafetyCheck() --Ensures Genesis cannot softlock, also makes it send the player back to the starting room on custom stages (for now)
+    if shared.Level:GetCurrentRoomIndex() == GridRooms.ROOM_GENESIS_IDX then
+        local isExitMissing = true
+        if Isaac.CountEntities(nil, EntityType.ENTITY_EFFECT, EffectVariant.HEAVEN_LIGHT_DOOR, 0) > 0 then
+            isExitMissing = false
+        else
+            for i = 0, shared.Room:GetGridSize() do
+                local grid = shared.Room:GetGridEntity(i)
+                if grid and grid:GetType() == GridEntityType.GRID_STAIRS and grid:GetVariant() == 3 then
+                    isExitMissing = false
+                    break
+                end
+            end
+        end
+
+        if isExitMissing or StageAPI.CurrentStage then
+            if StageAPI.CurrentStage then
+                for _, lightDoor in pairs(Isaac.FindByType(EntityType.ENTITY_EFFECT, EffectVariant.HEAVEN_LIGHT_DOOR)) do
+                    lightDoor.Visible = false
+                    lightDoor:Remove()
+                end
+            end
+            if StageAPI.IsFinalFloor() or StageAPI.CurrentStage then
+                Isaac.GridSpawn(GridEntityType.GRID_STAIRS, 3, shared.Room:GetCenterPos(), true)
+            else
+                Isaac.Spawn(EntityType.ENTITY_EFFECT, EffectVariant.HEAVEN_LIGHT_DOOR, 0, shared.Room:GetCenterPos(), Vector.Zero, npc)
+            end
+        end
+    end
+end
