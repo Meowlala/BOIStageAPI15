@@ -60,6 +60,32 @@ function StageAPI.LogMinor(...)
     Isaac.DebugString(str)
 end
 
+function StageAPI.PrintTable(table)
+    local str = ""
+    if table then
+        local length = 0
+        for index, entry in pairs(table) do
+            if index then
+                if entry then
+                    str = str..tostring(index).." "..tostring(entry).."\n"
+                else
+                    str = str..tostring(index).." nil\n"
+                end
+                length = length + 1
+            end
+        end
+        if length <= 0 then
+            str = "Table is empty"
+        end
+    else
+        str = "Table is nil"
+    end
+
+    StageAPI.LogConcat('[StageAPI] ', str)
+    Isaac.ConsoleOutput(str .. '\n')
+    Isaac.DebugString(str)
+end
+
 function StageAPI.TryGetCallInfo(level)
     level = level or 2
     if debug then

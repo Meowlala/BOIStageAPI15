@@ -164,6 +164,9 @@ mod:AddCallback(ModCallbacks.MC_PRE_USE_ITEM, function()
     end
 end, CollectibleType.COLLECTIBLE_FORGET_ME_NOW)
 
+StageAPI.SafeReturnIndex = nil
+StageAPI.SafeReturnDimension = 0
+StageAPI.UnsafeReturningIndexes = {}
 StageAPI.PotentialAscentData = {}
 mod:AddCallback(ModCallbacks.MC_POST_UPDATE, function()
     if StageAPI.JustUsedD7 then
@@ -196,7 +199,35 @@ mod:AddCallback(ModCallbacks.MC_POST_UPDATE, function()
             end
         end
     end
+
+    if REPENTOGON then
+        local dimension = shared.Level:GetDimension()
+        if dimension ~= Dimension.DEATH_CERTIFICATE and not StageAPI.TransitioningToExtraRoom then
+            local roomIndex = shared.Level:GetCurrentRoomIndex()
+            if roomIndex >= 0 and not StageAPI.UnsafeReturningIndexes[roomIndex] then
+                StageAPI.SafeReturnIndex = roomIndex
+                StageAPI.SafeReturnDimension = dimension
+                StageAPI.UnsafeReturningIndexes = {}
+            end
+        end
+    end
 end)
+
+if REPENTOGON then
+    mod:AddCallback(ModCallbacks.MC_POST_NEW_LEVEL, function()
+        StageAPI.SafeReturnIndex = shared.Level:GetStartingRoomIndex()
+        StageAPI.SafeReturnDimension = Dimension.NORMAL
+        StageAPI.UnsafeReturningIndexes = {}
+    end)
+
+    mod:AddCallback(ModCallbacks.MC_PRE_CHANGE_ROOM, function(_, targetRoomIdx, dimension)
+        if shared.Level:GetDimension() == Dimension.DEATH_CERTIFICATE and dimension ~= Dimension.DEATH_CERTIFICATE then --Detect leaving the Death Certificate dimension
+            if StageAPI.UnsafeReturningIndexes[targetRoomIdx] and StageAPI.SafeReturnIndex then
+                return {StageAPI.SafeReturnIndex, StageAPI.SafeReturnDimension}
+            end
+        end 
+    end)
+end
 
 function StageAPI.ShouldOverrideRoom(inStartingRoom, currentRoom)
     if inStartingRoom == nil then

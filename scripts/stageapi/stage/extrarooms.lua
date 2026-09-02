@@ -646,7 +646,7 @@ function StageAPI.ExtraRoomTransition(levelMapRoomID, direction, transitionType,
 
     shared.Level.LeaveDoor = leaveDoor
     shared.Level.EnterDoor = enterDoor
-
+    
     if transitionType == -1 then -- StageAPI special, instant transition
         StageAPI.ForcePlayerDoorSlot = (enterDoor == -1 and nil) or enterDoor
         shared.Level:ChangeRoom(transitionTo)
@@ -658,6 +658,10 @@ function StageAPI.ExtraRoomTransition(levelMapRoomID, direction, transitionType,
         end
 
         shared.Game:StartRoomTransition(transitionTo, direction, transitionType)
+    end
+
+    if StageAPI.TransitioningToExtraRoom then
+        StageAPI.UnsafeReturningIndexes[transitionTo] = true
     end
 
     -- To check if doing transition either to or from extra room
