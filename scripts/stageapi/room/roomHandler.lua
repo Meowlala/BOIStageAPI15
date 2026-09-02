@@ -1240,6 +1240,16 @@ function StageAPI.LoadRoomLayout(grids, entities, doGrids, doEntities, doPersist
         ents_spawned = StageAPI.LoadEntitiesFromEntitySets(entities, doGrids, doPersistentOnly, doAutoPersistent, avoidSpawning, persistenceData, loadingWave)
     end
 
+    if REPENTOGON then
+        if PlayerManager.AnyoneHasCollectible(CollectibleType.COLLECTIBLE_FLIP) and shared.Room:IsFirstVisit() then
+            for _, ent in pairs(ents_spawned) do
+                if ent.Type == EntityType.ENTITY_PICKUP and ent.Variant == PickupVariant.PICKUP_COLLECTIBLE then
+                    ent:ToPickup():InitFlipState()
+                end
+            end
+        end
+    end
+
     for gridIndex, railVariant in pairs(minecart_points) do
         local gridpos = shared.Room:GetGridPosition(gridIndex)
         for _, ent in pairs(ents_spawned) do
