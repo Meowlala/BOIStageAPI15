@@ -1002,7 +1002,7 @@ mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, function()
     if not StageAPI.TransitioningToExtraRoom then
         if shared.Level:GetCurrentRoomIndex() == GridRooms.ROOM_DEBUG_IDX and shared.Room:IsFirstVisit() then
             -- When a new room is loaded into the debug (goto) slot, clear any pre-existing custom grid data.
-            local lindex = StageAPI.GetCurrentRoomID()
+            local lindex = StageAPI.GetCurrentListIndex()
             local customGrids = StageAPI.GetTableIndexedByDimension(StageAPI.CustomGrids, true)
             customGrids[lindex] = {}
         end
@@ -1506,13 +1506,13 @@ StageAPI.AddCallback("StageAPI", Callbacks.EARLY_NEW_ROOM, -1, function()
 
     if not StageAPI.TransitioningToExtraRoom and shared.Level:GetCurrentRoomIndex() == GridRooms.ROOM_DEBUG_IDX and shared.Room:IsFirstVisit() then
         -- When a new room is loaded into the debug (goto) slot, delete any pre-existing LevelRoom
-        StageAPI.SetCurrentRoom(nil)
+        StageAPI.SetLevelRoom(nil, StageAPI.GetCurrentListIndex())
     end
 
     local roomDesc = shared.Level:GetCurrentRoomDesc()
     if roomDesc.OverrideData then
         -- Avoid overriding Greed rooms and such
-        StageAPI.SetCurrentRoom(nil)
+        StageAPI.SetLevelRoom(nil, StageAPI.GetCurrentListIndex())
     elseif not StageAPI.ShouldOverrideRoom() then
         StageAPI.GenerateBaseRoom(roomDesc)
     end
