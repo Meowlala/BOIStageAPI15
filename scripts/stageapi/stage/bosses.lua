@@ -660,6 +660,12 @@ end
 
 StageAPI.BossSelectRNG = RNG()
 function StageAPI.SelectBoss(bosses, rng, roomDesc, ignoreNoOptions, earlySelecting)
+    roomDesc = roomDesc or shared.Level:GetCurrentRoomDesc()
+    if not rng then
+        rng = StageAPI.BossSelectRNG
+        rng:SetSeed(roomDesc.SpawnSeed + 1, 35)
+    end
+
     local bossID = StageAPI.CallCallbacks(Callbacks.PRE_BOSS_SELECT, true, bosses, rng, roomDesc, ignoreNoOptions)
     if type(bossID) == "table" then
         bosses = bossID
@@ -669,14 +675,8 @@ function StageAPI.SelectBoss(bosses, rng, roomDesc, ignoreNoOptions, earlySelect
     if Isaac.GetChallenge() == Challenge.CHALLENGE_APRILS_FOOL or (bossID and type(bossID) == "boolean") then
         return nil, true
     elseif not bossID then
-        roomDesc = roomDesc or shared.Level:GetCurrentRoomDesc()
         local roomSubtype = roomDesc.Data and roomDesc.Data.Subtype or 0
         local isHorsemanRoom = StageAPI.IsIn(horsemanRoomSubtypes, roomSubtype)
-
-        if not rng then
-            rng = StageAPI.BossSelectRNG
-            rng:SetSeed(roomDesc.SpawnSeed + 1, 35)
-        end
 
         local floatWeights
         local totalUnencounteredWeight = 0
