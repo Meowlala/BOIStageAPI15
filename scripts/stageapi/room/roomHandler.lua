@@ -529,11 +529,12 @@ end
 function StageAPI.SelectSpawnGrids(gridsByIndex, seed)
     StageAPI.RoomLoadRNG:SetSeed(seed or shared.Room:GetSpawnSeed(), 1)
     local spawnGrids = {}
+    local spawnRails = {}
 
     local callbacks = StageAPI.GetCallbacks(Callbacks.PRE_SELECT_GRIDENTITY_LIST)
     for index, grids in pairs(gridsByIndex) do
         if #grids > 0 then
-            local spawnGrid, noSpawnGrid
+            local spawnGrid, spawnRail, noSpawnGrid
             for _, callback in ipairs(callbacks) do
                 local success, ret = StageAPI.TryCallback(callback, grids, index)
                 if success then
@@ -555,6 +556,7 @@ function StageAPI.SelectSpawnGrids(gridsByIndex, seed)
             if not noSpawnGrid then
                 if not spawnGrid then
                     local gridPool = {}
+                    local railPool = {}
                     for _, grid in pairs(grids) do
                         -- Fix BR issue where single, non-stacked grids were saved with weight 0
                         local weight = grid.Weight
@@ -563,23 +565,33 @@ function StageAPI.SelectSpawnGrids(gridsByIndex, seed)
                         end
 
                         if weight > 0 then
-                            table.insert(gridPool, {grid, weight})
+                            if StageAPI.RailGridTypes[grid.Type] then
+                                table.insert(railPool, {grid, weight})
+                            else
+                                table.insert(gridPool, {grid, weight})
+                            end
                         end
                     end
 
                     if #gridPool > 0 then
                         spawnGrid = StageAPI.WeightedRNG(gridPool, StageAPI.RoomLoadRNG)
                     end
+                    if #railPool > 0 then
+                        spawnRail = StageAPI.WeightedRNG(railPool, StageAPI.RoomLoadRNG)
+                    end
                 end
 
                 if spawnGrid then
                     spawnGrids[index] = spawnGrid
                 end
+                if spawnRail then
+                    spawnRails[index] = spawnRail
+                end
             end
         end
     end
 
-    return spawnGrids
+    return spawnGrids, spawnRails
 end
 
 ---@param layout RoomLayout
@@ -595,7 +607,7 @@ function StageAPI.ObtainSpawnObjects(layout, seed, noChampions)
     local entitiesByIndex, gridsByIndex, roomMetadata, lastPersistentIndex = StageAPI.SeparateEntityMetadata(layout.EntitiesByIndex, layout.GridEntitiesByIndex, seed, layout.Shape)
     local entitiesByIndex2, gridsByIndex2 = StageAPI.SeparateCustomGridSpawners(entitiesByIndex, gridsByIndex)
     local spawnEntities, lastPersistentIndex = StageAPI.SelectSpawnEntities(entitiesByIndex2, seed, roomMetadata, lastPersistentIndex, noChampions)
-    local spawnGrids = StageAPI.SelectSpawnGrids(gridsByIndex2, seed)
+    local spawnGrids, spawnRails = StageAPI.SelectSpawnGrids(gridsByIndex2, seed)
 
     local gridTakenIndices = {}
     local entityTakenIndices = {}
@@ -608,7 +620,7 @@ function StageAPI.ObtainSpawnObjects(layout, seed, noChampions)
         gridTakenIndices[index] = true
     end
 
-    return spawnEntities, spawnGrids, entityTakenIndices, gridTakenIndices, lastPersistentIndex, roomMetadata
+    return spawnEntities, spawnGrids, entityTakenIndices, gridTakenIndices, lastPersistentIndex, roomMetadata, spawnRails
 end
 
 StageAPI.ActiveEntityPersistenceData = {}
@@ -924,7 +936,7 @@ StageAPI.ConsoleSpawningGrid = false
 ---@param gridInformation? table<integer, GridInformation> if set will be used instead of grids, and set its additional data
 ---@param entities table<integer, SpawnList.EntityInfo[]>
 ---@return GridEntity[] gridsSpawned
-function StageAPI.LoadGridsFromDataList(grids, gridInformation, entities, railsOnly)
+function StageAPI.LoadGridsFromDataList(grids, gridInformation, entities, railsOnly, rails)
     local grids_spawned = {}
     local minecart_points = {}
     StageAPI.GridSpawnRNG:SetSeed(shared.Room:GetSpawnSeed(), 0)
@@ -1091,6 +1103,31 @@ function StageAPI.LoadGridsFromDataList(grids, gridInformation, entities, railsO
         end
     end
 
+    for index, railData in pairs(rails) do
+        local gridpos = shared.Room:GetGridPosition(index)
+        if insideRoomBoundary(gridpos) then
+            if REPENTOGON then
+                shared.Room:SetRail(index, railData.Variant)
+            else
+                local spawnType = railData.Type
+                if railData.Type == 6001 then
+                    spawnType = 6000
+                end
+                local command = "gridspawn " .. spawnType .. "." .. railData.Variant .. " " .. index
+                StageAPI.ConsoleSpawningGrid = true
+                Isaac.ExecuteCommand(command)
+                StageAPI.ConsoleSpawningGrid = false
+            end
+            if StageAPI.RailGridTypes[railData.Type] and StageAPI.MinecartRailVariants[railData.Variant] then
+                minecart_points[index] = railData.Variant
+            end
+            if railData.Type == 6001 then
+                local grid = Isaac.GridSpawn(GridEntityType.GRID_PIT, 0, gridpos, true)
+                grids_spawned[#grids_spawned + 1] = grid
+            end
+        end
+    end
+
     return grids_spawned, minecart_points
 end
 
@@ -1202,14 +1239,14 @@ end
 ---@param loadingWave? boolean
 ---@return Entity[] entsSpawned
 ---@return GridEntity[] gridsSpawned
-function StageAPI.LoadRoomLayout(grids, entities, doGrids, doEntities, doPersistentOnly, doAutoPersistent, gridData, avoidSpawning, persistenceData, loadingWave)
+function StageAPI.LoadRoomLayout(grids, entities, doGrids, doEntities, doPersistentOnly, doAutoPersistent, gridData, avoidSpawning, persistenceData, loadingWave, rails)
     local grids_spawned = {}
     local minecart_points = {}
     local ents_spawned = {}
 
     if grids then
         StageAPI.FoolsGoldReplacements = {}
-        grids_spawned, minecart_points = StageAPI.LoadGridsFromDataList(grids, gridData, entities, not doGrids)
+        grids_spawned, minecart_points = StageAPI.LoadGridsFromDataList(grids, gridData, entities, not doGrids, rails)
 
         if shared.Room:IsFirstVisit() then
             for index, veinsize in pairs(StageAPI.FoolsGoldReplacements) do --Fool's Gold vein spawning

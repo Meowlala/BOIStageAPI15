@@ -445,7 +445,7 @@ function StageAPI.LevelRoom:PostGetLayout(seed)
         noChampions = self.NoChampions
     end
 
-    self.SpawnEntities, self.SpawnGrids, self.EntityTakenIndices, self.GridTakenIndices, self.LastPersistentIndex, self.Metadata = StageAPI.ObtainSpawnObjects(self.Layout, seed, noChampions)
+    self.SpawnEntities, self.SpawnGrids, self.EntityTakenIndices, self.GridTakenIndices, self.LastPersistentIndex, self.Metadata, self.SpawnRails = StageAPI.ObtainSpawnObjects(self.Layout, seed, noChampions)
     self.Metadata.LevelRoom = self
 end
 
@@ -628,13 +628,13 @@ function StageAPI.LevelRoom:Load(isExtraRoom, noIncrementVisit, clearNPCsOnly)
     local wasFirstLoad = self.FirstLoad
     StageAPI.ClearRoomLayout(false, self.FirstLoad or isExtraRoom, true, self.FirstLoad or isExtraRoom, self.GridTakenIndices, nil, nil, not self.FirstLoad, clearNPCsOnly)
     if self.FirstLoad then
-        StageAPI.LoadRoomLayout(self.SpawnGrids, {self.SpawnEntities, self.ExtraSpawn}, true, true, self.IsClear, true, self.GridInformation, self.AvoidSpawning, self.PersistenceData)
+        StageAPI.LoadRoomLayout(self.SpawnGrids, {self.SpawnEntities, self.ExtraSpawn}, true, true, self.IsClear, true, self.GridInformation, self.AvoidSpawning, self.PersistenceData, false, self.SpawnRails)
         self.WasClearAtStart = shared.Room:IsClear()
         self.IsClear = self.WasClearAtStart
         self.FirstLoad = false
         self.HasEnemies = shared.Room:GetAliveEnemiesCount() > 0
     else
-        StageAPI.LoadRoomLayout(self.SpawnGrids, {self.SpawnEntities, self.ExtraSpawn}, isExtraRoom, true, self.IsClear, isExtraRoom, self.GridInformation, self.AvoidSpawning, self.PersistenceData)
+        StageAPI.LoadRoomLayout(self.SpawnGrids, {self.SpawnEntities, self.ExtraSpawn}, isExtraRoom, true, self.IsClear, isExtraRoom, self.GridInformation, self.AvoidSpawning, self.PersistenceData, false, self.SpawnRails)
         self.IsClear = shared.Room:IsClear()
     end
 
