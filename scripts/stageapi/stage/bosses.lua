@@ -659,7 +659,7 @@ function StageAPI.GetBossEncountered(name)
 end
 
 StageAPI.BossSelectRNG = RNG()
-function StageAPI.SelectBoss(bosses, rng, roomDesc, ignoreNoOptions)
+function StageAPI.SelectBoss(bosses, rng, roomDesc, ignoreNoOptions, earlySelecting)
     local bossID = StageAPI.CallCallbacks(Callbacks.PRE_BOSS_SELECT, true, bosses, rng, roomDesc, ignoreNoOptions)
     if type(bossID) == "table" then
         bosses = bossID
@@ -672,6 +672,11 @@ function StageAPI.SelectBoss(bosses, rng, roomDesc, ignoreNoOptions)
         roomDesc = roomDesc or shared.Level:GetCurrentRoomDesc()
         local roomSubtype = roomDesc.Data and roomDesc.Data.Subtype or 0
         local isHorsemanRoom = StageAPI.IsIn(horsemanRoomSubtypes, roomSubtype)
+
+        if not rng then
+            rng = StageAPI.BossSelectRNG
+            rng:SetSeed(roomDesc.SpawnSeed + 1, 35)
+        end
 
         local floatWeights
         local totalUnencounteredWeight = 0
@@ -704,7 +709,10 @@ function StageAPI.SelectBoss(bosses, rng, roomDesc, ignoreNoOptions)
             if potentialBoss.Rooms then
                 local validRooms, validRoomWeights = StageAPI.GetValidRoomsForLayout{
                     RoomList = potentialBoss.Rooms,
-                    RoomDescriptor = roomDesc
+                    RoomDescriptor = roomDesc,
+                    IgnoreShape = earlySelecting,
+                    IgnoreDoors = earlySelecting,
+                    Seed = rng:GetSeed(),
                 }
 
                 if #validRooms == 0 or validRoomWeights == 0 then
@@ -767,11 +775,6 @@ function StageAPI.SelectBoss(bosses, rng, roomDesc, ignoreNoOptions)
             if weight % 1 ~= 0 then
                 floatWeights = true
             end
-        end
-
-        if not rng then
-            rng = StageAPI.BossSelectRNG
-            rng:SetSeed(roomDesc.SpawnSeed + 1, 35)
         end
 
         if #forcedBosses > 0 then

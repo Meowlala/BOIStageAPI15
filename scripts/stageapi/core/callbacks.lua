@@ -1581,6 +1581,8 @@ StageAPI.AddCallback("StageAPI", Callbacks.POST_ROOM_LOAD, 1, function(currentRo
     end
 end)
 
+StageAPI.EarlyBossSelectRNG = RNG()
+
 if REPENTOGON then
     mod:AddCallback(ModCallbacks.MC_PRE_BOSS_SELECT, function(_, bossID, bossPool, levelStage, stageType)
         local nextStage = StageAPI.NextStage
@@ -1596,7 +1598,9 @@ if REPENTOGON then
             end
 
             if doEarlySelect then
-                local boss = StageAPI.SelectBoss(nextStage.Bosses)
+                StageAPI.EarlyBossSelectRNG:SetSeed(shared.Game:GetSeeds():GetStageSeed(levelStage))
+                local boss = StageAPI.SelectBoss(nextStage.Bosses, StageAPI.EarlyBossSelectRNG, nil, false, true)
+
                 if boss then
                     StageAPI.EarlySelectedBoss = boss
                     local bossData = StageAPI.GetBossData(boss)
