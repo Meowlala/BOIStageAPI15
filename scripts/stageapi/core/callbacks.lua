@@ -694,6 +694,7 @@ StageAPI.ReplaceBossSubtypes = {
     [82] = true, -- hornfel, doors
     [83] = true, -- great gideon, health bar
     [91] = true, -- min-min, mist
+    [93] = true, -- singe, spike balls
 }
 
 function StageAPI.GenerateBaseRoom(roomDesc)
