@@ -754,14 +754,24 @@ function StageAPI.LoadEntitiesFromEntitySets(entitysets, doGrids, doPersistentOn
                             if entityInfo.Data.Variant == 0 and entityInfo.Data.SubType == 0 then
                                 local roomDesc = shared.Level:GetRoomByIdx(shared.Level:GetCurrentRoomIndex(), StageAPI.GetDimension())
                                 roomDesc.Flags = roomDesc.Flags | RoomDescriptor.FLAG_PITCH_BLACK
-                            elseif entityInfo.Data.Variant == 1 and entityInfo.Data.SubType == 10 then
-                                local roomDesc = shared.Level:GetRoomByIdx(shared.Level:GetCurrentRoomIndex(), StageAPI.GetDimension())
-                                roomDesc.Flags = roomDesc.Flags & ~RoomDescriptor.FLAG_FLOODED
-                                shared.Room:SetWaterAmount(0)
-                            elseif entityInfo.Data.Variant == 1 and entityInfo.Data.SubType == 11 then
-                                local roomDesc = shared.Level:GetRoomByIdx(shared.Level:GetCurrentRoomIndex(), StageAPI.GetDimension())
-                                roomDesc.Flags = roomDesc.Flags | RoomDescriptor.FLAG_FLOODED
-                                shared.Room:SetWaterAmount(1)
+                            elseif entityInfo.Data.Variant == 1 then
+                                if entityInfo.Data.SubType >= 0 and entityInfo.Data.SubType <= 3 then
+                                    if REPENTOGON then
+                                        shared.Room:SetWaterCurrent(Vector(-1,0):Rotated(entityInfo.Data.SubType * 90))
+                                    end
+                                elseif entityInfo.Data.SubType == 10 then
+                                    local roomDesc = shared.Level:GetRoomByIdx(shared.Level:GetCurrentRoomIndex(), StageAPI.GetDimension())
+                                    roomDesc.Flags = roomDesc.Flags & ~RoomDescriptor.FLAG_FLOODED
+                                    if REPENTOGON then
+                                        shared.Room:SetWaterAmount(0)
+                                    end
+                                elseif entityInfo.Data.SubType == 11 then
+                                    local roomDesc = shared.Level:GetRoomByIdx(shared.Level:GetCurrentRoomIndex(), StageAPI.GetDimension())
+                                    roomDesc.Flags = roomDesc.Flags | RoomDescriptor.FLAG_FLOODED
+                                    if REPENTOGON then
+                                        shared.Room:SetWaterAmount(1)
+                                    end
+                                end
                             end
                         end
 
@@ -1118,12 +1128,14 @@ function StageAPI.LoadGridsFromDataList(grids, gridInformation, entities, railsO
                 Isaac.ExecuteCommand(command)
                 StageAPI.ConsoleSpawningGrid = false
             end
-            if StageAPI.RailGridTypes[railData.Type] and StageAPI.MinecartRailVariants[railData.Variant] then
+            if StageAPI.MinecartRailVariants[railData.Variant] then
                 minecart_points[index] = railData.Variant
             end
             if railData.Type == 6001 then
                 local grid = Isaac.GridSpawn(GridEntityType.GRID_PIT, 0, gridpos, true)
-                grids_spawned[#grids_spawned + 1] = grid
+                if grid then
+                    grids_spawned[#grids_spawned + 1] = grid
+                end
             end
         end
     end
