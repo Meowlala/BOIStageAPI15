@@ -751,26 +751,29 @@ function StageAPI.LoadEntitiesFromEntitySets(entitysets, doGrids, doPersistentOn
 
                         if entityInfo.Data.Type == 970 then --Vanilla metadata ents
                             shouldSpawnEntity = false
-                            if entityInfo.Data.Variant == 0 and entityInfo.Data.SubType == 0 then
+                            if entityInfo.Data.Variant == 0 and entityInfo.Data.SubType == 0 then --Darkness
                                 local roomDesc = shared.Level:GetRoomByIdx(shared.Level:GetCurrentRoomIndex(), StageAPI.GetDimension())
                                 roomDesc.Flags = roomDesc.Flags | RoomDescriptor.FLAG_PITCH_BLACK
                             elseif entityInfo.Data.Variant == 1 then
-                                if entityInfo.Data.SubType >= 0 and entityInfo.Data.SubType <= 3 then
+                                if entityInfo.Data.SubType >= 0 and entityInfo.Data.SubType <= 3 then --Water currents
                                     if REPENTOGON then
                                         shared.Room:SetWaterCurrent(Vector(-1,0):Rotated(entityInfo.Data.SubType * 90))
                                     end
-                                elseif entityInfo.Data.SubType == 10 then
+                                elseif entityInfo.Data.SubType == 10 then --Water disabler
                                     local roomDesc = shared.Level:GetRoomByIdx(shared.Level:GetCurrentRoomIndex(), StageAPI.GetDimension())
                                     roomDesc.Flags = roomDesc.Flags & ~RoomDescriptor.FLAG_FLOODED
                                     if REPENTOGON then
                                         shared.Room:SetWaterAmount(0)
                                     end
-                                elseif entityInfo.Data.SubType == 11 then
+                                elseif entityInfo.Data.SubType == 11 then --Water enabler
                                     local roomDesc = shared.Level:GetRoomByIdx(shared.Level:GetCurrentRoomIndex(), StageAPI.GetDimension())
                                     roomDesc.Flags = roomDesc.Flags | RoomDescriptor.FLAG_FLOODED
                                     if REPENTOGON then
                                         shared.Room:SetWaterAmount(1)
                                     end
+                                elseif entityInfo.Data.SubType == 20 then --Lava disabler
+                                    local roomDesc = shared.Level:GetRoomByIdx(shared.Level:GetCurrentRoomIndex(), StageAPI.GetDimension())
+                                    roomDesc.Flags = roomDesc.Flags & ~RoomDescriptor.FLAG_HAS_WATER
                                 end
                             end
                         end

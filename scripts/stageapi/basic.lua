@@ -190,7 +190,7 @@ StageAPI.ConsoleSpawnedGridTypes = {
 }
 
 StageAPI.UnsupportedTypes = {
-    [970] = true, -- water flow, water disabler, lava disabler, quest door
+    [970] = true, -- quest doors + other unsupported metadata
 }
 
 StageAPI.UnsupportedTypeExceptions = {
@@ -206,6 +206,7 @@ StageAPI.UnsupportedTypeExceptions = {
     ["970 1 3"] = true,
     ["970 1 10"] = true, -- water disabler
     ["970 1 11"] = true, -- water enabler
+    ["970 1 20"] = true, -- lava disabler
 }
 
 local EntityNames = {
