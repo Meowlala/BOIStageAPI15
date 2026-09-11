@@ -697,7 +697,7 @@ StageAPI.ReplaceBossSubtypes = {
     [93] = true, -- singe, spike balls
 }
 
-function StageAPI.GenerateBaseRoom(roomDesc)
+function StageAPI.GenerateBaseRoom(roomDesc, dontSelectBoss)
     local baseFloorInfo = StageAPI.GetBaseFloorInfo()
     local xlFloorInfo
     if shared.Level:GetCurses() & LevelCurse.CURSE_OF_LABYRINTH ~= 0 then
@@ -709,35 +709,37 @@ function StageAPI.GenerateBaseRoom(roomDesc)
     local dimension = StageAPI.GetDimension(roomDesc)
     local newRoom
     local setMirrorBossData
-    if baseFloorInfo and baseFloorInfo.HasCustomBosses
-    and roomDesc.Data.Type == RoomType.ROOM_BOSS
-    and roomDesc.SafeGridIndex ~= GridRooms.ROOM_DEBUG_IDX
-    and dimension == 0 and not backwards then
-        local bossFloorInfo = baseFloorInfo
-        if xlFloorInfo and roomDesc.ListIndex == lastBossRoomListIndex then
-            bossFloorInfo = xlFloorInfo
-        end
+    if not dontSelectBoss then
+        if baseFloorInfo and baseFloorInfo.HasCustomBosses
+        and roomDesc.Data.Type == RoomType.ROOM_BOSS
+        and roomDesc.SafeGridIndex ~= GridRooms.ROOM_DEBUG_IDX
+        and dimension == 0 and not backwards then
+            local bossFloorInfo = baseFloorInfo
+            if xlFloorInfo and roomDesc.ListIndex == lastBossRoomListIndex then
+                bossFloorInfo = xlFloorInfo
+            end
 
-        local bossID = StageAPI.SelectBoss(bossFloorInfo.Bosses, nil, roomDesc, true)
-        if bossID then
-            local bossData = StageAPI.GetBossData(bossID)
-            if bossData and not bossData.BaseGameBoss and bossData.Rooms then
-                newRoom = StageAPI.GenerateBossRoom({
-                    BossID = bossID,
-                    NoPlayBossAnim = true,
-                    CheckEncountered = false,
-                }, {
-                    RoomDescriptor = roomDesc
-                })
-                
-                if StageAPI.ReplaceBossSubtypes[roomDesc.Data.Subtype] then
-                    local overwritableRoomDesc = shared.Level:GetRoomByIdx(roomDesc.SafeGridIndex, dimension)
-                    local replaceData = StageAPI.GetGotoDataForTypeShape(RoomType.ROOM_BOSS, roomDesc.Data.Shape)
-                    overwritableRoomDesc.Data = replaceData
-                    setMirrorBossData = replaceData
+            local bossID = StageAPI.SelectBoss(bossFloorInfo.Bosses, nil, roomDesc, true)
+            if bossID then
+                local bossData = StageAPI.GetBossData(bossID)
+                if bossData and not bossData.BaseGameBoss and bossData.Rooms then
+                    newRoom = StageAPI.GenerateBossRoom({
+                        BossID = bossID,
+                        NoPlayBossAnim = true,
+                        CheckEncountered = false,
+                    }, {
+                        RoomDescriptor = roomDesc
+                    })
+                    
+                    if StageAPI.ReplaceBossSubtypes[roomDesc.Data.Subtype] then
+                        local overwritableRoomDesc = shared.Level:GetRoomByIdx(roomDesc.SafeGridIndex, dimension)
+                        local replaceData = StageAPI.GetGotoDataForTypeShape(RoomType.ROOM_BOSS, roomDesc.Data.Shape)
+                        overwritableRoomDesc.Data = replaceData
+                        setMirrorBossData = replaceData
+                    end
+
+                    StageAPI.LogMinor("Switched Base Floor Boss Room, new boss is " .. bossID)
                 end
-
-                StageAPI.LogMinor("Switched Base Floor Boss Room, new boss is " .. bossID)
             end
         end
     end
@@ -1527,7 +1529,7 @@ StageAPI.AddCallback("StageAPI", Callbacks.EARLY_NEW_ROOM, -1, function()
         -- Avoid overriding Greed rooms and such
         StageAPI.SetLevelRoom(nil, StageAPI.GetCurrentListIndex())
     elseif not StageAPI.ShouldOverrideRoom() then
-        StageAPI.GenerateBaseRoom(roomDesc)
+        StageAPI.GenerateBaseRoom(roomDesc, true) --Dont run boss selection here, it runs when entering a new level anyway
     end
 end)
 
