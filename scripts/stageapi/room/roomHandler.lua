@@ -804,6 +804,13 @@ function StageAPI.LoadEntitiesFromEntitySets(entitysets, doGrids, doPersistentOn
                                     end
                                 end
 
+                                if entityData.Type == EntityType.ENTITY_MAZE_ROAMER and entityData.SubType == 0 then --Reimplement Maze Roamer pair-spawning
+                                    local mirroredPos = shared.Room:GetCenterPos() + (shared.Room:GetCenterPos() - ent.Position)
+                                    local redMazeRoamer = Isaac.Spawn(entityData.Type, entityData.Variant, 1, mirroredPos, Vector.Zero, nil)
+                                    ent.Child = redMazeRoamer
+                                    redMazeRoamer.Parent = ent
+                                end
+
                                 if entityData.Type == EntityType.ENTITY_PICKUP and entityData.Variant == PickupVariant.PICKUP_COLLECTIBLE and entityData.SubType ~= 0 then -- why can corrupted data change fixed items spawns??
                                     if ent.SubType ~= entityData.SubType then
                                         ent:ToPickup():Morph(ent.Type, ent.Variant, entityData.SubType, true, true, true)
