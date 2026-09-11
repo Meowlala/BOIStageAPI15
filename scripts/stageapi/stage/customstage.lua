@@ -675,7 +675,7 @@ function StageAPI.CustomStage:HasMirrorDimension()
     elseif self.Replaces then
         vanillaStage, vanillaStageType = self.Replaces.OverrideStage, self.Replaces.OverrideStageType
     end
-    return ((vanillaStage == LevelStage.STAGE1_2 or (self:IsStage() and shared.Level:GetCurses() & LevelCurse.CURSE_OF_LABYRINTH ~= 0)) 
+    return ((vanillaStage == LevelStage.STAGE1_2 or (vanillaStage == LevelStage.STAGE1_1 and self:IsStage() and shared.Level:GetCurses() & LevelCurse.CURSE_OF_LABYRINTH ~= 0)) 
         and (vanillaStageType == StageType.STAGETYPE_REPENTANCE or vanillaStageType == StageType.STAGETYPE_REPENTANCE_B))
 end
 
@@ -690,7 +690,7 @@ function StageAPI.CustomStage:HasMineshaftDimension()
     elseif self.Replaces then
         vanillaStage, vanillaStageType = self.Replaces.OverrideStage, self.Replaces.OverrideStageType
     end
-    return ((vanillaStage == LevelStage.STAGE2_2 or (self:IsStage() and shared.Level:GetCurses() & LevelCurse.CURSE_OF_LABYRINTH ~= 0)) 
+    return ((vanillaStage == LevelStage.STAGE2_2 or (vanillaStage == LevelStage.STAGE2_1 and self:IsStage() and shared.Level:GetCurses() & LevelCurse.CURSE_OF_LABYRINTH ~= 0)) 
         and (vanillaStageType == StageType.STAGETYPE_REPENTANCE or vanillaStageType == StageType.STAGETYPE_REPENTANCE_B))
 end
 
