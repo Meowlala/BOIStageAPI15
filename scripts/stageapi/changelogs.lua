@@ -98,7 +98,7 @@ stages, since they would send
 you to the wrong next stage
 
 - Fix issues with how custom stages
-determined they had a mirror and/or
+determined they had a mirror or
 mineshaft dimension
 ]])
 
