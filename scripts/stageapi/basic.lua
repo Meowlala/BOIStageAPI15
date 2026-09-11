@@ -132,6 +132,7 @@ StageAPI.CorrectedGridTypes = {
     [1000]=GridEntityType.GRID_ROCK,
     [1001]=GridEntityType.GRID_ROCK_BOMB,
     [1002]=GridEntityType.GRID_ROCK_ALT,
+    [1003]=GridEntityType.GRID_ROCKT,
     [1008]=GridEntityType.GRID_ROCK_ALT2,
     [1010]=GridEntityType.GRID_ROCK_SPIKED,
     [1011]=GridEntityType.GRID_ROCK_GOLD,
