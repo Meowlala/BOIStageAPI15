@@ -32,6 +32,76 @@ mod:AddCallback(ModCallbacks.MC_POST_GAME_STARTED, function()
             REVEL.AddedStageAPIChangelogs = true
         end
 
+        TryAddChangelog("v2.41", [[- With REPENTOGON,
+add achievement checking when 
+transitioning from a custom 
+stage to a vanilla one
+
+- With REPENTOGON, update shadow
+overlays in overriden stages
+to use blending
+
+- Update ambush waves in
+custom stages to properly 
+use spawn pentagrams 
+with Repentance+
+
+- Fix issues when using
+Death Certificate in
+extra rooms
+
+- Fix softlock when using
+Genesis in extra rooms
+
+- Using Genesis in custom
+stages will send you back
+to the starting room of the
+stage, as opposed to sending
+you to the wrong next stage
+
+- With REPENTOGON, reimpement 
+Flip item pedestals in luarooms 
+
+- Fix issues with early
+boss selection logic for
+custom stages
+
+- Fix boss select RNG not being 
+seeded before the PRE_BOSS_SELECT
+callback runs
+
+- Fix issue when clearing
+data of certain rooms before
+overriding them
+
+- Minecart rails use their
+own seperated stack in luarooms
+
+- Prevent Singe Balls from
+appearing in custom boss rooms
+
+- Add support for Lava Disablers
+in luarooms
+
+- With REPENTOGON, add support
+for Water Currents in luarooms
+
+- Fix crash with Tinted Rocks
+placed in luarooms
+
+- Fix Maze Roamers not spawning
+their twin in luarooms
+
+- Prevent Forget Me Now dice
+rooms from appearing in custom
+stages, since they would send
+you to the wrong next stage
+
+- Fix issues with how custom stages
+determined they had a mirror and/or
+mineshaft dimension
+]])
+
         TryAddChangelog("v2.40", [[- Fix issue with
 custom grids spawn-blocking
 normal entities in luarooms
