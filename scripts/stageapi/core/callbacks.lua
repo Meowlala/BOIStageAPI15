@@ -2000,3 +2000,15 @@ function StageAPI.GenesisSafetyCheck() --Ensures Genesis cannot softlock, also m
         end
     end
 end
+
+--Prevent Forget Me Now dice room floors from appearing in custom stages
+StageAPI.DiceFloorRerollRNG = RNG()
+StageAPI.DiceFloorRerollSubTypes = {0,1,2,3,5}
+
+mod:AddCallback(ModCallbacks.MC_PRE_ENTITY_SPAWN, function(_, id, variant, subtype, position, velocity, spawner, seed)
+    if id == EntityType.ENTITY_EFFECT and variant == EffectVariant.DICE_FLOOR and subtype == 4 then
+        StageAPI.DiceFloorRerollRNG:SetSeed(seed, 35)
+        local newSubType = StageAPI.DiceFloorRerollSubTypes[StageAPI.DiceFloorRerollRNG:RandomInt(#StageAPI.DiceFloorRerollSubTypes) + 1]
+        return {id, variant, newSubType, seed}
+    end
+end)
