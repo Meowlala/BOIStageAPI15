@@ -32,6 +32,13 @@ mod:AddCallback(ModCallbacks.MC_POST_GAME_STARTED, function()
             REVEL.AddedStageAPIChangelogs = true
         end
 
+         TryAddChangelog("v2.42", [[- Stop custom
+boss selection logic from 
+running every time the 
+boss room is entered in 
+vanilla stages
+]])
+
         TryAddChangelog("v2.41", [[- With REPENTOGON,
 add achievement checking when 
 transitioning from a custom 
