@@ -830,6 +830,12 @@ StageAPI.AddCallback("StageAPI", Callbacks.POST_ROOM_CLEAR, 0, function()
                         pickup:Morph(collectible.Type, collectible.Variant, 0, false, true, false)
                     end
                 end
+
+                if StageAPI.TaintedKeeperExists() then
+                    pickup.ShopItemId = -1
+                    pickup.Price = 1
+                    pickup.AutoUpdatePrice = true
+                end
             end
         end
     end
@@ -1765,6 +1771,12 @@ mod:AddCallback(ModCallbacks.MC_POST_UPDATE, function ()
         else
             local item = Isaac.Spawn(EntityType.ENTITY_PICKUP, PickupVariant.PICKUP_COLLECTIBLE, dropToSpawn, Vector.Zero, Vector.Zero, nil):ToPickup()
             item.OptionsPickupIndex = BOSS_ITEM_OPTIONS_IDX
+
+            if StageAPI.TaintedKeeperExists() then
+                item.ShopItemId = -1
+                item.Price = 1
+                item.AutoUpdatePrice = true
+            end
 
             -- Mark it to not trigger the effect
             item:GetData().StageAPIDontCheckThemedDrop = true

@@ -19,55 +19,55 @@ function StageAPI.GetNumTaintedKeeperCoinsToSpawn(npc)
     return math.min(math.max(1, scaledCoins), 8)
 end
 
+function StageAPI.TaintedKeeperExists()
+    for _, player in ipairs(shared.Players) do
+        if player:GetPlayerType() == PlayerType.PLAYER_KEEPER_B then
+            return true
+        end
+    end
+    return false
+end
+
 mod:AddCallback(ModCallbacks.MC_POST_ENTITY_KILL, function(_, npc)
     npc = npc:ToNPC()
     if not npc then return end
 
-    local keeperBExists = false
-    for _, player in ipairs(shared.Players) do
-        if player:GetPlayerType() == PlayerType.PLAYER_KEEPER_B then
-            keeperBExists = true
-            break
+    if StageAPI.TaintedKeeperExists() then
+
+        local canSpawnNormalCoins = not ((npc.SpawnGridIndex < 0) or (shared.Level:GetCurrentRoomDesc().VisitedCount ~= 1 and not npc:HasEntityFlags(EntityFlag.FLAG_AMBUSH)))
+
+        if canSpawnNormalCoins or npc:HasEntityFlags(EntityFlag.FLAG_NO_DEATH_TRIGGER) then
+            -- Don't need to do anything
+            return
         end
-    end
 
-    if not keeperBExists then
-        return
-    end
+        local data = npc:GetData()
 
-    local canSpawnNormalCoins = not ((npc.SpawnGridIndex < 0) or (shared.Level:GetCurrentRoomDesc().VisitedCount ~= 1 and not npc:HasEntityFlags(EntityFlag.FLAG_AMBUSH)))
-
-    if canSpawnNormalCoins or npc:HasEntityFlags(EntityFlag.FLAG_NO_DEATH_TRIGGER) then
-        -- Don't need to do anything
-        return
-    end
-
-    local data = npc:GetData()
-
-    if not data.StageAPIEntityListIndex or data.StageAPIHandledTaintedKeeperCoins then
-        -- Only need to handle "room" entities spawned by StageAPI
-        return
-    end
-
-    data.StageAPIHandledTaintedKeeperCoins = true
-
-    local numCoins = StageAPI.GetNumTaintedKeeperCoinsToSpawn(npc)
-    local coinTimeout = npc:IsBoss() and 90 or 60
-    local rng = RNG()
-    rng:SetSeed(npc.InitSeed, 35)
-
-    for i = 1, numCoins do
-        local speed = (rng:RandomFloat() * 3.0) + 2.0
-        local angle = rng:RandomFloat() * math.pi * 2.0
-        local velocity = Vector(math.cos(angle) * speed, math.sin(angle) * speed)
-
-        local coin = Game():Spawn(EntityType.ENTITY_PICKUP, PickupVariant.PICKUP_COIN, npc.Position, velocity, npc, 0, rng:Next()):ToPickup()
-        if coin then
-            coin.Timeout = coinTimeout
+        if not data.StageAPIEntityListIndex or data.StageAPIHandledTaintedKeeperCoins then
+            -- Only need to handle "room" entities spawned by StageAPI
+            return
         end
-    end
 
-    data.StageAPIBlockSingleTaintedKeeperCoin = true
+        data.StageAPIHandledTaintedKeeperCoins = true
+
+        local numCoins = StageAPI.GetNumTaintedKeeperCoinsToSpawn(npc)
+        local coinTimeout = npc:IsBoss() and 90 or 60
+        local rng = RNG()
+        rng:SetSeed(npc.InitSeed, 35)
+
+        for i = 1, numCoins do
+            local speed = (rng:RandomFloat() * 3.0) + 2.0
+            local angle = rng:RandomFloat() * math.pi * 2.0
+            local velocity = Vector(math.cos(angle) * speed, math.sin(angle) * speed)
+
+            local coin = Game():Spawn(EntityType.ENTITY_PICKUP, PickupVariant.PICKUP_COIN, npc.Position, velocity, npc, 0, rng:Next()):ToPickup()
+            if coin then
+                coin.Timeout = coinTimeout
+            end
+        end
+
+        data.StageAPIBlockSingleTaintedKeeperCoin = true
+    end
 end)
 
 mod:AddCallback(ModCallbacks.MC_POST_PICKUP_INIT, function(_, pickup)
