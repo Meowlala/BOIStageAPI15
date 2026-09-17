@@ -528,11 +528,22 @@ function StageAPI.LevelRoom:SavePersistentEntities()
             end
 
             if entity.Type == EntityType.ENTITY_PICKUP then
+                entity = entity:ToPickup()
                 if persistData.UpdatePrice then
-                    entityPersistData.Price = {Price = entity:ToPickup().Price, AutoUpdate = entity:ToPickup().AutoUpdatePrice}
+                    entityPersistData.Price = {Price = entity.Price, AutoUpdate = entity.AutoUpdatePrice, ShopItemId = entity.ShopItemId}
                 end
-                if persistData.UpdateOptionsPickupIndex then
-                    entityPersistData.OptionsPickupIndex = entity:ToPickup().OptionsPickupIndex
+                entityPersistData.OptionsPickupIndex = entity.OptionsPickupIndex
+                entityPersistData.Touched = entity.Touched
+                entityPersistData.Charge = entity.Charge
+                entityPersistData.State = entity.State
+
+                if REPENTOGON then
+                    entityPersistData.CanRerollOverride = entity:GetCanRerollOverride()
+                    entityPersistData.VarData = entity:GetVarData()
+                    if entity.Variant == PickupVariant.PICKUP_COLLECTIBLE then
+                        entityPersistData.FlipCollectible = entity:GetFlipCollectible()
+                        entityPersistData.CollectibleCycle = entity:GetCollectibleCycle()
+                    end
                 end
             end
 
@@ -583,11 +594,22 @@ function StageAPI.LevelRoom:SavePersistentEntities()
                     end
 
                     if entity.Type == EntityType.ENTITY_PICKUP then
+                        entity = entity:ToPickup()
                         if persistData.UpdatePrice then
-                            entityPersistData.Price = {Price = entity:ToPickup().Price, AutoUpdate = entity:ToPickup().AutoUpdatePrice}
+                            entityPersistData.Price = {Price = entity.Price, AutoUpdate = entity.AutoUpdatePrice, ShopItemId = entity.ShopItemId}
                         end
-                        if persistData.UpdateOptionsPickupIndex then
-                            entityPersistData.OptionsPickupIndex = entity:ToPickup().OptionsPickupIndex
+                        entityPersistData.OptionsPickupIndex = entity.OptionsPickupIndex
+                        entityPersistData.Touched = entity.Touched
+                        entityPersistData.Charge = entity.Charge
+                        entityPersistData.State = entity.State
+
+                        if REPENTOGON then
+                            entityPersistData.CanRerollOverride = entity:GetCanRerollOverride()
+                            entityPersistData.VarData = entity:GetVarData()
+                            if entity.Variant == PickupVariant.PICKUP_COLLECTIBLE then
+                                entityPersistData.FlipCollectible = entity:GetFlipCollectible()
+                                entityPersistData.CollectibleCycle = entity:GetCollectibleCycle()
+                            end
                         end
                     end
 

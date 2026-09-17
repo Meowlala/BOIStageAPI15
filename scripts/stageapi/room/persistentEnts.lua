@@ -22,7 +22,6 @@ local shared = require("scripts.stageapi.shared")
 ---@field UpdatePosition boolean
 ---@field UpdateHealth boolean
 ---@field UpdatePrice boolean
----@field UpdateOptionsPickupIndex boolean
 ---@field StoreCheck fun(entity: Entity, data: table): boolean
 
 ---@type EntityPersistenceData[]
@@ -125,7 +124,6 @@ StageAPI.AddPersistenceCheck(function(entData)
             UpdateVariant = true,
             UpdateSubType = true,
             UpdatePrice = true,
-            UpdateOptionsPickupIndex = true,
             StoreCheck = function(entity)
                 if entity.Type == EntityType.ENTITY_PICKUP then
                     local variant = entity.Variant

@@ -826,9 +826,39 @@ function StageAPI.LoadEntitiesFromEntitySets(entitysets, doGrids, doPersistentOn
                                     if entityPersistData.Price then
                                         pickup.Price = entityPersistData.Price.Price
                                         pickup.AutoUpdatePrice = entityPersistData.Price.AutoUpdate
+                                        pickup.ShopItemId = entityPersistData.Price.ShopItemId
                                     end
                                     if entityPersistData.OptionsPickupIndex then
                                         pickup.OptionsPickupIndex = entityPersistData.OptionsPickupIndex
+                                    end
+                                    if entityPersistData.Touched then
+                                        pickup.Touched = entityPersistData.Touched
+                                    end
+                                    if entityPersistData.Charge then
+                                        pickup.Charge = entityPersistData.Charge
+                                    end
+                                    if entityPersistData.State then
+                                        pickup.State = entityPersistData.State
+                                    end
+
+                                    if REPENTOGON then
+                                        if entityPersistData.CanRerollOverride then
+                                            pickup:SetCanRerollOverride(entityPersistData.CanRerollOverride)
+                                        end
+                                        if entityPersistData.VarData then
+                                            pickup:SetVarData(entityPersistData.VarData)
+                                        end
+                                        if ent.Variant == PickupVariant.PICKUP_COLLECTIBLE then
+                                            if entityPersistData.FlipCollectible then
+                                                pickup:InitFlipState(entityPersistData.FlipCollectible, true)
+                                            end
+                                            if entityPersistData.CollectibleCycle then
+                                                pickup:RemoveCollectibleCycle()
+                                                for _, id in pairs(entityPersistData.CollectibleCycle) do
+                                                    pickup:AddCollectibleCycle(id)
+                                                end
+                                            end
+                                        end
                                     end
                                 end
 
