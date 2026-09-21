@@ -1471,6 +1471,18 @@ function StageAPI.SetLevelRoom(levelRoom, roomID, dimension)
     end
 end
 
+---@param roomID any
+---@param dimension? Dimension
+---@return boolean
+function StageAPI.RemoveLevelRoom(roomID, dimension)
+    dimension = dimension or StageAPI.GetDimension()
+    if StageAPI.GetLevelRoom(roomID, dimension) then
+        StageAPI.LevelRooms[dimension][roomID] = nil
+        return true
+    end
+    return false
+end
+
 ---@param room LevelRoom
 function StageAPI.SetCurrentRoom(room)
     StageAPI.ActiveEntityPersistenceData = {}
