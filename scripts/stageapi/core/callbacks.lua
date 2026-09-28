@@ -263,9 +263,16 @@ end
 
 StageAPI.RecentlyChangedLevel = nil
 
-mod:AddCallback(ModCallbacks.MC_POST_CURSE_EVAL, function()
+mod:AddPriorityCallback(ModCallbacks.MC_POST_CURSE_EVAL, CallbackPriority.LATE, function(_, curseMask)
     if not StageAPI.RecentlyStartedGame then
         StageAPI.RecentlyChangedLevel = true
+    end
+
+    if StageAPI.NextStage then
+        if curseMask & LevelCurse.CURSE_OF_MAZE ~= 0 then
+            StageAPI.ReapplyMazeCurse = true
+            return curseMask & ~LevelCurse.CURSE_OF_MAZE
+        end
     end
 end)
 
@@ -1216,6 +1223,11 @@ mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, function()
                 shared.Music:Crossfade(musicID)
             end
         end
+    end
+
+    if StageAPI.ReapplyMazeCurse then
+        shared.Level:AddCurse(LevelCurse.CURSE_OF_MAZE, false)
+        StageAPI.ReapplyMazeCurse = false
     end
 
     StageAPI.NextStage = nil
