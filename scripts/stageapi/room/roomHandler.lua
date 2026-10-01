@@ -9,8 +9,9 @@ local Callbacks = require("scripts.stageapi.enums.Callbacks")
 local EFFECT_SUBTYPE_MOONLIGHT = 1 -- Luna light beam in secret rooms
 
 local excludeTypesFromClearing = {
-    [EntityType.ENTITY_FAMILIAR] = true,
     [EntityType.ENTITY_PLAYER] = true,
+    [EntityType.ENTITY_TEAR] = true,
+    [EntityType.ENTITY_FAMILIAR] = true,
     [EntityType.ENTITY_KNIFE] = true,
     [EntityType.ENTITY_BLOOD_PUPPY] = true,
     [EntityType.ENTITY_DARK_ESAU] = true,
