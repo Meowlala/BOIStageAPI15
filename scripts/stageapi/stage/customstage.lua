@@ -739,9 +739,9 @@ end
 ---@return boolean? shouldLayer
 ---@return Music? shouldQueue
 ---@return boolean? disregardNonOverride
-function StageAPI.CustomStage:GetPlayingMusic()
+function StageAPI.CustomStage:GetPlayingMusic(id)
     local roomType = shared.Room:GetType()
-    local id = shared.Music:GetCurrentMusicID()
+    id = id or shared.Music:GetCurrentMusicID()
     local roomDesc = shared.Level:GetCurrentRoomDesc()
     if roomType == RoomType.ROOM_BOSS or (StageAPI.IsGreedBoss() and roomType == RoomType.ROOM_DEFAULT and shared.Room:GetFrameCount() > 0) then
         if self.BossMusic then

@@ -506,70 +506,72 @@ mod:AddCallback(ModCallbacks.MC_POST_RENDER, function()
 
     -- Music handling
 
-    local musicRoom = StageAPI.GetCurrentRoom()
+    if not REPENTOGON then
+        local musicRoom = StageAPI.GetCurrentRoom()
 
-    -- if transitioning from extra room to normal room, 
-    -- grid index is still the old one while the stageapi room
-    -- id is reset, leaving for default music for the transition
-    -- only (if the normal room was for instance a boss room)
-    -- Fix this by taking the last extra room in case
-    if StageAPI.DoingExtraRoomTransition
-    and not StageAPI.TransitioningToExtraRoom 
-    and StageAPI.PreviousExtraRoomData.RoomID
-    then
-        local levelMap = StageAPI.LevelMaps[StageAPI.PreviousExtraRoomData.MapID]
-        local roomId = levelMap:GetRoomData(StageAPI.PreviousExtraRoomData.RoomID).RoomID
-        musicRoom = StageAPI.GetLevelRoom(roomId, StageAPI.PreviousExtraRoomData.MapID)
-    end
-
-    if (
-        inCustomStage
-        and currentDimension ~= DIMENSION_DEATH_CERTIFICATE
-    ) or musicRoom then
-        local id = shared.Music:GetCurrentMusicID()
-        local musicID, shouldLayer, shouldQueue, disregardNonOverride, isMirrorMusic
-        if musicRoom then
-            musicID, shouldLayer = musicRoom:GetPlayingMusic()
+        -- if transitioning from extra room to normal room, 
+        -- grid index is still the old one while the stageapi room
+        -- id is reset, leaving for default music for the transition
+        -- only (if the normal room was for instance a boss room)
+        -- Fix this by taking the last extra room in case
+        if StageAPI.DoingExtraRoomTransition
+        and not StageAPI.TransitioningToExtraRoom 
+        and StageAPI.PreviousExtraRoomData.RoomID
+        then
+            local levelMap = StageAPI.LevelMaps[StageAPI.PreviousExtraRoomData.MapID]
+            local roomId = levelMap:GetRoomData(StageAPI.PreviousExtraRoomData.RoomID).RoomID
+            musicRoom = StageAPI.GetLevelRoom(roomId, StageAPI.PreviousExtraRoomData.MapID)
         end
 
-        if not musicID and StageAPI.CurrentStage then
-            musicID, shouldLayer, shouldQueue, disregardNonOverride, isMirrorMusic = StageAPI.CurrentStage:GetPlayingMusic()
-        end
-
-        if musicID then
-            if not shouldQueue then
-                shouldQueue = musicID
+        if (
+            inCustomStage
+            and currentDimension ~= DIMENSION_DEATH_CERTIFICATE
+        ) or musicRoom then
+            local id = shared.Music:GetCurrentMusicID()
+            local musicID, shouldLayer, shouldQueue, disregardNonOverride, isMirrorMusic
+            if musicRoom then
+                musicID, shouldLayer = musicRoom:GetPlayingMusic()
             end
 
-            local queuedID = shared.Music:GetQueuedMusicID()
-            local canOverride, canOverrideQueue, neverOverrideQueue = StageAPI.CanOverrideMusic(queuedID)
-            local shouldOverrideQueue = shouldQueue and (canOverride or canOverrideQueue or disregardNonOverride)
-            if not neverOverrideQueue and shouldQueue then
-                shouldOverrideQueue = shouldOverrideQueue or (id == queuedID)
+            if not musicID and StageAPI.CurrentStage then
+                musicID, shouldLayer, shouldQueue, disregardNonOverride, isMirrorMusic = StageAPI.CurrentStage:GetPlayingMusic()
             end
 
-            if queuedID ~= shouldQueue and shouldOverrideQueue then
-                shared.Music:Queue(shouldQueue)
-            end
-
-            local canOverride = StageAPI.CanOverrideMusic(id)
-            if id ~= musicID and (canOverride or disregardNonOverride) then
-                if isMirrorMusic ~= StageAPI.IsPlayingMirrorMusic then
-                    shared.Music:Crossfade(musicID, 0.05)
-                else
-                    shared.Music:Play(musicID, 0)
+            if musicID then
+                if not shouldQueue then
+                    shouldQueue = musicID
                 end
+
+                local queuedID = shared.Music:GetQueuedMusicID()
+                local canOverride, canOverrideQueue, neverOverrideQueue = StageAPI.CanOverrideMusic(queuedID)
+                local shouldOverrideQueue = shouldQueue and (canOverride or canOverrideQueue or disregardNonOverride)
+                if not neverOverrideQueue and shouldQueue then
+                    shouldOverrideQueue = shouldOverrideQueue or (id == queuedID)
+                end
+
+                if queuedID ~= shouldQueue and shouldOverrideQueue then
+                    shared.Music:Queue(shouldQueue)
+                end
+
+                local canOverride = StageAPI.CanOverrideMusic(id)
+                if id ~= musicID and (canOverride or disregardNonOverride) then
+                    if isMirrorMusic ~= StageAPI.IsPlayingMirrorMusic then
+                        shared.Music:Crossfade(musicID, 0.05)
+                    else
+                        shared.Music:Play(musicID, 0)
+                    end
+                end
+
+                shared.Music:UpdateVolume()
+
+                if shouldLayer and not shared.Music:IsLayerEnabled() then
+                    shared.Music:EnableLayer()
+                elseif not shouldLayer and shared.Music:IsLayerEnabled() then
+                    shared.Music:DisableLayer()
+                end
+
+                StageAPI.IsPlayingMirrorMusic = isMirrorMusic
             end
-
-            shared.Music:UpdateVolume()
-
-            if shouldLayer and not shared.Music:IsLayerEnabled() then
-                shared.Music:EnableLayer()
-            elseif not shouldLayer and shared.Music:IsLayerEnabled() then
-                shared.Music:DisableLayer()
-            end
-
-            StageAPI.IsPlayingMirrorMusic = isMirrorMusic
         end
     end
 
@@ -991,6 +993,10 @@ mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, function()
             editableCurrentDesc.VisitedCount = 0
 
             shared.Level:ChangeRoom(currentRoomIndex)
+
+            if REPENTOGON then
+                shared.Music:Play(Music.MUSIC_BEAST_BOSS, Options.MusicVolume) --Play some insane music that would never usually play here to trigger the callback
+            end
             return
         end
     end
@@ -1217,10 +1223,12 @@ mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, function()
             StageAPI.GenerateBaseLevel()
         end   
 
-        if StageAPI.CurrentStage and StageAPI.CurrentStage.GetPlayingMusic then
-            local musicID = StageAPI.CurrentStage:GetPlayingMusic()
-            if musicID then
-                shared.Music:Crossfade(musicID)
+        if not REPENTOGON then
+            if StageAPI.CurrentStage and StageAPI.CurrentStage.GetPlayingMusic then
+                local musicID = StageAPI.CurrentStage:GetPlayingMusic()
+                if musicID then
+                    shared.Music:Crossfade(musicID)
+                end
             end
         end
     end
@@ -2050,3 +2058,41 @@ mod:AddCallback(ModCallbacks.MC_PRE_ENTITY_SPAWN, function(_, id, variant, subty
         return {id, variant, newSubType, seed}
     end
 end)
+
+if REPENTOGON then
+    local function IsInMainMenu()
+        return MenuManager.IsActive() or Isaac.GetFrameCount() <= 1
+    end
+
+    mod:AddPriorityCallback(ModCallbacks.MC_PRE_MUSIC_PLAY, CallbackPriority.IMPORTANT, function(_, musicID, volume, isFade)
+        if not IsInMainMenu() then
+            local musicRoom = StageAPI.GetCurrentRoom()
+
+            if StageAPI.DoingExtraRoomTransition
+            and not StageAPI.TransitioningToExtraRoom 
+            and StageAPI.PreviousExtraRoomData.RoomID
+            then
+                local levelMap = StageAPI.LevelMaps[StageAPI.PreviousExtraRoomData.MapID]
+                local roomId = levelMap:GetRoomData(StageAPI.PreviousExtraRoomData.RoomID).RoomID
+                musicRoom = StageAPI.GetLevelRoom(roomId, StageAPI.PreviousExtraRoomData.MapID)
+            end
+
+            local customMusicID
+            if musicRoom then
+                customMusicID = musicRoom:GetPlayingMusic()
+            end
+            if not customMusicID then
+                if StageAPI.CurrentStage and StageAPI.CurrentStage.GetPlayingMusic then
+                    customMusicID = StageAPI.CurrentStage:GetPlayingMusic(musicID)
+                end
+            end
+            if customMusicID and musicID ~= customMusicID and musicID < Music.NUM_MUSIC then --Don't override non-vanilla music
+                if shared.Music:GetCurrentMusicID() == customMusicID then
+                    return false
+                else
+                    return customMusicID
+                end
+            end
+        end
+    end)
+end
