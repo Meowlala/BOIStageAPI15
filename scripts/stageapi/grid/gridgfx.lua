@@ -105,6 +105,11 @@ function StageAPI.GridGfx:SetDecorations(filename, anm2, propCount, prefix, suff
     }
 end
 
+---@param filename string
+function StageAPI.GridGfx:SetRails(filename)
+    self.Rails = filename
+end
+
 -- No SetPoop, do GridGfx:SetGrid(filename, GridEntityType.GRID_POOP, StageAPI.PoopVariant.Normal)
 
 StageAPI.GridGfxRNG = RNG()
@@ -215,6 +220,13 @@ function StageAPI.ChangeDecoration(decoration, decorations)
     end
 
     gsprite:Play((doAlt and decorations.AltPrefix or decorations.Prefix) .. tostring(prop) .. decorations.Suffix, true)
+end
+
+---@param filename string
+function StageAPI.ChangeRails(filename)
+    if REPENTOGON then
+        shared.Room:GetRailManager():GetRailsSprite():ReplaceSpritesheet(0, filename, true)
+    end
 end
 
 ---@class DoorInfo
@@ -779,6 +791,10 @@ function StageAPI.ChangeGrids(grids, callPostInit)
                     end
                 end
             end
+        end
+
+        if grids.Rails then
+            StageAPI.ChangeRails(grids.Rails)
         end
 
         if callPostInit then
