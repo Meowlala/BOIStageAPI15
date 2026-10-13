@@ -956,6 +956,7 @@ mod:AddCallback(ModCallbacks.MC_POST_NEW_ROOM, function()
     StageAPI.RecentlyChangedLevel = false
     StageAPI.RecentlyStartedGame = false
     StageAPI.SuppressingRoomClearRewards = false
+    StageAPI.IsGameOver = false
 
     if StageAPI.TransitioningToExtraRoom and StageAPI.IsRoomTopLeftShifted() and not StageAPI.DoubleTransitioning then
         StageAPI.DoubleTransitioning = true
@@ -2059,13 +2060,24 @@ mod:AddCallback(ModCallbacks.MC_PRE_ENTITY_SPAWN, function(_, id, variant, subty
     end
 end)
 
+StageAPI.IsGameOver = false
+mod:AddCallback(ModCallbacks.MC_POST_GAME_END, function(_, isGameOver)
+    if isGameOver then
+        StageAPI.IsGameOver = true
+        if StageAPI.OverrodeMusic then
+            shared.Music:Play(Music.MUSIC_GAME_OVER, Options.MusicVolume) --Fix game over theme not playing if music was/is being overriden by callback
+        end
+    end
+end)
+
+StageAPI.OverrodeMusic = false
 if REPENTOGON then
     local function IsInMainMenu()
         return MenuManager.IsActive() or Isaac.GetFrameCount() <= 1
     end
 
     mod:AddPriorityCallback(ModCallbacks.MC_PRE_MUSIC_PLAY, CallbackPriority.IMPORTANT, function(_, musicID, volume, isFade)
-        if not IsInMainMenu() then
+        if not (IsInMainMenu() or StageAPI.IsGameOver) then
             local musicRoom = StageAPI.GetCurrentRoom()
 
             if StageAPI.DoingExtraRoomTransition
@@ -2087,6 +2099,7 @@ if REPENTOGON then
                 end
             end
             if customMusicID and musicID ~= customMusicID and musicID < Music.NUM_MUSIC then --Don't override non-vanilla music
+                StageAPI.OverrodeMusic = true
                 if shared.Music:GetCurrentMusicID() == customMusicID then
                     return false
                 else
@@ -2094,5 +2107,6 @@ if REPENTOGON then
                 end
             end
         end
+        StageAPI.OverrodeMusic = false
     end)
 end
