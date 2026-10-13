@@ -751,26 +751,30 @@ function StageAPI.GotoCustomStage(stage, playTransition, noForgetSeed)
         if not stageType then
             StageAPI.StageRNG:SetSeed(StageAPI.Seeds:GetStageSeed(stage.Stage), 0)
             
-            local stagePool = stage.AltPath and StageAPI.AltPathStageTypes or StageAPI.BaseStageTypes
-            if REPENTOGON then
-                local unlockedStages = {}
-                for _, stageTypeToCheck in ipairs(stagePool) do
-                    local floorInfo = StageAPI.GetBaseFloorInfo(stage.Stage, stageTypeToCheck)
-                    local isUnlocked = true
-                    if floorInfo.Achievement then
-                        isUnlocked = Isaac.GetPersistentGameData():Unlocked(floorInfo.Achievement)
+            if stage.AltPath and stage.Stage >= LevelStage.STAGE4_1 then
+                stageType = StageType.STAGETYPE_REPENTANCE --Don't go to Mortis bruh
+            else
+                local stagePool = stage.AltPath and StageAPI.AltPathStageTypes or StageAPI.BaseStageTypes
+                if REPENTOGON then
+                    local unlockedStages = {}
+                    for _, stageTypeToCheck in ipairs(stagePool) do
+                        local floorInfo = StageAPI.GetBaseFloorInfo(stage.Stage, stageTypeToCheck)
+                        local isUnlocked = true
+                        if floorInfo.Achievement then
+                            isUnlocked = Isaac.GetPersistentGameData():Unlocked(floorInfo.Achievement)
+                        end
+                        if isUnlocked then
+                            table.insert(unlockedStages, stageTypeToCheck)
+                        end
                     end
-                    if isUnlocked then
-                        table.insert(unlockedStages, stageTypeToCheck)
+                    if #unlockedStages > 0 then
+                        stageType = unlockedStages[StageAPI.Random(1, #unlockedStages, StageAPI.StageRNG)]
+                    else --This shouldn't happen but better to be safe
+                        stageType = stagePool[StageAPI.Random(1, #stagePool, StageAPI.StageRNG)]
                     end
-                end
-                if #unlockedStages > 0 then
-                    stageType = unlockedStages[StageAPI.Random(1, #unlockedStages, StageAPI.StageRNG)]
-                else --This shouldn't happen but better to be safe
+                else
                     stageType = stagePool[StageAPI.Random(1, #stagePool, StageAPI.StageRNG)]
                 end
-            else
-                stageType = stagePool[StageAPI.Random(1, #stagePool, StageAPI.StageRNG)]
             end
         end
 
